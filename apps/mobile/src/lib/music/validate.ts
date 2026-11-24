@@ -1,5 +1,6 @@
 import { isFiniteNumber, isRecord } from '../responseShapes';
 import type { MusicDraft, MusicCandidateView, MusicGenerationView, MusicEntitlements, MusicGeneration, MusicModel, MusicQuote, MusicSongRow, MusicSongDetail, MusicVersion, MusicHook, MusicShareLink, MusicLifecycle, MusicVersionCapabilities, MusicReuseContext } from './types';
+import { isMusicDailyChallenge } from './dailyChallenge';
 
 // Boundary checks: every field the exported types promise is verified, so a screen never meets a
 // missing nested field as a throw on access (the caller gets `bad_response` instead).
@@ -13,6 +14,7 @@ const sunoModels = ['v6', 'v6_mini', 'v6_wild'];
 const genders = ['auto', 'male', 'female'];
 const isContract = (v: unknown): boolean => contracts.includes(v as typeof contracts[number]);
 const isPositiveInteger = (v: unknown): boolean => Number.isSafeInteger(v) && Number(v) > 0;
+const isNonNegativeInteger = (v: unknown): boolean => Number.isSafeInteger(v) && Number(v) >= 0;
 const isRange = (v: unknown): boolean => isRecord(v) && all(v, ['min', 'max'], isFiniteNumber) && Number(v.min) <= Number(v.max);
 const isDuration = (v: unknown): boolean => isRecord(v) && all(v, ['min', 'max', 'default'], isFiniteNumber)
     && Number(v.min) <= Number(v.default) && Number(v.default) <= Number(v.max)
@@ -62,6 +64,11 @@ export const isMusicEntitlements = (v: unknown): v is MusicEntitlements => isRec
     && (v.custom_drafts.provider_contract === undefined || isContract(v.custom_drafts.provider_contract))
     && isRecord(v.features)
     && all(v.features, ['albums', 'inspiration', 'studioChat', 'dailyChallenge', 'persistentQueue'], bool)
+    && (v.daily_allowance === undefined || (isRecord(v.daily_allowance) && bool(v.daily_allowance.enabled)
+        && optional(v.daily_allowance, ['unavailable', 'eligible'], bool)
+        && optional(v.daily_allowance, ['candidates_remaining', 'pairs_remaining'], isNonNegativeInteger)
+        && optional(v.daily_allowance, ['reset_at'], str)))
+    && (v.daily_challenge === undefined || isMusicDailyChallenge(v.daily_challenge))
     && isRecord(v.policy) && str(v.policy.version) && bool(v.policy.pre_debit);
 
 export const isMusicQuote = (v: unknown): v is MusicQuote => isRecord(v)
@@ -69,6 +76,9 @@ export const isMusicQuote = (v: unknown): v is MusicQuote => isRecord(v)
     && (v.mode === 'simple' || v.mode === 'custom')
     && all(v, ['output_count', 'credits_per_candidate', 'total_credits', 'balance', 'balance_after'], isFiniteNumber)
     && bool(v.affordable)
+    && optional(v, ['list_credits'], x => isFiniteNumber(x) && Number(x) >= 0)
+    && optional(v, ['daily_free_candidates'], x => Number.isSafeInteger(x) && Number(x) >= 0 && Number(x) <= 2)
+    && optional(v, ['daily_allowance_reset_at'], str)
     && (v.provider_contract === undefined || isContract(v.provider_contract))
     && (v.suno_model === undefined || sunoModels.includes(v.suno_model as string))
     && (v.vocal_gender === undefined || genders.includes(v.vocal_gender as string))

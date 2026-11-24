@@ -2730,6 +2730,24 @@
     "ratio": 1.73
   },
   {
+    "id": "studioAssistant.ask",
+    "english": "Review",
+    "translation": "समीक्षा करें",
+    "ratio": 2
+  },
+  {
+    "id": "studioAssistant.value_on",
+    "english": "on",
+    "translation": "चालू",
+    "ratio": 2
+  },
+  {
+    "id": "studioAssistant.state_yes",
+    "english": "on",
+    "translation": "चालू",
+    "ratio": 2
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "साइन इन करें",

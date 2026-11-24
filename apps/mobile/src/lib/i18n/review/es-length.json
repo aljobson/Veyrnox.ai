@@ -3594,6 +3594,12 @@
     "ratio": 3
   },
   {
+    "id": "music.create.dailyAllowanceReset",
+    "english": "Resets at {time}",
+    "translation": "Se restablece a las {time}",
+    "ratio": 1.63
+  },
+  {
     "id": "music.create.keepMine",
     "english": "Keep mine",
     "translation": "Conservar la mía",
@@ -4966,6 +4972,24 @@
     "english": "Move up",
     "translation": "Mover hacia arriba",
     "ratio": 2.57
+  },
+  {
+    "id": "music.dailyChallenge.prompt.glass-after-rain.title",
+    "english": "Glass after rain",
+    "translation": "Cristal después de la lluvia",
+    "ratio": 1.75
+  },
+  {
+    "id": "studioAssistant.value_on",
+    "english": "on",
+    "translation": "activado",
+    "ratio": 4
+  },
+  {
+    "id": "studioAssistant.value_off",
+    "english": "off",
+    "translation": "desactivado",
+    "ratio": 3.67
   },
   {
     "id": "oauth.signIn",

@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { DISCOVER_SEEDS, buildSamplePrompt } from '../../../lib/music/discoverSeeds';
 import { Switch, View } from 'react-native';
 import { Button, SegmentedControl, Text, TextField, themedStyles, useThemedStyles } from '../../../components/ui';
 import { MusicQuoteCard } from '../../../components/music/MusicQuoteCard';
@@ -11,23 +10,24 @@ import { MusicAdvancedControls } from '../../../components/music/MusicAdvancedCo
 import { MusicSunoControls } from '../../../components/music/MusicSunoControls';
 import { useMusicCreate } from '../../../lib/music/useMusicCreate';
 import { isSunoModel, modelCounterLimit, modelState, quoteBlockers } from '../../../lib/music/createForm';
-import { t } from '../../../lib/i18n';
+import { formatLocale, t } from '../../../lib/i18n';
 import { ds } from '../../../theme';
 import { SafeKeyboardFormScrollView } from '../../../components/SafeContentScrollView';
-const KNOWN = new Set(['empty_prompt', 'lyrics_required', 'style_required', 'over_length', 'bpm_invalid', 'locked_plan', 'unavailable', 'rights', 'no_slot', 'not_affordable', 'quote_expired', 'quote_stale', 'contract_stale', 'draft_stale', 'quote_already_used', 'conflict', 'prompt_not_allowed', 'model_unavailable', 'plan_unavailable']);
+import { resolveMusicCreateHandoff } from '../../../lib/music/createHandoff';
+const KNOWN = new Set(['empty_prompt', 'lyrics_required', 'style_required', 'over_length', 'bpm_invalid', 'locked_plan', 'unavailable', 'rights', 'no_slot', 'not_affordable', 'quote_expired', 'quote_stale', 'daily_allowance_stale', 'contract_stale', 'draft_stale', 'quote_already_used', 'conflict', 'prompt_not_allowed', 'model_unavailable', 'plan_unavailable']);
 const messageKey = (code: string) => code === 'rights' ? 'rights_required' : KNOWN.has(code) ? code : 'error';
 export default function MusicCreate() {
-    const { flow, state, pending, queue } = useMusicCreate(), s = useThemedStyles(sheets);
-    const { sample } = useLocalSearchParams<{ sample?: string }>();
+    const { api, flow, state, pending, queue } = useMusicCreate(), s = useThemedStyles(sheets);
+    const { sample, challenge } = useLocalSearchParams<{ sample?: string; challenge?: string }>();
     const seeded = useRef<typeof flow | null>(null), touched = useRef<typeof flow | null>(null);
     const edit: typeof flow.edit = (...args) => { touched.current = flow; flow.edit(...args); };
     useEffect(() => {
-        const seed = DISCOVER_SEEDS.find(s => s.id === sample), input = state.input;
-        if (seeded.current === flow || !seed || state.status !== 'on') return;
+        if (seeded.current === flow || state.status !== 'on' || (!sample && !challenge)) return;
         seeded.current = flow;
-        if (touched.current !== flow && !pending && input.mode === 'simple' && !input.prompt && !input.title && !input.lyrics && !input.styles && !state.rights)
-            flow.edit({ prompt: buildSamplePrompt(seed), title: seed.title });
-    }, [flow, sample, state.status, state.input, state.rights, pending]);
+        const handoff = resolveMusicCreateHandoff({ sampleId: sample, challengeId: challenge, entitlements: state.entitlements,
+            input: state.input, rights: state.rights, touched: touched.current === flow, pending: Boolean(pending), translate: t });
+        if (handoff) flow.edit(handoff);
+    }, [flow, sample, challenge, state.status, state.input, state.rights, state.entitlements, pending]);
     const lock = useRef(false);
     const [now, setNow] = useState(Date.now);
     useEffect(() => {
@@ -50,6 +50,17 @@ export default function MusicCreate() {
                     : e && e.models.length === 0 ? <MusicNotice message={t('music.create.unavailable')} />
                         : e ? <>
                         <Text variant="title1">{t('music.create.title')}</Text>
+                        {e.daily_allowance?.unavailable ? <MusicNotice message={t('music.create.dailyAllowanceUnavailable')} />
+                            : e.daily_allowance?.enabled ? <View style={s.content}>
+                                <Text>{e.daily_allowance.candidates_remaining === 0
+                                    ? t('music.create.dailyAllowanceExhausted')
+                                    : t(e.daily_allowance.candidates_remaining === 1
+                                        ? 'music.create.dailyAllowanceStatus.one' : 'music.create.dailyAllowanceStatus.other',
+                                    { count: e.daily_allowance.candidates_remaining ?? 0 })}</Text>
+                                {e.daily_allowance.reset_at ? <Text>{t('music.create.dailyAllowanceReset', {
+                                    time: new Date(e.daily_allowance.reset_at).toLocaleTimeString(formatLocale()),
+                                })}</Text> : null}
+                            </View> : null}
                         <SegmentedControl value={input.mode} options={(['simple', 'custom'] as const).map(value => ({ value, label: t(`music.create.${value}`) }))}
                             onChange={mode => edit({ mode })} />
                         {suno ? <Text variant="bodyStrong">{t('music.create.suno.offer')}</Text> : null}
@@ -127,7 +138,8 @@ export default function MusicCreate() {
                                     void flow.confirm().finally(() => { lock.current = false; });
                                 }} />
                         </> : null}
-                        <MusicQueue entries={queue.entries} activeCount={flow.tracker.activeCount()} limit={e.concurrency_limit} />
+                        <MusicQueue entries={queue.entries} activeCount={flow.tracker.activeCount()} limit={e.concurrency_limit}
+                            api={api} refresh={flow.tracker.refresh} afterCancel={flow.refreshEntitlements} />
                     </> : null}
     </SafeKeyboardFormScrollView>;
 }

@@ -19,7 +19,7 @@ export function createGenerationTracker(o: Options) {
     const timer = o.setTimer ?? ((fn, ms) => { const id = setTimeout(fn, ms); return () => clearTimeout(id); });
     let snapshot: Snapshot = { state: 'on', entries: [] }, epoch = 0;
     let active = o.initialAppState === undefined || o.initialAppState === 'active';
-    const timers = new Map<string, () => void>(), failures = new Map<string, number>(), flights = new Set<string>(), loaded = new Set<string>();
+    const timers = new Map<string, () => void>(), failures = new Map<string, number>(), flights = new Set<string>(), followUps = new Set<string>(), loaded = new Set<string>();
     const listeners = new Set<() => void>();
     const emit = () => listeners.forEach(fn => fn());
     const cancel = () => { timers.forEach(fn => fn()); timers.clear(); };
@@ -29,7 +29,7 @@ export function createGenerationTracker(o: Options) {
         if (!active || snapshot.state === 'off' || !entry || entry.missing || (loaded.has(id) && terminalGeneration(entry.view.state)) || timers.has(id) || flights.has(id)) return;
         timers.set(id, timer(() => { timers.delete(id); void poll(id); }, delay));
     }
-    function off() { if (snapshot.state === 'off') return; epoch++; cancel(); flights.clear(); snapshot = { ...snapshot, state: 'off' }; emit(); }
+    function off() { if (snapshot.state === 'off') return; epoch++; cancel(); flights.clear(); followUps.clear(); snapshot = { ...snapshot, state: 'off' }; emit(); }
     async function poll(id: string) {
         const ticket = epoch; flights.add(id);
         let delay = 2000;
@@ -48,19 +48,30 @@ export function createGenerationTracker(o: Options) {
                 delay = Math.min(10000, 2000 * 2 ** count);
             }
         } finally {
-            if (ticket === epoch) { flights.delete(id); schedule(id, delay); }
+            if (ticket === epoch) {
+                flights.delete(id);
+                const immediate = followUps.delete(id);
+                schedule(id, immediate ? 0 : delay);
+            }
         }
     }
     const unsubscribe = o.subscribeAppState(state => {
         active = state === 'active';
         if (!active) cancel(); else snapshot.entries.forEach(e => schedule(e.id, 800));
     });
-    function reset() { epoch++; cancel(); flights.clear(); failures.clear(); loaded.clear(); snapshot = { state: 'on', entries: [] }; emit(); }
+    function reset() { epoch++; cancel(); flights.clear(); followUps.clear(); failures.clear(); loaded.clear(); snapshot = { state: 'on', entries: [] }; emit(); }
+    function refresh(id: string) {
+        const entry = find(id);
+        if (!active || snapshot.state === 'off' || !entry || entry.missing || (loaded.has(id) && terminalGeneration(entry.view.state))) return;
+        const stop = timers.get(id); stop?.(); timers.delete(id);
+        if (flights.has(id)) { followUps.add(id); return; }
+        void poll(id);
+    }
     return {
         snapshot: () => snapshot,
         subscribe(fn: () => void) { listeners.add(fn); return () => { listeners.delete(fn); }; },
         activeCount: () => snapshot.entries.filter(e => !e.missing && !terminalGeneration(e.view.state)).length,
-        off, reset, dispose() { reset(); unsubscribe(); },
+        off, reset, refresh, dispose() { reset(); unsubscribe(); },
         add(result: Omit<MusicGeneration, 'balance_after'>, input: MusicInputSnapshot, sourceAction?: GenerationActionKind) {
             if (snapshot.state === 'off') return;
             const existing = find(result.generation_id);

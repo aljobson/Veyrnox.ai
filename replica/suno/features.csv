@@ -27,7 +27,7 @@ Eight-minute song generations,creation,should,yes,no,All current v6 variants
 Generation queue and progress,creation,must,yes,partial,Server-mode candidate cards poll queued running ready failed and refunded projections independently; cancellation priority and live-provider validation remain
 Concurrent generations,creation,should,yes,partial,Client retains and independently polls multiple accepted pairs while service-role admission serializes each owner and rejects a fifth active shared pair before debit; paid priority capacity and live database races remain pending
 Credit quote before generation,billing,must,yes,partial,Server UI requires an explicit exact live-catalog quote before a separate pair confirmation and shows affordability expiry and balance-after; production rollout remains gated
-Daily Free credits,billing,must,yes,partial,Preview opens with 50 local credits; daily renewal and account entitlement remain
+Daily Free credits,billing,must,yes,partial,Default-off code reserves up to ten Music candidates per verified account per UTC day under a bounded global budget and shows exact allowance-adjusted quotes across web and iOS; production policy and rollout remain disabled pending owner activation
 Monthly Pro or Premier credits,billing,must,yes,yes,Veyrnox provides independently priced Starter Plus and Ultra monthly credit plans; Suno plan names and exact allowances are not copied
 Add-on credits,billing,should,yes,yes,Existing Stripe credit packs provide non-expiring one-off top-ups
 Content moderation before generation,safety,must,yes,partial,A clean-room normalized pre-debit policy rejects narrow high-confidence unsafe combinations with one public error; broader classifier and abuse review remain
@@ -83,7 +83,7 @@ Filter playlists by creator type,organization,could,yes,no,Own Suno-curated or o
 Search within and across playlists,organization,could,yes,yes,Private playlists provide explicit selected-playlist and all-playlist search across song and collection titles with duplicate membership kept attributable
 Generate playlist cover art,organization,could,yes,no,Independent visual assets only
 Inspire from a playlist,creation,should,yes,no,Recommended three to five owned songs
-Create and publish albums,organization,could,yes,no,Publishing also publishes included songs
+Create and publish albums,organization,could,yes,partial,Owner-scoped album drafts playlist conversion ordered tracks artwork moderation public shelves and export are implemented behind default-off gates; songs must already be published and publishing an album does not publish included songs
 Cover a song,remix,must,yes,partial,Rights-bound current-version Cover freezes prompt influence duration price and source evidence then creates two non-destructive lineage branches; provider catalog row and production gate remain inactive pending billed live acceptance
 Extend a song,remix,must,yes,partial,A rights-bound current source can quote and create two fixed 30-second instrumental tail continuations as immutable branches; head extension new-ending control lyrics and billed live provider acceptance remain unavailable
 Adjust song speed,remix,should,yes,yes,Owner can render a 0.5x to 2x speed-and-linked-pitch PCM WAV child with a measured new duration immutable source lineage and explicit disclosure

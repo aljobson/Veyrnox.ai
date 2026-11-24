@@ -3780,6 +3780,12 @@
     "ratio": 2
   },
   {
+    "id": "music.create.dailyAllowanceExhausted",
+    "english": "Daily allowance used for today.",
+    "translation": "Das tägliche Kontingent ist für heute aufgebraucht.",
+    "ratio": 1.65
+  },
+  {
     "id": "music.create.locked_plan",
     "english": "This model requires a paid plan.",
     "translation": "Dieses Modell erfordert einen kostenpflichtigen Tarif.",
@@ -5188,6 +5194,24 @@
     "english": "Unpublish album",
     "translation": "Veröffentlichung des Albums aufheben",
     "ratio": 2.4
+  },
+  {
+    "id": "music.dailyChallenge.prompt.copper-sunrise.title",
+    "english": "Copper sunrise",
+    "translation": "Kupferner Sonnenaufgang",
+    "ratio": 1.64
+  },
+  {
+    "id": "studioAssistant.value_on",
+    "english": "on",
+    "translation": "einschalten",
+    "ratio": 5.5
+  },
+  {
+    "id": "studioAssistant.value_off",
+    "english": "off",
+    "translation": "ausschalten",
+    "ratio": 3.67
   },
   {
     "id": "recovery.retry",
