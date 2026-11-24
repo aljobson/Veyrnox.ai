@@ -176,9 +176,9 @@ test('async refusal closure errors log once without counting, including a missin
   }
 });
 
-test('0603 restates the gate with exactly the cooldown and Seedance endpoint changes', () => {
+test('0604 restates the gate with exactly the cooldown and Seedance endpoint changes', () => {
   const read = (name) => readFileSync(new URL(`../packages/db/schema/supabase/${name}`, import.meta.url), 'utf8');
-  const sql = read('0603_route_failure_accounting.sql');
+  const sql = read('0604_route_failure_accounting.sql');
   const gate = (source) => source.match(/CREATE OR REPLACE FUNCTION public\.reserve_crun_create_slot\([\s\S]*?GRANT EXECUTE ON FUNCTION public\.reserve_crun_create_slot\(TEXT,TEXT,TEXT,TEXT\) TO service_role;/)[0];
   const expected = gate(read('0591_crun_suno_music_foundation.sql'))
     .replace("(p_endpoint IS NOT NULL AND p_endpoint !~ '^crun:[A-Za-z0-9._/-]{1,120}$')",
@@ -201,10 +201,10 @@ test('0603 restates the gate with exactly the cooldown and Seedance endpoint cha
   assert.doesNotMatch(sql, /GRANT EXECUTE ON FUNCTION private\.route_breaker_record|UPDATE public\.model_catalog|CREATE OR REPLACE FUNCTION public\.job_route_failover/);
 });
 
-test('0603 preserves async outcome handling while forwarding the attempt creation time', () => {
+test('0604 preserves async outcome handling while forwarding the attempt creation time', () => {
   const read = (name) => readFileSync(new URL(`../packages/db/schema/supabase/${name}`, import.meta.url), 'utf8');
   const outcomeFunction = (sql) => sql.match(/CREATE OR REPLACE FUNCTION public\.mark_job_attempt_outcome\([\s\S]*?\$\$;/)[0];
-  const sql = read('0603_route_failure_accounting.sql');
+  const sql = read('0604_route_failure_accounting.sql');
   const expected = outcomeFunction(read('0376_route_circuit_breaker.sql'))
     .replace('RETURNING x.route_id', 'RETURNING x.route_id, x.created_at')
     .replace("a.route_id, p_outcome = 'completed');", "a.route_id, p_outcome = 'completed', a.created_at);");

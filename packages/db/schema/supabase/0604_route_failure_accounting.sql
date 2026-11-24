@@ -1,4 +1,4 @@
--- 0603 — route failure accounting and breaker recovery (ADR-0256).
+-- 0604 — route failure accounting and breaker recovery (ADR-0256).
 -- Generic Crun routes probe after ten minutes; Suno still requires fenced reopen.
 -- Only the two Seedance 2.5 edit/extend endpoints bypass the single-colon grammar.
 -- No catalog, route, price or activation changes. Idempotent: CREATE OR REPLACE.
