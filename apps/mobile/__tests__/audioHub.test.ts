@@ -30,7 +30,7 @@ describe('audio hub targets', () => {
         expect(audioTarget('dub', null)).toEqual({ pathname: '/features/[slug]', params: { slug: 'lip-sync' } });
     });
     test('music picks the cheapest music model, including one named music/SFX', () => {
-        const models = [model('suno', 'Suno music', 9), model('ace-step', 'ACE-Step (music/SFX)', 2), model('tts', 'Text to speech voice', 1)];
+        const models = [model('veyrnox-music', 'Veyrnox Music', 9), model('ace-step', 'ACE-Step (music/SFX)', 2), model('tts', 'Text to speech voice', 1)];
         expect(audioTarget('music', models)).toEqual({ pathname: '/create/[modelId]', params: { modelId: 'ace-step' } });
         expect(audioTarget('speech', models)).toEqual({ pathname: '/create/[modelId]', params: { modelId: 'tts' } });
     });

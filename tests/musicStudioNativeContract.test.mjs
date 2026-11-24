@@ -1,9 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { MUSIC_STUDIO_ACTION_TYPES } from '../lib/musicStudioActions.mjs';
 import {
   MUSIC_STUDIO_ASSISTANT_NATIVE_TRANSLATIONS,
+  MUSIC_STUDIO_ASSISTANT_PLURAL_CATEGORIES,
   MUSIC_STUDIO_ASSISTANT_TRANSLATIONS,
 } from '../lib/i18n/musicStudioAssistantTranslations.mjs';
 
@@ -36,6 +38,16 @@ test('native English catalog merges Studio action copy instead of exposing keys'
   assert.equal(MUSIC_STUDIO_ASSISTANT_NATIVE_TRANSLATIONS.en['studioAssistant.title'], 'Studio actions');
   assert.match(catalogs, /en: \{ \.\.\.en, \.\.\.MUSIC_STUDIO_ASSISTANT_NATIVE_TRANSLATIONS\.en \}/);
   assert.match(catalogs, /CATALOGS: Catalogs = \{ en: merged\.en! \}/);
+});
+
+test('native Studio catalog imports without Intl.PluralRules and freezes the shipped ICU categories', () => {
+  for (const locale of Object.keys(MUSIC_STUDIO_ASSISTANT_PLURAL_CATEGORIES)) {
+    assert.deepEqual(MUSIC_STUDIO_ASSISTANT_PLURAL_CATEGORIES[locale],
+      new Intl.PluralRules(locale).resolvedOptions().pluralCategories, locale);
+  }
+  const moduleUrl = new URL('../lib/i18n/musicStudioAssistantTranslations.mjs', import.meta.url).href;
+  const source = `Object.defineProperty(Intl, 'PluralRules', { value: undefined, configurable: true }); await import(${JSON.stringify(moduleUrl)});`;
+  execFileSync(process.execPath, ['--input-type=module', '--eval', source]);
 });
 
 test('native mute and solo preserve the live engine and refusal result', () => {

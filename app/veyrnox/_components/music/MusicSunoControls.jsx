@@ -103,7 +103,7 @@ export function MusicSunoControls({ model, draft, updateDraft, controls, updateC
 
       <label className="block text-sm font-bold text-vx-fg-body">{t('app.music.suno.model')}
         <select value={controls.sunoModel} onChange={(event) => updateControl('sunoModel', event.target.value)} className="mt-2 min-h-12 w-full rounded-xl border border-vx-border-boost bg-vx-base px-4 text-vx-fg focus-visible:ring-2 focus-visible:ring-vx-accent">
-          {(model?.controls?.suno_model || []).map((value) => <option key={value} value={value}>{value}</option>)}
+          {(model?.controls?.suno_model || []).map((value) => <option key={value} value={value}>{model?.controls?.suno_model_labels?.[value] || value}</option>)}
         </select>
       </label>
 

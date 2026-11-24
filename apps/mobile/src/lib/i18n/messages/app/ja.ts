@@ -6683,7 +6683,7 @@ export default {
     "music.create.lyrics_required": "カスタムのボーカル曲には歌詞を追加するか、インストゥルメンタルを選択してください。",
     "music.create.contract_stale": "音楽プロバイダーが変更されました。下書きを更新したので、料金をもう一度確認してください。",
     "music.create.suno.offer": "音楽モデル",
-    "music.create.suno.model": "Sunoモデル",
+    "music.create.suno.model": "生成スタイル",
     "music.create.suno.style": "スタイル",
     "music.create.suno.exclude": "除外するスタイル",
     "music.create.suno.selectStyles": "スタイルを選択",

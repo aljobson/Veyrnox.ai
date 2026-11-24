@@ -534,7 +534,7 @@ function CustomDraftFields({ custom, entitlements, quote, busy, clearQuote, quot
               <input type="checkbox" checked={rightsConfirmed} onChange={(event) => { setRightsConfirmed(event.target.checked); clearQuote(); }} className="mt-1 h-5 w-5 shrink-0 accent-vx-accent" />
               <span><strong>I wrote these lyrics or have permission to use them.</strong><span className="mt-1 block text-vx-fg-muted">This attestation is frozen with the exact saved draft revision used for generation.</span></span>
             </label>
-          ) : <p className="text-sm text-vx-fg-muted">ACE-Step receives <span className="font-vx-mono">[Instrumental]</span>; the saved lyrics stay in your private draft and are not sent with this pair.</p>}
+          ) : <p className="text-sm text-vx-fg-muted">{selectedModel?.name || 'Veyrnox Music Pro'} receives <span className="font-vx-mono">[Instrumental]</span>; the saved lyrics stay in your private draft and are not sent with this pair.</p>}
           {generationError ? <p role="alert" className="text-sm text-vx-danger">{generationError}</p> : null}
           {quote?.mode === 'custom' ? (
             <div className="rounded-xl border border-vx-border-boost p-3 text-sm"><span>2 versions × {quote.credits_per_candidate} credits</span><strong className="float-right font-vx-mono text-vx-money">{quote.total_credits} credits</strong></div>
@@ -575,6 +575,7 @@ export function MusicServerStudio({ sourcesEnabled = false, sampleSeed = null, s
   const [instrumental, setInstrumental] = useState(true);
   const [sourceId, setSourceId] = useState(null);
   const model = useMemo(() => entitlements?.models?.find((item) => item.id === modelId) || entitlements?.models?.[0], [entitlements, modelId]);
+  const baseModelName = entitlements?.models?.find((item) => !item.requires_paid_plan)?.name || 'Veyrnox Music';
   const sunoCustomModel = entitlements?.models?.find((item) => isSunoContract(item) && item.generation_modes?.includes('custom'));
   const sunoActive = Boolean(entitlements?.models?.some(isSunoContract));
   const [durationSeconds, setDurationSeconds] = useMusicDuration(model?.controls?.duration_seconds, clearQuote, { active: mode === 'simple' });
@@ -704,7 +705,7 @@ export function MusicServerStudio({ sourcesEnabled = false, sampleSeed = null, s
                 {!entitlements?.models?.length ? <option>Loading verified models…</option> : null}
               </select>
             </label>
-            {model?.available === false ? <p role="status" className="rounded-2xl border border-vx-border bg-vx-base px-4 py-3 text-sm text-vx-fg-muted">This higher-quality model requires an active paid plan. Choose ACE-Step or open Credits &amp; billing to upgrade.</p> : null}
+            {model?.available === false ? <p role="status" className="rounded-2xl border border-vx-border bg-vx-base px-4 py-3 text-sm text-vx-fg-muted">This higher-quality model requires an active paid plan. Choose {baseModelName} or open Credits &amp; billing to upgrade.</p> : null}
             {model?.controls?.duration_seconds ? (
               <MusicDurationField id="music-duration" ariaLabel="Song duration" value={durationSeconds} onChange={change((value) => setDurationSeconds(Number(value)))} bounds={model.controls.duration_seconds} blockSeconds={model.controls.duration_price_block_seconds} />
             ) : null}
@@ -715,7 +716,7 @@ export function MusicServerStudio({ sourcesEnabled = false, sampleSeed = null, s
                   <label className="block font-bold">
                     <span className="flex items-center justify-between gap-3"><span>Variety</span><output htmlFor="music-variety" className="font-vx-mono text-xs text-vx-accent">{variety}%</output></span>
                     <input id="music-variety" aria-label="Variety" type="range" min="0" max="100" step="1" value={variety} onChange={change((value) => setVariety(Number(value)))} className="mt-3 w-full accent-vx-accent" />
-                    <span className="mt-2 block font-normal leading-5 text-vx-fg-muted">Higher values ask ACE-Step 1.5 for more creative, diverse musical decisions. 50 keeps its verified provider default.</span>
+                    <span className="mt-2 block font-normal leading-5 text-vx-fg-muted">Higher values ask {model.name} for more creative, diverse musical decisions. 50 keeps its verified provider default.</span>
                   </label>
                   <label className="block font-bold">
                     <span className="flex items-center justify-between gap-3"><span>Style influence</span><output htmlFor="music-style-influence" className="font-vx-mono text-xs text-vx-accent">{styleInfluence}%</output></span>
@@ -725,7 +726,7 @@ export function MusicServerStudio({ sourcesEnabled = false, sampleSeed = null, s
                   <label className="block font-bold">
                     <span className="flex items-center justify-between gap-3"><span>Exclude styles or instruments</span><span className="font-vx-mono text-xs text-vx-fg-faint">{excludeStyles.length}/500</span></span>
                     <input value={excludeStyles} onChange={change(setExcludeStyles)} maxLength={500} placeholder="e.g. distorted guitar, orchestral strings" className="mt-2 min-h-12 w-full rounded-xl border border-vx-border-boost bg-vx-panel px-4 font-normal text-vx-fg placeholder:text-vx-fg-faint focus:border-vx-accent focus:outline-none" />
-                    <span className="mt-2 block font-normal leading-5 text-vx-fg-muted">Sent as ACE-Step 1.5&apos;s negative music guidance; it is not a guaranteed content filter.</span>
+                    <span className="mt-2 block font-normal leading-5 text-vx-fg-muted">Sent as {model.name}&apos;s negative music guidance; it is not a guaranteed content filter.</span>
                   </label>
                   {model.controls?.tempo_key_meter ? <MusicTempoKeyControls value={tempoKey} onChange={(next) => { setTempoKey(next); clearQuote(); }} /> : null}
                 </div>

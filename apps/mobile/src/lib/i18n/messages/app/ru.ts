@@ -6941,7 +6941,7 @@ export default {
     "music.create.lyrics_required": "Добавьте текст для пользовательской вокальной песни или выберите инструментальную версию.",
     "music.create.contract_stale": "Поставщик музыки изменился. Черновик обновлён; проверьте цену ещё раз.",
     "music.create.suno.offer": "Музыкальная модель",
-    "music.create.suno.model": "Модель Suno",
+    "music.create.suno.model": "Стиль генерации",
     "music.create.suno.style": "Стиль",
     "music.create.suno.exclude": "Исключить стили",
     "music.create.suno.selectStyles": "Выбрать стили",

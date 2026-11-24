@@ -6683,7 +6683,7 @@ export default {
     "music.create.lyrics_required": "맞춤 보컬 곡에 가사를 추가하거나 연주곡을 선택하세요.",
     "music.create.contract_stale": "음악 제공업체가 변경되었습니다. 초안을 새로 고쳤으니 가격을 다시 확인하세요.",
     "music.create.suno.offer": "음악 모델",
-    "music.create.suno.model": "Suno 모델",
+    "music.create.suno.model": "생성 스타일",
     "music.create.suno.style": "스타일",
     "music.create.suno.exclude": "제외할 스타일",
     "music.create.suno.selectStyles": "스타일 선택",
