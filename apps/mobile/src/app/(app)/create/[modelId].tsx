@@ -1,6 +1,4 @@
-import { mergeOwnerProofModels, ownerProofExposure, hasOwnerProofExposure, type OwnerProofExposure } from '../../../../../../lib/ownerProofOverlay.mjs';
-import { useOwnerProofModels } from '../../../lib/useOwnerProofModels';
-import { SmartCutShapeHint, SmartCutShapeSession } from '../../../components/create/SmartCutShapeHint';
+import { useOwnerProofCreate } from '../../../lib/useOwnerProofCreate'; import { SmartCutShapeHint, SmartCutShapeSession } from '../../../components/create/SmartCutShapeHint';
 import { useTemplateContract } from '../../../lib/useTemplateContract'; import { internalModelId } from '../../../lib/publicModelIds';
 import { phonePhotoHints } from '../../../lib/templatePhotoHintText'; import { templatePhotosUnavailable, templateRouteContract, templateBoundPrompt, fidelityBlocked, fidelityTemplateId } from '../../../lib/templateFidelity';
 import { fetchSwapScene, swapSceneModel, type SwapScene } from '../../../lib/swapScenes';
@@ -53,7 +51,7 @@ import { useBalance } from '../../../lib/useBalance';
 import { shortfall } from '../../../lib/lowBalance';
 import { useFreeLeftState } from '../../../lib/useFreeLeft';
 import { isAudioDriven, isSoundPass, isSpeechModel, missingNeedKey, missingRequiredSlots } from '../../../lib/createModelKind';
-import { estimateCredits, fetchCatalog, isSupported, kindOf, promptRequired, textInput, type CatalogModel } from '../../../lib/media';
+import { estimateCredits, fetchCatalog, kindOf, promptRequired, textInput, type CatalogModel } from '../../../lib/media';
 import { expectedDurationMs } from '../../../lib/generationProgress';
 import { MIN_TARGET, selectedState } from '../../../lib/a11y';
 import { portraitAsPickedFile, startOddlingId } from '../../../lib/oddlingsAnimate';
@@ -101,19 +99,7 @@ export default function CreateWithModel() {
     const [startProblem, setStartProblem] = useState<string | null>(null);
     const [refreshKey, setRefreshKey] = useState(0);
     const { left: freeMap, loading: freeLoading } = useFreeLeftState(refreshKey);
-    const [publicCatalog, setCatalog] = useState<CatalogModel[]>([]);
-    const privateModels = useOwnerProofModels();
-    const catalog = useMemo(() => mergeOwnerProofModels(publicCatalog, privateModels.filter(isSupported)), [publicCatalog, privateModels]);
-    const model = swapScene ? publicModel : publicModel ? privateModels.find(m => m.id === publicModel.id) ?? publicModel : null;
-    const [proofExposure, setProofExposure] = useState<OwnerProofExposure | null>(null);
-    const privateImage = !swapScene && !!privateModels.find(m => m.id === model?.id)?.capabilities?.media?.image && !publicModel?.capabilities?.media?.image;
-    const exposed = ownerProofExposure(proofExposure, model?.id ?? '', accountEpoch, privateImage, references.some(ref => ref.slot === 'image') || !!startFile);
-    if (exposed !== proofExposure) setProofExposure(exposed);
-    const withdrawnProofSlots = !swapScene && hasOwnerProofExposure(exposed, model?.id ?? '', accountEpoch)
-        ? references.filter(ref => !model?.capabilities?.media?.[ref.slot]) : [];
-    const unsupportedProofSource = withdrawnProofSlots.length > 0 || (!swapScene && !!startFile && hasOwnerProofExposure(exposed, model?.id ?? '', accountEpoch) && !model?.capabilities?.media?.image);
-    const removeProofImage = () => { setReferences(current => current.filter(ref => !withdrawnProofSlots.includes(ref))); setStartFile(null); setError(null); };
-    const frame = useFrameChoice(model?.id);
+    const [publicCatalog, setCatalog] = useState<CatalogModel[]>([]); const { catalog, model, unsupportedProofSource, removeProofImage } = useOwnerProofCreate({ publicCatalog, publicModel, swapScene, accountEpoch, references, startFile, setReferences, setStartFile, setError }); const frame = useFrameChoice(model?.id);
     const [results, setResults] = useState<ResultBatch | null>(null);
     const [complete, setComplete] = useState(false);
     const [settled, setSettled] = useState(0);
@@ -485,8 +471,7 @@ export default function CreateWithModel() {
                         <Text variant="callout" tone="secondary" accessibilityLiveRegion="polite" style={styles.shortText}>{plural('create.short', missing, { have: String(balance ?? 0), need: String(payable) })}</Text>
                         <Button variant="tertiary" accessibilityRole="button" accessibilityLabel={t('lowBalance.buy')} onPress={async () => { await flushDraft(); router.push('/credits'); }} label={t('lowBalance.buy')} />
                     </View>
-                ) : null}
-                    {unsupportedProofSource ? <View><Text variant="body" tone="danger" accessibilityLiveRegion="polite">{t('form.err.sourceMismatch')}</Text><Button variant="secondary" label={t('chat.attach.removeN', { n: 1 })} onPress={removeProofImage} /></View> : null}
+                ) : null}{unsupportedProofSource ? <View><Text variant="body" tone="danger" accessibilityLiveRegion="polite">{t('form.err.sourceMismatch')}</Text><Button variant="secondary" label={t('chat.attach.removeN', { n: 1 })} onPress={removeProofImage} /></View> : null}
                 {error ? <Text variant="body" tone="danger" style={styles.error} accessibilityLiveRegion="polite">{error}</Text> : null}
                 {error && matchingRetry && !disabled ? <Button variant="secondary" accessibilityRole="button" label={t('recovery.retry')} onPress={() => void generate()} /> : null}
                 {note ? <Text variant="caption" tone="tertiary" style={styles.consent} accessibilityLiveRegion="polite">{note}</Text> : null}

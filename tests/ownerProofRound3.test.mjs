@@ -4,12 +4,15 @@ import { readFileSync, existsSync } from 'node:fs';
 import ts from 'typescript';
 import { ownerProofExposure, hasOwnerProofExposure } from '../lib/ownerProofOverlay.mjs';
 const phone=readFileSync('apps/mobile/src/app/(app)/create/[modelId].tsx','utf8');
+// The owner-proof logic lives in the phone hook; the screen keeps the submit guard and the disabled state.
+const phoneHook=readFileSync('apps/mobile/src/lib/useOwnerProofCreate.ts','utf8');
 const ast=ts.createSourceFile('phone.tsx',phone,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
-function fragment(name, fn=false) {
+const hookAst=ts.createSourceFile('hook.ts',phoneHook,ts.ScriptTarget.Latest,true,ts.ScriptKind.TS);
+function fragment(name, fn=false, tree=ast) {
     let code;
-    function visit(node){if(fn&&ts.isFunctionDeclaration(node)&&node.name?.text===name)code=node.getText(ast);if(!fn&&ts.isVariableDeclaration(node)&&node.name.getText(ast)===name)code=`const ${node.getText(ast)};`;ts.forEachChild(node,visit);}visit(ast);assert.ok(code,name);return code;
+    function visit(node){if(fn&&ts.isFunctionDeclaration(node)&&node.name?.text===name)code=node.getText(tree);if(!fn&&ts.isVariableDeclaration(node)&&node.name.getText(tree)===name)code=`const ${node.getText(tree)};`;ts.forEachChild(node,visit);}visit(tree);assert.ok(code,name);return code;
 }
-const declarations=['privateImage','exposed','withdrawnProofSlots','unsupportedProofSource','removeProofImage','disabled'].map(name=>fragment(name)).join('\n');
+const declarations=[...['privateImage','exposed','exposedHere','media','withdrawn','unsupportedProofSource','removeProofImage'].map(name=>fragment(name,false,hookAst)),fragment('disabled')].join('\n');
 const code=ts.transpileModule(`${declarations}\n${fragment('generate',true)}`,{compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText;
 function evaluate(context) { return new Function('context',`with(context){${code};return {exposed,unsupportedProofSource,disabled,removeProofImage,generate};}`)(context); }
 for(const entry of ['references','startFile']) test(`phone ${entry}: private withdrawal disables and refuses submission, removal restores readiness`,async()=>{
@@ -18,7 +21,7 @@ for(const entry of ['references','startFile']) test(`phone ${entry}: private wit
     const context={publicModel,model:privateModel,privateModels:[privateModel],swapScene:null,proofExposure:null,accountEpoch:1,
         references:entry==='references'?[{slot:'image',origin:'asset',asset_id:'owned'}]:[],startFile:entry==='startFile'?{uri:'picked.png'}:null,
         ownerProofExposure,hasOwnerProofExposure,busy:false,waiting:false,inProgress:false,complete:false,freeLoading:false,ready:true,matchingRetry:{},missing:0,
-        pending:{current:{run:()=>{requests++;}}},setReferences:fn=>{context.references=fn(context.references);},setStartFile:value=>{context.startFile=value;},setError:()=>{}};
+        pending:{current:{run:()=>{requests++;}}},setReferences:fn=>{context.references=fn(context.references);},setStartFile:value=>{context.startFile=value;},setError:()=>{}};context.input=context;
     let view=evaluate(context);context.proofExposure=view.exposed;assert.equal(view.disabled,false);
     context.privateModels=[];context.model=publicModel;
     view=evaluate(context);assert.equal(view.disabled,true);assert.equal(view.unsupportedProofSource,true);

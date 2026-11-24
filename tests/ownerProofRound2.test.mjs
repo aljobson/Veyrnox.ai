@@ -12,7 +12,7 @@ function initializer(source,name,match='') {
 test('actual phone model selection preserves swap projections with empty and populated overlays',()=>{
     const code=ts.transpileModule(read('apps/mobile/src/lib/swapScenes.ts'),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText;
     const module={exports:{}};new Function('exports',code)(module.exports);
-    const expression=initializer(read('apps/mobile/src/app/(app)/create/[modelId].tsx'),'model','privateModels');
+    const expression=initializer(read('apps/mobile/src/lib/useOwnerProofCreate.ts'),'model','privateModels');
     const choose=new Function('swapScene','publicModel','privateModels',`return ${expression}`);
     const raw={id:'swap-recast',durations:[5,10],capabilities:{media:{image:{},video:{},audio:{}}}};
     for(const people of [1,2]) for(const privateModels of [[],[{...raw,durations:[10]}]]) {
