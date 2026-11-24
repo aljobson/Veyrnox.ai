@@ -9,9 +9,10 @@ const AUTH = '11111111-1111-4111-8111-111111111111';
 const ANALYSIS = '22222222-2222-4222-8222-222222222222';
 const request = { kind: 'audio', key: `${AUTH}/song.mp3`, rights_confirmed: true, idempotency_key: 'aaaaaaaa' };
 
-test('audio inspiration request is exact and rights-bound', () => {
+test('audio and image inspiration requests are exact and rights-bound', () => {
   assert.equal(parseMusicInspirationRequest(request).ok, true);
-  for (const value of [{ ...request, extra: true }, { ...request, kind: 'image' }, { ...request, rights_confirmed: false },
+  assert.deepEqual(parseMusicInspirationRequest({ ...request, kind: 'image' }), { ok: true, kind: 'image', key: request.key, idempotencyKey: 'aaaaaaaa' });
+  for (const value of [{ ...request, extra: true }, { ...request, kind: 'video_frames' }, { ...request, rights_confirmed: false },
     { ...request, idempotency_key: 'short' }]) assert.equal(parseMusicInspirationRequest(value).ok, false);
 });
 

@@ -103,13 +103,13 @@ describe('audio inspiration', () => {
         expires_at: '2026-11-24T12:00:00Z', idempotent: false };
     test('posts the exact rights-bound contract and validates the result', async () => {
         request.mockResolvedValue(result);
-        await expect(analyzeMusicInspiration(api, 'uploads/key.mp3', KEY)).resolves.toEqual(result);
+        await expect(analyzeMusicInspiration(api, 'audio', 'uploads/key.mp3', KEY)).resolves.toEqual(result);
         expect(request.mock.calls[0][0]).toBe('/api/v1/music/inspiration');
         expect(sentBody()).toEqual({ kind: 'audio', key: 'uploads/key.mp3', rights_confirmed: true, idempotency_key: KEY });
     });
     test.each([{ ...result, brief: '' }, { ...result, tags: ['x', 'x'] }, { ...result, idempotent: 'no' }])('rejects malformed %j', async value => {
         request.mockResolvedValue(value);
-        await expect(analyzeMusicInspiration(api, 'uploads/key.mp3', KEY)).rejects.toMatchObject({ code: 'bad_response' });
+        await expect(analyzeMusicInspiration(api, 'image', 'uploads/key.jpg', KEY)).rejects.toMatchObject({ code: 'bad_response' });
     });
 });
 

@@ -17,7 +17,7 @@ test('adapter sends exact audio bytes to fixed URL with no-data-collection routi
   assert.equal(call.url, AUDIO_INSPIRATION_URL);
   assert.equal(call.init.redirect, 'manual');
   const body = JSON.parse(call.init.body);
-  assert.deepEqual(body.provider, { data_collection: 'deny' });
+  assert.deepEqual(body.provider, { data_collection: 'deny', zdr: true, require_parameters: true });
   assert.equal(body.messages[0].content[1].input_audio.data, 'AAEC/f7/');
   assert.equal(body.messages[0].content[1].input_audio.format, 'mp3');
 });
