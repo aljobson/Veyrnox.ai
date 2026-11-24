@@ -63,7 +63,7 @@ test('raw capability lengths are mapped objects; public fallback exposes numeric
   assert.deepEqual(fallbackCapabilitiesFor('kling-3.0-i2v').lengths, [5, 10]);
 });
 
-for (const [label, modelId] of [['Veo text-only', 'veo-3.1-fast-kie'], ['image-kind', 'nano-banana-kie'], ['audio-kind', 'mmaudio-v2']]) {
+for (const [label, modelId] of [['Veo text-only', 'veo-3.1-fast-kie'], ['image-kind', 'nano-banana-kie'], ['audio-kind', 'suno-sounds']]) {
   test(`${label} audited template goes through web builder and route without a photo`, async t => {
     const c = fixture(`fix3-${label}`, modelId);
     const cap = fallbackCapabilitiesFor(modelId);

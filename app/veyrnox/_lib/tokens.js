@@ -24,7 +24,7 @@ export const MODELS = [
   { id: 'seedance-2.0-reference', staged: true, name: 'Seedance 2.0 · Reference', credits: 85, kind: 'video', durations: [5], media: { image: { required: true, maxFiles: 9 } } },
   { id: 'seedance-2.0-fast',  name: 'Seedance 2.0 Fast',   credits: 19,                                         kind: 'video', durations: [5], aspects: ['16:9', '9:16'] },
   { id: 'kling-avatar-v2',    name: 'Kling AI Avatar',     credits: 32,  tag: 'NEW',                            kind: 'video', durations: [5], media: { image: { required: true }, audio: { required: true, maxSeconds: 10 } } },
-  { id: 'latentsync',         name: 'LatentSync',          credits: 12,  tag: 'NEW',                            kind: 'video', durations: [5], media: { video: { required: true, maxSeconds: 40 }, audio: { required: true, maxSeconds: 40 } } },
+  { id: 'latentsync', staged: true, name: 'LatentSync',     credits: 12,  tag: 'NEW',                            kind: 'video', durations: [5], media: { video: { required: true, maxSeconds: 40 }, audio: { required: true, maxSeconds: 40 } } },
   { id: 'hailuo-02-kie',      name: 'MiniMax Hailuo 02',   credits: 9,                                         kind: 'video', durations: [5], presentation: { durationByOption: { 5: '6' } } },
   { id: 'veo-3.1-kie',        name: 'Veo 3.1',             credits: 70,  tag: 'PREMIUM',    premium: true, gated: true, kind: 'video', durations: [5], presentation: { fixedDurationLabel: '8s', resolutionLabel: '720p' } },
   { id: 'veo-3.1-fast-kie',   name: 'Veo 3.1 Fast',        credits: 9,                                         kind: 'video', durations: [5], presentation: { fixedDurationLabel: '8s', resolutionLabel: '720p' } },
@@ -42,13 +42,7 @@ export const MODELS = [
   { id: 'bria-expand',        name: 'Bria Expand',         credits: 3,                                          kind: 'image', durations: [5] },
   { id: 'ace-step',           name: 'ACE Step',            credits: 2,                                          kind: 'audio', durations: [5], durationInput: { type: 'int', min: 5, max: 60, default: 60 } },
   { id: 'ace-step-1.5',       name: 'ACE-Step 1.5',        credits: 3,                                          kind: 'audio', durations: [5], presentation: { fixedDurationLabel: '60s' } },
-  { id: 'elevenlabs-sfx-v2',  name: 'ElevenLabs Sound Effects', credits: 2,                                     kind: 'audio', durations: [5], presentation: { fixedDurationLabel: '10s' } },
-  { id: 'mmaudio-v2',         name: 'MMAudio v2',          credits: 2,                                          kind: 'audio', durations: [5], presentation: { fixedDurationLabel: '8s' } },
-  { id: 'elevenlabs-tts-turbo', name: 'ElevenLabs TTS Turbo', credits: 3,                                       kind: 'audio', speech: true, promptMax: 1000, durations: [5] },
-  { id: 'minimax-speech-2.6-hd', name: 'MiniMax Speech 2.6 HD', credits: 6,                                     kind: 'audio', speech: true, promptMax: 1000, durations: [5] },
-  { id: 'inworld-tts',        name: 'Inworld TTS',         credits: 2,                                          kind: 'audio', speech: true, promptMax: 2000, durations: [5] },
-  { id: 'zonos2-voice-clone', name: 'Zonos2 Voice Clone',  credits: 2,   tag: 'NEW',                            kind: 'audio', speech: true, promptMax: 1000, durations: [5], media: { audio: { required: true } } },
-  { id: 'elevenlabs-dialogue', name: 'ElevenLabs Dialogue', credits: 6,  tag: 'NEW',                            kind: 'audio', speech: true, promptMax: 1000, durations: [5] },
+  { id: 'suno-sounds',        name: 'Suno Sound Effects', credits: 2,   tag: 'NEW',                             kind: 'audio', durations: [5], presentation: { fixedDurationLabel: 'about 8s' } },
 ];
 
 // 10s video = exactly 2x credits. Non-negotiable.
@@ -344,8 +338,7 @@ export const MORE_FEATURES = [
     { label: 'Video Generator', href: '/app/create?model=wan-2.5-a1' },
     { label: 'Image-to-Video',  href: '/app/create?model=kling-3.0-i2v' },
     { label: 'Audio',           href: '/app/create?model=ace-step' },
-    { label: 'Lip Sync',        href: '/app/create?model=latentsync' },
-    { label: 'Text to Speech',  href: '/app/create?model=elevenlabs-tts-turbo' },
+    { label: 'Text to Speech',  href: '/app/create?model=qwen3-tts' },
     { label: 'Upscale',         href: '/app/create?model=topaz-upscale' },
     { label: 'Background Removal', href: '/app/create?model=bria-bg-remove' },
   ] },
