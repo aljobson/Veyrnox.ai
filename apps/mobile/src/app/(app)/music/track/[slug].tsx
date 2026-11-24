@@ -13,7 +13,7 @@ import { PublicAttemptNotice } from '../../../../components/music/PublicAttemptN
 import { usePublicMusic } from '../../../../lib/music/usePublicMusic';
 import { creatorName } from '../../../../lib/music/publicTypes';
 import { t } from '../../../../lib/i18n';
-import { usePersistentAudioQueue } from '../../../../components/music/PersistentAudioQueue';
+import { usePersistentAudioQueue } from '../../../../components/music/PersistentAudioQueueContext';
 export default function PublicTrackScreen() {
     const params = useLocalSearchParams<{ slug: string }>(), slug = typeof params.slug === 'string' ? params.slug : '';
     const { api, flow, state, session } = usePublicMusic({ kind: 'track', slug });

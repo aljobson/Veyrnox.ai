@@ -1,6 +1,10 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "music.queue.add": "Ajouter à la file d’écoute",
+  "music.queue.title": "File d’écoute",
+  "music.queue.position": "File d’écoute · {position} sur {total}",
+  "music.queue.generatedAudio": "Audio généré",
   "videoShape.all": "Tous les formats",
   "videoShape.portrait": "Portrait",
   "videoShape.landscape": "Paysage",

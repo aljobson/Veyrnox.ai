@@ -1,6 +1,10 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "music.queue.add": "添加到播放队列",
+  "music.queue.title": "播放队列",
+  "music.queue.position": "播放队列 · 第 {position}/{total} 项",
+  "music.queue.generatedAudio": "生成的音频",
   "videoShape.all": "所有画面比例",
   "videoShape.portrait": "竖屏",
   "videoShape.landscape": "横屏",

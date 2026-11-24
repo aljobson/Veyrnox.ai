@@ -19,7 +19,7 @@ import type { MusicSongDetail } from '../../../lib/music/types';
 import { t, rawText } from '../../../lib/i18n';
 import { ds } from '../../../theme';
 import { SafeContentScrollView } from '../../../components/SafeContentScrollView';
-import { usePersistentAudioQueue } from '../../../components/music/PersistentAudioQueue';
+import { usePersistentAudioQueue } from '../../../components/music/PersistentAudioQueueContext';
 
 export default function SongDetail() {
     const { id, revision } = useLocalSearchParams<{ id: string; revision?: string }>();

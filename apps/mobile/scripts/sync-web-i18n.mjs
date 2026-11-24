@@ -7,7 +7,6 @@ import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { escapeCell } from './escape-cell.mjs';
 import { areaNames } from './gen-en-registry.mjs';
-import { MCP_MUSIC_COPY, mcpMusicCurrent } from '../../../lib/i18n/mcpMusicCopy.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const app = join(here, '..');
@@ -15,15 +14,28 @@ const repo = join(app, '..', '..');
 const WEB = join(repo, 'lib', 'i18n', 'messages');
 const OUT = join(app, 'src', 'lib', 'i18n', 'messages');
 const CODES = ['es', 'zh', 'hi', 'ar', 'fr', 'pt', 'ru', 'ja', 'de', 'ko'];
+const musicCopyCache = new Map();
+
+function readMcpMusicCopy(path) {
+    if (musicCopyCache.has(path)) return musicCopyCache.get(path);
+    const source = readFileSync(path, 'utf8')
+        .replace(/^export const /gm, 'const ')
+        .replace(/^export function /gm, 'function ');
+    const copy = new Function(`${source}\nreturn { MCP_MUSIC_COPY, mcpMusicCurrent };`)();
+    musicCopyCache.set(path, copy);
+    return copy;
+}
 
 // A catalog file is `export default { ... }` or `const x = { ... } as const; export default x;`.
 // The public catalogs may also import the shared, data-only Music MCP copy module.
 function readCatalog(path) {
     // Skip strings/comments, and strip only the final object assertion (or _order.ts array assertion).
-    const source = readFileSync(path, 'utf8').replace(
-        /^import \{\s*MCP_MUSIC_COPY(?:,\s*mcpMusicCurrent)?\s*\} from '\.\.\/mcpMusicCopy\.mjs';\r?\n/m,
-        '',
-    );
+    const raw = readFileSync(path, 'utf8');
+    const sharedImport = /^import \{\s*MCP_MUSIC_COPY(?:,\s*mcpMusicCurrent)?\s*\} from '\.\.\/mcpMusicCopy\.mjs';\r?\n/m;
+    const shared = sharedImport.test(raw)
+        ? readMcpMusicCopy(resolve(dirname(path), '../mcpMusicCopy.mjs'))
+        : { MCP_MUSIC_COPY: {}, mcpMusicCurrent: () => ({}) };
+    const source = raw.replace(sharedImport, '');
     const tokens = /'(?:\\[\s\S]|[^'\\])*'|"(?:\\[\s\S]|[^"\\])*"|`(?:\\[\s\S]|[^`\\])*`|\/\/[^\r\n]*|\/\*[\s\S]*?\*\/|([}\]])\s+as const;/g;
     const trivia = String.raw`(?:\s|\/\/[^\r\n]*|\/\*[\s\S]*?\*\/)*`;
     const exportEnd = new RegExp(`^${trivia}(?:export default \\w+;${trivia})?$`);
@@ -32,7 +44,7 @@ function readCatalog(path) {
     ).replace(/^export default\s+/m, 'return ').replace(/^return (\w+);\s*$/m, 'return $1;');
     const m = { exports: undefined };
     return new Function('module', 'MCP_MUSIC_COPY', 'mcpMusicCurrent', text.includes('return ') ? text : `module.exports = ${text}`)(
-        m, MCP_MUSIC_COPY, mcpMusicCurrent,
+        m, shared.MCP_MUSIC_COPY, shared.mcpMusicCurrent,
     ) ?? m.exports;
 }
 

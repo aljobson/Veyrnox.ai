@@ -21,7 +21,7 @@ import type { ApiClient } from '../../lib/api';
 import type { CatalogModel, Kind } from '../../lib/media';
 import { plural, t } from '../../lib/i18n';
 import { failedJobMessage } from '../../lib/failedJob';
-import { usePersistentAudioQueue } from '../music/PersistentAudioQueue';
+import { usePersistentAudioQueue } from '../music/PersistentAudioQueueContext';
 
 export interface ResultBatch {
     ids: string[]; modelId: string; kind: Kind | null; aspect: string | null; duration: number | null; count: number;

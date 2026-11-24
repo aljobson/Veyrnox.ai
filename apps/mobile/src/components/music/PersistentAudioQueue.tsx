@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { AppState, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../auth/AuthProvider';
@@ -10,26 +10,20 @@ import { mediaApi } from '../../lib/media';
 import { getEntitlements } from '../../lib/music/client';
 import {
     cleanPersistentAudioQueueEntry, persistentAudioQueueStore, sanitizePersistentAudioQueue, visiblePersistentAudioQueue,
-    type AudioQueueEnvelope, type OwnedQueueEntry, type PersistentQueueCapability, type PublicQueueEntry,
+    type AudioQueueEnvelope, type PersistentQueueCapability,
 } from '../../lib/music/persistentAudioQueue';
 import { ds } from '../../theme';
 import { t } from '../../lib/i18n';
+import { PersistentAudioQueueContext, type PersistentAudioQueueApi } from './PersistentAudioQueueContext';
+
+export { usePersistentAudioQueue } from './PersistentAudioQueueContext';
 
 type Capability = PersistentQueueCapability;
 type NativeAudioPlayer = ReturnType<typeof import('expo-audio')['createAudioPlayer']>;
-type QueueApi = {
-    publicEnabled: boolean; ownedEnabled: boolean; capability: Capability;
-    addPublic(entry: Omit<PublicQueueEntry, 'type'>): void;
-    addOwned(entry: Omit<OwnedQueueEntry, 'type'>): void;
-};
-const QueueContext = createContext<QueueApi | null>(null);
 const empty = (owner: string): AudioQueueEnvelope => ({ version: 2, owner, queue: [], index: 0 });
-
-export function usePersistentAudioQueue(): QueueApi | null { return useContext(QueueContext); }
 
 export function PersistentAudioQueueProvider({ children }: { children: ReactNode }) {
     const { api } = useAuth();
-    const insets = useSafeAreaInsets();
     const owner = useSyncExternalStore(subscribeCacheUser, getCacheUser, getCacheUser) ?? '';
     const [envelope, setEnvelope] = useState<AudioQueueEnvelope>(() => empty(owner));
     const [capability, setCapability] = useState<Capability>('loading');
@@ -91,7 +85,7 @@ export function PersistentAudioQueueProvider({ children }: { children: ReactNode
             return sanitizePersistentAudioQueue({ ...current, queue: [...current.queue, entry] }, ownerRef.current);
         });
     }, [capability]);
-    const apiValue = useMemo<QueueApi>(() => ({ publicEnabled: capability === 'on', ownedEnabled: capability === 'on', capability,
+    const apiValue = useMemo<PersistentAudioQueueApi>(() => ({ publicEnabled: capability === 'on', ownedEnabled: capability === 'on', capability,
         addPublic: entry => add({ type: 'public_slug', ...entry }), addOwned: entry => add({ type: 'owned_asset', ...entry }) }), [owner, capability, add]);
 
     const activeEnvelope = useMemo(() => envelope.owner === owner ? envelope : empty(owner), [envelope, owner]);
@@ -156,24 +150,36 @@ export function PersistentAudioQueueProvider({ children }: { children: ReactNode
     const clear = () => { dispose(); setEnvelope(value => capability === 'unknown'
         ? sanitizePersistentAudioQueue({ ...value, queue: value.queue.filter(row => row.type === 'owned_asset'), index: 0 }, ownerRef.current)
         : empty(ownerRef.current)); };
-    const styles = useThemedStyles(sheets);
-    return <QueueContext.Provider value={apiValue}><View style={styles.host}>
+    return <PersistentAudioQueueContext.Provider value={apiValue}><View style={hostStyle}>
         {children}
-        {current ? <View accessibilityRole="summary" accessibilityLabel={t('music.queue.title')} style={[styles.bar, { paddingBottom: Math.max(ds.space.sm, insets.bottom) }]}>
-            <View style={styles.copy}><Text variant="bodyStrong" numberOfLines={1}>{current.title}</Text>
-                <Text variant="footnote" tone="secondary" accessibilityLiveRegion="polite">{t('music.queue.position', { position: index + 1, total: visible.length })}</Text></View>
-            <View style={styles.controls}>
-                <Button variant="secondary" label={t('music.queue.previous')} disabled={index === 0} onPress={() => move(-1)} />
-                <Button label={t(playing ? 'music.pause' : 'music.play')} onPress={() => playing ? stop() : void start()} />
-                <Button variant="secondary" label={t('music.queue.next')} disabled={index >= visible.length - 1} onPress={() => move(1)} />
-                <Button variant="tertiary" label={t('music.queue.clear')} onPress={clear} />
-            </View>
-        </View> : null}
-    </View></QueueContext.Provider>;
+        {current ? <PersistentAudioQueueBar title={current.title} position={index + 1} total={visible.length} playing={playing}
+            canPrevious={index > 0} canNext={index < visible.length - 1} onPrevious={() => move(-1)} onNext={() => move(1)}
+            onPlayPause={() => playing ? stop() : void start()} onClear={clear} /> : null}
+    </View></PersistentAudioQueueContext.Provider>;
 }
 
+function PersistentAudioQueueBar({ title, position, total, playing, canPrevious, canNext, onPrevious, onNext, onPlayPause, onClear }: {
+    title: string; position: number; total: number; playing: boolean; canPrevious: boolean; canNext: boolean;
+    onPrevious(): void; onNext(): void; onPlayPause(): void; onClear(): void;
+}) {
+    const insets = useSafeAreaInsets();
+    const styles = useThemedStyles(sheets);
+    return <View accessibilityRole="summary" accessibilityLabel={t('music.queue.title')}
+        style={[styles.bar, { paddingBottom: Math.max(ds.space.sm, insets.bottom) }]}>
+        <View style={styles.copy}><Text variant="bodyStrong" numberOfLines={1}>{title}</Text>
+            <Text variant="footnote" tone="secondary" accessibilityLiveRegion="polite">{t('music.queue.position', { position, total })}</Text></View>
+        <View style={styles.controls}>
+            <Button variant="secondary" label={t('musicPlaylists.previous')} disabled={!canPrevious} onPress={onPrevious} />
+            <Button label={t(playing ? 'music.pause' : 'music.play')} onPress={onPlayPause} />
+            <Button variant="secondary" label={t('musicPlaylists.next')} disabled={!canNext} onPress={onNext} />
+            <Button variant="tertiary" label={t('music.create.suno.clear')} onPress={onClear} />
+        </View>
+    </View>;
+}
+
+const hostStyle = { flex: 1 } as const;
+
 const sheets = themedStyles(p => ({
-    host: { flex: 1 },
     bar: { padding: ds.space.sm, gap: ds.space.xs, backgroundColor: p.bgElevated1, borderTopWidth: 1, borderTopColor: p.borderStrong },
     copy: { flex: 1, minWidth: 0 },
     controls: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: ds.space.xs },

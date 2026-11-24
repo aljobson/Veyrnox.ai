@@ -13,11 +13,25 @@ const join = (...parts: string[]): string => (require('path') as { join: (...p: 
 const root = join(__dirname, '..');
 const repo = join(root, '..', '..');
 
-// The public site's catalog files are plain `export default { ... }` modules with no imports. The Publish composer's
-// shared strings live in the signed-in app area; scripts/sync-web-i18n.mjs reads the same catalog files in the same order.
+function readMcpMusicCopy(path: string): { MCP_MUSIC_COPY: Record<string, string>; mcpMusicCurrent: (locale: string) => Record<string, string> } {
+    const source = readFileSync(path, 'utf8')
+        .replace(/^export const /gm, 'const ')
+        .replace(/^export function /gm, 'function ');
+    return new Function(`${source}\nreturn { MCP_MUSIC_COPY, mcpMusicCurrent };`)() as {
+        MCP_MUSIC_COPY: Record<string, string>; mcpMusicCurrent: (locale: string) => Record<string, string>;
+    };
+}
+
+// The public catalogs are data-only modules. Music MCP copy is shared through one data-only import;
+// scripts/sync-web-i18n.mjs evaluates the same import without loading app/runtime code.
 function readModule(path: string): Record<string, string> {
-    const text = readFileSync(path, 'utf8').replace(/^export default\s+/m, 'return ');
-    return new Function(text)() as Record<string, string>;
+    const raw = readFileSync(path, 'utf8');
+    const sharedImport = /^import \{\s*MCP_MUSIC_COPY(?:,\s*mcpMusicCurrent)?\s*\} from '\.\.\/mcpMusicCopy\.mjs';\r?\n/m;
+    const shared = sharedImport.test(raw)
+        ? readMcpMusicCopy(join(repo, 'lib', 'i18n', 'mcpMusicCopy.mjs'))
+        : { MCP_MUSIC_COPY: {}, mcpMusicCurrent: () => ({}) };
+    const text = raw.replace(sharedImport, '').replace(/^export default\s+/m, 'return ');
+    return new Function('MCP_MUSIC_COPY', 'mcpMusicCurrent', text)(shared.MCP_MUSIC_COPY, shared.mcpMusicCurrent) as Record<string, string>;
 }
 function readWebCatalog(code: string): Record<string, string> {
     return {
