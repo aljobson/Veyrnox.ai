@@ -17,13 +17,15 @@ test('the public editors page is routed, discoverable and indexed', () => {
 
 test('the page documents real editor boundaries and launches the existing tools', () => {
   const page = read('app/veyrnox/editors/page.js');
+  const copy = read('lib/i18n/editorsEnglish.mjs');
 
-  for (const heading of ['Video Editor', 'Audio Editor', 'Smart Cut']) assert.match(page, new RegExp(heading));
-  assert.match(page, /up to 10 clips and 60 seconds/);
-  assert.match(page, /deterministic local preview/);
-  assert.match(page, /does not claim to detect mistakes, repeated lines, picture quality, or the best performance/);
+  for (const heading of ['Video Editor', 'Audio Editor', 'Smart Cut']) assert.match(copy, new RegExp(heading));
+  assert.match(copy, /up to 10 clips and 60 seconds/);
+  assert.match(copy, /deterministic local preview/);
+  assert.match(copy, /does not claim to detect mistakes, repeated lines, picture quality, or the best performance/);
   assert.match(page, /href: '\/app\/library#smart-cut'/);
   assert.match(page, /href: '\/app\/music'/);
-  assert.match(page, /exact credit price/);
+  assert.match(copy, /exact credit price/);
+  assert.match(page, /<Main>/);
   assert.match(page, /<FooterForest locale=\{locale\} t=\{t\} flush \/>/);
 });
