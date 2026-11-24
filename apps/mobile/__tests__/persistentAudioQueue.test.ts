@@ -1,8 +1,10 @@
 let mockCacheOwner: string | undefined = 'account-a';
-const mockCacheListeners = new Set<() => void>();
+function mockCacheListeners(): Set<() => void> {
+    return ((globalThis as any).__persistentAudioQueueStoreOwnerListeners ??= new Set<() => void>());
+}
 jest.mock('../src/lib/appCache', () => ({
     getCacheUser: () => mockCacheOwner,
-    subscribeCacheUser: (listener: () => void) => { mockCacheListeners.add(listener); return () => mockCacheListeners.delete(listener); },
+    subscribeCacheUser: (listener: () => void) => { mockCacheListeners().add(listener); return () => mockCacheListeners().delete(listener); },
     userDocStorage: { get: async () => null, set: async () => undefined, remove: async () => undefined, keys: async () => [] },
 }));
 

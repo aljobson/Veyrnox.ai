@@ -8,12 +8,15 @@ let mockOwner: string | undefined = 'account-a';
 function mockListeners(): Set<() => void> {
     return ((globalThis as any).__persistentAudioQueueOwnerListeners ??= new Set<() => void>());
 }
+function mockAuthApi(): object {
+    return ((globalThis as any).__persistentAudioQueueAuthApi ??= {});
+}
 const mockDocuments = new Map<string, string>();
 const mockGetEntitlements = jest.fn();
 const mockGetAsset = jest.fn();
 const mockPlayers: any[] = [];
 
-jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: {} }) }));
+jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockAuthApi() }) }));
 jest.mock('../src/lib/appCache', () => ({
     getCacheUser: () => mockOwner,
     subscribeCacheUser: (listener: () => void) => { mockListeners().add(listener); return () => mockListeners().delete(listener); },
