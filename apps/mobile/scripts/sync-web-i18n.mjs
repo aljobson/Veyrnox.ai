@@ -15,10 +15,33 @@ const WEB = join(repo, 'lib', 'i18n', 'messages');
 const OUT = join(app, 'src', 'lib', 'i18n', 'messages');
 const CODES = ['es', 'zh', 'hi', 'ar', 'fr', 'pt', 'ru', 'ja', 'de', 'ko'];
 
-// A catalog file is `export default { ... }` or `const x = { ... } as const; export default x;` with no imports.
-function readCatalog(path) {
+// A catalog file may import data-only helpers, `import { A, b } from '../x.mjs';` (the translated catalogs share the
+// Music MCP copy this way). The helper is read as text too: only `export const` and `export function`, no imports of
+// its own, so nothing here loads runtime code.
+function readImports(source, path) {
+    const bindings = {};
+    const text = source.replace(/^import\s*\{([^}]*)\}\s*from\s*'(\.{1,2}\/[^']+\.mjs)';[ \t]*\r?\n?/gm, (_match, names, spec) => {
+        const file = resolve(dirname(path), spec);
+        const body = readFileSync(file, 'utf8');
+        if (/(?:^\s*import\b)|(?:[^.\w$]import\s*\()/m.test(body)) throw new Error(`${file}: a helper imported by a catalog cannot import anything`);
+        const exported = [...body.matchAll(/^export (?:const|function) (\w+)/gm)].map(([, name]) => name);
+        const helper = new Function(`${body.replace(/^export (?=const|function)/gm, '')}\nreturn { ${exported.join(', ')} };`)();
+        for (const part of names.split(',').map(entry => entry.trim()).filter(Boolean)) {
+            const [, name, alias = name] = part.match(/^(\w+)(?:\s+as\s+(\w+))?$/) ?? [];
+            if (!name) throw new Error(`${file}: cannot read the import binding "${part}"`);
+            if (!Object.hasOwn(helper, name)) throw new Error(`${file} does not export ${name}`);
+            bindings[alias] = helper[name];
+        }
+        return '';
+    });
+    return { text, bindings };
+}
+
+// A catalog file is `export default { ... }` or `const x = { ... } as const; export default x;`, optionally after
+// data-only helper imports (see readImports).
+export function readCatalog(path) {
     // Skip strings/comments, and strip only the final object assertion (or _order.ts array assertion).
-    const source = readFileSync(path, 'utf8');
+    const { text: source, bindings } = readImports(readFileSync(path, 'utf8'), path);
     const tokens = /'(?:\\[\s\S]|[^'\\])*'|"(?:\\[\s\S]|[^"\\])*"|`(?:\\[\s\S]|[^`\\])*`|\/\/[^\r\n]*|\/\*[\s\S]*?\*\/|([}\]])\s+as const;/g;
     const trivia = String.raw`(?:\s|\/\/[^\r\n]*|\/\*[\s\S]*?\*\/)*`;
     const exportEnd = new RegExp(`^${trivia}(?:export default \\w+;${trivia})?$`);
@@ -26,7 +49,8 @@ function readCatalog(path) {
         closing && exportEnd.test(source.slice(offset + match.length)) ? `${closing};` : match
     ).replace(/^export default\s+/m, 'return ').replace(/^return (\w+);\s*$/m, 'return $1;');
     const m = { exports: undefined };
-    return new Function('module', text.includes('return ') ? text : `module.exports = ${text}`)(m) ?? m.exports;
+    const names = Object.keys(bindings);
+    return new Function('module', ...names, text.includes('return ') ? text : `module.exports = ${text}`)(m, ...names.map(name => bindings[name])) ?? m.exports;
 }
 
 // Read data-only area catalogs without importing app/runtime code or evaluating en.ts.
