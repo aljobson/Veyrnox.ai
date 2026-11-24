@@ -23,7 +23,12 @@ export async function generateMetadata() {
 }
 
 // Tool names are the connector's own identifiers; each has a description key mcp.tool.<name>.
-const tools = ['list_models', 'estimate_generation', 'generate_image', 'generate_video', 'edit_video', 'get_generation', 'list_generations', 'get_balance'];
+const tools = [
+  'list_models', 'estimate_generation', 'reserve_source_upload', 'generate_image', 'generate_video', 'edit_video',
+  'get_music_draft', 'estimate_music_generation', 'generate_music', 'get_music_generation',
+  'list_music_playlists', 'create_music_playlist', 'update_music_playlist',
+  'get_generation', 'list_generations', 'get_balance',
+];
 const publishTools = ['publish_list_brands', 'publish_list_accounts', 'publish_list_posts', 'publish_get_analytics',
   'publish_schedule_post', 'publish_reschedule_post', 'publish_cancel_post'];
 
@@ -32,7 +37,9 @@ export default async function McpPage() {
   // The Publish tools exist only while the switch is on (ADR-0112); the other copy is true otherwise.
   const publish = publishAutomationEnabled();
   const shownTools = publish ? [...tools, ...publishTools] : tools;
-  const c = (name) => (publish ? tOr(t, `mcp.pub.${name}`, name) : tOr(t, `mcp.${name}`, name));
+  const c = (name) => (publish
+    ? tOr(t, `mcp.pub.${name}.current`, tOr(t, `mcp.pub.${name}`, name))
+    : tOr(t, `mcp.${name}.current`, tOr(t, `mcp.${name}`, name)));
   return (
     <div className="min-h-dvh">
       <MarketingNav />

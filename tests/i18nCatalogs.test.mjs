@@ -124,8 +124,23 @@ test('every tool group on /tools has translated words, and every MCP tool a desc
     assert.ok(en[`tools.t.${task.key}.label`], `${task.key} label`);
     assert.ok(en[`tools.t.${task.key}.blurb`], `${task.key} blurb`);
   }
-  for (const name of ['list_models', 'estimate_generation', 'get_generation', 'list_generations', 'get_balance']) {
+  for (const name of [
+    'list_models', 'estimate_generation', 'reserve_source_upload', 'generate_image', 'generate_video', 'edit_video',
+    'get_music_draft', 'estimate_music_generation', 'generate_music', 'get_music_generation',
+    'list_music_playlists', 'create_music_playlist', 'update_music_playlist',
+    'get_generation', 'list_generations', 'get_balance',
+  ]) {
     assert.ok(en[`mcp.tool.${name}`], name);
+  }
+});
+
+test('the current Music MCP overview stays translated while Publish copy also names the wider surface', () => {
+  for (const { code } of LOCALES) {
+    for (const key of ['mcp.lead.current', 'mcp.s3.body.current', 'mcp.what.title.current', 'mcp.what.p.current']) {
+      assert.ok(CATALOGS[code][key], `${code} ${key}`);
+      if (code !== 'en') assert.notEqual(CATALOGS[code][key], CATALOGS.en[key], `${code} ${key}`);
+    }
+    assert.match(CATALOGS[code]['mcp.pub.what.p.current'], /Music/);
   }
 });
 
