@@ -34,7 +34,7 @@ test('native entitlement visibility is generation fenced and fails closed', () =
 test('native English catalog merges Studio action copy instead of exposing keys', () => {
   assert.equal(MUSIC_STUDIO_ASSISTANT_TRANSLATIONS.en['studioAssistant.title'], 'Studio actions');
   assert.equal(MUSIC_STUDIO_ASSISTANT_NATIVE_TRANSLATIONS.en['studioAssistant.title'], 'Studio actions');
-  assert.match(catalogs, /en: \{ \.\.\.en, \.\.\.MUSIC_STUDIO_ASSISTANT_NATIVE_TRANSLATIONS\.en \}/);
+  assert.match(catalogs, /en: \{ \.\.\.en, \.\.\.MUSIC_STUDIO_ASSISTANT_NATIVE_TRANSLATIONS\.en, \.\.\.musicSourcesByLocale\.en \}/);
   assert.match(catalogs, /CATALOGS: Catalogs = \{ en: merged\.en! \}/);
 });
 
