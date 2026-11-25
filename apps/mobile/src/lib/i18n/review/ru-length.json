@@ -3900,6 +3900,24 @@
     "ratio": 1.67
   },
   {
+    "id": "beat.title",
+    "english": "Music editor",
+    "translation": "Музыкальный редактор",
+    "ratio": 1.67
+  },
+  {
+    "id": "beat.home.new",
+    "english": "New music edit",
+    "translation": "Новый музыкальный монтаж",
+    "ratio": 1.71
+  },
+  {
+    "id": "beat.home.empty",
+    "english": "No music edits yet",
+    "translation": "Пока нет музыкальных монтажей",
+    "ratio": 1.61
+  },
+  {
     "id": "beat.transport",
     "english": "Transport",
     "translation": "Воспроизведение",
@@ -4276,12 +4294,6 @@
     "english": "Unpublish",
     "translation": "Снять с публикации",
     "ratio": 2
-  },
-  {
-    "id": "beatAi.stems",
-    "english": "Split stems",
-    "translation": "Разделить на стемы",
-    "ratio": 1.64
   },
   {
     "id": "beatAi.key",

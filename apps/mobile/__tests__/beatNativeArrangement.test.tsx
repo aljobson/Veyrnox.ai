@@ -4,12 +4,12 @@ import * as RN from 'react-native';
 import BeatEditor from '../src/app/(app)/beats/[id]';
 import { setLocaleFromDevice, t } from '../src/lib/i18n';
 import { beatStore, newBeat, resetBeats, getBeat, putBeat, dropBeat } from '../src/lib/beatNative/store';
-import { addAudioRegion, addKitTrack, addRegion, copyRegion, deleteRegion, duplicateRegion, moveRegion, removeTrack, resizeRegion, selectPattern, setCycle, setAudioRegion, setRegionPattern, setView, splitRegion, trimRegionStart, tryOp, validateBeat, type BeatDoc, type Edit } from '../src/lib/beatNative/doc';
+import { addAudioRegion, addKitTrack, addRegion, copyRegion, deleteRegion, duplicateRegion, moveRegion, removeTrack, resizeRegion, selectPattern, setAudioRegion, setRegionPattern, setView, splitRegion, trimRegionStart, tryOp, validateBeat, type BeatDoc, type Edit } from '../src/lib/beatNative/doc';
 import { guardedRippleDelete } from '../src/lib/beatNative/arrange';
 import { canUndo, createHistory, record } from '../src/lib/beatNative/history';
 import { position, regionLabel } from '../src/lib/beatNative/regionActions';
 import type { MeasureAndRevealLaneInput } from '../src/lib/beatNative/clipSearch';
-import { BEAT_SOUNDS, soundAsset, type AudioAsset, type BeatSound } from '../src/lib/beatNative/labs';
+import { BEAT_SOUNDS, soundAsset } from '../src/lib/beatNative/labs';
 import { beforeReplace } from '../src/lib/beatNative/recordingFinalizers';
 import * as recordingHook from '../src/lib/beatNative/useTakeRecording';
 import { restoreBeatLibraryTriggerFocus } from '../src/components/beats/BeatArrangement';
@@ -23,8 +23,7 @@ jest.mock('../src/lib/beatNative/store', () => {
 jest.mock('../src/lib/beatNative/persist', () => ({ ...jest.requireActual('../src/lib/beatNative/persist'), documentFiles: () => ({ read: async () => null, write: async () => {}, remove: async () => {}, list: async () => [] }) }));
 jest.mock('../src/components/beats/BeatSaveControls', () => ({ BeatSaveControls: () => null }));
 jest.mock('../src/components/beats/ai/BeatAiPanel', () => ({ BeatAiPanel: () => null }));
-let mockLabsProps: any, mockLibrarySheetProps: any, mockSoundsSheetProps: any;
-jest.mock('../src/components/beats/BeatLabsBar', () => ({ BeatLabsBar: (props: any) => { mockLabsProps = props; return null; } }));
+let mockLibrarySheetProps: any, mockSoundsSheetProps: any;
 jest.mock('../src/components/beats/BeatSongLibrarySheet', () => ({ BeatSongLibrarySheet: (props: any) => {
     mockLibrarySheetProps = props;
     return require('react').createElement(require('react-native').View, { testID: 'mock-beat-song-library-sheet' });
@@ -107,16 +106,17 @@ function searchManyDoc(doc: BeatDoc): BeatDoc {
     expect(validateBeat(next).ok).toBe(true);
     return next;
 }
-beforeEach(() => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; jest.useFakeTimers(); jest.clearAllMocks(); mockMeasureAndRevealLane.mockReset(); mockPutBeatBusy = false; mockLabsProps = null; mockLibrarySheetProps = null; mockSoundsSheetProps = null; setLocaleFromDevice(['en']); resetBeats(); root = createRoot(); });
+beforeEach(() => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; jest.useFakeTimers(); jest.clearAllMocks(); mockMeasureAndRevealLane.mockReset(); mockPutBeatBusy = false; mockLibrarySheetProps = null; mockSoundsSheetProps = null; setLocaleFromDevice(['en']); resetBeats(); root = createRoot(); });
 afterEach(async () => { mockPutBeatBusy = false; await act(async () => root.unmount()); setLocaleFromDevice(['en']); resetBeats(); jest.useRealTimers(); });
 
-test('A1 view switch is saved and one Undo restores pattern view', async () => {
+test('A1 an old pattern project is migrated into the Music Editor timeline without a view switch', async () => {
     await open(d => setView(d, 'pattern'));
-    await act(async () => beatStore.flushBeats()); expect(beatStore.saveState(mockId)).toBe('saved');
-    await press(t('beat.view.song'));
-    expect(current().view).toBe('song'); expect(beatStore.saveState(mockId)).toBe('saving'); expect(node('beat-arrangement')).toBeDefined();
-    await press(t('beat.undo')); expect(current().view).toBe('pattern'); expect(node('beat-arrangement')).toBeUndefined();
-    await press(t('beat.redo')); expect(current().view).toBe('song');
+    expect(current().view).toBe('song');
+    expect(node('beat-arrangement')).toBeDefined();
+    expect(control(t('beat.view.pattern'))).toBeUndefined();
+    expect(control(t('beat.view.song'))).toBeUndefined();
+    await act(async () => beatStore.flushBeats());
+    expect(beatStore.saveState(mockId)).toBe('saved');
 });
 test.each([
     ['move', 24, 0, (d: BeatDoc) => moveRegion(d, 'r1', 960, 't1')],
@@ -530,12 +530,11 @@ test('Song starter Sounds use the snapped locator/audio lane at Add after editor
     await press(t('beat.undo')); expect(same(current())).toEqual(same(before));
     expect(control(t('beat.undo')).props.accessibilityState.disabled).toBe(true);
 });
-test('Song owns one Sounds action and library dismissal restores trigger focus; Pattern returns Sounds to LabsBar', async () => {
+test('Song library dismissal restores trigger focus without exposing beat-maker controls', async () => {
     const resolve = jest.fn(() => 42), focus = jest.fn();
     restoreBeatLibraryTriggerFocus({} as ComponentRef<typeof RN.Pressable>, resolve, focus);
     expect(resolve).toHaveBeenCalledTimes(1); expect(focus).toHaveBeenCalledWith(42);
     await open();
-    expect(mockLabsProps.showSounds).toBe(false);
     expect(root.container.queryAll(n => n.props.accessibilityLabel === t('beatLabs.sounds') && typeof (n.props.onClick ?? n.props.onPress) === 'function')).toHaveLength(1);
     await press(t('beat.library.open'));
     const dismiss = mockLibrarySheetProps.onDismiss;
@@ -544,9 +543,8 @@ test('Song owns one Sounds action and library dismissal restores trigger focus; 
     expect(node('mock-beat-song-library-sheet')).toBeUndefined();
     expect(() => dismiss()).not.toThrow();
 
-    await press(t('beat.view.pattern'));
-    expect(node('beat-arrangement')).toBeUndefined();
-    expect(mockLabsProps.showSounds).toBe(true);
+    expect(control(t('beat.view.pattern'))).toBeUndefined();
+    expect(node('beat-arrangement')).toBeDefined();
 });
 test('first search selection queues reveal after selection and retries fresh geometry after content reflow', async () => {
     await open(searchManyDoc);
@@ -634,25 +632,6 @@ test.each(['onScrollBeginDrag', 'onMomentumScrollBegin'] as const)('%s cancels p
     expect(attempts).toHaveLength(1);
     expect(scrollTo.mock.calls.some(([value]) => value?.y !== undefined)).toBe(false);
 });
-test('switching Song to Pattern cancels detached-lane measurement and queued retry', async () => {
-    await open(searchManyDoc);
-    const attempts: MeasureAndRevealLaneInput[] = [];
-    mockMeasureAndRevealLane.mockImplementation(input => { attempts.push(input); });
-    const scrollTo = (RN.ScrollView as unknown as { prototype: { scrollTo: jest.Mock } }).prototype.scrollTo;
-    await act(async () => field(t('beat.search.label')).props.onChangeText('drums search'));
-    await pressNode('beat-search-result-search2');
-    expect(attempts).toHaveLength(1);
-    await act(async () => node('beat-editor-workspace').props.onContentSizeChange(400, 2000));
-    scrollTo.mockClear();
-
-    await press(t('beat.view.pattern'));
-    expect(node('beat-arrangement')).toBeUndefined();
-    expect(attempts[0].isCurrent()).toBe(false);
-    attempts[0].onReveal(800);
-    await act(async () => jest.runOnlyPendingTimers());
-    expect(attempts).toHaveLength(1);
-    expect(scrollTo.mock.calls.some(([value]) => value?.y !== undefined)).toBe(false);
-});
 test('A6 ruler locator is view state; cycle toggle, endpoints and invalid cycle use apply', async () => {
     const before = await open();
     await press(t('beat.ruler.next')); await press(t('beat.ruler.previous')); await press(t('beat.ruler.end')); await press(t('beat.ruler.start'));
@@ -699,6 +678,7 @@ test('A8 audio gain, fades and reverse edit validated audio regions and undo', a
 });
 test('A9b mixed mixer gain and mute work on every kind and kit controls only exist on drums', async () => {
     await open(mixed);
+    await press(t('beat.track.controls'));
     for (let i = 0; i < 3; i++) {
         const track = t('beat.track', { n: i + 1 });
         const gain = root.container.queryAll(n => n.props.accessibilityLabel === t('beat.gain', { track }) && n.props.onAccessibilityAction)[0];
@@ -706,6 +686,7 @@ test('A9b mixed mixer gain and mute work on every kind and kit controls only exi
         expect(current().tracks[i].gain).toBe(0.9); await press(t('beat.mute', { track })); expect(current().tracks[i].mute).toBe(true);
         expect(root.container.queryAll(n => n.props.accessibilityLabel === t('beat.kit', { track })).length > 0).toBe(i === 0);
     }
+    await press(t('beat.track.controls'));
     await press(current().tracks[1].name); expect(control(t('beat.region.add')).props.accessibilityState.disabled).toBe(true);
     await choose('rm'); expect(node('region-inspector')).toBeDefined(); expect(control(t('beat.audio.reverse'))).toBeUndefined();
 });
@@ -742,12 +723,7 @@ test('measured lane heights and initial finger position determine the drop lane'
     await drag('region-r1', 0, 140);
     expect(current().tracks[1].regions.some(region => region.id === 'r1')).toBe(true);
 });
-test('mixed documents choose the first drum kit for pad preview even when audio is first', async () => {
-    await open(d => { const doc = mixed(d); return setView({ ...doc, tracks: [doc.tracks[1], doc.tracks[2], doc.tracks[0]] }, 'pattern'); });
-    await press(t('beat.pad.hit', { pad: t('beat.pad.snare') }));
-    expect(mockAudio.hitPad).toHaveBeenCalledWith('snare', '808');
-});
-test('auto-scroll follows playback until a manual scroll, including switching views during the run', async () => {
+test('auto-scroll follows playback until a manual scroll and resets on the next run', async () => {
     await open();
     const scrollTo = (RN.ScrollView as unknown as { prototype: { scrollTo: jest.Mock } }).prototype.scrollTo;
     await act(async () => node('arrangement-scroll').props.onLayout({ nativeEvent: { layout: { width: 120 } } }));
@@ -756,7 +732,6 @@ test('auto-scroll follows playback until a manual scroll, including switching vi
     await act(async () => callback()(64)); expect(scrollTo).toHaveBeenLastCalledWith({ x: 354, animated: false });
     await act(async () => node('arrangement-scroll').props.onScrollBeginDrag()); scrollTo.mockClear();
     await act(async () => callback()(0)); expect(scrollTo).not.toHaveBeenCalled();
-    await press(t('beat.view.pattern')); await press(t('beat.view.song'));
     await act(async () => node('arrangement-scroll').props.onLayout({ nativeEvent: { layout: { width: 120 } } }));
     await act(async () => callback()(48)); expect(scrollTo).not.toHaveBeenCalled();
     await press(t('beat.stop')); await press(t('beat.play')); scrollTo.mockClear();
@@ -770,9 +745,9 @@ test('N3-R1 touches over the label use block coordinates and cross the real lane
     expect(block.props.pointerEvents).toBe('box-only');
     for (const id of ['r1-trim', 'r1-resize', 'cycle-start', 'cycle-end']) expect(node(id).props.pointerEvents).toBe('box-only');
     expect(node('cycle-band').props.pointerEvents).toBe('none');
-    // Model native hit testing at the label: its local y=4 is 30 pt down the block
-    // (24 pt padding + 2 pt border). A non-touchable label retargets to the block.
-    const labelY = 4, blockY = 30, laneTop = 4, laneHeight = 96;
+    // Model native hit testing at the label: its local y=4 is 18 pt down the compact block
+    // (12 pt padding + 2 pt border). A non-touchable label retargets to the block.
+    const labelY = 4, blockY = 18, laneTop = 4, laneHeight = 64;
     const target = label.props.pointerEvents === 'none' ? block : label;
     const event = (dy: number) => ({ nativeEvent: { identifier: 1, target: target.props.testID,
         pageX: 100, pageY: laneTop + blockY + dy, locationY: (target === block ? blockY : labelY) + dy }, stopPropagation: jest.fn() });
@@ -789,14 +764,13 @@ test('N3-R1 touches over the label use block coordinates and cross the real lane
     await press(t('beat.undo')); expect(same(current())).toEqual(same(before));
 });
 
-test('N3-R2 a new phone beat opens in Song with arrangement and a reachable Pattern switch', async () => {
+test('N3-R2 a new music edit stays in Song with no beat-maker Pattern switch', async () => {
     const doc = await open();
     expect(doc.view).toBe('song'); expect(current().view).toBe('song');
     expect(node('beat-arrangement')).toBeDefined();
-    expect(control(t('beat.view.pattern'))).toBeDefined();
-    expect(control(t('beat.view.song')).props.accessibilityState.selected).toBe(true);
-    await press(t('beat.view.pattern')); expect(node('beat-arrangement')).toBeUndefined();
-    expect(control(t('beat.pad.hit', { pad: t('beat.pad.kick') }))).toBeDefined();
+    expect(control(t('beat.view.pattern'))).toBeUndefined();
+    expect(control(t('beat.view.song'))).toBeUndefined();
+    expect(control(t('beat.pad.hit', { pad: t('beat.pad.kick') }))).toBeUndefined();
 });
 
 test.each(['fadeIn', 'fadeOut'] as const)('N3-R3 partial %s keeps its anchor through 50 ms steps and minimum clamping', async which => {

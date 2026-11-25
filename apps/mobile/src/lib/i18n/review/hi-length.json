@@ -2215,13 +2215,13 @@
   },
   {
     "id": "beat.midiRecord.recovery.saveNew",
-    "english": "Save as new beat",
+    "english": "Save as new song",
     "translation": "नए बीट के रूप में सेव करें",
     "ratio": 1.63
   },
   {
     "id": "beat.midiRecord.recovery.saveAsNew",
-    "english": "Save as new beat",
+    "english": "Save as new song",
     "translation": "नए बीट के रूप में सेव करें",
     "ratio": 1.63
   },

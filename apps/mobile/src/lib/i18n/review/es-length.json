@@ -3726,6 +3726,12 @@
     "ratio": 2.67
   },
   {
+    "id": "beat.home.empty",
+    "english": "No music edits yet",
+    "translation": "Aún no hay ediciones musicales",
+    "ratio": 1.67
+  },
+  {
     "id": "beat.pattern.on",
     "english": "On",
     "translation": "Activado",
@@ -4113,12 +4119,6 @@
     "id": "musicPublication.listen",
     "english": "Shared song",
     "translation": "Canción compartida",
-    "ratio": 1.64
-  },
-  {
-    "id": "beatAi.targetStems",
-    "english": "Target stem",
-    "translation": "Aislar instrumento",
     "ratio": 1.64
   },
   {
