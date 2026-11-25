@@ -48,6 +48,7 @@ export default {
     "beatPiano.library.add": "Add instrument",
     "beatPiano.library.close": "Close library",
     "beatPiano.library.search": "Search instruments",
+    "beatPiano.library.preview": "Preview",
     "beatPiano.library.audition": "Audition {name}",
     "beatPiano.library.addNamed": "Add {name}",
     "beatPiano.library.edit": "Edit notes: {name}",

@@ -45,7 +45,7 @@ test('disables every track creation choice when the song cannot accept another t
     }
 });
 
-test('presents track choices as a clean icon grid without disclosure chevrons', async () => {
+test('presents track choices as one compact icon menu without disclosure chevrons', async () => {
     await act(async () => root.render(<MusicAddTrackSheet disabled={false} onLibrary={() => {}} onDevice={() => {}}
         onRecord={() => {}} onDrums={() => {}} onInstrument={() => {}} onClose={() => {}} />));
     const icons = root.container.queryAll(node => node.props.accessibilityElementsHidden && node.props.style);
