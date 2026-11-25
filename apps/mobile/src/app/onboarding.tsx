@@ -235,9 +235,9 @@ function Result({ answers, onBack, onEdit, onFinish }: { answers: PreAuthAnswers
             <Text variant="title1" accessibilityRole="header">{t('onboarding.result.title')}</Text>
             <Text tone="secondary">{t('onboarding.result.body')}</Text>
             <Card style={styles.starterCard}>
-                <View style={styles.starterHeading}><Icon name="sparkle" size={22} /><Text variant="bodyStrong">{t('onboarding.result.workspace')}</Text></View>
+                <View style={styles.starterHeading}><Icon name="sparkle" size={24} /><Text variant="bodyStrong">{t('onboarding.result.workspace')}</Text></View>
                 <View style={[styles.outputPreview, { aspectRatio: previewAspect }]}>
-                    <Icon name={GOAL_ICON[goalKey]} size={34} />
+                    <Icon name={GOAL_ICON[goalKey]} size={36} />
                     <Text variant="title3" style={styles.center}>{tool}</Text>
                     {aspect ? <View style={styles.formatBadge}><Text variant="caption">{aspect}</Text></View> : null}
                 </View>

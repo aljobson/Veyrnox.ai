@@ -11,7 +11,7 @@ import {
     readPreAuthOnboarding,
     savePreAuthAnswers,
 } from '../src/lib/preAuthOnboarding';
-import type { ClientTask } from '../src/lib/api';
+import type { ApiClient, ClientTask } from '../src/lib/api';
 
 const mockDisk = new Map<string, string>();
 jest.mock('expo-secure-store', () => ({
@@ -55,7 +55,7 @@ test('guest browsing remembers the route and only carries a complete result into
 
 test('a completed result is applied once and retires the older account onboarding across restarts', async () => {
     await completePreAuthOnboarding(answers, 'sign-in');
-    const request = jest.fn(async () => ({}));
+    const request = jest.fn(async <T,>() => ({} as T)) as jest.MockedFunction<ApiClient['request']>;
     const task: ClientTask = { gen: 4, user: 'account-a', current: () => true };
 
     await expect(applyPendingPreAuthOnboarding({ request }, task)).resolves.toBe(true);
