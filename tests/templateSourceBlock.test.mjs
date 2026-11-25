@@ -21,6 +21,14 @@ test('a template that only needs the person\'s photo is not blocked', () => {
   assert.equal(templateSourceUnsupported({ sourcePromptOrigin: null, sourcePromptIssues: ['reference-video-not-supported'] }), false, 'only the exact community prompt is judged');
 });
 
+test('a registered source-clip template never falls back to prompt-only generation', () => {
+  assert.equal(templateSourceUnsupported({
+    id: 'community-midnight-sports-drive',
+    sourcePrompt: 'face reference Identity WARDROBE',
+    sourcePromptOrigin: 'community-source-exact',
+  }), true);
+});
+
 test('the recipe, the template page and Create all stop generation for it', () => {
   const recipe = readFileSync(new URL('../app/veyrnox/_components/TemplateRecipe.js', import.meta.url), 'utf8');
   assert.match(recipe, /templateSourceUnsupported\(preset\)/);
