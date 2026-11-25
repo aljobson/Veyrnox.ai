@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 const screen = readFileSync(new URL('../apps/mobile/src/app/(app)/beats/[id].tsx', import.meta.url), 'utf8');
 const aiPanel = readFileSync(new URL('../apps/mobile/src/components/beats/ai/BeatAiPanel.tsx', import.meta.url), 'utf8');
 const addTrackSheet = readFileSync(new URL('../apps/mobile/src/components/beats/MusicAddTrackSheet.tsx', import.meta.url), 'utf8');
+const simpleEditorChrome = readFileSync(new URL('../apps/mobile/src/components/editor/SimpleEditorChrome.tsx', import.meta.url), 'utf8');
 const magic = readFileSync(new URL('../apps/mobile/src/lib/beatAi/magicGate.ts', import.meta.url), 'utf8');
 
 test('native Music Editor opens AI editing from a compact icon surface and keeps Magic Bar hard off', () => {
@@ -32,15 +33,18 @@ test('native AI editing is generation, project and visit fenced and fails closed
 });
 
 test('add track presents the five music sources as compact choices', () => {
-  for (const source of ['library', 'device', 'record', 'drums', 'instrument']) {
-    assert.match(addTrackSheet, new RegExp(`testID="music-add-track-${source}"`));
+  for (const [source, icon] of [
+    ['library', 'folder'],
+    ['device', 'arrowUp'],
+    ['record', 'microphone'],
+    ['drums', 'waveform'],
+    ['instrument', 'pianoKeys'],
+  ]) {
+    assert.match(addTrackSheet, new RegExp(`id: '${source}', icon: '${icon}'`));
   }
-  assert.match(addTrackSheet, /icon="folder"/);
-  assert.match(addTrackSheet, /icon="arrowUp"/);
-  assert.match(addTrackSheet, /icon="microphone"/);
-  assert.match(addTrackSheet, /icon="waveform"/);
-  assert.match(addTrackSheet, /icon="pianoKeys"/);
-  assert.match(addTrackSheet, /onClose\(\);\s*action\(\);/);
+  assert.match(addTrackSheet, /<SimpleEditorSheet testID="music-add-track-sheet"[\s\S]*rows=\{rows\}/);
+  assert.match(simpleEditorChrome, /rows\.map\(\(row\) => <Pressable/);
+  assert.match(simpleEditorChrome, /onPress=\{\(\) => \{ onClose\(\); if \(row\.afterClose\)/);
 });
 
 test('native mute and solo preserve the live engine and refusal result', () => {
