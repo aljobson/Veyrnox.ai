@@ -95,7 +95,7 @@ export function TemplatePicker({ models, goal, selectedKind, onPick, onClose, ga
         </ul>}
 
         {kind === 'video' && rows.length > 0 && <div className="mt-4 text-right text-xs"><Link href="/presets" onClick={onClose} className="font-bold text-vx-accent underline underline-offset-2">{t('app.create.templates.openGallery')}</Link></div>}
-        {kind === 'audio' && <div className="mt-4 text-right text-xs"><Link href="/app/music/sounds" className="font-bold text-vx-accent underline underline-offset-2">Open Sound Effects</Link></div>}
+        {kind === 'audio' && <div className="mt-4 text-right text-xs"><Link href="/app/music/sounds" className="font-bold text-vx-accent underline underline-offset-2">{t('app.audio.sounds.open')}</Link></div>}
       </div>
     </Modal>
   );

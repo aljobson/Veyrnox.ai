@@ -36,7 +36,7 @@ export default function AudioHubPage() {
             </li>
           ))}
         </ul>
-        {loading && <p role="status" className="mt-4 text-xs text-vx-fg-muted">Checking the live audio catalog…</p>}
+        {loading && <p role="status" className="mt-4 text-xs text-vx-fg-muted">{t('app.audio.catalogChecking')}</p>}
       </Main>
     </div>
   );
