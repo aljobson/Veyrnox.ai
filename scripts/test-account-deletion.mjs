@@ -260,6 +260,9 @@ try {
         // Administrator accountability, including actor email, like account_actions (ADR-0083).
         'admin_change_log',
         'admin_roles', 'admin_mutation_receipts', 'runtime_switches', // retained administrator authorization/operational audit, no customer content
+        // Voice recordings, keys and challenge text are queued/scrubbed by 0618;
+        // these content-free ownership/review audit rows remain accountable.
+        'music_voice_profiles', 'music_voice_events', 'music_voice_receipts',
         'user_ai_controls', 'ai_limit_policy', // operator AI switch/limit and reason, no customer content; a tombstoned account stays switched off (ADR-0327)
         // money and its audit trail
         'credit_balances', 'ledger_entries', 'top_ups', 'top_up_flagged_orders', 'account_actions', 'referral_rewards', 'referrals',
@@ -297,6 +300,16 @@ try {
         WHERE n.nspname='public' AND c.relname = ANY($1::text[])`, [[...CRUN_PROVIDER_STATE.keys()]]);
     assert.deepEqual(new Set(classifiedCrun.map((r) => r.tbl)), new Set(CRUN_PROVIDER_STATE.keys()),
         'all Crun provider-state tables are explicitly classified');
+
+    // Content-free upload-key digests are retained through their profile FK,
+    // not a direct users FK, so classify that indirect ownership explicitly.
+    const MUSIC_VOICE_INDIRECT_STATE = new Map([
+        ['music_voice_source_tombstones', 'retained_via_profile_owner'],
+    ]);
+    const classifiedVoice = await q(`SELECT c.relname AS tbl FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+        WHERE n.nspname='public' AND c.relname = ANY($1::text[])`, [[...MUSIC_VOICE_INDIRECT_STATE.keys()]]);
+    assert.deepEqual(new Set(classifiedVoice.map((r) => r.tbl)), new Set(MUSIC_VOICE_INDIRECT_STATE.keys()),
+        'all indirect Music Voice deletion state is explicitly classified');
 
     console.log('account deletion: ok');
 } finally {

@@ -2,6 +2,7 @@ import { rpc, envConfig } from '../../../../../packages/db/supabase-client.js';
 import { MUSIC_MOBILE_ROLLOUT_FLAGS, musicRuntimeFlag } from '../../../../../lib/musicRuntime.js';
 import { musicDailyChallengeAt } from '../../../../../lib/musicDailyChallenge.js';
 import { musicInspirationSources } from '../../../../../lib/musicInspiration.js';
+import { musicVoicesSchemaReady } from '../../../../../lib/musicVoices.js';
 import { readFreshMusicCatalog } from '../../../../../lib/publicCatalog.js';
 import {
     musicAlbumsEnabled, musicDailyCreditsEnabled, musicEntitlementProjection, musicGenerationEnabled, musicStudioChatEnabled,
@@ -39,7 +40,8 @@ export async function GET(request) {
             }
         }
         const features = Object.fromEntries(MUSIC_MOBILE_ROLLOUT_FLAGS.map(name => [name,
-            name === 'albums' ? musicAlbumsEnabled() : name === 'studioChat' ? musicStudioChatEnabled() : musicRuntimeFlag(name)]));
+            name === 'albums' ? musicAlbumsEnabled() : name === 'studioChat' ? musicStudioChatEnabled()
+                : name === 'voices' ? musicVoicesSchemaReady() : musicRuntimeFlag(name)]));
         const inspirationSources = features.inspiration ? musicInspirationSources() : [];
         return reply({
             ...musicEntitlementProjection({

@@ -130,7 +130,7 @@ function MusicUploadsCollection({ active }) {
 // Collections that replace the song list with their own panel.
 const PANEL_COLLECTIONS = ['uploads', 'trash', 'mixes', 'history', 'hooks', 'covers'];
 
-export function MusicServerLibrary({ workspaceView = false, sourcesEnabled = false, collaborationEnabled = false, tabsEnabled = false, beatEditor = false }) {
+export function MusicServerLibrary({ workspaceView = false, sourcesEnabled = false, collaborationEnabled = false, tabsEnabled = false, beatEditor = false, voicesEnabled = false }) {
   const library = useMusicLibraryState();
   const [query, setQuery] = useState('');
   const [workspaceId, setWorkspaceId] = useState(workspaceView ? '' : 'all');
@@ -176,7 +176,7 @@ export function MusicServerLibrary({ workspaceView = false, sourcesEnabled = fal
           <h1 className="mt-2 font-vx text-4xl font-black tracking-tight sm:text-5xl">{workspaceView ? 'Personal workspaces' : 'Music Library'}</h1>
           <p className="mt-3 max-w-2xl text-vx-fg-body">{workspaceView ? 'Group owned versions without changing their audio or visibility.' : 'Find, play and organize every completed private version.'}</p>
         </div>
-        <p className="font-vx-mono text-sm text-vx-fg-muted">{library.songs.length} owned {library.songs.length === 1 ? 'version' : 'versions'}</p>
+        <div className="flex flex-col items-start gap-2 sm:items-end"><p className="font-vx-mono text-sm text-vx-fg-muted">{library.songs.length} owned {library.songs.length === 1 ? 'version' : 'versions'}</p>{voicesEnabled ? <Link data-testid="music-voices-link" href="/app/music/voices" className="min-h-10 rounded-full border border-vx-accent px-4 py-2 text-sm font-bold text-vx-accent">Verify your voice</Link> : null}</div>
       </header>
 
       {library.error ? <div role="alert" className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-vx-danger/50 bg-vx-danger/10 px-4 py-3 text-sm text-vx-danger"><span>{library.error}</span><button type="button" onClick={library.load} className="min-h-10 rounded-full border border-current px-4 font-bold">Reload Library</button></div> : null}

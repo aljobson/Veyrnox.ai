@@ -2,6 +2,7 @@
 // (ADR-0078), the same way the Cinema administrator routes do. The edge rule
 // is still there; this is the check that does not depend on it.
 import { ADMIN_PERMISSIONS } from '../lib/adminPermissions.js';
+import { sealMusicVoiceChallenge } from '../lib/musicVoices.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { register } from 'node:module';
@@ -14,7 +15,8 @@ const { requireDashboardAccess, verifyAccessLogin, _resetCertsCache } = await im
 const TEAM = 'team.cloudflareaccess.test';
 const AUD = 'a'.repeat(64);
 const ACCESS = { ACCESS_TEAM_DOMAIN: TEAM, ACCESS_AUD: AUD };
-const SUPABASE = { R2_ACCOUNT_ID: 'test', R2_ACCESS_KEY_ID: 'test', R2_SECRET_ACCESS_KEY: 'test', R2_BUCKET: 'test', SUPABASE_URL: 'https://db.test', SUPABASE_SERVICE_ROLE_KEY: 'service-test', ADMIN_REQUIRE_AAL2: 'true', ADMIN_CREDIT_GRANTS_ENABLED: 'true' };
+const VOICE_SECRET = 'admin-route-test-secret-longer-than-thirty-two-bytes';
+const SUPABASE = { R2_ACCOUNT_ID: 'test', R2_ACCESS_KEY_ID: 'test', R2_SECRET_ACCESS_KEY: 'test', R2_BUCKET: 'test', SUPABASE_URL: 'https://db.test', SUPABASE_SERVICE_ROLE_KEY: 'service-test', ADMIN_REQUIRE_AAL2: 'true', ADMIN_CREDIT_GRANTS_ENABLED: 'true', MUSIC_SCHEMA_ENABLED: 'true', MUSIC_LIBRARY_ENABLED: 'true', MUSIC_RUNTIME_FLAGS: '{"voices":true}', MUSIC_VOICES_SCHEMA_ENABLED: 'true', UPLOAD_INTEGRITY_ENABLED: 'true', MUSIC_VOICE_CHALLENGE_SECRET: VOICE_SECRET };
 const USER = '11111111-1111-4111-8111-111111111111';
 // The violations POST needs an Idempotency-Key since 0246; the other routes ignore it.
 const ADMIN = { 'x-veyrnox-auth-mfa-at': String(Math.floor(Date.now()/1000)), 'x-veyrnox-auth-id': 'auth-admin', 'x-veyrnox-auth-aal': 'aal2', 'idempotency-key': 'access-test-key-0001' };
@@ -41,7 +43,14 @@ async function mint({ pair, jwk }, over = {}, base = PERSON) {
 }
 
 /** Answer the Access key set, and count anything that reaches Supabase. */
-function stubNetwork(jwks, rpc = () => Response.json({ ok: true, permissions: ADMIN_PERMISSIONS.owner, user: {}, jobs: [], r2_key: 'held/test.png', mime_type: 'image/png', action_id: 'a', tier: 'warning' })) {
+function stubNetwork(jwks, rpc = async (u) => {
+    if (u.endsWith('/music_voice_admin_list')) return Response.json({ ok: true, profiles: [] });
+    if (u.endsWith('/music_voice_admin_evidence')) return Response.json({ ok: true, profile_id: USER, submission_revision: 1,
+        reference_source_key: `uploads/${USER}/reference.wav`, challenge_source_key: `uploads/${USER}/challenge.wav`,
+        challenge_ciphertext: await sealMusicVoiceChallenge({ profileId: USER, phrase: 'amber river 123456' }, VOICE_SECRET) });
+    if (u.endsWith('/music_voice_admin_review')) return Response.json({ ok: true, profile: { id: USER, name: 'Test voice', status: 'verified', submission_revision: 1 } });
+    return Response.json({ ok: true, permissions: ADMIN_PERMISSIONS.owner, user: {}, jobs: [], r2_key: 'held/test.png', mime_type: 'image/png', action_id: 'a', tier: 'warning' });
+}) {
     const reached = [];
     globalThis.fetch = async (url, init) => {
         const u = String(url);
@@ -93,6 +102,10 @@ const ROUTES = [
     ['webhooks GET', '../app/api/v1/admin/webhooks/route.js', 'GET', '/api/v1/admin/webhooks', undefined],
     ['music-comments GET', '../app/api/v1/admin/music-comments/route.js', 'GET', '/api/v1/admin/music-comments', undefined],
     ['music-comments POST', '../app/api/v1/admin/music-comments/route.js', 'POST', '/api/v1/admin/music-comments', { action: 'resolve_report', id: USER, reason: 'test' }],
+    ['music-voices GET', '../app/api/v1/admin/music/voices/route.js', 'GET', '/api/v1/admin/music/voices', undefined],
+    ['music-voices evidence POST', '../app/api/v1/admin/music/voices/[id]/evidence/route.js', 'POST', `/api/v1/admin/music/voices/${USER}/evidence`, { submission_revision: 1 }],
+    ['music-voices evidence ack POST', '../app/api/v1/admin/music/voices/[id]/evidence/ack/route.js', 'POST', `/api/v1/admin/music/voices/${USER}/evidence/ack`, { submission_revision: 1 }],
+    ['music-voices review POST', '../app/api/v1/admin/music/voices/[id]/review/route.js', 'POST', `/api/v1/admin/music/voices/${USER}/review`, { submission_revision: 1, decision: 'approve', reason_code: 'evidence_consistent', checklist: { phrase_exact: true, reference_consistent: true, no_synthetic_concerns: true, policy_acknowledged: true } }],
     ['security GET', '../app/api/v1/admin/security/route.js', 'GET', '/api/v1/admin/security', undefined],
     ['security alert POST', '../app/api/v1/admin/security/route.js', 'POST', '/api/v1/admin/security', { alert_id: USER, status: 'resolved' }],
 ];
@@ -101,7 +114,7 @@ async function call([, file, method, path, body], headers) {
     return mod[method](new Request(`https://veyrnox.test${path}`, {
         method, headers: { ...(body ? { 'content-type': 'application/json' } : {}), ...headers },
         ...(body ? { body: JSON.stringify(body) } : {}),
-    }));
+    }), { params: Promise.resolve({ id: USER }) });
 }
 
 test.beforeEach(() => _resetCertsCache());

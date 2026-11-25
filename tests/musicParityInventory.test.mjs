@@ -55,10 +55,11 @@ test('the dated production capability snapshot matches committed production conf
   assert.equal(MUSIC_PARITY_PRODUCTION_SNAPSHOT.observedAt, '2026-11-24');
   assert.deepEqual(MUSIC_PARITY_FLAG_ROWS.longSongs, { disposition: 'dark', rows: ['edit.sections-extend-crop'] });
   assert.deepEqual(MUSIC_PARITY_FLAG_ROWS.dailyCredits, { disposition: 'dark', rows: ['create.quote-rights-recovery'] });
+  assert.deepEqual(MUSIC_PARITY_FLAG_ROWS.voices, { disposition: 'dark', rows: [] });
 });
 
 test('new parity capabilities are recognized but remain default off', () => {
-  for (const flag of ['albums', 'inspiration', 'studioChat', 'dailyChallenge', 'persistentQueue']) {
+  for (const flag of ['albums', 'inspiration', 'studioChat', 'dailyChallenge', 'persistentQueue', 'voices']) {
     assert.equal(musicRuntimeFlag(flag, {}), false);
     assert.equal(musicRuntimeFlag(flag, { MUSIC_RUNTIME_FLAGS: JSON.stringify({ [flag]: true }) }), true);
   }
@@ -84,6 +85,7 @@ test('iOS-only scope withholds personalization credit until native outcome evide
   assert.equal(row?.target, 'intentionally_different');
   assert.deepEqual(row?.outcomeEvidence, []);
   assert.deepEqual(row?.requiredGates, ['PERSONAS_ENABLED']);
+  assert.deepEqual(MUSIC_PARITY_FLAG_ROWS.voices, { disposition: 'dark', rows: [] });
 });
 
 test('candidate cancellation evidence stays partial until live route and iPhone proof exist', () => {

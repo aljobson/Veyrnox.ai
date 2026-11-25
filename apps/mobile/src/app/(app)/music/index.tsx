@@ -29,6 +29,7 @@ export default function MusicLibrary() {
     const [applied, setApplied] = useState(''); const [searchRejected, setSearchRejected] = useState(false); const [loading, setLoading] = useState(false);
     const [droppedHooks, setDroppedHooks] = useState(0);
     const [albumsOn, setAlbumsOn] = useState(false);
+    const [voicesOn, setVoicesOn] = useState(false);
     const [hook, setHook] = useState<MusicHook | null>(null);
     const epoch = useRef(0);
     const load = useCallback(async () => {
@@ -50,6 +51,7 @@ export default function MusicLibrary() {
         if (hookResult.state === 'on') setDroppedHooks(hookResult.data.dropped);
         else if (hookResult.state === 'off') setDroppedHooks(0);
         setAlbumsOn(entitlementResult.state === 'on' && entitlementResult.data.features.albums);
+        setVoicesOn(entitlementResult.state === 'on' && entitlementResult.data.features.voices);
         setResults({ songs, history, hooks }); setSearchRejected(rejected);
         if (rejected || songs.state === 'off') setSearchOn(false);
         else if (songs.state === 'on') setSearchOn(true);
@@ -76,6 +78,7 @@ export default function MusicLibrary() {
             <ListRow icon="pianoKeys" title={t('beat.title')} accessibilityLabel={t('beat.title')} onPress={() => router.push('/beats' as never)} />
             <ListRow icon="playlist" title={t('musicPlaylists.title')} accessibilityLabel={t('musicPlaylists.title')} onPress={() => router.push('/music/playlists' as never)} />
             {albumsOn ? <ListRow icon="vinylRecord" title={t('musicAlbums.title')} accessibilityLabel={t('musicAlbums.title')} onPress={() => router.push('/music/albums' as never)} /> : null}
+            {voicesOn ? <ListRow icon="microphone" title={t('musicVoices.title')} accessibilityLabel={t('musicVoices.title')} onPress={() => router.push('/music/voices' as never)} /> : null}
             <ListRow icon="usersThree" title={t('musicPublic.explore')} accessibilityLabel={t('musicPublic.explore')} onPress={() => router.push('/music/explore' as never)} />
             <ListRow icon="compass" title={t('musicDiscover.title')} accessibilityLabel={t('musicDiscover.title')} onPress={() => router.push('/music/discover' as never)} />
         </> : null}

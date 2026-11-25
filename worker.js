@@ -37,7 +37,7 @@ import { runScheduledBackfill } from './lib/scheduledBackfill.js';
 import { runPushSweep } from './lib/pushNotifications.js';
 import { removeReservedUpload, sweepUploadReservations } from './lib/uploadReservations.js';
 import { sweepSocialUploads } from './lib/social/uploadSweep.js';
-import { sweepUploads, sweepConsumedUploads } from './lib/uploadSweep.js';
+import { musicVoiceUploadProtected, protectedMusicVoiceUploads, sweepUploads, sweepConsumedUploads } from './lib/uploadSweep.js';
 import { isConfigured as r2IsConfigured } from './packages/adapters/r2.js';
 import { sweepSteps } from './lib/autoShortSweep.js';
 import { sweepEditorServerRender } from './lib/editorServerRenderSweep.js';
@@ -292,14 +292,27 @@ async function runUploadSweep(env) {
     const dbcfg = { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY };
     const strict = env.UPLOAD_INTEGRITY_ENABLED === 'true';
     if (strict && (!dbcfg.supabaseUrl || !dbcfg.serviceRoleKey)) return { ok: false, error: 'upload reservations not configured' };
-    const opts = strict ? { remove: (key) => removeReservedUpload(key, cfg, dbcfg) } : {};
+    let protectedKeys = new Set();
+    if (dbcfg.supabaseUrl && dbcfg.serviceRoleKey) {
+        const protection = await protectedMusicVoiceUploads(dbcfg);
+        if (!protection.ok) { console.error('[upload-sweep] voice evidence protection failed:', protection.error); return { ok: false }; }
+        protectedKeys = protection.keys;
+    }
+    const isProtected = async (key) => {
+        if (!dbcfg.supabaseUrl || !dbcfg.serviceRoleKey) return false;
+        const current = await musicVoiceUploadProtected(dbcfg, key);
+        if (!current.ok) throw new Error(current.error || 'voice upload protection lookup failed');
+        return current.protected;
+    };
+    const opts = { protectedKeys, isProtected,
+        ...(strict ? { remove: (key) => removeReservedUpload(key, cfg, dbcfg) } : {}) };
     let reservationFailure = false;
     if (env.PUBLISH_UPLOADS_ENABLED === 'true') {
         const social = await sweepSocialUploads(cfg, dbcfg);
         if (!social.ok) { reservationFailure = true; console.error('[social-uploads] cleanup failed'); }
     }
     if (strict) {
-        const reservations = await sweepUploadReservations(cfg, dbcfg);
+        const reservations = await sweepUploadReservations(cfg, dbcfg, { protectedKeys, isProtected });
         if (!reservations.ok) {
             reservationFailure = true;
             console.error('[upload-reservations] cleanup failed');

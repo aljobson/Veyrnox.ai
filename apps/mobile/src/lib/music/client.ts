@@ -28,7 +28,7 @@ const bad = (status = 200): ApiError => new ApiError(status, 'bad_response');
 const rows = (value: unknown): readonly MusicRow[] | null => Array.isArray(value) && value.every(isRecord) ? value : null;
 const post = (body: unknown): RequestInit => ({ method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
 const DEFAULT_MUSIC_FEATURES: MusicEntitlements['features'] = Object.freeze({
-    albums: false, inspiration: false, studioChat: false, dailyChallenge: false, persistentQueue: false,
+    albums: false, inspiration: false, studioChat: false, dailyChallenge: false, persistentQueue: false, voices: false,
 });
 const DISABLED_DAILY_ALLOWANCE = Object.freeze({ enabled: false });
 const INSPIRATION_SOURCES = new Set(['audio', 'image', 'video_frames']);
@@ -45,7 +45,8 @@ export async function getEntitlements(api: ApiClient): Promise<MusicEntitlements
         && new Set(response.inspiration_sources).size === response.inspiration_sources.length
         ? response.inspiration_sources : [];
     const projectedFeatures = isRecord(response) && response.features === undefined
-        ? DEFAULT_MUSIC_FEATURES : isRecord(response) ? response.features : undefined;
+        ? DEFAULT_MUSIC_FEATURES : isRecord(response) && isRecord(response.features)
+            ? { ...DEFAULT_MUSIC_FEATURES, ...response.features } : isRecord(response) ? response.features : undefined;
     const safeFeatures = isRecord(projectedFeatures) ? {
         ...projectedFeatures,
         // A server may know the umbrella flag but not yet project the source contract.

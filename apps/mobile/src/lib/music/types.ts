@@ -82,6 +82,7 @@ export type MusicEntitlements = {
         readonly studioChat: boolean;
         readonly dailyChallenge: boolean;
         readonly persistentQueue: boolean;
+        readonly voices: boolean;
     };
     readonly inspiration_sources: readonly (MusicInspirationSource | 'video_frames')[];
     readonly daily_allowance?: {

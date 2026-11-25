@@ -23,7 +23,7 @@ function deps(listResult) {
     };
 }
 
-const { sweepUploads } = await import('../lib/uploadSweep.js');
+const { musicVoiceUploadProtected, protectedMusicVoiceUploads, sweepUploads } = await import('../lib/uploadSweep.js');
 
 test('an upload older than the window is deleted; a fresh one is not', async () => {
     const out = await sweepUploads(CFG, deps({ ok: true, nextToken: null, objects: [
@@ -34,6 +34,37 @@ test('an upload older than the window is deleted; a fresh one is not', async () 
     assert.equal(out.expired, 1);
     assert.equal(out.deleted, 1);
     assert.deepEqual(deleted, [`uploads/${AUTH}/${UUID}.png`]);
+});
+
+test('active voice evidence survives the 24-hour sweep and lookup fails closed', async () => {
+    const protectedKey = `uploads/${AUTH}/${UUID}.wav`;
+    const staleKey = `uploads/${AUTH}/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb.wav`;
+    const out = await sweepUploads(CFG, { ...deps({ ok: true, nextToken: null, objects: [
+        { key: protectedKey, lastModified: hoursAgo(720), size: 10 },
+        { key: staleKey, lastModified: hoursAgo(48), size: 10 },
+    ] }), protectedKeys: new Set([protectedKey]) });
+    assert.equal(out.deleted, 1); assert.deepEqual(deleted, [staleKey]);
+
+    const found = await protectedMusicVoiceUploads({}, { read: async () => ({ ok: true, keys: [protectedKey] }) });
+    assert.deepEqual([...found.keys], [protectedKey]);
+    const missing = Object.assign(new Error('missing'), { status: 404, body: { code: 'PGRST202', message: 'not in schema cache' } });
+    assert.equal((await protectedMusicVoiceUploads({}, { read: async () => { throw missing; } })).migrationPending, true);
+    const unavailable = await protectedMusicVoiceUploads({}, { read: async () => { throw Error('database down'); } });
+    assert.deepEqual({ ok: unavailable.ok, error: unavailable.error }, { ok: false, error: 'voice upload protection lookup failed' });
+    const fresh = await musicVoiceUploadProtected({}, protectedKey, { read: async (name, args) => {
+        assert.equal(name, 'music_voice_upload_protected'); assert.equal(args.p_key, protectedKey);
+        return { ok: true, protected: true };
+    } });
+    assert.deepEqual(fresh, { ok: true, protected: true });
+});
+
+test('an upload protected after the initial snapshot is rechecked immediately before deletion', async () => {
+    const key = `uploads/${AUTH}/${UUID}.wav`;
+    const out = await sweepUploads(CFG, { ...deps({ ok: true, nextToken: null, objects: [
+        { key, lastModified: hoursAgo(48), size: 10 },
+    ] }), protectedKeys: new Set(), isProtected: async candidate => candidate === key });
+    assert.equal(out.deleted, 0);
+    assert.deepEqual(deleted, []);
 });
 
 test('an object we did not mint is never deleted, however old', async () => {
@@ -175,6 +206,28 @@ test('consumed ordered references deduplicate upload keys and never delete asset
         { inputs: { references: [{origin:'upload',slot:'image',key}, {origin:'upload',slot:'image',key}, {origin:'asset',slot:'image',key:'jobs/asset/output.png',asset_id:UUID}, {origin:'upload',key:'jobs/asset/output.png'}] } },
     ], remove: async value => { calls.push(value); return {ok:true}; } });
     assert.deepEqual(calls,[key]); assert.equal(result.deleted,1);
+});
+
+test('the consumed-job pass cannot delete active voice evidence', async () => {
+    const { sweepConsumedUploads } = await import('../lib/uploadSweep.js');
+    const protectedKey = `uploads/${AUTH}/${UUID}.wav`;
+    const removed = [];
+    const result = await sweepConsumedUploads({}, {}, { protectedKeys: new Set([protectedKey]),
+        find: async () => [{ id: 'same-upload', inputs: { source_keys: { audio_url: protectedKey } } }],
+        remove: async value => { removed.push(value); return { ok: true }; } });
+    assert.deepEqual(removed, []); assert.equal(result.deleted, 0);
+});
+
+test('the consumed-job pass rechecks protection immediately before deletion', async () => {
+    const { sweepConsumedUploads } = await import('../lib/uploadSweep.js');
+    const protectedKey = `uploads/${AUTH}/${UUID}.wav`;
+    const removed = [];
+    const result = await sweepConsumedUploads({}, {}, {
+        find: async () => [{ id: 'newly-protected', inputs: { source_keys: { audio_url: protectedKey } } }],
+        isProtected: async candidate => candidate === protectedKey,
+        remove: async value => { removed.push(value); return { ok: true }; },
+    });
+    assert.deepEqual(removed, []); assert.equal(result.deleted, 0);
 });
 
 test('two top-level encoded queries exclude asset-only pages and merge duplicate jobs', async () => {
