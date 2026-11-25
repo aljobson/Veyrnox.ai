@@ -107,6 +107,9 @@ test('focused music dock exposes add, AI, play and mixer without history chrome'
         await act(async () => (button.props.onClick ?? button.props.onPress)({ nativeEvent: {} }));
         expect(action).toHaveBeenCalledTimes(1);
     }
+    const ai = root.container.queryAll(n => n.props.testID === 'beat-editor-ai' && typeof (n.props.onClick ?? n.props.onPress) === 'function')[0];
+    expect(RN.StyleSheet.flatten(ai.props.style)).toMatchObject({ borderWidth: 1 });
+    expect(ai.queryAll(n => n.props.children === 'AI')).toHaveLength(1);
 });
 
 test('regular width uses the row layout and protects landscape sides plus the bottom safe-area edge', async () => {

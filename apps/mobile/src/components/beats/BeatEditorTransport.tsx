@@ -1,7 +1,7 @@
 import type { ComponentRef, Ref } from 'react';
 import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Button, SegmentedControl, Text, themedStyles, useAppearance, useThemedStyles } from '../ui';
+import { Button, Icon, SegmentedControl, Text, themedStyles, useAppearance, useThemedStyles } from '../ui';
 import { t } from '../../lib/i18n';
 import { beatEditorLayout } from '../../lib/beatNative/editorLayout';
 import { ds, TEXT_SCALE } from '../../theme';
@@ -81,8 +81,10 @@ export function BeatEditorTransport({ playing, starting, locked, showPatterns = 
     const projectActions = <View style={[s.group, scrollActions && s.groupAccessible]} testID="beat-editor-project-actions">
         {onAdd ? <Button testID="beat-editor-add-track" size="md" variant="tertiary" icon="plus" iconOnly label={t('beat.track.add')}
             disabled={addDisabled} onPress={onAdd} containerStyle={[s.control, scrollActions && s.controlAccessible]} /> : null}
-        {onAi ? <Button testID="beat-editor-ai" size="md" variant="tertiary" icon="magicWand" iconOnly label={t('beatAi.title')}
-            disabled={locked} onPress={onAi} containerStyle={[s.control, scrollActions && s.controlAccessible]} /> : null}
+        {onAi ? <Button testID="beat-editor-ai" size="md" variant="secondary" tone="accent" label={t('beatAi.title')}
+            disabled={locked} onPress={onAi} style={s.aiControl} containerStyle={[s.control, scrollActions && s.controlAccessible]}>
+            <View style={s.aiContent}><Icon name="sparkleFill" size={18} tint={s.aiLabel.color} /><Text variant="micro" tone="accent" style={s.aiLabel}>AI</Text></View>
+        </Button> : null}
         {onExport ? <Button testID="beat-editor-export" size="md" variant="tertiary" icon="arrowUp" iconOnly label={t('beatExport.title')}
             onPress={onExport} containerStyle={[s.control, scrollActions && s.controlAccessible]} /> : null}
     </View>;
@@ -125,6 +127,9 @@ const sheets = themedStyles(p => ({
     patternAction: { flex: 0.8 },
     groupAccessible: { flex: 0, width: 'auto', alignSelf: 'stretch' },
     control: { flex: 1 },
+    aiControl: { borderWidth: 1, borderColor: p.accent },
+    aiContent: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+    aiLabel: { color: p.accent },
     controlAccessible: { flex: 0, minWidth: 150 },
     patternActionAccessible: { flex: 0, minWidth: 190 },
     play: { flex: 1.2 },

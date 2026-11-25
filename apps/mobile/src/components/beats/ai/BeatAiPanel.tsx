@@ -89,9 +89,12 @@ function OwnerPanel({ api, owner, doc, apply, current, disabled, onClose }: { ap
         <Button size="md" variant="tertiary" icon="close" iconOnly label={t('beat.pattern.cancel')} onPress={onClose} containerStyle={stylesClose} />
         <View style={s.panel}>
         <View testID="music-ai-actions" style={s.actions}>
-            {AI_ACTIONS.map(action => <Button key={action.op} size="md" variant="tertiary" icon={action.icon} iconOnly
-                label={t(`beatAi.${action.op}`)} disabled={disabled || view.busy} containerStyle={s.action}
-                onPress={() => { setOp(action.op); request.open(); }} />)}
+            {AI_ACTIONS.map(action => <View key={action.op} style={s.action}>
+                <Button testID={`music-ai-${action.op}`} size="md" variant="secondary" tone="accent" icon={action.icon} iconOnly
+                    label={t(`beatAi.${action.op}`)} disabled={disabled || view.busy} containerStyle={s.actionIcon}
+                    onPress={() => { setOp(action.op); request.open(); }} />
+                <Text variant="micro" tone="secondary" numberOfLines={2} style={s.actionLabel}>{t(`beatAi.${action.op}`)}</Text>
+            </View>)}
         </View>
         {view.rows.map(row => <Button key={row.key} label={t('beatAi.resume', { name: row.prompt || t(`beatAi.${row.op}`) })} disabled={disabled || view.busy} onPress={() => { setOp(row.op); void request.resume(row); }} />)}
         {view.error && !view.open ? <Text accessibilityRole="alert">{t(view.error, view.errorParams)}</Text> : null}
@@ -103,8 +106,10 @@ function OwnerPanel({ api, owner, doc, apply, current, disabled, onClose }: { ap
 
 const stylesClose = { alignSelf: 'flex-end' as const, marginTop: -56 };
 
-const styles = themedStyles((p) => ({
+const styles = themedStyles(() => ({
     panel: { gap: ds.space.lg, paddingTop: ds.space.sm },
-    actions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: ds.space.xs },
-    action: { flex: 1, maxWidth: 64, backgroundColor: p.surface },
+    actions: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: ds.space.xs },
+    action: { flex: 1, maxWidth: 68, alignItems: 'center', gap: ds.space.xs },
+    actionIcon: { width: 52 },
+    actionLabel: { textAlign: 'center', minHeight: 30 },
 }));

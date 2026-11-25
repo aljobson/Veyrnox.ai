@@ -10,4 +10,6 @@ test('AI music editing is a compact icon toolbar, not a wall of action buttons',
     for (const icon of ['magicWand', 'waveform', 'crosshair', 'arrowsHorizontal', 'scissors']) {
         expect(source).toContain(`icon: '${icon}'`);
     }
+    expect(source).toContain('testID={`music-ai-${action.op}`}');
+    expect(source).toContain("<Text variant=\"micro\" tone=\"secondary\"");
 });
