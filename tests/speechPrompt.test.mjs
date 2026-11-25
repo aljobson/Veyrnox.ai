@@ -149,7 +149,7 @@ test('the create page keeps the starter out of state, so a speech model cannot s
     assert.doesNotMatch(page, /neon-lit/);
     assert.equal((page.match(/\bsetPrompt\(/g) || []).length, 8, 'typing, dictation, incoming drafts, recovered draft, account reset, a picked template and the Edit prompt swap of a private template are the only text setters');
     // Draft text is explicit input; image drafts deliberately carry no duration.
-    assert.match(page, /setPrompt\(draft\.prompt\);\n    if \(draft\.durationSeconds\) setDuration\(`/);
+    assert.match(page, /setPrompt\(draft\.prompt\);\n\s+if \(draft\.durationSeconds\) setDuration\(`/);
     assert.match(page, /setPrompt\(saved\.prompt\)/);
     assert.match(page, /setPrompt\(null\); setSources/);
     assert.match(page, /if \(draft\) setPrompt\(draft\.prompt\);/);
