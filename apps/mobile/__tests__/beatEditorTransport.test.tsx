@@ -84,6 +84,19 @@ test('phone transport keeps MIDI record as a labelled icon in the main action ro
     expect(root.container.queryAll(n => n.props.testID === 'beat-midi-record-row')).toHaveLength(0);
 });
 
+test('phone transport exposes add and export as labelled icon actions', async () => {
+    const onAdd = jest.fn(), onExport = jest.fn();
+    await act(async () => root.render(<BeatEditorTransport {...props} showPatterns={false} onAdd={onAdd} onExport={onExport} />));
+    expect(root.container.queryAll(n => n.props.testID === 'beat-editor-pattern-selector')).toHaveLength(0);
+    for (const [id, action] of [['beat-editor-add-track', onAdd], ['beat-editor-export', onExport]] as const) {
+        const button = root.container.queryAll(n => n.props.testID === id && typeof (n.props.onClick ?? n.props.onPress) === 'function')[0];
+        expect(button.props.accessibilityLabel).toBeTruthy();
+        expect(RN.StyleSheet.flatten(button.props.style)).toMatchObject({ minWidth: 44, minHeight: 44 });
+        await act(async () => (button.props.onClick ?? button.props.onPress)({ nativeEvent: {} }));
+        expect(action).toHaveBeenCalledTimes(1);
+    }
+});
+
 test('regular width uses the row layout and protects landscape sides plus the bottom safe-area edge', async () => {
     mockDimensions = { ...mockDimensions, width: 1024 };
     await render();
