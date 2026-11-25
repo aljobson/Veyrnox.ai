@@ -5,6 +5,7 @@ import { mockInbox } from './mockInbox.mjs';
 // previewed in the simulator without an account. Development only: `node dev/mock-server.mjs` (port 8799).
 import { mockSocialUploads, uploadsEnabled, validateUploadMedia } from './mockSocialUploads.mjs';
 import { mockQaJobs, qaAsset } from './mockQaJobs.mjs';
+import { mockMusicRemix } from './mockMusicRemix.mjs';
 import { mockSecurity } from './mockSecurityFixtures.mjs';
 import { mockWins } from './mockWins.mjs';
 import { mockCheckin } from './mockCheckin.mjs';
@@ -64,6 +65,9 @@ const state = {
     brandKits: new Map(),
     retention: new Map(),
     progress: new Map([['11111111-1111-4111-8111-111111111111', 24]]),
+    musicRemixGenerations: new Map(),
+    musicRemixQuotes: new Map(),
+    musicRemixConfirmations: new Map(),
 };
 state.messages.set(state.threads[0].id, [
     { id: randomUUID(), role: 'user', content: 'Give me three angles for a spring launch video.' },
@@ -176,6 +180,7 @@ createServer(async (req, res) => {
     if (await mockSocialUploads(req, res, `http://${req.headers.host || `localhost:${PORT}`}`, state.socialPosts)) return;
     const body = req.method === 'POST' || req.method === 'PATCH' || req.method === 'PUT' || req.method === 'DELETE' ? await readBody(req) : {};
     console.log(req.method, path);
+    if (mockMusicRemix(req, res, url, body, state)) return;
     if (mockSecurity(req, res, url, body)) return;
 
     if (path.startsWith('/mock-upload/') && req.method === 'PUT') {

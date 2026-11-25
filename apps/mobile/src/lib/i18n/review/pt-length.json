@@ -4878,6 +4878,12 @@
     "ratio": 2.14
   },
   {
+    "id": "musicRemix.sample.title",
+    "english": "Sample this song",
+    "translation": "Usar um sample desta música",
+    "ratio": 1.69
+  },
+  {
     "id": "studioAssistant.value_on",
     "english": "on",
     "translation": "ativado",

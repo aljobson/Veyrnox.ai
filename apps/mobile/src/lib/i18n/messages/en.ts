@@ -162,6 +162,7 @@ import area_musicGenerationActions from './en/musicGenerationActions';
 import area_musicPlaylists from './en/musicPlaylists';
 import area_musicPublic from './en/musicPublic';
 import area_musicPublication from './en/musicPublication';
+import area_musicRemix from './en/musicRemix';
 import area_musicRender from './en/musicRender';
 import area_musicSectionActions from './en/musicSectionActions';
 import area_musicTargetStems from './en/musicTargetStems';
@@ -421,6 +422,7 @@ const catalog = {
     ...area_musicPlaylists,
     ...area_musicPublic,
     ...area_musicPublication,
+    ...area_musicRemix,
     ...area_musicRender,
     ...area_musicSectionActions,
     ...area_musicTargetStems,

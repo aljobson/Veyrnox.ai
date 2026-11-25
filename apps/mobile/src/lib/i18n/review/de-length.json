@@ -5214,6 +5214,12 @@
     "ratio": 1.64
   },
   {
+    "id": "musicRemix.sample.startMore",
+    "english": "Move start later",
+    "translation": "Beginn nach hinten verschieben",
+    "ratio": 1.88
+  },
+  {
     "id": "studioAssistant.value_on",
     "english": "on",
     "translation": "einschalten",
