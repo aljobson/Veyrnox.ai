@@ -3,8 +3,9 @@ import { createContext, useContext } from 'react';
 import { useTemplateSwapAvailable } from '../_lib/useTemplateSwapAvailable.js';
 import { useCatalog } from '../_lib/useCatalog.js';
 import { useI18n } from '../../../components/I18nProvider.jsx';
+import { MODELS } from '../_lib/tokens.js';
 const SwapContext = createContext(null);
-const TEMPLATE_SWAP_MODEL_NAME = 'Kling O1 · Reference';
+const TEMPLATE_SWAP_MODEL_NAME = MODELS.find(model => model.id === 'kling-o1-reference')?.name;
 export function TemplateSwapBoundary({ id, children }) {
   const availability = useTemplateSwapAvailable(id);
   const { models, live } = useCatalog();

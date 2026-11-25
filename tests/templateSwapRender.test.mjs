@@ -26,6 +26,7 @@ const shared = {
   '../../../components/I18nProvider.jsx':{useI18n:()=>({t})},
   '../_lib/useTemplateSwapAvailable.js':{useTemplateSwapAvailable:()=>({id:'test',offer:available?offer:null,loading:false})},
   '../_lib/useCatalog.js':{useCatalog:()=>({models:catalogModels,live:true})},
+  '../_lib/tokens.js':{MODELS:[{id:offer.model,name:'Staged O1 label'}]},
 };
 const boundary=load('app/veyrnox/_components/TemplateSwapBoundary.js',shared);
 const attempts={SwapAttemptStatus:()=>null,swapControl:'min-h-11'};
@@ -86,7 +87,7 @@ test('an intentionally unlisted swap model keeps its reviewed template usable',(
       'next/navigation':{useSearchParams:()=>new URLSearchParams('preset=test')},'./TemplateSwapBoundary.js':boundary,'./SwapComposer.js':composer,'./SwapAttemptStatus.js':attempts,'./TemplatePhotoExample.js':{TemplatePhotoExample:()=>null},'./SwapTemplatePreview.js':{SwapTemplatePreview:()=>null},
     });
     const html=renderToStaticMarkup(React.createElement(entry.SwapCreateEntry,null,React.createElement('div',null,'Legacy Create')));
-    assert.match(html,/Kling O1 · Reference/);
+    assert.match(html,/Staged O1 label/);
     assert.doesNotMatch(html,/Checking the model/);
     assert.doesNotMatch(html,/<button[^>]*disabled[^>]*>Generate/);
   } finally { available=false; catalogModels=[model]; swapAttempts=[]; }
