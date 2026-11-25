@@ -40,6 +40,8 @@ describe('Crun Suno quote controls (0593)', { skip: !local && 'disposable localh
     client = await pool.connect();
     await client.query("SET TIME ZONE 'UTC'");
     await client.query('BEGIN');
+    // 0611 unlists ACE in production; 0593's rolled-back quote fixtures opt it back in.
+    await client.query("UPDATE public.model_catalog SET active=true WHERE id IN ('ace-step','ace-step-1.5')");
   });
   after(async () => {
     if (client) { await client.query('ROLLBACK'); client.release(); }

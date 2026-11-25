@@ -35,7 +35,9 @@ try {
   const quote = model => value('SELECT public.music_create_quote($1::text,$2::text,$3::text,$4::text,$5::integer,$6::integer,$7::text,$8::integer,$9::integer,$10::text,$11::text)',
     [auth, 'Instrumental keys', 'Part', model, null, null, null, 10, 120, 'C Major', '4']);
   assert.equal((await quote('ace-step-loop')).code, 'MODEL_UNAVAILABLE');
-  await query("UPDATE public.model_catalog SET active=true WHERE id='ace-step-loop'");
+  // 0611 unlists ACE-Step 1.5 in production. This disposable rolled-back proof opts both
+  // historical quote fixtures back in after confirming the loop starts unavailable.
+  await query("UPDATE public.model_catalog SET active=true WHERE id IN ('ace-step-loop','ace-step-1.5')");
   for (const model of ['ace-step-loop','ace-step-1.5']) {
     await query('SAVEPOINT generation');
     const q = await quote(model); assert.equal(q.ok,true,JSON.stringify(q)); assert.equal(q.total_credits,source.credits_5s*2);
