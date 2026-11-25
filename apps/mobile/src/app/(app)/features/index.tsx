@@ -7,6 +7,7 @@ import { CREATIVE_FEATURE_GROUPS, CREATIVE_FEATURES, examplePlaysOn } from '../.
 import { compatibleCreativeFeatures, creativeReuseTargetHref, readCreativeReuse } from '../../../lib/creativeReuse';
 import { t } from '../../../lib/i18n';
 import { colors, fonts } from '../../../theme';
+import { HomeBackButton } from '../../../components/HomeBackButton';
 
 export default function CreativeFeatures() {
     const { sourceJobId, sourceKind } = useLocalSearchParams<{ sourceJobId?: string; sourceKind?: string }>();
@@ -15,7 +16,7 @@ export default function CreativeFeatures() {
     const available = reuse ? compatibleCreativeFeatures(reuse.kind) : CREATIVE_FEATURES;
     return (
         <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-            <Stack.Screen options={{ title: t('features.creativetools') }} />
+            <Stack.Screen options={{ title: t('features.creativetools'), headerLeft: () => <HomeBackButton /> }} />
             {reuse ? (
                 <View style={styles.hero}>
                     <Text style={styles.kicker}>{t('features.reuse.kicker')}</Text>

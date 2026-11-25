@@ -35,6 +35,7 @@ test('the simplified Creative Tools view starts with avatars and renders the com
   await openSignedIn(app, screen);
   await device.openLink('ai.veyrnox.app://features');
 
+  await expect(screen.getByRole('button', 'Back')).toBeVisible();
   await expect(screen.getByText('Avatars')).toBeVisible();
   await expect(screen.getByRole('button', { name: /AI Avatar Generator/ })).toBeVisible();
   await expect(screen.getByRole('button', { name: /Talking Avatar/ })).toBeAttached();
