@@ -51,7 +51,7 @@ export function BeatInstrumentLibrary({ apply, audio, onClose, onDismiss, refusa
                     setSelectedKey(instrumentKey(group.presets[0].instrument));
                     setQuery('');
                 }}>
-                    <Icon name={groupIcon(group.id)} size={22} />
+                    <Icon name={groupIcon(group.id)} size={24} />
                     <Text variant="micro" tone={active ? 'primary' : 'secondary'} numberOfLines={1}>{t(`beatPiano.library.group.${group.id}`)}</Text>
                 </Pressable>;
             })}
@@ -82,7 +82,7 @@ export function BeatInstrumentLibrary({ apply, audio, onClose, onDismiss, refusa
                 accessibilityLabel={t('beatPiano.library.audition', { name: selected.label })}
                 style={({ pressed }) => [s.action, pressed && pressStyle]}
                 onPress={() => void audition(selected.instrument)}>
-                <Icon name="play" size={26} />
+                <Icon name="play" size={28} />
                 <Text variant="caption" tone="secondary">{t('beatPiano.library.preview')}</Text>
             </Pressable>
             <Pressable accessibilityRole="button"
@@ -94,7 +94,7 @@ export function BeatInstrumentLibrary({ apply, audio, onClose, onDismiss, refusa
                     if (apply(d => addInstrumentTrack(d, selected.instrument), t('beatPiano.library.add'))) onClose();
                     else setFailed(true);
                 }}>
-                <Icon name="plus" size={26} />
+                <Icon name="plus" size={28} />
                 <Text variant="caption" tone="secondary">{t('beatPiano.library.add')}</Text>
             </Pressable>
         </View> : null}
