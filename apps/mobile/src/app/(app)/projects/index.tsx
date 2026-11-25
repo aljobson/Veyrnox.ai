@@ -9,11 +9,12 @@ import { HeaderAction } from '../../../components/HeaderAction';
 import { useAuth } from '../../../auth/AuthProvider';
 import { useAssetLinks } from '../../../components/JobThumb';
 import { ProjectThumb } from '../../../components/CreationThumbs';
-import { SmartCutBatchQueue } from '../../../components/projects/SmartCutBatchQueue';
+import { removeProjectMedia } from '../../../lib/editorDeviceMedia';
+import { removeProjectFonts } from '../../../lib/editorFontFiles';
 import { touchTarget } from '../../../lib/a11y';
-import { cleanProjectName, createProject, createProjectFolder, deleteProjectFolder, editingTimeSavedClock, fetchProjectFolders, fetchProjects, fetchWorkspaces, folderLabel, projectDates, projectsErrorMessage, renameProjectFolder, type Project, type ProjectFolder, type Workspace } from '../../../lib/projects';
+import { cleanProjectName, createProject, createProjectFolder, deleteProject, deleteProjectFolder, editingTimeSavedClock, fetchProjectFolders, fetchProjects, fetchWorkspaces, folderLabel, projectDates, projectsErrorMessage, renameProjectFolder, type Project, type ProjectFolder, type Workspace } from '../../../lib/projects';
 import { EDITOR_ENABLED } from '../../../lib/editorFlag';
-import { formatLocale, t } from '../../../lib/i18n';
+import { t } from '../../../lib/i18n';
 import { colors } from '../../../theme';
 
 export default function Projects() {
@@ -33,6 +34,7 @@ export default function Projects() {
     const [folderNaming, setFolderNaming] = useState(false);
     const [folderName, setFolderName] = useState('');
     const [folderRenaming, setFolderRenaming] = useState(false);
+    const [deletingId, setDeletingId] = useState<string | null>(null);
     // One key per attempt: tapping Create twice, or retrying after a dropped connection, makes one project.
     const createKey = useRef<string | null>(null);
     const folderCreateKey = useRef<string | null>(null);
@@ -102,6 +104,25 @@ export default function Projects() {
             setFolders((current) => current.filter((item) => item.id !== folder.id)); setFolderFilter('all');
         } catch (err) { setFormError(projectsErrorMessage(err)); }
         finally { setCreating(false); }
+    }
+
+    function confirmDeleteProject(project: Project) {
+        if (deletingId) return;
+        Alert.alert(t('projects.deletethisproject'), t('projects.theprojectanditssavedversionsare'), [
+            { text: t('projects.cancel'), style: 'cancel' },
+            { text: t('projects.delete'), style: 'destructive', onPress: () => void removeProject(project) },
+        ]);
+    }
+
+    async function removeProject(project: Project) {
+        if (deletingId) return;
+        setDeletingId(project.id); setFormError(null);
+        try {
+            await deleteProject(api, project.id, project.version);
+            setProjects((current) => current?.filter((item) => item.id !== project.id) ?? current);
+            void Promise.all([removeProjectMedia(project.id), removeProjectFonts(project.id)]).catch(() => undefined);
+        } catch (err) { setFormError(projectsErrorMessage(err)); }
+        finally { setDeletingId(null); }
     }
 
     const loadWorkspaces = useCallback(async () => {
@@ -215,7 +236,6 @@ export default function Projects() {
                         </Pressable>
                     )}
                     {formError ? <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{formError}</StatusText> : null}
-                    {projects && projects.length > 1 && workspaceId ? <SmartCutBatchQueue workspaceId={workspaceId} projects={projects} router={router} /> : null}
                     {!projects ? (
                         <ActivityIndicator color={colors.accent} />
                     ) : (
@@ -225,14 +245,19 @@ export default function Projects() {
                             ListEmptyComponent={<Text style={styles.muted}>{t('projects.noprojectsinthisworkspaceyet')}</Text>}
                             ListFooterComponent={<Text style={styles.note}>{t('projects.openaprojecttorenameitdelete')}</Text>}
                             renderItem={({ item }) => (
-                                <Pressable accessibilityRole="button" accessibilityLabel={rawText(`${item.name}, ${projectDates(item)}`)} style={styles.row} onPress={() => router.push({ pathname: '/projects/[id]', params: { id: item.id } })}>
-                                    <ProjectThumb api={api} links={links} projectId={item.id} size={48} />
-                                    <View style={styles.copy}>
-                                        <Text style={styles.name}>{item.name}</Text>
-                                        <Text style={styles.muted}>{projectDates(item)}</Text>
-                                        {item.editingTimeSavedSeconds ? <Text style={styles.saved}>{t('projects.editingTimeSaved', { value1: editingTimeSavedClock(item.editingTimeSavedSeconds) })}</Text> : null}
-                                    </View>
-                                </Pressable>
+                                <View style={styles.row}>
+                                    <Pressable accessibilityRole="button" accessibilityLabel={rawText(`${item.name}, ${projectDates(item)}`)} style={[styles.projectLink, touchTarget]} onPress={() => router.push({ pathname: '/projects/[id]', params: { id: item.id } })}>
+                                        <ProjectThumb api={api} links={links} projectId={item.id} size={48} />
+                                        <View style={styles.copy}>
+                                            <Text style={styles.name}>{item.name}</Text>
+                                            <Text style={styles.muted}>{projectDates(item)}</Text>
+                                            {item.editingTimeSavedSeconds ? <Text style={styles.saved}>{t('projects.editingTimeSaved', { value1: editingTimeSavedClock(item.editingTimeSavedSeconds) })}</Text> : null}
+                                        </View>
+                                    </Pressable>
+                                    <Pressable accessibilityRole="button" accessibilityLabel={rawText(`${t('projects.delete')} ${item.name}`)} disabled={deletingId !== null} style={[styles.deleteButton, touchTarget, deletingId !== null && styles.off]} onPress={() => confirmDeleteProject(item)}>
+                                        <Text style={styles.deleteText}>{deletingId === item.id ? '…' : t('projects.delete')}</Text>
+                                    </Pressable>
+                                </View>
                             )}
                         />
                     )}
@@ -249,7 +274,8 @@ const styles = StyleSheet.create({
     chipOn: { backgroundColor: colors.accent, borderColor: colors.accent },
     chipText: { color: colors.body },
     chipTextOn: { color: colors.accentInk, fontWeight: '600' },
-    row: { minHeight: 56, flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth, gap: 12 },
+    row: { minHeight: 64, flexDirection: 'row', alignItems: 'center', borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth, gap: 8 },
+    projectLink: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 12 },
     copy: { flex: 1, gap: 2 },
     name: { color: colors.text, fontSize: 16 },
     muted: { color: colors.muted },
@@ -259,6 +285,7 @@ const styles = StyleSheet.create({
     newRow: { alignSelf: 'flex-start', justifyContent: 'center' },
     newText: { color: colors.accent, fontSize: 16, fontWeight: '600' },
     deleteText: { color: colors.danger, fontSize: 16, fontWeight: '600' },
+    deleteButton: { minWidth: 72, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
     folderActions: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 14 },
     newBox: { flexDirection: 'row', gap: 8 },
     input: { flex: 1, color: colors.text, backgroundColor: colors.surface, borderRadius: 12, paddingHorizontal: 12, minHeight: 44 },

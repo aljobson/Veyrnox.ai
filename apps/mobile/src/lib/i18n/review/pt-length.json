@@ -3762,6 +3762,12 @@
     "ratio": 2
   },
   {
+    "id": "beat.home.empty",
+    "english": "No music edits yet",
+    "translation": "Ainda não há edições musicais",
+    "ratio": 1.61
+  },
+  {
     "id": "beat.pattern.on",
     "english": "On",
     "translation": "Ativado",
@@ -3877,7 +3883,7 @@
   },
   {
     "id": "beat.local.loadError",
-    "english": "Could not load saved beats. Retry loading.",
+    "english": "Could not load saved songs. Retry loading.",
     "translation": "Não foi possível carregar os beats salvos. Tente carregar novamente.",
     "ratio": 1.62
   },

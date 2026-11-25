@@ -121,13 +121,13 @@ describe('destination-aware catalog prices', () => {
 
 const source = (path: string) => readFileSync(resolve(__dirname, '..', path), 'utf8');
 
-test('Audio exposes the native Beat maker as a first-class studio', () => {
+test('Audio exposes the native Music Editor as a first-class studio', () => {
     const audio = source('src/app/(app)/audio.tsx');
-    expect(audio).toContain("['yourMusic', 'beats', ...AUDIO_STUDIOS]");
-    expect(audio).toContain("const beats = mobileFeature('beats')");
-    expect(audio).toContain('icon={beats.icon}');
+    expect(audio).toContain("['yourMusic', 'musicEditor', ...AUDIO_STUDIOS]");
+    expect(audio).toContain("const musicEditor = mobileFeature('beats')");
+    expect(audio).toContain('icon={musicEditor.icon}');
     expect(audio).toContain("subtitle={t('beat.home.emptyBody')}");
-    expect(audio).toContain('router.push(beats.href as never)');
+    expect(audio).toContain('router.push(musicEditor.href as never)');
 });
 
 // Evaluate only the selected prop expression, without mounting a native screen or starting playback.

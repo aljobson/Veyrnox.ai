@@ -45,18 +45,18 @@ describe('tab shell', () => {
         expect(layout).toContain('maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE}');
     });
 
-    test('Studio keeps the stable editor route and gates only editor-specific actions', () => {
+    test('Editor keeps the stable editor route and does not duplicate music or workflow navigation', () => {
         const layout = read(path.join(TABS, '_layout.tsx'));
         const editor = read(path.join(TABS, 'editor.tsx'));
-        expect(layout).toContain("title: t('tabs.studio')");
+        expect(layout).toContain("title: t('editor.title')");
         expect(layout).toContain("tabBarIcon: tabIcon('scissors')");
         expect(layout).not.toContain('href: EDITOR_ENABLED');
         expect(editor).toContain("pathname: '/editor/new'");
         expect(editor).toContain("params: { blank: '1' }");
         expect(editor).toContain("pathname: '/editor/[projectId]'");
-        expect(editor).toContain("mobileFeature('projects')");
-        expect(editor).toContain("mobileFeature('beats')");
-        // Cinema remains available through the registry-backed drawer after giving its tab slot to Studio.
+        expect(editor).not.toContain("mobileFeature('beats')");
+        expect(editor).not.toContain("mobileFeature('features')");
+        // Cinema remains available through the registry-backed drawer after giving its tab slot to Editor.
         expect(read(path.join(__dirname, '..', 'src', 'lib', 'featureRegistry.ts'))).toContain("href: '/cinema'");
     });
 
