@@ -45,6 +45,7 @@ export function MusicOwnedSourcesCard({ api }: { readonly api: ApiClient }) {
     const [progress, setProgress] = useState(0), [message, setMessage] = useState(''), [notice, setNotice] = useState('');
 
     useEffect(() => {
+        mounted.current = true;
         const reset = () => {
             controller.current?.abort(); controller.current = null; attempt.current = null;
             setSources([]); setFile(current => { discardCacheCopy(current?.uri); fileRef.current = null; return null; });

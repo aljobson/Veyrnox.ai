@@ -1,4 +1,4 @@
-import { act } from 'react';
+import { act, StrictMode } from 'react';
 import { createRoot, type Root } from 'test-renderer';
 import * as DocumentPicker from 'expo-document-picker';
 import { MusicOwnedSourcesCard } from '../src/components/music/MusicOwnedSourcesCard';
@@ -33,7 +33,8 @@ const text = (value: string) => root.container.queryAll(n => n.children.includes
 beforeEach(async () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     resetCacheUser(); await bindCacheUser('source-owner'); jest.clearAllMocks(); list.mockResolvedValue([]); root = createRoot();
-    await act(async () => root.render(<MusicOwnedSourcesCard api={api} />));
+    // Keep the component under the same strict effect lifecycle used by the development app.
+    await act(async () => root.render(<StrictMode><MusicOwnedSourcesCard api={api} /></StrictMode>));
 });
 afterEach(async () => { await act(async () => { root.unmount(); resetCacheUser(); }); });
 
