@@ -7542,6 +7542,12 @@
     "ratio": 1.8
   },
   {
+    "id": "musicSources.title",
+    "english": "Owned audio",
+    "translation": "Audio dont vous détenez les droits",
+    "ratio": 3.09
+  },
+  {
     "id": "studioAssistant.value_on",
     "english": "on",
     "translation": "activé",
