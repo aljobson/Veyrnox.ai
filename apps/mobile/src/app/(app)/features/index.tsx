@@ -16,11 +16,13 @@ export default function CreativeFeatures() {
     return (
         <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
             <Stack.Screen options={{ title: t('features.creativetools') }} />
-            <View style={styles.hero}>
-                <Text style={styles.kicker}>{reuse ? t('features.reuse.kicker') : t('features.gUIDEDCREATION')}</Text>
-                <Text style={styles.title} accessibilityRole="header">{reuse ? t('features.reuse.title', { kind: t(`mediaKind.${reuse.kind}`) }) : t('features.maketheexactthingyouneed')}</Text>
-                <Text style={styles.lead}>{reuse ? t('features.reuse.lead') : t('features.chooseaworkflowVeyrnoxsetstheright')}</Text>
-            </View>
+            {reuse ? (
+                <View style={styles.hero}>
+                    <Text style={styles.kicker}>{t('features.reuse.kicker')}</Text>
+                    <Text style={styles.title} accessibilityRole="header">{t('features.reuse.title', { kind: t(`mediaKind.${reuse.kind}`) })}</Text>
+                    <Text style={styles.lead}>{t('features.reuse.lead')}</Text>
+                </View>
+            ) : null}
             {CREATIVE_FEATURE_GROUPS.map((group) => {
                 const features = available.filter((item) => item.group === group);
                 if (!features.length) return null;
