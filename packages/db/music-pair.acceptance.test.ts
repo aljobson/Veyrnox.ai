@@ -37,6 +37,9 @@ describe('music pair foundation (0250)', { skip: !DATABASE_URL && 'DATABASE_URL 
     // dispatch rows into the shared DB (they then fill fal capacity for later scripts such as test-fal-dispatch-capped).
     await client.query((await readFile(new URL('./schema/supabase/0591_crun_suno_music_foundation.sql', import.meta.url), 'utf8'))
         .replace(/^BEGIN;\s*$/m, '').replace(/^COMMIT;\s*$/m, ''));
+    // 0611 unlists ACE in production; this historical proof runs in a transaction and must
+    // opt its original catalog fixture back in explicitly.
+    await client.query("UPDATE public.model_catalog SET active=true WHERE id IN ('ace-step','ace-step-1.5')");
   });
 
   after(async () => {

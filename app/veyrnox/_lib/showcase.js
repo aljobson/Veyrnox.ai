@@ -29,7 +29,6 @@ import { SHOWCASE_CLIP_EXPANSION_5 } from './sourceTemplateExpansion5.js';
 import { SOURCE_TEMPLATES } from './sourceTemplates.js';
 import { isPublishableSourcePromptTemplate } from './sourcePromptAudit.js';
 import { BROKEN_TEMPLATE_IDS } from './brokenTemplateIds.js';
-import { ORIGINAL_SEEDANCE_CLIPS } from './originalSeedanceTemplates.js';
 import { publicTemplateId } from './templateIds.js';
 
 export const AUDIT_SHOWCASE_CLIPS = {
@@ -505,7 +504,7 @@ const PRESERVED_REPLACED_LANDING_CLIP_KEYS = new Set([
 // renamed to match); the clip records keep their original paths.
 const publicMediaPath = (path) => (typeof path === 'string' ? path.replace(/-(?:higgs|syntx)-/, '-') : path);
 export const SHOWCASE_CLIPS = Object.freeze(Object.fromEntries(
-  Object.entries({ ...AUDIT_SHOWCASE_CLIPS, ...ORIGINAL_SEEDANCE_CLIPS })
+  Object.entries(AUDIT_SHOWCASE_CLIPS)
     .filter(([clipKey]) => !REMOVED_TEMPLATE_ONLY_CLIP_KEYS.has(clipKey))
     .filter(([clipKey]) => !REPLACED_HIGGSFIELD_CLIP_KEY_SET.has(clipKey)
       || PRESERVED_REPLACED_LANDING_CLIP_KEYS.has(clipKey))

@@ -4,7 +4,7 @@ The community registry retains 976 rows and publishes 884 complete exact
 prompt/video pairs. Seventy rows are hidden: 27 without captured community text,
 42 with unavailable text and one truncated record. `PRESETS` drives the gallery,
 mobile presets API, search and sitemap. The homepage wall has 14 retained cards.
-`ALL_TEMPLATES` has 1,946 addressable recipes, including 1,036 independent effect
+`ALL_TEMPLATES` has 1,926 addressable recipes, including 1,036 independent effect
 concepts and six reference recipes that are unchanged and have no gallery video.
 
 Each community prompt is joined from its source record at registration time.
