@@ -5,10 +5,10 @@ import { readFile } from 'node:fs/promises';
 const migration = await readFile(new URL('../packages/db/schema/supabase/0611_retire_stalled_ace_audio_offers.sql', import.meta.url), 'utf8');
 
 test('only the two live-SLA-failing ACE offers are retired', () => {
-  assert.match(migration, /id = 'ace-step'[\s\S]*provider_endpoint = 'fal-ai\/ace-step'/);
-  assert.match(migration, /id = 'ace-step-1\.5'[\s\S]*provider_endpoint = 'fal-ai\/ace-step-1\.5'/);
+  assert.match(migration, /id IN \('ace-step', 'ace-step-1\.5'\) AND modality = 'text-to-audio'/);
   assert.match(migration, /SET active = false/);
   assert.match(migration, /IF affected <> 2 THEN/);
+  assert.doesNotMatch(migration, /provider\s*=|provider_endpoint\s*=/);
   assert.doesNotMatch(migration, /qwen3-tts|suno-sounds/);
 });
 
