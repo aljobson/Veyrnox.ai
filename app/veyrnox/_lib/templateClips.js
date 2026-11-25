@@ -301,14 +301,7 @@ export const TEMPLATE_CLIPS = Object.freeze([
   ["wassup-freestyle","viral-wassup-freestyle.mp4"], ["wear-the-moment","viral-wear-the-moment.mp4"], ["what-falls-next","creator-what-falls-next.mp4"],
   ["wheelie-rider","viral-wheelie-rider.mp4"], ["whiskey-gun-trick","viral-whiskey-gun-trick.mp4"], ["who-was-that-business","viral-who-was-that-business.mp4"],
   ["window-explode","creator-window-explode.mp4"], ["wish-a-merry-christmas","creator-wish-a-merry-christmas.mp4"], ["x-ray-matter","creator-x-ray-matter.mp4"],
-  ["you-good-max","viral-you-good-max.mp4"], ["young-samurai","creator-young-samurai.mp4"], ["original-aurora-glacier","original-aurora-glacier.mp4"],
-  ["original-blossom-whirlwind","original-blossom-whirlwind.mp4"], ["original-desert-mirage-walk","original-desert-mirage-walk.mp4"], ["original-ice-palace-entrance","original-ice-palace-entrance.mp4"],
-  ["original-lantern-river-night","original-lantern-river-night.mp4"], ["original-neon-rain-rooftop","original-neon-rain-rooftop.mp4"], ["original-thunder-cliff-stand","original-thunder-cliff-stand.mp4"],
-  ["original-zero-gravity-cafe","original-zero-gravity-cafe.mp4"],
-  ["original-anime-sky-run","original-anime-sky-run.mp4"], ["original-beach-barefoot-dance","original-beach-barefoot-dance.mp4"], ["original-disco-floor-spin","original-disco-floor-spin.mp4"],
-  ["original-hand-drawn-meadow","original-hand-drawn-meadow.mp4"], ["original-neon-club-footwork","original-neon-club-footwork.mp4"], ["original-pixel-quest","original-pixel-quest.mp4"],
-  ["original-rain-puddle-tap","original-rain-puddle-tap.mp4"], ["original-rooftop-sunset-groove","original-rooftop-sunset-groove.mp4"], ["original-salsa-plaza-steps","original-salsa-plaza-steps.mp4"],
-  ["original-storybook-3d-hero","original-storybook-3d-hero.mp4"], ["original-street-popping-solo","original-street-popping-solo.mp4"], ["original-studio-mirror-routine","original-studio-mirror-routine.mp4"],
+  ["you-good-max","viral-you-good-max.mp4"], ["young-samurai","creator-young-samurai.mp4"],
 ].map(([id, previewFile]) => Object.freeze({ id, previewFile })));
 
 export function publicTemplateClip(id, clips = TEMPLATE_CLIPS) {
