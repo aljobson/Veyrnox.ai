@@ -19,7 +19,7 @@ export default {
   "beatLabs.added": "Sound added.",
   "beatLabs.addFailed": "Could not add this sound. The track or asset limit may have been reached.",
   "beatLabs.cancel": "Cancel",
-  "beatLabs.makeBeat": "Edit in Music Editor",
+  "beatLabs.makeBeat": "Edit with AI",
   "beatLabs.songTitle": "My song",
   "beatLabs.loading": "Opening song in Music Editor…",
   "beatLabs.backLibrary": "Back to library",

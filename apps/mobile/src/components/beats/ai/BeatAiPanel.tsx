@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { useFocusEffect } from 'expo-router';
-import { Button, Text } from '../../ui';
+import { View } from 'react-native';
+import { Button, Text, themedStyles, useThemedStyles } from '../../ui';
 import { useAuth } from '../../../auth/AuthProvider';
 import { userIdFromToken } from '../../../lib/appCache';
 import { t } from '../../../lib/i18n';
@@ -16,6 +17,16 @@ import type { ApiClient } from '../../../lib/api';
 import { BeatAiSheet } from './BeatAiSheet';
 import { BeatMagicBar } from './BeatMagicBar';
 import { MAGIC_BAR_ON_PHONE } from '../../../lib/beatAi/magicGate';
+import type { MenuIcon } from '../../../lib/menuIcons';
+import { ds } from '../../../theme';
+
+const AI_ACTIONS: readonly { op: Op; icon: MenuIcon }[] = [
+    { op: 'generate', icon: 'magicWand' },
+    { op: 'stems', icon: 'waveform' },
+    { op: 'targetStems', icon: 'crosshair' },
+    { op: 'extend', icon: 'arrowsHorizontal' },
+    { op: 'replace', icon: 'scissors' },
+];
 export function BeatAiPanel({ doc, apply, disabled = false }: { doc: BeatDoc; apply(edit: Edit, label?: string): boolean; disabled?: boolean }) {
     const { api, getAccessToken, generation } = useAuth();
     const identity = useRef({ generation, id: doc.id }); identity.current = { generation, id: doc.id };
@@ -35,6 +46,7 @@ export function BeatAiPanel({ doc, apply, disabled = false }: { doc: BeatDoc; ap
     return <OwnerPanel key={`${session.owner}.${generation}.${doc.id}.${session.visit}`} api={api} owner={session.owner} doc={doc as AiDoc} apply={apply} current={current} disabled={disabled} />;
 }
 function OwnerPanel({ api, owner, doc, apply, current, disabled }: { api: ApiClient; owner: string; doc: AiDoc; apply(edit: Edit, label?: string): boolean; current(): boolean; disabled: boolean }) {
+    const s = useThemedStyles(styles);
     const [probe, setProbe] = useState<BeatAiProbe['state'] | 'checking'>('checking');
     const session = useMemo(() => ({ controller: new AbortController(), live: true }), []);
     const valid = useCallback(() => session.live && !session.controller.signal.aborted && current(), [session, current]);
@@ -55,12 +67,22 @@ function OwnerPanel({ api, owner, doc, apply, current, disabled }: { api: ApiCli
     }, [api, owner, request, session, valid]);
     if (probe === 'off' || probe === 'signed_out' || probe === 'checking') return null;
     if (probe !== 'on') return <Text>{t(probe === 'offline' ? 'beatAi.offline' : 'beatAi.error')}</Text>;
-    return <>
-        <Text variant="title3">{t('beatAi.title')}</Text>
-        {(['generate', 'stems', 'targetStems', 'extend', 'replace'] as Op[]).map(action => <Button key={action} label={t(`beatAi.${action}`)} disabled={disabled || view.busy} onPress={() => { setOp(action); request.open(); }} />)}
+    return <View testID="music-ai-editor" style={s.panel}>
+        <Text variant="title3" accessibilityRole="header">{t('beatAi.title')}</Text>
+        <View testID="music-ai-actions" style={s.actions}>
+            {AI_ACTIONS.map(action => <Button key={action.op} size="md" variant="tertiary" icon={action.icon} iconOnly
+                label={t(`beatAi.${action.op}`)} disabled={disabled || view.busy} containerStyle={s.action}
+                onPress={() => { setOp(action.op); request.open(); }} />)}
+        </View>
         {view.rows.map(row => <Button key={row.key} label={t('beatAi.resume', { name: row.prompt || t(`beatAi.${row.op}`) })} disabled={disabled || view.busy} onPress={() => { setOp(row.op); void request.resume(row); }} />)}
         {view.error && !view.open ? <Text accessibilityRole="alert">{t(view.error, view.errorParams)}</Text> : null}
         {view.open ? <BeatAiSheet key={`${op}.${view.record?.key ?? 'new'}`} request={request} client={client} doc={doc} op={op} onClose={request.close} /> : null}
         {MAGIC_BAR_ON_PHONE ? <BeatMagicBar doc={doc} client={client} owner={owner} current={valid} off={off} /> : null}
-    </>;
+    </View>;
 }
+
+const styles = themedStyles((p) => ({
+    panel: { gap: ds.space.sm, padding: ds.space.md, borderRadius: ds.radius.lg, backgroundColor: p.surface, borderWidth: 1, borderColor: p.borderSubtle },
+    actions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: ds.space.xs },
+    action: { flex: 1, maxWidth: 64 },
+}));

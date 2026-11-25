@@ -3,7 +3,7 @@ import { APP_CATALOGS } from '../src/lib/i18n';
 import { BEAT_SOUNDS, BEAT_SHORTCUTS, BEAT_TEMPLATES, BEAT_TIP_STEPS, addAudioRegion, beatTipsSeenKey, createBeatFromTemplate, filterSounds, soundAsset, soundDuration, soundTicks, validateSound } from '../src/lib/beatNative/labs';
 import { PHONE_CAPABILITIES, SHORTCUT_CAPABILITY, touchKey } from '../src/lib/beatNative/controls';
 import { phoneTipSteps, nextTip, tipTargetsForView, tipAt, tipAfter, tipsSeen, markTipsSeen, secureTipKey, PHONE_TIP_TARGETS } from '../src/lib/beatNative/coachMarks';
-import { createTemplateBeat } from '../src/lib/beatNative/templates';
+import { createMusicEdit, createTemplateBeat } from '../src/lib/beatNative/templates';
 import { soundTake, createSoundPreview } from '../src/lib/beatNative/soundPreview';
 import { renderTakeSamples, SYNTH_RATE } from '../src/lib/instrumentShared';
 import { createBeatStore } from '../src/lib/beatNative/store';
@@ -19,6 +19,15 @@ test.each(BEAT_TEMPLATES)('$id opens the shared template in the arrangement and 
     expect(files.data.size).toBe(1);
     const saved = store.getBeat(result.id)!;
     expect({ ...saved, updatedAt: result.updatedAt }).toEqual(result); // N2 advances its save timestamp.
+    expect(store.saveState(result.id)).toBe('saved');
+});
+test('a new music edit starts with one empty audio lane and no drum pattern track', async () => {
+    const store = createBeatStore(memoryFiles());
+    const result = await createMusicEdit(store, 'Music edit 1');
+    expect(result.view).toBe('song');
+    expect(result.tracks).toEqual([expect.objectContaining({ name: 'Audio 1', kind: 'audio', regions: [] })]);
+    expect(result.tracks.some(track => !track.kind || track.kind === 'drums')).toBe(false);
+    expect(validateBeat(result).ok).toBe(true);
     expect(store.saveState(result.id)).toBe('saved');
 });
 test('creation awaits the write and cleans up a failed write, even if cleanup also fails', async () => {

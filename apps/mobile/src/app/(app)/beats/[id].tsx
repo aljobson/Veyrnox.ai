@@ -1,7 +1,4 @@
 import { BeatExportSheet } from '../../../components/beats/BeatExportSheet';
-import { BeatLabsBar } from '../../../components/beats/BeatLabsBar';
-import { PHONE_CAPABILITIES } from '../../../lib/beatNative/controls';
-import { PHONE_TIP_TARGETS } from '../../../lib/beatNative/coachMarks';
 import { BeatRecordPanel } from '../../../components/beats/BeatRecordPanel';
 import { BeatTakeLanes } from '../../../components/beats/BeatTakeLanes';
 import { useTakeRecording } from '../../../lib/beatNative/useTakeRecording';
@@ -70,7 +67,7 @@ const midiErrorNotice = (error: unknown) => {
 };
 
 export default function BeatEditor() {
-    const { id } = useLocalSearchParams<{ id: string }>();
+    const { id, setup } = useLocalSearchParams<{ id: string; setup?: string }>();
     const { api, generation, beginSessionTask } = useAuth();
     const authRef = useRef({ api, generation, beginSessionTask });
     authRef.current = { api, generation, beginSessionTask };
@@ -164,6 +161,7 @@ export default function BeatEditor() {
     useEffect(() => () => { cancelPendingLaneReveal(); }, [cancelPendingLaneReveal]);
     const [mixer, setMixer] = useState(false);
     const [addTrackOpen, setAddTrackOpen] = useState(false);
+    const setupHandled = useRef<string | null>(null);
     const [deviceImportBusy, setDeviceImportBusy] = useState(false);
     const [songLibraryOpen, setSongLibraryOpen] = useState(false);
     const [instrumentLibrary, setInstrumentLibrary] = useState(false);
@@ -217,6 +215,22 @@ export default function BeatEditor() {
     // MusicNotice owns visible errors; this channel owns editor milestones only.
     useAnnouncement(said?.message, { everywhere: true, eventKey: said?.event });
     useLocalBeatLifecycle();
+    useEffect(() => {
+        if (!doc || setup !== '1' || setupHandled.current === doc.id) return;
+        setupHandled.current = doc.id;
+        setAddTrackOpen(true);
+    }, [doc, setup]);
+    const normalizedProject = useRef<string | null>(null);
+    useEffect(() => {
+        if (!doc || normalizedProject.current === doc.id) return;
+        normalizedProject.current = doc.id;
+        if (doc.view !== 'pattern' || beatReadOnly(doc)) return;
+        const next = setView(doc, 'song');
+        if (putBeat(next)) {
+            docRef.current = next;
+            history.current = createHistory(next);
+        }
+    }, [doc]);
     useEffect(() => {
         if (!doc) {
             setEditTrackId(undefined);
@@ -682,10 +696,6 @@ export default function BeatEditor() {
                 }}>
                 <View style={[s.actions, shortLandscape && s.actionsShort]}>
                     <View testID="beat-editor-quick-settings" style={s.quickSettings} accessibilityRole="toolbar" accessibilityLabel={t('beat.title')}>
-                        <Button size="md" variant="tertiary" icon={doc.view === 'song' ? 'squares' : 'waveform'} iconOnly
-                            label={t(doc.view === 'song' ? 'beat.view.pattern' : 'beat.view.song')} disabled={patternLocked}
-                            onPress={() => apply(d => setView(d, doc.view === 'song' ? 'pattern' : 'song'), t('beat.view.changed'))}
-                            containerStyle={s.iconAction} />
                         <Button size="md" variant="tertiary" icon="gauge" iconOnly label={t('beat.tempoValue', { bpm })}
                             accessibilityState={{ expanded: tempoOpen }} onPress={() => setTempoOpen(value => !value)} containerStyle={s.iconAction} />
                         <Text variant="caption" tone="secondary" style={s.tempoLabel}>{t('beat.tempoValue', { bpm })}</Text>
@@ -717,11 +727,11 @@ export default function BeatEditor() {
                 <View testID={`beat-editor-layout-${layout}`} style={[s.editor, layout === 'regular' && s.editorRegular]}>
                     <View style={[s.composer, layout === 'regular' && s.composerRegular]}>
                         <View testID="beat-editor-main" style={s.main}>
-                        {doc.view === 'song' ? <BeatArrangement manualRunRef={manualRun} key={doc.id} doc={doc} apply={apply} selectCurrentPattern={slot => { selectCurrentPattern(slot); }}
+                        <BeatArrangement manualRunRef={manualRun} key={doc.id} doc={doc} apply={apply} selectCurrentPattern={slot => { selectCurrentPattern(slot); }}
                             editTrackId={resolvedEditTrackId} onEditTrackChange={setEditTrackId}
                             locator={arrangementLocator} onLocatorChange={setArrangementLocator} snap={arrangementSnap} onSnapChange={changeArrangementSnap}
                             playing={playing} step={step} disabled={patternLocked} navigationDisabled={locked || historyBusy}
-                            announce={setSaid} onHold={setHeld} onAddTrack={() => setAddTrackOpen(true)} onRevealLane={revealLane} layout={layout} /> : null}
+                            announce={setSaid} onHold={setHeld} onAddTrack={() => setAddTrackOpen(true)} onRevealLane={revealLane} layout={layout} />
                         <BeatRecordPanel doc={doc} controller={takes.controller} view={takes.view} playing={playing}
                             externalLocked={midiController.locked()} />
                         {midiVisible && midiTrack ? <BeatMidiRecordPanel track={midiTrack}
@@ -773,15 +783,12 @@ export default function BeatEditor() {
                         {doc.tracks.length >= MAX_TRACKS ? <Text variant="footnote" tone="secondary">{t('beat.track.max', { max: MAX_TRACKS })}</Text> : null}
                     </View> : null}
                 </View>
-                <View style={[s.secondaryTools, doc.view === 'song' && s.secondaryToolsHidden]}
-                    accessibilityElementsHidden={doc.view === 'song'} importantForAccessibility={doc.view === 'song' ? 'no-hide-descendants' : 'auto'}>
-                    {doc.view !== 'song' ? <BeatAiPanel doc={doc} apply={apply} disabled={locked} /> : null}
-                    <BeatLabsBar doc={doc} apply={apply} targets={PHONE_TIP_TARGETS} capabilities={PHONE_CAPABILITIES}
-                        showSounds={doc.view !== 'song'} />
+                <View style={s.secondaryTools}>
+                    <BeatAiPanel doc={doc} apply={apply} disabled={locked} />
                 </View>
             </KeyboardFormScrollView></KeyboardScreen>
             <BeatEditorTransport playing={playing} starting={starting} locked={locked}
-                showPatterns={doc.view === 'pattern'}
+                showPatterns={false}
                 pattern={doc.currentPattern} patternDisabled={patternLocked} canUndo={undoable} canRedo={redoable}
                 patternControlsRef={patternControlsTrigger}
                 midiRecordPhase={midiTransportVisible ? midiPhase : undefined} midiRecordDisabled={midiIdleDisabled}
@@ -831,7 +838,6 @@ const sheets = themedStyles(p => ({
     iconAction: { width: 52, flexGrow: 0 },
     tempoLabel: { marginRight: 'auto', fontVariant: ['tabular-nums'] },
     secondaryTools: { gap: ds.space.md },
-    secondaryToolsHidden: { display: 'none' },
     editor: { gap: ds.space.xl },
     editorRegular: { flexDirection: 'row', alignItems: 'flex-start' },
     composer: { alignItems: 'stretch', gap: ds.space.md },

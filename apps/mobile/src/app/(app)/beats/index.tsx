@@ -1,5 +1,4 @@
-import { BeatTemplatePicker } from '../../../components/beats/BeatTemplatePicker';
-import { createTemplateBeat } from '../../../lib/beatNative/templates';
+import { createMusicEdit } from '../../../lib/beatNative/templates';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState, useSyncExternalStore } from 'react';
 import { ScrollView, View } from 'react-native';
@@ -19,8 +18,8 @@ import { ds } from '../../../theme';
 
 type State = 'checking' | 'on' | 'off' | 'offline' | 'error' | 'signed_out';
 
-// Local beats remain available regardless of the account route’s availability.
-export default function BeatsHome() {
+// Local music edits remain available regardless of the account route’s availability.
+export default function MusicEditorHome() {
     const { api, getAccessToken, generation } = useAuth(); const router = useRouter(); const s = useThemedStyles(sheets);
     const beats = useSyncExternalStore(subscribeBeats, listBeats, listBeats);
     const [account, setAccount] = useState<{ generation: number; userId: string | null } | null>(null);
@@ -46,17 +45,19 @@ export default function BeatsHome() {
     }, [api, getAccessToken, generation]));
     useAnnouncement(state !== 'checking' && state !== 'off' ? t('beat.home.loaded', { count: beats.length }) : null, { everywhere: true });
     const open = (id: string) => router.push({ pathname: '/beats/[id]', params: { id } } as never);
-    const [picker, setPicker] = useState(false), [creationFailed, setCreationFailed] = useState(false);
+    const [creating, setCreating] = useState(false), [creationFailed, setCreationFailed] = useState(false);
+    const create = async () => {
+        if (creating) return;
+        setCreating(true); setCreationFailed(false);
+        try {
+            const doc = await createMusicEdit(beatStore, t('beat.home.untitled', { n: beats.length + 1 }));
+            router.push({ pathname: '/beats/[id]', params: { id: doc.id, setup: '1' } } as never);
+        } catch { setCreationFailed(true); }
+        finally { setCreating(false); }
+    };
     return (
         <ScrollView style={s.screen} contentContainerStyle={s.content}>
             <Stack.Screen options={{ title: t('beat.title') }} />
-            {picker ? <BeatTemplatePicker onClose={() => setPicker(false)} onPick={async template => {
-                setCreationFailed(false);
-                try {
-                    const doc = await createTemplateBeat(beatStore, template, t('beat.home.untitled', { n: beats.length + 1 }));
-                    setPicker(false); open(doc.id);
-                } catch { setPicker(false); setCreationFailed(true); }
-            }} /> : null}
             {creationFailed ? <MusicNotice message={t('beatLabs.createFailed')} /> : null}
             {state === 'checking' ? <VeyLoader label={t('beat.home.checking')} showLabel /> : null}
             {state === 'signed_out' ? <MusicNotice message={t('beat.cloud.signed_out')} /> : null}
@@ -64,7 +65,18 @@ export default function BeatsHome() {
             {state === 'error' ? <><MusicNotice message={t('beat.cloud.error')} /><Button label={t('beat.retry')} onPress={() => void probeBeats(api).then(result => setState(result.state))} /></> : null}
             {beatStore.hydrationState() === 'error' ? <><MusicNotice message={t('beat.local.loadError')} /><Button label={t('beat.retry')} onPress={() => void hydrateBeats().catch(() => undefined)} /></> : null}
                 {state === 'offline' ? <MusicNotice message={t('beat.offline')} /> : null}
-                <Button label={t('beat.home.new')} onPress={() => setPicker(true)} />
+                <View style={s.actions} accessibilityRole="toolbar" accessibilityLabel={t('beat.title')}>
+                    <View style={s.action}>
+                        <Button label={t('beat.home.new')} icon="waveform" iconOnly size="md" variant="tertiary" loading={creating}
+                            containerStyle={s.actionIcon} onPress={() => void create()} />
+                        <Text variant="caption" style={s.actionLabel}>{t('beat.home.new')}</Text>
+                    </View>
+                    <View style={s.action}>
+                        <Button label={t('music.title')} icon="folder" iconOnly size="md" variant="tertiary"
+                            containerStyle={s.actionIcon} onPress={() => router.push('/music' as never)} />
+                        <Text variant="caption" style={s.actionLabel}>{t('music.title')}</Text>
+                    </View>
+                </View>
                 {beats.length === 0 ? <EmptyState title={t('beat.home.empty')} body={t('beat.home.emptyBody')} /> : beats.map(beat => (
                     <View key={beat.id} style={s.row}>
                         <View style={s.grow}>
@@ -80,6 +92,10 @@ export default function BeatsHome() {
 const sheets = themedStyles(p => ({
     screen: { flex: 1, backgroundColor: p.bg },
     content: { padding: ds.space.gutter, gap: ds.space.lg },
+    actions: { flexDirection: 'row', alignItems: 'flex-start', gap: ds.space.xl },
+    action: { width: 84, alignItems: 'center', gap: ds.space.xs },
+    actionIcon: { width: 52, borderRadius: ds.radius.md, backgroundColor: p.surface, borderWidth: 1, borderColor: p.borderSubtle },
+    actionLabel: { textAlign: 'center', color: p.textSecondary },
     row: { flexDirection: 'row', alignItems: 'center', gap: ds.space.sm },
     grow: { flex: 1 },
 }));

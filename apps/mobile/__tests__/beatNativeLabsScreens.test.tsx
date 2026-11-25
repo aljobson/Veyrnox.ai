@@ -158,21 +158,21 @@ test.each(['hiphop', 'lofi'] as const)('%s template and added audio expose kit c
         expect(controls.length > 0).toBe(track.kind !== 'audio' && track.kind !== 'midi');
     });
 });
-test('non-trashed song detail has Make a beat next to the existing song actions', async () => {
+test('non-trashed song detail opens the AI Music Editor next to the existing song actions', async () => {
     jest.spyOn(musicClient, 'getSong').mockResolvedValue({ ...songFixture, id: PROJECT, actions: [] } as MusicSongDetail);
     await act(async () => root.render(<SongDetail />)); await press(t('beatLabs.makeBeat'));
     expect(mockPush).toHaveBeenCalledWith({ pathname: '/beats/new', params: { song: PROJECT } });
 });
-test('trashed song detail has no Make a beat action', async () => {
+test('trashed song detail has no Edit with AI action', async () => {
     jest.spyOn(musicClient, 'getSong').mockResolvedValue({ ...songFixture, id: PROJECT, lifecycle_status: 'trashed' } as MusicSongDetail);
     await act(async () => root.render(<SongDetail />));
     expect(text(t('music.trashBanner')).length).toBeGreaterThan(0);
     expect(byLabel(t('beatLabs.makeBeat'))).toBeUndefined();
 });
-test('beats home catches creation failure, shows a notice, and never navigates', async () => {
-    jest.spyOn(templates, 'createTemplateBeat').mockRejectedValue(new Error('save_failed'));
+test('Music Editor home catches creation failure, shows a notice, and never navigates', async () => {
+    jest.spyOn(templates, 'createMusicEdit').mockRejectedValue(new Error('save_failed'));
     await act(async () => root.render(<BeatsHome />));
-    await press(t('beat.home.new')); await press(t('beatLabs.template.blank'));
+    await press(t('beat.home.new'));
     expect(text(t('beatLabs.createFailed')).length).toBeGreaterThan(0);
     expect(mockPush).not.toHaveBeenCalled();
 });

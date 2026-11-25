@@ -1,9 +1,9 @@
 export default {
     'beat.title': 'Music editor',
-    'beat.home.new': 'New song',
-    'beat.home.untitled': 'Song {n}',
-    'beat.home.empty': 'No Music Editor projects yet',
-    'beat.home.emptyBody': 'Open a song from Your Music, then add drums and instruments, arrange the tracks, mix, and export.',
+    'beat.home.new': 'New music edit',
+    'beat.home.untitled': 'Music edit {n}',
+    'beat.home.empty': 'No music edits yet',
+    'beat.home.emptyBody': 'Import audio or open a song from Your Music. Use AI to split stems, extend or replace sections, then add instruments and mix.',
     'beat.home.openNamed': 'Open {title} in Music Editor',
     'beat.home.loaded': 'Music Editor projects: {count}.',
     'beat.home.checking': 'Checking the Music Editor',

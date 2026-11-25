@@ -23,3 +23,15 @@ export function createTemplateBeat(store: CreationStore, template: TemplateId, t
     return createBeatRecord(store, title, initial => setView(
         createBeatFromTemplate({ template, id: initial.id, title, now: initial.createdAt }), 'song'));
 }
+
+/** Start a music edit with an empty audio lane, not a drum pattern. */
+export function createMusicEdit(store: CreationStore, title: string) {
+    return createBeatRecord(store, title, initial => {
+        const first = initial.tracks[0]!;
+        const { kit: _kit, ...track } = first;
+        return setView({
+            ...initial,
+            tracks: [{ ...track, name: 'Audio 1', kind: 'audio', regions: [] }],
+        }, 'song');
+    });
+}
