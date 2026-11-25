@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { VeyCharacter } from '../components/VeyCharacter';
-import { Button, Card, Icon, Text, themedStyles, usePressStyle, useThemedStyles } from '../components/ui';
+import { Button, Card, Icon, Text, VividCard, themedStyles, useThemedStyles } from '../components/ui';
 import type { MenuIcon } from '../lib/menuIcons';
 import { FIRST_GOALS, type StoredFirstGoal } from '../lib/firstGoal';
 import { FIRST_DESTINATIONS, FIRST_ROLES, defaultAspectFor, type StoredDestination, type StoredRole } from '../lib/firstProfile';
@@ -12,7 +12,7 @@ import { t } from '../lib/i18n';
 import { markWelcomeSeen } from '../lib/markWelcomeSeen';
 import { browsePreAuthOnboarding, completePreAuthOnboarding, readPreAuthOnboarding, savePreAuthAnswers, skipPreAuthOnboarding, type PreAuthAnswers } from '../lib/preAuthOnboarding';
 import { captureEvent } from '../lib/analytics/events';
-import { ds } from '../theme';
+import { ds, VIVID_HUES } from '../theme';
 
 type Stage = 'intro' | 'role' | 'goal' | 'destination' | 'result';
 type QuestionStage = Exclude<Stage, 'intro' | 'result'>;
@@ -51,15 +51,6 @@ const DESTINATION_ICON: Record<(typeof FIRST_DESTINATIONS)[number], MenuIcon> = 
 
 const EMPTY: PreAuthAnswers = { role: null, goal: null, destination: null };
 
-const CARD_TONES = [
-    { background: '#3B82E6', glow: '#9AD8FF' },
-    { background: '#F4813C', glow: '#FFD083' },
-    { background: '#7657E8', glow: '#C4B5FF' },
-    { background: '#45B95E', glow: '#A4EC96' },
-    { background: '#D14F74', glow: '#FFAAAF' },
-    { background: '#168DA4', glow: '#7CE1EE' },
-] as const;
-
 function firstOpenStage(answers: PreAuthAnswers): Stage {
     if (!answers.role) return 'role';
     if (!answers.goal) return 'goal';
@@ -71,7 +62,6 @@ export default function Onboarding() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const styles = useThemedStyles(sheets);
-    const pressStyle = usePressStyle();
     const [stage, setStage] = useState<Stage>('intro');
     const [editing, setEditing] = useState<QuestionStage | null>(null);
     const [answers, setAnswers] = useState<PreAuthAnswers>(EMPTY);
@@ -202,11 +192,11 @@ export default function Onboarding() {
                         <Text tone="secondary">{t('create.firstRun.personalise')}</Text>
                         <View style={styles.options}>
                             {stage === 'role' ? FIRST_ROLES.map((value, index) => (
-                                <Choice key={value} icon={ROLE_ICON[value]} label={ROLE_LABEL[value]()} toneIndex={index} onPress={() => choose('role', value)} pressStyle={pressStyle} styles={styles} />
+                                <Choice key={value} icon={ROLE_ICON[value]} label={ROLE_LABEL[value]()} toneIndex={index} onPress={() => choose('role', value)} styles={styles} />
                             )) : stage === 'goal' ? FIRST_GOALS.map((value, index) => (
-                                <Choice key={value} icon={GOAL_ICON[value]} label={GOAL_LABEL[value]()} toneIndex={index + 2} onPress={() => choose('goal', value)} pressStyle={pressStyle} styles={styles} />
+                                <Choice key={value} icon={GOAL_ICON[value]} label={GOAL_LABEL[value]()} toneIndex={index + 2} onPress={() => choose('goal', value)} styles={styles} />
                             )) : FIRST_DESTINATIONS.map((value, index) => (
-                                <Choice key={value} icon={DESTINATION_ICON[value]} label={DESTINATION_LABEL[value]()} toneIndex={index + 1} onPress={() => choose('destination', value)} pressStyle={pressStyle} styles={styles} />
+                                <Choice key={value} icon={DESTINATION_ICON[value]} label={DESTINATION_LABEL[value]()} toneIndex={index + 1} onPress={() => choose('destination', value)} styles={styles} />
                             ))}
                         </View>
                     </ScrollView>
@@ -216,15 +206,8 @@ export default function Onboarding() {
     );
 }
 
-function Choice({ icon, label, toneIndex, onPress, pressStyle, styles }: { icon: MenuIcon; label: string; toneIndex: number; onPress: () => void; pressStyle: object; styles: ReturnType<typeof sheets> }) {
-    const tone = CARD_TONES[toneIndex % CARD_TONES.length];
-    return (
-        <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={({ pressed }) => [styles.choice, { backgroundColor: tone.background }, pressed && pressStyle]}>
-            <View pointerEvents="none" style={[styles.cardGlow, { backgroundColor: tone.glow }]} />
-            <View style={styles.choiceIcon}><Icon name={icon} size={40} tint="#FFFFFF" /></View>
-            <Text variant="title3" tone="onMedia" style={styles.choiceLabel}>{label}</Text>
-        </Pressable>
-    );
+function Choice({ icon, label, toneIndex, onPress, styles }: { icon: MenuIcon; label: string; toneIndex: number; onPress: () => void; styles: ReturnType<typeof sheets> }) {
+    return <VividCard hue={VIVID_HUES[toneIndex % VIVID_HUES.length]} icon={icon} title={label} onPress={onPress} style={styles.choice} />;
 }
 
 function Result({ answers, onBack, onEdit, onFinish }: { answers: PreAuthAnswers; onBack: () => void; onEdit: (stage: QuestionStage) => void; onFinish: (destination: 'sign-in' | 'preview') => Promise<void> }) {
@@ -265,17 +248,7 @@ function Result({ answers, onBack, onEdit, onFinish }: { answers: PreAuthAnswers
 }
 
 function ResultTile({ toneIndex, icon, label, value, wide = false, styles }: { toneIndex: number; icon: MenuIcon; label: string; value: string; wide?: boolean; styles: ReturnType<typeof sheets> }) {
-    const tone = CARD_TONES[toneIndex % CARD_TONES.length];
-    return (
-        <View accessible accessibilityLabel={`${label}: ${value}`} style={[styles.resultTile, wide && styles.resultTileWide, { backgroundColor: tone.background }]}>
-            <View pointerEvents="none" style={[styles.cardGlow, { backgroundColor: tone.glow }]} />
-            <View style={styles.resultTileIcon}><Icon name={icon} size={36} tint="#FFFFFF" /></View>
-            <View style={styles.resultTileCopy}>
-                <Text variant="caption" tone="onMedia" style={styles.tileEyebrow}>{label}</Text>
-                <Text variant="bodyStrong" tone="onMedia">{value}</Text>
-            </View>
-        </View>
-    );
+    return <VividCard hue={VIVID_HUES[toneIndex % VIVID_HUES.length]} icon={icon} eyebrow={label} title={value} layout={wide ? 'wide' : 'tile'} style={[styles.resultTile, wide && styles.resultTileWide]} />;
 }
 
 function ResultRow({ icon, label, value, onChange, styles }: { icon: MenuIcon; label: string; value: string; onChange?: () => void; styles: ReturnType<typeof sheets> }) {
@@ -297,20 +270,14 @@ const sheets = themedStyles((p) => ({
     progressBarOn: { backgroundColor: p.accent },
     questionBody: { padding: ds.space.gutter, paddingTop: ds.space.xxxl, gap: ds.space.md },
     options: { flexDirection: 'row', flexWrap: 'wrap', gap: ds.space.sm, marginTop: ds.space.md },
-    choice: { width: '48%', minHeight: 150, justifyContent: 'flex-end', padding: ds.space.lg, borderRadius: ds.radius.lg, overflow: 'hidden' },
-    cardGlow: { position: 'absolute', width: 126, height: 126, borderRadius: 63, right: -28, top: -36, opacity: 0.48 },
-    choiceIcon: { position: 'absolute', right: ds.space.lg, top: ds.space.lg, width: 58, height: 58, borderRadius: ds.radius.lg, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
-    choiceLabel: { maxWidth: '92%' },
+    choice: { width: '48%' },
     result: { flexGrow: 1, padding: ds.space.gutter, gap: ds.space.lg, justifyContent: 'center' },
     backButton: { alignSelf: 'flex-start' },
     starterCard: { gap: ds.space.lg, backgroundColor: p.bgElevated1, borderColor: p.borderSubtle },
     starterHeading: { flexDirection: 'row', alignItems: 'center', gap: ds.space.sm },
     resultTiles: { flexDirection: 'row', flexWrap: 'wrap', gap: ds.space.sm },
-    resultTile: { width: '48%', minHeight: 164, borderRadius: ds.radius.lg, padding: ds.space.lg, justifyContent: 'flex-end', overflow: 'hidden' },
+    resultTile: { width: '48%', minHeight: 164 },
     resultTileWide: { width: '100%', minHeight: 126 },
-    resultTileIcon: { position: 'absolute', right: ds.space.lg, top: ds.space.lg, width: 54, height: 54, borderRadius: ds.radius.lg, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
-    resultTileCopy: { gap: ds.space.xs, paddingTop: ds.space.xxxl },
-    tileEyebrow: { color: 'rgba(255,255,255,0.82)' },
     resultCard: { gap: ds.space.xl, backgroundColor: p.bgElevated1 },
     resultRow: { flexDirection: 'row', alignItems: 'flex-start', gap: ds.space.md },
     resultIcon: { width: 40, height: 40, borderRadius: ds.radius.md, backgroundColor: p.accentSubtle, alignItems: 'center', justifyContent: 'center' },

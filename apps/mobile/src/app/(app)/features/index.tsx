@@ -8,9 +8,9 @@ import { compatibleCreativeFeatures, creativeReuseTargetHref, readCreativeReuse 
 import { directoryFeatures } from '../../../lib/featureRegistry';
 import { FILM_STUDIO_ENABLED } from '../../../lib/filmStudioSwitch';
 import { t } from '../../../lib/i18n';
-import { MENU_ICONS } from '../../../lib/menuIcons';
 import { useMusicAvailable } from '../../../lib/music/useMusicAvailable';
-import { colors, fonts } from '../../../theme';
+import { colors, fonts, VIVID_HUES } from '../../../theme';
+import { VividCard } from '../../../components/ui';
 
 export default function CreativeFeatures() {
     const { sourceJobId, sourceKind } = useLocalSearchParams<{ sourceJobId?: string; sourceKind?: string }>();
@@ -32,12 +32,9 @@ export default function CreativeFeatures() {
                     <Text style={styles.groupTitle} accessibilityRole="header">{t('menu.features')}</Text>
                     <Text style={styles.count}>{t('features.tools', { value1: directory.length })}</Text>
                 </View>
-                <View style={styles.directoryGrid}>{directory.map((feature) => {
+                <View style={styles.directoryGrid}>{directory.map((feature, index) => {
                     const label = t(feature.titleKey as Parameters<typeof t>[0]);
-                    return <Pressable key={feature.id} accessibilityRole="button" accessibilityLabel={rawText(label)} style={({ pressed }) => [styles.directoryCard, pressed && styles.pressed]} onPress={() => router.push(feature.href as never)}>
-                        {feature.icon ? <Image source={MENU_ICONS[feature.icon]} style={styles.directoryIcon} contentFit="contain" alt="" accessibilityElementsHidden /> : null}
-                        <Text style={styles.directoryName} numberOfLines={2}>{label}</Text>
-                    </Pressable>;
+                    return <VividCard key={feature.id} hue={VIVID_HUES[index % VIVID_HUES.length]} icon={feature.icon ?? 'sparkle'} title={label} accessibilityLabel={rawText(label)} style={styles.directoryCard} onPress={() => router.push(feature.href as never)} />;
                 })}</View>
             </View> : null}
             {CREATIVE_FEATURE_GROUPS.map((group) => {
@@ -74,9 +71,7 @@ const styles = StyleSheet.create({
     group: { gap: 12 }, groupHeading: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', borderBottomWidth: 2, borderBottomColor: colors.text, paddingBottom: 8 },
     groupTitle: { color: colors.text, fontSize: 23, fontWeight: '900' }, count: { color: colors.muted, fontSize: 11, fontWeight: '700' },
     directoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-    directoryCard: { width: '48%', minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 14, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
-    directoryIcon: { width: 22, height: 22, tintColor: colors.accent },
-    directoryName: { flex: 1, color: colors.text, fontSize: 14, lineHeight: 18, fontWeight: '800' },
+    directoryCard: { width: '48%', minHeight: 150 },
     grid: { gap: 12 }, card: { width: '100%', overflow: 'hidden', borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
     mediaFrame: { width: '100%', height: 210, alignItems: 'center', justifyContent: 'center', backgroundColor: '#09090B' }, thumb: { width: '100%', height: '100%' },
     playBadge: { position: 'absolute', width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.72)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)' },

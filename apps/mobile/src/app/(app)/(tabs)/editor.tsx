@@ -1,6 +1,6 @@
 import { rawText } from '../../../lib/i18n/translate';
 import { directionalStyle } from '../../../lib/rtl';
-import { Button, Card, Text, themedStyles, useThemedStyles, useAppearance } from '../../../components/ui';
+import { Button, Card, Text, VividCard, themedStyles, useThemedStyles, useAppearance } from '../../../components/ui';
 import { VeyLoader } from '../../../components/VeyLoader';
 import { Image } from 'expo-image';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
@@ -15,10 +15,10 @@ import { EDITOR_ENABLED } from '../../../lib/editorFlag';
 import { FILM_STUDIO_ENABLED } from '../../../lib/filmStudioSwitch';
 import { mobileFeature, type MobileFeatureDefinition } from '../../../lib/featureRegistry';
 import { formatLocale, t } from '../../../lib/i18n';
-import { MENU_ICONS, type MenuIcon } from '../../../lib/menuIcons';
+import { MENU_ICONS } from '../../../lib/menuIcons';
 import { fetchProjects, fetchWorkspaces, projectSavedAt, projectsErrorMessage, projectVersion, type Project, type Workspace } from '../../../lib/projects';
 import { projectsChangedGeneration, subscribeProjectsChanged } from '../../../lib/projectsChanged';
-import { ds } from '../../../theme';
+import { ds, type VividHue } from '../../../theme';
 
 const newestFirst = (items: readonly Project[]): Project[] => [...items].sort((a, b) => {
     const aSaved = projectSavedAt(a);
@@ -28,21 +28,9 @@ const newestFirst = (items: readonly Project[]): Project[] => [...items].sort((a
     return bTime - aTime || projectVersion(b) - projectVersion(a) || a.name.localeCompare(b.name);
 });
 
-function StudioRow({ feature, body, onPress }: { feature: MobileFeatureDefinition; body: string; onPress: () => void }) {
-    const styles = useThemedStyles(sheets);
+function StudioRow({ feature, body, hue, onPress }: { feature: MobileFeatureDefinition; body: string; hue: VividHue; onPress: () => void }) {
     const title = t(feature.titleKey as Parameters<typeof t>[0]);
-    return (
-        <Button label={title} variant="secondary" accessibilityRole="button" accessibilityLabel={rawText(title)} style={styles.tool} onPress={onPress}>
-            <View style={styles.toolIconBox}>
-                <Image source={MENU_ICONS[feature.icon as MenuIcon]} style={styles.toolIcon} tintColor={styles.accentInk.color} contentFit="contain" alt="" accessibilityElementsHidden />
-            </View>
-            <View style={styles.toolCopy}>
-                <Text variant="bodyStrong">{title}</Text>
-                <Text variant="footnote" tone="secondary">{body}</Text>
-            </View>
-            <Image source={MENU_ICONS.caretRight} style={[styles.caret, directionalStyle()]} tintColor={styles.mutedInk.color} contentFit="contain" alt="" accessibilityElementsHidden />
-        </Button>
-    );
+    return <VividCard hue={hue} icon={feature.icon ?? 'sparkle'} title={title} detail={body} layout="row" showChevron accessibilityLabel={rawText(title)} onPress={onPress} />;
 }
 
 export default function EditorHome() {
@@ -125,12 +113,12 @@ export default function EditorHome() {
                             <Text variant="display" style={styles.heading} accessibilityRole="header">{t('tabs.studio')}</Text>
                             <Text variant="body" style={styles.summary}>{t('studio.summary')}</Text>
                         </View>
-                        <StudioRow feature={projectsFeature} body={t('studio.projectsBody')} onPress={() => router.push(projectsFeature.href as never)} />
-                        <StudioRow feature={beatsFeature} body={t('studio.beatsBody')} onPress={() => router.push(beatsFeature.href as never)} />
-                        <StudioRow feature={smartCutFeature} body={t('app.explore.smartCutStart')} onPress={() => router.push(smartCutFeature.href as never)} />
-                        <StudioRow feature={featuresFeature} body={t('features.chooseaworkflowVeyrnoxsetstheright')} onPress={() => router.push(featuresFeature.href as never)} />
+                        <StudioRow hue="blue" feature={projectsFeature} body={t('studio.projectsBody')} onPress={() => router.push(projectsFeature.href as never)} />
+                        <StudioRow hue="purple" feature={beatsFeature} body={t('studio.beatsBody')} onPress={() => router.push(beatsFeature.href as never)} />
+                        <StudioRow hue="orange" feature={smartCutFeature} body={t('app.explore.smartCutStart')} onPress={() => router.push(smartCutFeature.href as never)} />
+                        <StudioRow hue="teal" feature={featuresFeature} body={t('features.chooseaworkflowVeyrnoxsetstheright')} onPress={() => router.push(featuresFeature.href as never)} />
                         <BestCutEntry />
-                        {FILM_STUDIO_ENABLED ? <StudioRow feature={filmFeature} body={t('filmCloud.intro')} onPress={() => router.push(filmFeature.href as never)} /> : null}
+                        {FILM_STUDIO_ENABLED ? <StudioRow hue="green" feature={filmFeature} body={t('filmCloud.intro')} onPress={() => router.push(filmFeature.href as never)} /> : null}
                         {EDITOR_ENABLED ? <Button label={t('menu.professional')} variant="primary"
                             accessibilityRole="button"
                             accessibilityLabel={t('menu.professional')}
@@ -220,10 +208,6 @@ const sheets = themedStyles((p) => ({
     primaryCopy: { flex: 1, gap: 2 },
     primaryTitle: { color: p.onAccent },
     primaryBody: { color: p.onAccent, opacity: 0.82 },
-    tool: { minHeight: 76, paddingVertical: ds.space.md },
-    toolIconBox: { width: 44, height: 44, borderRadius: ds.radius.sm, alignItems: 'center', justifyContent: 'center', backgroundColor: p.accentSubtle },
-    toolIcon: { width: 24, height: 24 },
-    toolCopy: { flex: 1, gap: 2 },
     chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     chip: { minHeight: 44, maxWidth: '100%', justifyContent: 'center', paddingHorizontal: ds.space.md, borderRadius: 999, backgroundColor: p.surface, borderColor: p.borderSubtle, borderWidth: 1 },
     chipOn: { backgroundColor: p.accentSubtle, borderColor: p.accent },
