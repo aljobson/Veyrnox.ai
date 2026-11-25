@@ -7,6 +7,7 @@ import { Button, ListRow, Text, themedStyles, useThemedStyles } from '../../../c
 import { EmptyState } from '../../../components/EmptyState';
 import { VeyLoader } from '../../../components/VeyLoader';
 import { MusicNotice } from '../../../components/music/MusicNotice';
+import { HeaderAction } from '../../../components/HeaderAction';
 import { beatStore, hydrateBeats, dropBeat, listBeats, subscribeBeats } from '../../../lib/beatNative/store';
 import { useLocalBeatLifecycle } from '../../../lib/beatNative/useLocalBeatLifecycle';
 import { userIdFromToken } from '../../../lib/appCache';
@@ -57,7 +58,13 @@ export default function MusicEditorHome() {
     };
     return (
         <ScrollView style={s.screen} contentContainerStyle={s.content}>
-            <Stack.Screen options={{ title: t('beat.title') }} />
+            <Stack.Screen options={{
+                title: t('beat.title'),
+                headerRight: () => <View style={s.headerActions} accessibilityRole="toolbar" accessibilityLabel={t('beat.title')}>
+                    <HeaderAction testID="music-editor-new" label={t('beat.home.new')} icon="plus" iconOnly onPress={() => void create()} />
+                    <HeaderAction testID="music-editor-library" label={t('music.title')} icon="folder" iconOnly onPress={() => router.push('/music' as never)} />
+                </View>,
+            }} />
             {creationFailed ? <MusicNotice message={t('beatLabs.createFailed')} /> : null}
             {state === 'checking' ? <VeyLoader label={t('beat.home.checking')} showLabel /> : null}
             {state === 'signed_out' ? <MusicNotice message={t('beat.cloud.signed_out')} /> : null}
@@ -65,18 +72,6 @@ export default function MusicEditorHome() {
             {state === 'error' ? <><MusicNotice message={t('beat.cloud.error')} /><Button label={t('beat.retry')} onPress={() => void probeBeats(api).then(result => setState(result.state))} /></> : null}
             {beatStore.hydrationState() === 'error' ? <><MusicNotice message={t('beat.local.loadError')} /><Button label={t('beat.retry')} onPress={() => void hydrateBeats().catch(() => undefined)} /></> : null}
                 {state === 'offline' ? <MusicNotice message={t('beat.offline')} /> : null}
-                <View style={s.actions} accessibilityRole="toolbar" accessibilityLabel={t('beat.title')}>
-                    <View style={s.action}>
-                        <Button label={t('beat.home.new')} icon="waveform" iconOnly size="md" variant="tertiary" loading={creating}
-                            containerStyle={s.actionIcon} onPress={() => void create()} />
-                        <Text variant="caption" style={s.actionLabel}>{t('beat.home.new')}</Text>
-                    </View>
-                    <View style={s.action}>
-                        <Button label={t('music.title')} icon="folder" iconOnly size="md" variant="tertiary"
-                            containerStyle={s.actionIcon} onPress={() => router.push('/music' as never)} />
-                        <Text variant="caption" style={s.actionLabel}>{t('music.title')}</Text>
-                    </View>
-                </View>
                 {beats.length === 0 ? <EmptyState title={t('beat.home.empty')} body={t('beat.home.emptyBody')} /> : beats.map(beat => (
                     <View key={beat.id} style={s.row}>
                         <View style={s.grow}>
@@ -92,10 +87,7 @@ export default function MusicEditorHome() {
 const sheets = themedStyles(p => ({
     screen: { flex: 1, backgroundColor: p.bg },
     content: { padding: ds.space.gutter, gap: ds.space.lg },
-    actions: { flexDirection: 'row', alignItems: 'flex-start', gap: ds.space.xl },
-    action: { width: 84, alignItems: 'center', gap: ds.space.xs },
-    actionIcon: { width: 52, borderRadius: ds.radius.md, backgroundColor: p.surface, borderWidth: 1, borderColor: p.borderSubtle },
-    actionLabel: { textAlign: 'center', color: p.textSecondary },
+    headerActions: { flexDirection: 'row', alignItems: 'center', gap: ds.space.xs },
     row: { flexDirection: 'row', alignItems: 'center', gap: ds.space.sm },
     grow: { flex: 1 },
 }));
