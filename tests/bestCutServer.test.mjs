@@ -15,7 +15,8 @@ function handlers(extra = {}) {
     return { calls, submits, ...speechAnalysisHandlers({ env: { ...env, ...extra.env }, cfg: {}, r2cfg: r2,
         select: async table => table === 'model_catalog' ? [{ id: 'elevenlabs-scribe-v2', active: true, provider: 'fal', provider_endpoint: 'fal-ai/elevenlabs/speech-to-text/scribe-v2', credits_5s: 3 }]
             : table === 'upload_reservations' ? [{ r2_key: key, size_bytes: 500 }] : table === 'fal_capacity_policy' ? [{ enabled: false }] : [{ paused: false }],
-        resolveUpload: async () => ({ ok: true, r2_key: key, sha256: fingerprint, size_bytes: 500, mime_type: 'video/quicktime', probe: { fingerprint, mime: 'video/quicktime', duration: 12 } }),
+        resolveUpload: extra.resolveUpload || (async () => ({ ok: true, r2_key: key, sha256: fingerprint, size_bytes: 500, mime_type: 'video/quicktime',
+            probe: { fingerprint, mime: 'video/quicktime', duration: extra.measuredDuration ?? 12 } })),
         sign: async () => ({ url: 'https://storage.test/file' }), submit: async value => { submits.push(value); return { ok: true, providerJobId: 'provider-1' }; },
         rpc: async (name, args) => {
             calls.push({ name, args }); if (extra.rpc?.[name]) return extra.rpc[name](args);
@@ -43,6 +44,16 @@ test('preflight is non-debiting and upload start binds only verified metadata an
     const args = h.calls.find(c => c.name === 'speech_analysis_request_v2').args;
     assert.equal(args.p_accepts_no_speech, true); assert.equal(args.p_fingerprint, fingerprint); assert.equal(args.p_size, 500); assert.equal(args.p_asset_job_id, null);
     assert.equal(h.submits.length, 1);
+});
+test('legacy preflight requests without durations stay compatible and use the server measurement', async () => {
+    const h = handlers({ measuredDuration: 60.1, rpc: { speech_analysis_preflight_v2: () => ({ ok: true, cached: false, credits: 3 }) } });
+    assert.deepEqual(await (await h.preflight(req({ sources: [input().source] }))).json(), { clips: [{ cached: false, credits: 6 }] });
+});
+test('preflight and admission price the same server duration across a 60-second boundary', async () => {
+    const shorter = handlers({ measuredDuration: 59.95, rpc: { speech_analysis_preflight_v2: () => ({ ok: true, cached: false, credits: 3 }) } });
+    assert.deepEqual(await (await shorter.preflight(req({ sources: [input().source], durations: [60.1] }))).json(), { clips: [{ cached: false, credits: 3 }] });
+    const longer = handlers({ measuredDuration: 60.1, rpc: { speech_analysis_preflight_v2: () => ({ ok: true, cached: false, credits: 3 }) } });
+    assert.deepEqual(await (await longer.preflight(req({ sources: [input().source], durations: [59.95] }))).json(), { clips: [{ cached: false, credits: 6 }] });
 });
 test('chosen transcription language scopes preflight, admission and provider submission', async () => {
     const h = handlers();
@@ -133,10 +144,10 @@ test('preflight meters one hashed clip per call', async () => {
     assert.equal((await h.preflight(req({ sources: [], durations: [] }))).status, 400);
 });
 test('preflight charges every started minute for a long Best Cut source', async () => {
-    const h = handlers({ rpc: { speech_analysis_preflight_v2: () => ({ ok: true, cached: false, credits: 3 }) } });
+    const h = handlers({ measuredDuration: 146, rpc: { speech_analysis_preflight_v2: () => ({ ok: true, cached: false, credits: 3 }) } });
     assert.deepEqual(await (await h.preflight(req({ sources: [input().source], durations: [146] }))).json(), { clips: [{ cached: false, credits: 9 }] });
 });
 test('preflight exposes a dedicated zero-credit first Smart Cut', async () => {
-    const h = handlers({ rpc: { speech_analysis_preflight_v2: () => ({ ok: true, cached: false, first_free: true, credits: 3 }) } });
+    const h = handlers({ measuredDuration: 146, rpc: { speech_analysis_preflight_v2: () => ({ ok: true, cached: false, first_free: true, credits: 3 }) } });
     assert.deepEqual(await (await h.preflight(req({ sources: [input().source], durations: [146] }))).json(), { clips: [{ cached: false, free: true, paidCredits: 9, credits: 0 }] });
 });

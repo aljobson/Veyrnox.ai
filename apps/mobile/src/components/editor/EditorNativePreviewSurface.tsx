@@ -47,7 +47,10 @@ export function EditorNativePreviewSurface({ enabled, account, project, timeline
 }) {
     const skia = skiaLibrary(), [size, setSize] = useState({ width: 0, height: 0 });
     const dimensions = pixelSize(size.width, size.height, timelineSize(timeline, 720));
-    const [rendered, setRendered] = useState<{ frame: number; image: SkiaModule.SkImage; reference: Size } | null>(null);
+    const [rendered, setRendered] = useState<{
+        frame: number; image: SkiaModule.SkImage; reference: Size; account: string; project: string;
+        timeline: Timeline; sources: Readonly<Record<string, string>>; width: number; height: number;
+    } | null>(null);
     const pending = useRef<RenderJob | null>(null), running = useRef(false), ticket = useRef(0);
     const active = useRef<AbortController | null>(null), mounted = useRef(true), images = useRef(new Set<SkiaModule.SkImage>());
 
@@ -62,9 +65,16 @@ export function EditorNativePreviewSurface({ enabled, account, project, timeline
                     if (!mounted.current || job.ticket !== ticket.current || job.controller.signal.aborted) result.image.dispose();
                     else {
                         images.current.add(result.image);
-                        setRendered({ frame: job.frame, image: result.image, reference: result.plan.referenceSize });
+                        setRendered(current => {
+                            if (current && current.image !== result.image) { current.image.dispose(); images.current.delete(current.image); }
+                            return { frame: job.frame, image: result.image, reference: result.plan.referenceSize, account: job.account,
+                                project: job.project, timeline: job.timeline, sources: job.sources, width: job.width, height: job.height };
+                        });
                     }
-                } else if (mounted.current && job.ticket === ticket.current) setRendered(null);
+                } else if (mounted.current && job.ticket === ticket.current) setRendered(current => {
+                    if (current) { current.image.dispose(); images.current.delete(current.image); }
+                    return null;
+                });
             }
         } finally { active.current = null; running.current = false; }
     }, []);
@@ -80,11 +90,11 @@ export function EditorNativePreviewSurface({ enabled, account, project, timeline
         return () => controller.abort();
     }, [account, dimensions.height, dimensions.width, enabled, frame, localMediaUris, project, pump, skia, timeline]);
 
-    const shown = enabled && account && project && dimensions.width > 0 && dimensions.height > 0 && rendered?.frame === frame ? rendered : null;
+    const shown = enabled && account && project && dimensions.width > 0 && dimensions.height > 0
+        && rendered?.frame === frame && rendered.account === account && rendered.project === project
+        && rendered.timeline === timeline && rendered.sources === localMediaUris
+        && rendered.width === dimensions.width && rendered.height === dimensions.height ? rendered : null;
     useLayoutEffect(() => { onDisplayed(shown ? { frame: shown.frame, exact: true } : null); }, [onDisplayed, shown]);
-    useEffect(() => {
-        for (const image of images.current) if (image !== shown?.image) { image.dispose(); images.current.delete(image); }
-    }, [shown]);
     useEffect(() => () => {
         mounted.current = false; ++ticket.current; active.current?.abort(); pending.current?.controller.abort(); pending.current = null;
         images.current.forEach(image => image.dispose()); images.current.clear();

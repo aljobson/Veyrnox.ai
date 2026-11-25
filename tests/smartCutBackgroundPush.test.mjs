@@ -10,6 +10,10 @@ test('Smart Cut background completion is isolated to terminal speech-analysis jo
   assert.match(sql, /j\.state IN \('STORED', 'FAILED', 'REFUNDED'\)/);
   assert.match(sql, /j\.updated_at > now\(\) - interval '15 minutes'/);
   assert.match(sql, /CASE WHEN j\.state = 'STORED' THEN 'smart_cut_done' ELSE 'smart_cut_failed' END/);
+  assert.match(sql, /j\.error_code IS DISTINCT FROM 'analysis_no_speech'/);
+  assert.match(sql, /j\.error_code IS DISTINCT FROM 'user_cancelled'/);
+  assert.match(sql, /NOT EXISTS \([\s\S]*queued\.job_id = j\.id[\s\S]*smart_cut_done[\s\S]*smart_cut_failed/);
+  assert.match(sql, /BEGIN;[\s\S]*COMMIT;/);
 });
 
 test('Smart Cut push enqueue is idempotent and cannot write jobs or the ledger', () => {

@@ -6,6 +6,8 @@
 -- terminal jobs from the last 15 minutes; it never changes a job, analysis or ledger row.
 -- The existing per-device notify_jobs choice gates both progress and completion.
 
+BEGIN;
+
 ALTER TABLE public.push_outbox
     DROP CONSTRAINT IF EXISTS push_outbox_kind_check,
     DROP CONSTRAINT IF EXISTS push_outbox_shape_check;
@@ -41,6 +43,13 @@ BEGIN
            AND j.updated_at > now() - interval '15 minutes'
            AND j.state IN ('STORED', 'FAILED', 'REFUNDED')
            AND j.inputs->>'kind' = 'speech_analysis'
+           AND j.error_code IS DISTINCT FROM 'analysis_no_speech'
+           AND j.error_code IS DISTINCT FROM 'user_cancelled'
+           AND NOT EXISTS (
+               SELECT 1 FROM public.push_outbox queued
+                WHERE queued.job_id = j.id
+                  AND queued.kind IN ('smart_cut_done', 'smart_cut_failed')
+           )
          ORDER BY j.updated_at
          LIMIT GREATEST(1, LEAST(COALESCE(p_limit, 200), 1000))
     ), ins AS (
@@ -54,3 +63,5 @@ BEGIN
 END $$;
 REVOKE ALL ON FUNCTION public.push_enqueue_smart_cut_events(INTEGER) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.push_enqueue_smart_cut_events(INTEGER) TO service_role;
+
+COMMIT;

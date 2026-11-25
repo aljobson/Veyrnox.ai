@@ -28,6 +28,10 @@ test('Best Cut quote exposes the ten-minute ceiling and one-minute billing block
     await expect(fetchSpeechQuote(api(request), undefined, true)).resolves.toMatchObject({ credits: 3, max_seconds: 600, billing_block_seconds: 60 });
     expect(request.mock.calls[0][0]).toBe(`${SPEECH_PATH}/quote?capability=best-cut`);
 });
+test('a new app hides Best Cut gracefully while an older server still returns the one-minute quote', async () => {
+    const request = jest.fn().mockResolvedValue({ credits: 3, max_seconds: 60, languages: ['en'] });
+    await expect(fetchSpeechQuote(api(request), undefined, true)).resolves.toBeNull();
+});
 test('explicit transcription language is sent while automatic keeps the legacy payload', async () => {
     const request = jest.fn().mockResolvedValue({ id: 'job', status: 'queued' });
     await startSpeech(api(request), { ...args(), language: 'es' });

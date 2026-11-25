@@ -3,7 +3,7 @@
   "auditedOn": "2026-11-24",
   "matrix": {
     "path": "replica/byecut/features.csv",
-    "sha256": "5d3a036463f28072140d45ffd140886a81e3e884ca22c169b6552ba9d6a3a8e1",
+    "sha256": "c127de5e887fc3b8387068be9af1ca83cb4373c9db613a201775f3c73fc9adf7",
     "rows": 87,
     "inScopeRows": 78,
     "cleanRoomExclusions": 9
@@ -224,7 +224,7 @@
       "evidence": [
         "replica/byecut/recon.md",
         "replica/byecut/screens/android-projects.jpg",
-        "packages/db/schema/supabase/0611_project_folders.sql",
+        "packages/db/schema/supabase/0618_project_folders.sql",
         "app/api/v1/project-folders/route.js",
         "app/api/v1/project-folders/[id]/route.js",
         "app/veyrnox/app/projects/page.js",
@@ -234,7 +234,7 @@
         "scripts/test-project-folders.mjs"
       ],
       "evidenceRationale": "Original Veyrnox source implements workspace-scoped four-level folders with list, create, nested create, rename, guarded delete and filtering on web and shared iOS/Android. Focused source/API tests and a fresh disposable-PostgreSQL migration replay plus 11 acceptance checks passed; live journeys remain required.",
-      "auditNote": "Source-complete on 2026-11-23 after Craft Anything re-review found no remaining blocker. Migration 0604 is authored but unapplied; no browser, iOS or Android journey is claimed.",
+      "auditNote": "Source-complete on 2026-11-23 after Craft Anything re-review found no remaining blocker. Migration 0618 is authored but unapplied; no browser, iOS or Android journey is claimed.",
       "journeyEvidence": [],
       "notes": ""
     },
@@ -254,7 +254,7 @@
       "owningWorkstream": "3",
       "evidence": [
         "replica/byecut/recon.md",
-        "packages/db/schema/supabase/0611_project_folders.sql",
+        "packages/db/schema/supabase/0618_project_folders.sql",
         "app/api/v1/projects/[id]/route.js",
         "app/veyrnox/app/projects/page.js",
         "apps/mobile/src/app/(app)/projects/[id].tsx",
@@ -263,7 +263,7 @@
         "scripts/test-project-folders.mjs"
       ],
       "evidenceRationale": "Original Veyrnox source implements optimistic, same-workspace project moves into any folder or back to Unfiled on web and shared iOS/Android. Focused route/mobile tests and disposable-PostgreSQL acceptance checks cover move, unfile, stale-version and cross-workspace refusal; live journeys remain required.",
-      "auditNote": "Source-complete on 2026-11-23 after Craft Anything re-review found no remaining blocker. Migration 0604 is authored but unapplied; no browser, iOS or Android journey is claimed.",
+      "auditNote": "Source-complete on 2026-11-23 after Craft Anything re-review found no remaining blocker. Migration 0618 is authored but unapplied; no browser, iOS or Android journey is claimed.",
       "journeyEvidence": [],
       "notes": ""
     },

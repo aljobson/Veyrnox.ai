@@ -43,7 +43,7 @@ export interface SmartCutSegment {
     readonly alternateCandidates?: readonly { readonly takeId: string; readonly start: number; readonly end: number; readonly confidence: number; readonly coverage: number; readonly precision: number; readonly boundaryQuality?: SmartCutBoundaryQuality }[];
 }
 export interface SmartCutWarning {
-    readonly code: 'review_boundaries' | 'trim_intersects_unit' | 'segment_limit_reached' | 'output_limit_reached' | 'unit_exceeds_budget' | 'phrase_timing' | 'removal_retained' | 'source_clip_limit_reached' | 'script_not_aligned' | 'script_incomplete' | 'extra_speech_omitted' | 'false_start_omitted' | 'retake_omitted' | 'join_review' | 'language_unknown' | 'language_mixed' | 'language_override_invalid' | 'script_match_missing' | 'alignment_budget_exceeded';
+    readonly code: 'review_boundaries' | 'trim_intersects_unit' | 'segment_limit_reached' | 'output_limit_reached' | 'unit_exceeds_budget' | 'phrase_timing' | 'removal_retained' | 'source_clip_limit_reached' | 'script_not_aligned' | 'script_incomplete' | 'extra_speech_omitted' | 'false_start_omitted' | 'retake_omitted' | 'join_review' | 'language_unknown' | 'language_mixed' | 'language_override_invalid' | 'script_match_missing' | 'alignment_budget_exceeded' | 'unsafe_timed_boundary';
     readonly parameters: Readonly<Record<string, unknown>>;
 }
 export interface SmartCutPlan {

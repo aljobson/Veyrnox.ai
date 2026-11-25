@@ -36,6 +36,7 @@ const SMART_CUT_ERROR_KEYS = Object.freeze({
   script_match_missing: 'app.smartCut.error.scriptMatchMissing',
   alignment_budget_exceeded: 'app.smartCut.error.alignmentBudgetExceeded',
   language_override_invalid: 'app.smartCut.error.languageOverrideInvalid',
+  unsafe_timed_boundary: 'app.smartCut.error.unsafeTimedBoundary',
 });
 
 function segmentMatchText(t, number, segment) {

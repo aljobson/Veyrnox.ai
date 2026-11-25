@@ -403,7 +403,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         setProjectFileBusy(true); setProblem(null);
         const live = () => mounted.current && readiness.current && sameRevision(expected, editFreshness());
         try {
-            const result = await shareNativeProjectFile(current, name, live);
+            const result = await shareNativeProjectFile(current, displayName, live);
             if (live()) setProblem(t(result === 'unavailable' ? 'editorSimple.projectFileShareUnavailable' : 'editorSimple.projectFileShared'));
         } catch { if (live()) setProblem(t('editorSimple.projectFileShareFailed')); }
         finally { if (mounted.current) setProjectFileBusy(false); }
