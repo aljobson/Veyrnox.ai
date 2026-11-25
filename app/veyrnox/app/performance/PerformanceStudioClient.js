@@ -577,7 +577,7 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
     }
     if (dedicatedLipSync && !requested) {
       const timer = setTimeout(() => {
-        setWorkflowId('video-lip-sync');
+        setWorkflowId('talking-photo');
         setSpeechSource('script');
       }, 0);
       return () => clearTimeout(timer);
@@ -637,6 +637,7 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
     ttsCredits: ttsModel?.credits,
     captionsCredits,
   }), [captionsCredits, lipModel?.credits, speechSource, ttsModel?.credits]);
+  const quoteAvailable = Boolean(lipModel && (speechSource !== 'script' || ttsModel));
   const dubbingBatchUnitCredits = useMemo(() => performanceQuote({
     lipSyncCredits: lipModel?.credits,
     speechSource: 'script',
@@ -650,6 +651,22 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
   const job = jobs[0] || null;
   const busy = sending || generating || ['uploading', 'speech', 'rendering', 'captioning', 'batch-speech', 'batch-rendering', 'batch-captioning'].includes(stage);
   const compositionStatus = talkingAvatarCompositionStatus(composition, background, { subtitlesAvailable: captionRendererAvailable });
+
+  useEffect(() => {
+    if (!dedicatedLipSync || catalogLoading || performanceModels.length) return undefined;
+    const fallbackId = ['talking-photo', 'video-lip-sync']
+      .find((id) => availablePerformanceModels(models, id).length > 0);
+    if (!fallbackId || fallbackId === workflowId) return undefined;
+    const next = workflowById(fallbackId);
+    const timer = setTimeout(() => {
+      setWorkflowId(fallbackId);
+      setPerformanceModelId(null);
+      setSpeechSource(next.defaultSpeechSource);
+      setConsent(false);
+      setError(null);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [catalogLoading, dedicatedLipSync, models, performanceModels.length, workflowId]);
 
   const setVisualFile = useCallback((file) => {
     if (visualRef.current?.previewUrl?.startsWith('blob:')) URL.revokeObjectURL(visualRef.current.previewUrl);
@@ -1753,19 +1770,20 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
         {dedicatedLipSync && (
           <section aria-labelledby="lip-sync-engine-title" className="mt-6 overflow-hidden rounded-2xl border border-vx-border bg-vx-panel">
             <div className="border-b border-vx-border px-4 py-4 sm:px-5">
-              <p className="font-vx-mono text-[10px] font-bold uppercase tracking-[0.14em] text-vx-accent">Live model contracts</p>
+              <p className="font-vx-mono text-[10px] font-bold uppercase tracking-[0.14em] text-vx-accent">Available model contracts</p>
               <h2 id="lip-sync-engine-title" className="mt-1 text-xl font-black">Choose the source—not a vague quality toggle.</h2>
-              <p className="mt-2 max-w-3xl text-sm leading-6 text-vx-fg-muted">These are separate live engines. Video Lip Sync preserves an existing performance; Talking Photo creates a new one from a still portrait. The selected engine fixes the accepted source, model and duration limit.</p>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-vx-fg-muted">These are separate engines. Video Lip Sync preserves an existing performance; Talking Photo creates a new one from a still portrait. Only an engine backed by the live catalog can be selected.</p>
             </div>
             <div className="grid sm:grid-cols-2" role="list" aria-label="Live lip-sync engine contracts">
               {LIP_SYNC_ENGINE_CONTRACTS.map((contract) => {
                 const selected = contract.workflowId === workflow.id;
+                const available = availablePerformanceModels(models, contract.workflowId).length > 0;
                 return (
                   <div key={contract.workflowId} role="listitem" className="border-b border-vx-border p-4 last:border-b-0 sm:border-b-0 sm:border-r sm:last:border-r-0 sm:p-5">
-                    <button type="button" aria-pressed={selected} disabled={busy} onClick={() => chooseWorkflow(contract.workflowId)} className="w-full rounded-xl border border-vx-border bg-vx-base p-4 text-left transition-colors hover:border-vx-accent disabled:opacity-55 aria-pressed:border-vx-accent aria-pressed:ring-2 aria-pressed:ring-vx-accent/20">
+                    <button type="button" aria-pressed={selected} disabled={busy || !available} onClick={() => chooseWorkflow(contract.workflowId)} className="w-full rounded-xl border border-vx-border bg-vx-base p-4 text-left transition-colors hover:border-vx-accent disabled:opacity-55 aria-pressed:border-vx-accent aria-pressed:ring-2 aria-pressed:ring-vx-accent/20">
                       <span className="flex flex-wrap items-center justify-between gap-2">
                         <span className="text-base font-black">{workflowById(contract.workflowId).label}</span>
-                        <span className={`rounded-full px-2.5 py-1 font-vx-mono text-[9px] font-bold uppercase tracking-[0.1em] ${selected ? 'bg-vx-accent text-vx-accent-ink' : 'border border-vx-border text-vx-fg-muted'}`}>{selected ? 'Selected' : contract.badge}</span>
+                        <span className={`rounded-full px-2.5 py-1 font-vx-mono text-[9px] font-bold uppercase tracking-[0.1em] ${selected && available ? 'bg-vx-accent text-vx-accent-ink' : 'border border-vx-border text-vx-fg-muted'}`}>{!available ? 'Unavailable' : selected ? 'Selected' : contract.badge}</span>
                       </span>
                       <span className="mt-3 block text-sm leading-5 text-vx-fg-body">{contract.summary}</span>
                       <span className="mt-4 grid grid-cols-3 gap-2 border-y border-vx-border py-3">
@@ -1794,6 +1812,7 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {visibleWorkflows.map((item) => {
               const engineContract = dedicatedLipSync ? lipSyncEngineContract(item) : null;
+              const available = item.status === 'available' && availablePerformanceModels(models, item).length > 0;
               const content = (
                 <>
                   <span className="font-vx-mono text-[9px] font-bold tracking-[0.12em] text-vx-fg-faint">{item.eyebrow}</span>
@@ -1801,13 +1820,13 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
                   <span className="mt-2 block text-[11px] leading-4 text-vx-fg-muted">{item.description}</span>
                   {engineContract && <span className="mt-2 block font-vx-mono text-[9px] font-bold uppercase tracking-[0.08em] text-vx-fg-faint">{engineContract.modelLabel} · {engineContract.maxSeconds}s max</span>}
                   <span className={`mt-3 block font-vx-mono text-[9px] font-bold tracking-[0.1em] ${item.status === 'planned' ? 'text-vx-fg-faint' : 'text-vx-accent'}`}>
-                    {item.status === 'available' ? '● AVAILABLE' : item.href ? '↗ OPEN TOOL' : '○ PLANNED'}
+                    {item.status === 'available' ? available ? '● AVAILABLE' : '○ UNAVAILABLE' : item.href ? '↗ OPEN TOOL' : '○ PLANNED'}
                   </span>
                 </>
               );
               const className = 'min-h-36 rounded-2xl border border-vx-border bg-vx-panel p-4 text-left transition-colors hover:border-vx-accent disabled:cursor-not-allowed disabled:opacity-55 aria-pressed:border-vx-accent aria-pressed:bg-vx-accent/[0.07]';
               if (item.href) return <Link key={item.id} href={item.href} className={className}>{content}</Link>;
-              return <button key={item.id} type="button" disabled={item.status !== 'available' || busy} aria-pressed={workflowId === item.id} onClick={() => chooseWorkflow(item.id)} className={className}>{content}</button>;
+              return <button key={item.id} type="button" disabled={!available || busy} aria-pressed={workflowId === item.id} onClick={() => chooseWorkflow(item.id)} className={className}>{content}</button>;
             })}
           </div>
         </section>
@@ -1822,7 +1841,7 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
                     <h2 id="talking-photo-model-title" className="mt-1 text-lg font-black">Choose speed, fidelity and price</h2>
                     <p className="mt-1 max-w-2xl text-xs leading-5 text-vx-fg-muted">Both models accept one permitted image and speech up to ten seconds. Each card uses its own live catalog price.</p>
                   </div>
-                  <span className="rounded-full border border-vx-border px-3 py-1.5 font-vx-mono text-[9px] font-bold uppercase tracking-[0.1em] text-vx-fg-muted">2 live models</span>
+                  <span className="rounded-full border border-vx-border px-3 py-1.5 font-vx-mono text-[9px] font-bold uppercase tracking-[0.1em] text-vx-fg-muted">{performanceModels.length} available</span>
                 </div>
                 <div className="mt-4 grid gap-3 sm:grid-cols-2" role="list" aria-label="Talking Photo models">
                   {TALKING_PHOTO_MODEL_CONTRACTS.map((contract) => {
@@ -1850,7 +1869,7 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
                     <h2 id="video-lip-sync-model-title" className="mt-1 text-lg font-black">Choose duration, cost and mismatch handling</h2>
                     <p className="mt-1 max-w-2xl text-xs leading-5 text-vx-fg-muted">{dedicatedDubbing ? 'Quick clip is the lower-cost 40-second path. Long-form accepts an owned video and speech track up to three minutes; reviewed text remains bounded by the editor’s script limit.' : 'Both models preserve an existing performance. Long-form expands the server-enforced source limit from 40 seconds to three minutes.'}</p>
                   </div>
-                  <span className="rounded-full border border-vx-border px-3 py-1.5 font-vx-mono text-[9px] font-bold uppercase tracking-[0.1em] text-vx-fg-muted">2 live models</span>
+                  <span className="rounded-full border border-vx-border px-3 py-1.5 font-vx-mono text-[9px] font-bold uppercase tracking-[0.1em] text-vx-fg-muted">{performanceModels.length} available</span>
                 </div>
                 <div className="mt-4 grid gap-3 sm:grid-cols-2" role="list" aria-label={dedicatedDubbing ? 'Video Dubbing engines' : 'Video Lip Sync models'}>
                   {VIDEO_LIP_SYNC_MODEL_CONTRACTS.map((contract) => {
@@ -2129,7 +2148,7 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
                 <p className="font-vx-mono text-[10px] font-bold tracking-[0.14em] text-vx-fg-muted">APPROVE TOTAL</p>
                 <p className="font-vx-mono text-[11px] text-vx-fg-muted">balance {balance ?? '—'} cr</p>
               </div>
-              <p className="mt-2 font-vx-mono text-[38px] font-black text-vx-money">−{quote.totalCredits} cr</p>
+              <p className="mt-2 font-vx-mono text-[38px] font-black text-vx-money">{quoteAvailable ? `−${quote.totalCredits} cr` : 'Unavailable'}</p>
               {speechSource === 'script' && (
                 <p className="mt-2 text-xs leading-5 text-vx-fg-muted">
                   {quote.speechCredits} credits for speech, then {quote.lipSyncCredits} for {workflow.id === 'product-presenter' ? 'presenter animation' : 'lip sync'}. If speech succeeds but {workflow.id === 'product-presenter' ? 'animation' : 'lip sync'} cannot start, the speech stays in Library and only its charge stands.
@@ -2137,8 +2156,8 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
               )}
               {composition.subtitles && <p className="mt-2 text-xs leading-5 text-vx-fg-muted">The base performance is created first, then up to {captionsCredits} credits are charged for burned subtitles, based on the finished video&apos;s length. If captioning fails, that second job is refunded and the base video remains in Library.</p>}
               {composition.pictureInPicture && <p className="mt-2 text-xs leading-5 text-vx-fg-muted">Picture-in-picture adds no credits. After the performance succeeds, this browser combines it with the selected background and prepares a local WebM download.</p>}
-              <Button className="mt-5 w-full justify-between" cost={quote.totalCredits} disabled={blocked} onClick={submit}>
-                {sending ? 'Preparing…' : generating ? 'Generation running' : workflow.id === 'video-dubbing' ? 'Create dubbed video' : workflow.id === 'product-presenter' ? 'Create product presenter' : workflow.id === 'baby-podcast' ? 'Create synthetic baby podcast' : workflow.id === 'talking-object' ? 'Create talking object' : workflow.id === 'talking-animal' ? 'Create talking animal' : workflow.id === 'talking-cartoon' ? 'Create talking illustration' : 'Create performance'}
+              <Button className="mt-5 w-full justify-between" cost={quoteAvailable ? quote.totalCredits : undefined} disabled={blocked} onClick={submit}>
+                {!quoteAvailable ? 'Model unavailable' : sending ? 'Preparing…' : generating ? 'Generation running' : workflow.id === 'video-dubbing' ? 'Create dubbed video' : workflow.id === 'product-presenter' ? 'Create product presenter' : workflow.id === 'baby-podcast' ? 'Create synthetic baby podcast' : workflow.id === 'talking-object' ? 'Create talking object' : workflow.id === 'talking-animal' ? 'Create talking animal' : workflow.id === 'talking-cartoon' ? 'Create talking illustration' : 'Create performance'}
               </Button>
               {!visual && <p className="mt-3 text-xs text-vx-fg-muted">Add the required source.</p>}
               {visual && !speechReady && <p className="mt-3 text-xs text-vx-fg-muted">Add {workflow.id === 'singing-photo' ? 'a cleared song clip' : 'speech'} that fits the {activeMaxSeconds}s model limit.</p>}
