@@ -72,25 +72,19 @@ describe('sign-in screen', () => {
     });
     const textNode = (key: string) => root.container.queryAll((n) => n.type === 'Text' && n.children.includes(t(key)))[0];
 
-    test('the title is the header, not the kicker', async () => {
+    test('the title is the header and repeated sales copy stays off the login screen', async () => {
         await act(async () => root.render(<SignIn />));
         expect(textNode('signIn.title').props.accessibilityRole).toBe('header');
-        expect(textNode('signIn.kicker').props.accessibilityRole).toBeUndefined();
-    });
-
-    test('the promise group reads the visible lines, not a different summary', async () => {
-        await act(async () => root.render(<SignIn />));
-        const group = root.container.queryAll((n) => n.props.accessible === true && n.type === 'View')[0];
-        expect(group.props.accessibilityLabel).toBeUndefined();
-        for (const key of ['signIn.photo', 'signIn.video', 'signIn.idea']) expect(group.queryAll((n) => n.type === 'Text' && n.children.includes(t(key)))).toHaveLength(1);
+        for (const key of ['signIn.kicker', 'signIn.photo', 'signIn.video', 'signIn.idea']) expect(textNode(key)).toBeUndefined();
     });
 
     test('ticking the box announces the status line once', async () => {
         const announce = jest.spyOn(RN.AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
         await act(async () => root.render(<SignIn />));
-        expect(textNode('signIn.tickFirst').props.accessibilityLiveRegion).toBe('polite');
+        expect(textNode('signIn.tickFirst')).toBeUndefined();
         expect(announce).not.toHaveBeenCalled();
         await act(async () => root.container.queryAll((n) => n.props.testID === 'consent')[0].props.onChange(true));
+        expect(textNode('signIn.ready')).toBeDefined();
         expect(announce).toHaveBeenCalledTimes(1);
         expect(announce).toHaveBeenCalledWith(t('signIn.ready'));
     });

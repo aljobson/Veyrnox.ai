@@ -7,19 +7,14 @@ import { useAuth } from '../auth/AuthProvider';
 import { BrandIntro } from '../components/BrandIntro';
 import { SignupOffer } from '../components/SignupOffer';
 import { SignedInRedirect } from '../components/SignedInRedirect';
-import { Button, Icon, Text, AuthProviderButton, themedStyles, useThemedStyles } from '../components/ui';
+import { Button, Text, AuthProviderButton, themedStyles, useThemedStyles } from '../components/ui';
 import { ConsentRow } from '../components/ui/ConsentRow';
 import { DEV_MOCK } from '../lib/config';
 import { ds, colors } from '../theme';
 import { t } from '../lib/i18n';
 import { playSelection } from '../lib/haptics';
 import { captureEvent } from '../lib/analytics/events';
-
-const PROMISES = [
-    { icon: 'image', label: 'signIn.photo' },
-    { icon: 'video', label: 'signIn.video' },
-    { icon: 'lightbulb', label: 'signIn.idea' },
-] as const;
+import { useAnnouncement } from '../lib/useAnnouncement';
 
 export default function SignIn() {
     const { appleNativeAvailable, signInWithApple, signInWithOAuth, signInWithEmail, status } = useAuth();
@@ -35,6 +30,7 @@ export default function SignIn() {
     const [error, setError] = useState<string | null>(null);
     const [agreed, setAgreed] = useState(false);
     const blocked = busy || !agreed;
+    useAnnouncement(agreed ? t('signIn.ready') : null, { everywhere: true });
     useEffect(() => { if (status === 'signedOut') captureEvent('sign_in_started', { source: entrySource }); }, [entrySource, status]);
     async function run(action: () => Promise<void>) {
         if (!agreed || busy || running.current) return;
@@ -70,25 +66,14 @@ export default function SignIn() {
             >
                 <View style={styles.hero}>
                     <BrandIntro fontSize={32} />
-                    {!compact ? <Text variant="caption" tone="accent">{t('signIn.kicker')}</Text> : null}
                     <Text variant="display">{personalised ? t('onboarding.signIn.title') : t('signIn.title')}</Text>
                     <Text tone="secondary">{personalised ? t('onboarding.signIn.body') : t('signIn.subtitle')}</Text>
-                    {!compact ? (
-                        <View accessible style={styles.promises}>
-                            {PROMISES.map((promise) => (
-                                <View key={promise.label} style={styles.promise}>
-                                    <Icon name={promise.icon} size={20} />
-                                    <Text variant="footnote" tone="secondary">{t(promise.label)}</Text>
-                                </View>
-                            ))}
-                        </View>
-                    ) : null}
                 </View>
                 {!compact ? <SignupOffer /> : null}
                 <ConsentRow agreed={agreed} onChange={setAgreed} />
-                {!compact ? (
-                    <Text variant="footnote" tone="tertiary" accessibilityLiveRegion="polite">
-                        {t(agreed ? 'signIn.ready' : 'signIn.tickFirst')}
+                {!compact && agreed ? (
+                    <Text variant="footnote" tone="tertiary">
+                        {t('signIn.ready')}
                     </Text>
                 ) : null}
                 <AuthProviderButton
@@ -136,7 +121,5 @@ const sheets = themedStyles((p) => ({
     frame: { flex: 1, backgroundColor: p.bg },
     scroll: { flex: 1 },
     screen: { flexGrow: 1, gap: ds.space.md },
-    hero: { gap: ds.space.lg, marginBottom: ds.space.lg },
-    promises: { gap: ds.space.sm },
-    promise: { flexDirection: 'row', alignItems: 'center', gap: ds.space.md },
+    hero: { gap: ds.space.md, marginBottom: ds.space.sm },
 }));
