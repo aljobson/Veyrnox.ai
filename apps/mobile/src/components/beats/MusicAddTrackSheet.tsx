@@ -40,16 +40,16 @@ function TrackChoice({ testID, icon, title, disabled, onPress }: {
 }) {
     const s = useThemedStyles(sheets);
     return <Button testID={testID} variant="tertiary" disabled={disabled}
-        label={title} onPress={onPress} style={s.choice}><View style={s.label}><View style={s.icon}><Icon name={icon} size={24} /></View><View style={s.copy}>
-            <Text variant="bodyStrong">{title}</Text>
-        </View><Icon name="caretRight" size={20} /></View></Button>;
+        label={title} onPress={onPress} style={s.choice}><View style={s.label}><View style={s.icon}><Icon name={icon} size={28} /></View>
+            <Text variant="caption" numberOfLines={2} style={s.choiceLabel}>{title}</Text>
+        </View></Button>;
 }
 
 const sheets = themedStyles(p => ({
     close: { alignSelf: 'flex-end', marginTop: -56 },
-    options: { gap: ds.space.xs, marginTop: ds.space.sm, padding: ds.space.sm, borderRadius: ds.radius.lg, backgroundColor: p.bgElevated1 },
-    choice: { paddingHorizontal: ds.space.sm, justifyContent: 'flex-start', borderRadius: ds.radius.md },
-    label: { width: '100%', flexDirection: 'row', alignItems: 'center', gap: ds.space.md, paddingVertical: ds.space.xs },
-    icon: { width: 40, height: 40, borderRadius: ds.radius.md, alignItems: 'center', justifyContent: 'center', backgroundColor: p.surface },
-    copy: { flex: 1, gap: ds.space.xs },
+    options: { flexDirection: 'row', flexWrap: 'wrap', gap: ds.space.sm, marginTop: ds.space.sm, padding: ds.space.sm, borderRadius: ds.radius.lg, backgroundColor: p.bgElevated1 },
+    choice: { width: '30%', minWidth: 92, flexGrow: 1, paddingHorizontal: ds.space.xs, borderRadius: ds.radius.md },
+    label: { width: '100%', minHeight: 88, alignItems: 'center', justifyContent: 'center', gap: ds.space.sm, paddingVertical: ds.space.sm },
+    icon: { width: 44, height: 44, borderRadius: ds.radius.md, alignItems: 'center', justifyContent: 'center', backgroundColor: p.surface },
+    choiceLabel: { textAlign: 'center' },
 }));

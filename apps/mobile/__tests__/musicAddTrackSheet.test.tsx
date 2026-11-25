@@ -44,3 +44,11 @@ test('disables every track creation choice when the song cannot accept another t
         expect(button.props.accessibilityState.disabled).toBe(true);
     }
 });
+
+test('presents track choices as a clean icon grid without disclosure chevrons', async () => {
+    await act(async () => root.render(<MusicAddTrackSheet disabled={false} onLibrary={() => {}} onDevice={() => {}}
+        onRecord={() => {}} onDrums={() => {}} onInstrument={() => {}} onClose={() => {}} />));
+    const icons = root.container.queryAll(node => node.props.accessibilityElementsHidden && node.props.style);
+    expect(icons.length).toBeGreaterThanOrEqual(5);
+    expect(root.container.queryAll(node => node.props.accessibilityLabel === 'caretRight')).toHaveLength(0);
+});

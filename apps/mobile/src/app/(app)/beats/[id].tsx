@@ -13,7 +13,7 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ComponentRef } from 'react';
 import { AccessibilityInfo, Alert, AppState, findNodeHandle, Keyboard, Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { AppearanceContext, Button, SegmentedControl, Text, themedStyles, useAppearance, useThemedStyles } from '../../../components/ui';
+import { AppearanceContext, Button, Text, themedStyles, useAppearance, useThemedStyles } from '../../../components/ui';
 import { EmptyState } from '../../../components/EmptyState';
 import { MusicNotice } from '../../../components/music/MusicNotice';
 import { PadGrid } from '../../../components/beats/PadGrid';
@@ -42,7 +42,6 @@ import { ds, TEXT_SCALE } from '../../../theme';
 import { createHistory, record, replacePresent, travel, canUndo, canRedo, type History } from '../../../lib/beatNative/history';
 import { useLocalBeatLifecycle } from '../../../lib/beatNative/useLocalBeatLifecycle';
 import { BeatAiPanel } from '../../../components/beats/ai/BeatAiPanel';
-import { BeatSaveControls } from '../../../components/beats/BeatSaveControls';
 import { BeatEditorTransport } from '../../../components/beats/BeatEditorTransport';
 import { BeatMidiRecordPanel, type BeatMidiRecordPhase } from '../../../components/beats/BeatMidiRecordPanel';
 import { BeatMidiRecoveryCard, type BeatMidiRecoveryMode } from '../../../components/beats/BeatMidiRecoveryCard';
@@ -60,15 +59,6 @@ import { pickDeviceAudio } from '../../../lib/beatNative/deviceAudioImport';
 import { position } from '../../../lib/beatNative/regionActions';
 
 const clampBpm = (n: number) => Math.min(MAX_BPM, Math.max(MIN_BPM, n));
-const studioTime = (tick: number, bpm: number) => {
-    const totalMs = Math.max(0, Math.round(tick / 960 * 60_000 / bpm));
-    const minutes = Math.floor(totalMs / 60_000), seconds = Math.floor(totalMs % 60_000 / 1000), millis = totalMs % 1000;
-    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(millis).padStart(3, '0')}`;
-};
-const studioBeat = (tick: number) => {
-    const safe = Math.max(0, tick), bar = Math.floor(safe / 3840) + 1, within = safe % 3840;
-    return `${String(bar).padStart(3, '0')}.${Math.floor(within / 960) + 1}.${Math.floor(within % 960 / 240) + 1}`;
-};
 const playbackNotice = (error: unknown) => t((error as Error)?.message === 'audio_playback_too_large' ? 'beat.audioTooLarge' : 'beat.audioError');
 const midiErrorNotice = (error: unknown) => {
     const code = (error as { code?: string })?.code ?? (error as Error)?.message ?? '';
@@ -664,26 +654,17 @@ export default function BeatEditor() {
                     scheduleLaneRevealRetry();
                 }}>
                 <View style={[s.actions, shortLandscape && s.actionsShort]}>
-                    {!shortLandscape ? <View style={s.saveStatus}><BeatSaveControls id={doc.id} apply={apply} /></View> : null}
-                    <View style={s.topbar} accessibilityRole="toolbar" accessibilityLabel={t('beat.title')}>
-                        {doc.view === 'pattern' ? <Button size="md" variant="tertiary" icon="plus" iconOnly label={t('beat.track.add')}
-                            disabled={patternLocked || doc.tracks.length >= MAX_TRACKS} onPress={() => setAddTrackOpen(true)} containerStyle={s.iconAction} /> : null}
-                        <Button size="md" variant="tertiary" icon="arrowUp" iconOnly label={t('beatExport.title')}
-                            onPress={() => setExporting(true)} containerStyle={s.iconAction} />
-                        <Button size="md" variant="tertiary" icon="faders" iconOnly label={t('beat.mixer')} disabled={locked}
-                            onPress={() => setMixer(true)} containerStyle={s.iconAction} />
+                    <View testID="beat-editor-quick-settings" style={s.quickSettings} accessibilityRole="toolbar" accessibilityLabel={t('beat.title')}>
+                        <Button size="md" variant="tertiary" icon={doc.view === 'song' ? 'squares' : 'waveform'} iconOnly
+                            label={t(doc.view === 'song' ? 'beat.view.pattern' : 'beat.view.song')} disabled={patternLocked}
+                            onPress={() => apply(d => setView(d, doc.view === 'song' ? 'pattern' : 'song'), t('beat.view.changed'))}
+                            containerStyle={s.iconAction} />
                         <Button size="md" variant="tertiary" icon="gauge" iconOnly label={t('beat.tempoValue', { bpm })}
                             accessibilityState={{ expanded: tempoOpen }} onPress={() => setTempoOpen(value => !value)} containerStyle={s.iconAction} />
+                        <Text variant="caption" tone="secondary" style={s.tempoLabel}>{t('beat.tempoValue', { bpm })}</Text>
                         {layout !== 'regular' ? <Button size="md" variant="tertiary" icon="sliders" iconOnly label={t('beat.track.controls')}
                             accessibilityState={{ expanded: trackControlsOpen }} onPress={() => setTrackControlsOpen(value => !value)} containerStyle={s.iconAction} /> : null}
                     </View>
-                    {!shortLandscape ? <View testID="beat-studio-readout" style={s.readout} accessible accessibilityRole="summary"
-                        accessibilityLabel={[studioTime(arrangementLocator, bpm), studioBeat(arrangementLocator), t('beat.tempoValue', { bpm }), `4/4 ${t('music.create.advanced.meter')}`].join(', ')}>
-                        <View style={s.readoutCell}><Text variant="footnote" tone="tertiary">{t('beatMix.param.time').toUpperCase()}</Text><Text variant="caption" style={s.readoutValue}>{studioTime(arrangementLocator, bpm)}</Text></View>
-                        <View style={s.readoutCell}><Text variant="footnote" tone="tertiary">{t('beat.snap.bar').toUpperCase()}</Text><Text variant="caption" style={s.readoutValue}>{studioBeat(arrangementLocator)}</Text></View>
-                        <View style={s.readoutCell}><Text variant="footnote" tone="tertiary">{t('beat.tempo').toUpperCase()}</Text><Text variant="caption" style={s.readoutValue}>{t('beat.tempoValue', { bpm })}</Text></View>
-                        <View style={s.readoutCell}><Text variant="footnote" tone="tertiary">{t('music.create.advanced.meter').toUpperCase()}</Text><Text variant="caption" style={s.readoutValue}>4/4</Text></View>
-                    </View> : null}
                     {tempoOpen ? <View style={s.tempo} accessibilityLabel={t('beat.tempo')}>
                         <Text variant="title3" accessibilityLiveRegion="polite">{t('beat.tempoValue', { bpm })}</Text>
                         <View style={s.stepper}>
@@ -693,9 +674,6 @@ export default function BeatEditor() {
                             <Button size="md" variant="secondary" label="+5" accessibilityLabel={t('beat.tempoUp5')} onPress={() => bump(5)} disabled={patternLocked || bpm >= MAX_BPM} containerStyle={s.flex} />
                         </View>
                     </View> : null}
-                    <SegmentedControl value={doc.view} accessibilityLabel={t('beat.view.label')} disabled={patternLocked}
-                        options={[{ value: 'song', label: t('beat.view.song') }, { value: 'pattern', label: t('beat.view.pattern') }]}
-                        onChange={view => apply(d => setView(d, view), t('beat.view.changed'))} />
                 </View>
                 {replacing ? <Text accessibilityLiveRegion="polite">{t('beatTakes.replacing')}</Text> : null}
                 {notice ? <MusicNotice message={notice} /> : null}
@@ -746,8 +724,8 @@ export default function BeatEditor() {
                                 onToggle={n => apply(d => toggleStep(d, pad, n))}
                                 onVelocity={(n, direction) => apply(d => cycleVelocity(d, pad, n, direction))} />
                         </> : null}
-                        <BeatInstrumentsSection doc={doc} apply={apply} audio={engine} disabled={locked} notice={notice}
-                            onOpen={regionId => { stop(); openPiano(doc.id, regionId); }} />
+                        {doc.view === 'pattern' ? <BeatInstrumentsSection doc={doc} apply={apply} audio={engine} disabled={locked} notice={notice}
+                            onOpen={regionId => { stop(); openPiano(doc.id, regionId); }} /> : null}
                         </View>
                     </View>
                     {layout === 'regular' || trackControlsOpen ? <View testID="beat-editor-inspector" style={[s.inspector, layout === 'regular' && s.inspectorRegular]}>
@@ -785,6 +763,8 @@ export default function BeatEditor() {
                 onPatternControls={openPatternControls}
                 onUndo={() => navigateHistory('undo')} onRedo={() => navigateHistory('redo')}
                 onPlay={() => void (playing || starting ? stop() : play())}
+                addDisabled={patternLocked || doc.tracks.length >= MAX_TRACKS}
+                onAdd={() => setAddTrackOpen(true)} onExport={() => setExporting(true)}
                 mixerDisabled={locked} onMixer={() => { if (!locked) setMixer(true); }} />
             {exporting && <BeatExportSheet doc={doc} replacing={replacing}
                 recording={['opening', 'armed', 'recording', 'finishing'].includes(takes.view.status) || midiPhase !== 'idle'}
@@ -820,12 +800,9 @@ const sheets = themedStyles(p => ({
     contentRegular: { width: '100%', maxWidth: 1180, alignSelf: 'center', paddingHorizontal: ds.space.xxxl },
     actions: { gap: ds.space.sm },
     actionsShort: { gap: ds.space.xs },
-    saveStatus: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: ds.space.sm },
-    topbar: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', borderTopWidth: 1, borderBottomWidth: 1, borderColor: '#26262a' },
+    quickSettings: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: ds.space.xs },
     iconAction: { width: 52, flexGrow: 0 },
-    readout: { minHeight: 48, flexDirection: 'row', overflow: 'hidden', borderWidth: 1, borderColor: '#26262a', borderRadius: ds.radius.md, backgroundColor: '#111114' },
-    readoutCell: { flex: 1, minWidth: 0, alignItems: 'center', justifyContent: 'center', gap: 1, borderRightWidth: 1, borderRightColor: '#26262a' },
-    readoutValue: { fontVariant: ['tabular-nums'] },
+    tempoLabel: { marginRight: 'auto', fontVariant: ['tabular-nums'] },
     secondaryTools: { gap: ds.space.md },
     secondaryToolsHidden: { display: 'none' },
     editor: { gap: ds.space.xl },
