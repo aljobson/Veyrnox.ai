@@ -3906,6 +3906,12 @@
     "ratio": 2.15
   },
   {
+    "id": "beatPiano.library.preview",
+    "english": "Preview",
+    "translation": "Vista previa",
+    "ratio": 1.71
+  },
+  {
     "id": "beatPiano.selected.octaveUp",
     "english": "Selected notes octave up",
     "translation": "Subir octava de las notas seleccionadas",

@@ -4092,6 +4092,12 @@
     "ratio": 1.62
   },
   {
+    "id": "beatPiano.library.preview",
+    "english": "Preview",
+    "translation": "Предпросмотр",
+    "ratio": 1.71
+  },
+  {
     "id": "beatPiano.library.group.drums",
     "english": "Drum kits",
     "translation": "Ударные установки",
