@@ -8,7 +8,7 @@ import { Text } from './Text';
 import { useAppearance } from './AppearanceContext';
 import { usePressStyle } from './usePressStyle';
 
-export type VividCardLayout = 'tile' | 'wide' | 'row';
+export type VividCardLayout = 'tile' | 'wide' | 'row' | 'compact';
 
 export function VividCard({
     hue,
@@ -50,12 +50,13 @@ export function VividCard({
     const glow = useMemo(() => ({ backgroundColor: tone.glow }), [tone.glow]);
     const iconSurface = useMemo(() => ({ backgroundColor: tone.iconSurface }), [tone.iconSurface]);
     const label = rawText(accessibilityLabel ?? [eyebrow, title, detail].filter(Boolean).join('. '));
-    const row = layout === 'row';
+    const row = layout === 'row' || layout === 'compact';
+    const compact = layout === 'compact';
     const content = (
         <>
             <View pointerEvents="none" style={[styles.glow, row && styles.glowRow, glow]} />
-            <View style={[styles.icon, row ? styles.iconRow : styles.iconTile, iconSurface]}>
-                <Icon name={icon} size={row ? 28 : 40} tint={tone.foreground} />
+            <View style={[styles.icon, row ? styles.iconRow : styles.iconTile, compact && styles.iconCompact, iconSurface]}>
+                <Icon name={icon} size={compact ? 22 : row ? 28 : 40} tint={tone.foreground} />
             </View>
             <View style={[styles.copy, row && styles.copyRow]}>
                 {eyebrow ? <Text variant="caption" style={[styles.eyebrow, { color: tone.foregroundMuted }]}>{eyebrow}</Text> : null}
@@ -106,6 +107,14 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: ds.space.md,
     },
+    compact: {
+        minHeight: 64,
+        paddingHorizontal: ds.space.md,
+        paddingVertical: ds.space.sm,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: ds.space.md,
+    },
     glow: {
         position: 'absolute',
         width: 126,
@@ -126,6 +135,7 @@ const styles = StyleSheet.create({
         borderRadius: ds.radius.lg,
     },
     iconRow: { width: 50, height: 50, borderRadius: ds.radius.md },
+    iconCompact: { width: 40, height: 40, borderRadius: ds.radius.sm },
     copy: { gap: ds.space.xs, paddingTop: ds.space.xxxl },
     copyRow: { flex: 1, paddingTop: 0 },
     eyebrow: { fontWeight: '600' },
