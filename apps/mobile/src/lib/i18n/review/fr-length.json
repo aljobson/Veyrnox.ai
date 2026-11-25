@@ -5862,16 +5862,16 @@
     "ratio": 1.67
   },
   {
-    "id": "beat.title",
-    "english": "Beat maker",
-    "translation": "Créateur de beats",
-    "ratio": 1.7
+    "id": "beat.home.new",
+    "english": "New music edit",
+    "translation": "Nouveau montage musical",
+    "ratio": 1.64
   },
   {
     "id": "beat.home.empty",
-    "english": "No beats yet",
-    "translation": "Aucun beat pour l’instant",
-    "ratio": 2.08
+    "english": "No music edits yet",
+    "translation": "Aucun montage musical pour l’instant",
+    "ratio": 2
   },
   {
     "id": "beat.pattern.on",
@@ -5947,13 +5947,13 @@
   },
   {
     "id": "beat.midiRecord.recovery.saveNew",
-    "english": "Save as new beat",
+    "english": "Save as new song",
     "translation": "Sauvegarder comme nouveau beat",
     "ratio": 1.88
   },
   {
     "id": "beat.midiRecord.recovery.saveAsNew",
-    "english": "Save as new beat",
+    "english": "Save as new song",
     "translation": "Sauvegarder comme nouveau beat",
     "ratio": 1.88
   },
@@ -6055,7 +6055,7 @@
   },
   {
     "id": "beat.local.loadError",
-    "english": "Could not load saved beats. Retry loading.",
+    "english": "Could not load saved songs. Retry loading.",
     "translation": "Impossible de charger les beats enregistrés. Réessaie le chargement.",
     "ratio": 1.62
   },
@@ -6484,12 +6484,6 @@
     "english": "Allow remixes",
     "translation": "Autoriser les remixes",
     "ratio": 1.62
-  },
-  {
-    "id": "beatAi.stems",
-    "english": "Split stems",
-    "translation": "Séparer les pistes",
-    "ratio": 1.64
   },
   {
     "id": "beatAi.key",

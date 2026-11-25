@@ -21,7 +21,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Linking, Platform } from 'react-native';
 import { createApiClient, API_BASE, type ApiClient } from '../lib/api';
-import { AUTH_REDIRECT_URL, EDITOR_REVIEW } from '../lib/config';
+import { AUTH_REDIRECT_URL } from '../lib/config';
 import { apiTokenSource, isTransientRefreshFailure } from '../lib/auth/apiToken';
 import { createAppleNonce, createPkce } from '../lib/auth/pkce';
 import { aiConsent } from '../lib/aiConsentStore';
@@ -290,16 +290,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const gen = generationRef.current;
         void (async () => {
             const next = await refresh();
-            if (!cancelled && generationRef.current === gen && !next && !sessionRef.current) {
-                if (EDITOR_REVIEW) {
-                    try {
-                        const session = await signInWithPassword('demo@veyrnox.ai', 'demo-password', 'mock');
-                        if (!cancelled && generationRef.current === gen && !sessionRef.current) await adopt(session);
-                    } catch {
-                        if (!cancelled && generationRef.current === gen && !sessionRef.current) setStatus('signedOut');
-                    }
-                } else setStatus('signedOut');
-            }
+            if (!cancelled && generationRef.current === gen && !next && !sessionRef.current) setStatus('signedOut');
         })();
         if (Platform.OS === 'ios') {
             void AppleAuthentication.isAvailableAsync().then((ok) => !cancelled && setAppleNativeAvailable(ok));
@@ -307,7 +298,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return () => {
             cancelled = true;
         };
-    }, [adopt, refresh]);
+    }, [refresh]);
 
     const finishSignIn = useCallback(async (session: Session, gen: number): Promise<number | null> => {
         if (generationRef.current !== gen) return null;

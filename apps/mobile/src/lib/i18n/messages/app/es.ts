@@ -7175,7 +7175,7 @@ export default {
     "beat.home.empty": "Aún no hay ediciones musicales",
     "beat.home.emptyBody": "Importa audio o abre una canción de Tu música. Usa IA para separar pistas, ampliar o sustituir secciones, añadir instrumentos y mezclar.",
     "beat.home.openNamed": "Abrir {title}",
-    "beat.home.loaded": "Beats: {count}.",
+    "beat.home.loaded": "Proyectos del Editor de música: {count}.",
     "beat.home.checking": "Comprobando el creador de beats",
     "beat.home.delete": "Eliminar permanentemente {title} de este teléfono",
     "beat.off": "El creador de beats aún no está disponible",

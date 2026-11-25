@@ -7084,7 +7084,7 @@ export default {
     "beat.home.empty": "Noch keine Musikbearbeitungen",
     "beat.home.emptyBody": "Importiere Audio oder öffne einen Song aus Deine Musik. Nutze KI, um Spuren zu trennen, Abschnitte zu verlängern oder zu ersetzen, Instrumente hinzuzufügen und zu mischen.",
     "beat.home.openNamed": "{title} öffnen",
-    "beat.home.loaded": "Beats: {count}.",
+    "beat.home.loaded": "Musikeditor-Projekte: {count}.",
     "beat.home.checking": "Beat-Maker wird geprüft",
     "beat.home.delete": "{title} dauerhaft von diesem Telefon löschen",
     "beat.off": "Der Beat-Maker ist noch nicht verfügbar",

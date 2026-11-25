@@ -386,6 +386,7 @@ describe('save and versions UI', () => {
         const flush = jest.spyOn(beatStore, 'flushBeats');
         const doc = newBeat('Lifecycle'); mockParams = { id: doc.id };
         await act(async () => root.render(<BeatEditor />));
+        await press(t('beat.saveNote'));
         await press(t('beat.tempoValue', { bpm: doc.tempo.bpm }));
         await press(t('beat.tempoUp5'));
         await press(t('beat.undo'));
@@ -478,6 +479,7 @@ describe('accepted inspection regressions', () => {
         beatStore.setCloudLink(doc.id, { userId: USER, projectId: null, revision: 0 });
         mockApi.request.mockImplementation(async (_path, init) => init?.method === 'PUT' ? { project: project(doc.id, 1) } : { projects: [] });
         await act(async () => root.render(<BeatEditor />));
+        await press(t('beat.saveNote'));
         await press(t('beat.cloud.linkAgain'));
         const put = mockApi.request.mock.calls.find(([, init]) => init?.method === 'PUT');
         expect(put).toBeDefined(); expect(JSON.parse(put![1].body).expected_revision).toBe(0);
@@ -489,7 +491,9 @@ describe('accepted inspection regressions', () => {
             if (init?.method === 'PUT') throw new ApiError(409, 'unknown', { error: { code: 'VERSION_CONFLICT' } });
             return path.endsWith(doc.id) ? { project: project(doc.id, 2), doc_json: JSON.stringify({ ...doc, title: 'Theirs' }) } : { projects: [] };
         });
-        await act(async () => root.render(<BeatEditor />)); await press(t('beat.cloud.link'));
+        await act(async () => root.render(<BeatEditor />));
+        await press(t('beat.saveNote'));
+        await press(t('beat.cloud.link'));
         await press(t('beat.conflict.later'));
         expect(text(t('beat.cloud.paused_conflict')).length).toBeGreaterThan(0);
         expect(text(t('beat.cloud.error'))).toHaveLength(0);
@@ -575,6 +579,7 @@ test('a linked beat with a local-only take offers Retry and usable Versions', as
     const retry = jest.spyOn(BeatCloudSync.prototype, 'retry');
     try {
         mockParams = { id: doc.id }; await act(async () => root.render(<BeatEditor />));
+        await press(t('beat.saveNote'));
         expect(text(t('beat.cloud.takes')).length).toBeGreaterThan(0);
         expect(byLabel(t('beat.retry'))).toBeDefined();
         expect(mockApi.request.mock.calls.filter(([, init]) => init?.method === 'POST')).toHaveLength(1);

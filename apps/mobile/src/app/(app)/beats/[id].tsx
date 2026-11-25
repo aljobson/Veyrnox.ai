@@ -19,6 +19,7 @@ import { BeatMixerSheet } from '../../../components/beats/BeatMixerSheet';
 import { automationControl, type MixDoc } from '../../../lib/beatNative/mix';
 import { BeatInstrumentsSection, openPiano } from '../../../components/beats/BeatInstrumentsSection';
 import { BeatInstrumentLibrary } from '../../../components/beats/BeatInstrumentLibrary';
+import { BeatSaveControls } from '../../../components/beats/BeatSaveControls';
 import { MusicAddTrackSheet } from '../../../components/beats/MusicAddTrackSheet';
 import { BeatArrangement } from '../../../components/beats/BeatArrangement';
 import { BeatSongLibrarySheet, type BeatSongPlacement } from '../../../components/beats/BeatSongLibrarySheet';
@@ -54,6 +55,7 @@ import { KeyboardFormScrollView } from '../../../components/KeyboardFormScrollVi
 import { addAudioRegion as addAudioAssetRegion, type AudioAsset } from '../../../lib/beatNative/labs';
 import { pickDeviceAudio } from '../../../lib/beatNative/deviceAudioImport';
 import { position } from '../../../lib/beatNative/regionActions';
+import { HeaderAction } from '../../../components/HeaderAction';
 
 const clampBpm = (n: number) => Math.min(MAX_BPM, Math.max(MIN_BPM, n));
 const playbackNotice = (error: unknown) => t((error as Error)?.message === 'audio_playback_too_large' ? 'beat.audioTooLarge' : 'beat.audioError');
@@ -98,6 +100,7 @@ export default function BeatEditor() {
     const [held, setHeld] = useState(false);
     const [tempoOpen, setTempoOpen] = useState(false);
     const [trackControlsOpen, setTrackControlsOpen] = useState(false);
+    const [saveControlsOpen, setSaveControlsOpen] = useState(false);
     const [pad, setPad] = useState<PadId>('kick');
     const [padRecord, setPadRecord] = useState(false);
     const [ordinaryPlaying, setOrdinaryPlaying] = useState(false);
@@ -637,8 +640,8 @@ export default function BeatEditor() {
                 headerStyle: { backgroundColor: '#0a0a0b' },
                 headerTintColor: '#f2f2f3',
                 headerTitle: () => <Text variant="title3" style={s.headerTitle}>{doc.title}</Text>,
-                headerRight: () => <Button testID="beat-editor-export" size="md" variant="tertiary" icon="arrowUp" iconOnly
-                    label={t('beatExport.title')} onPress={() => setExporting(true)} containerStyle={s.headerAction} />,
+                headerRight: () => <HeaderAction testID="beat-editor-export" label={t('beatExport.title')} icon="arrowUp" iconOnly
+                    onPress={() => setExporting(true)} />,
                 contentStyle: { backgroundColor: '#0a0a0b' },
             }} />
             <KeyboardScreen><KeyboardFormScrollView ref={workspace} testID="beat-editor-workspace" scrollEnabled={!held} style={s.workspaceScroll}
@@ -681,6 +684,9 @@ export default function BeatEditor() {
                             disabled={!undoable} onPress={() => navigateHistory('undo')} containerStyle={s.iconAction} />
                         <Button testID="beat-editor-redo" size="md" variant="tertiary" icon="seekForward" iconOnly label={t('beat.redo')}
                             disabled={!redoable} onPress={() => navigateHistory('redo')} containerStyle={s.iconAction} />
+                        <Button testID="beat-editor-save-controls" size="md" variant="tertiary" icon="folder" iconOnly label={t('beat.versions.title')}
+                            accessibilityLabel={t('beat.saveNote')}
+                            accessibilityState={{ expanded: saveControlsOpen }} onPress={() => setSaveControlsOpen(value => !value)} containerStyle={s.iconAction} />
                         {layout !== 'regular' ? <Button size="md" variant="tertiary" icon="sliders" iconOnly label={t('beat.track.controls')}
                             accessibilityState={{ expanded: trackControlsOpen }} onPress={() => setTrackControlsOpen(value => !value)} containerStyle={s.iconAction} /> : null}
                     </View>
@@ -692,6 +698,9 @@ export default function BeatEditor() {
                             <Button size="md" variant="secondary" label="+" accessibilityLabel={t('beat.tempoUp')} onPress={() => bump(1)} disabled={patternLocked || bpm >= MAX_BPM} containerStyle={s.flex} />
                             <Button size="md" variant="secondary" label="+5" accessibilityLabel={t('beat.tempoUp5')} onPress={() => bump(5)} disabled={patternLocked || bpm >= MAX_BPM} containerStyle={s.flex} />
                         </View>
+                    </View> : null}
+                    {saveControlsOpen ? <View testID="beat-save-controls-panel" style={s.savePanel}>
+                        <BeatSaveControls id={doc.id} apply={apply} />
                     </View> : null}
                 </View>
                 {replacing ? <Text accessibilityLiveRegion="polite">{t('beatTakes.replacing')}</Text> : null}
@@ -816,7 +825,6 @@ const sheets = themedStyles(p => ({
     actionsShort: { gap: ds.space.xs },
     quickSettings: { minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 0, paddingHorizontal: ds.space.xs },
     iconAction: { width: 48, flexGrow: 0 },
-    headerAction: { width: 48, flexGrow: 0 },
     tempoLabel: { marginRight: 'auto', fontVariant: ['tabular-nums'] },
     editor: { flexGrow: 1, gap: 0 },
     editorRegular: { flexDirection: 'row', alignItems: 'flex-start' },
@@ -826,6 +834,7 @@ const sheets = themedStyles(p => ({
     inspector: { flex: 1, minWidth: 0, gap: ds.space.lg },
     inspectorRegular: { paddingLeft: ds.space.xl, borderLeftWidth: 1, borderLeftColor: p.borderSubtle },
     tempo: { gap: ds.space.sm, alignItems: 'center', padding: ds.space.md, borderRadius: ds.radius.lg, backgroundColor: '#141416', borderWidth: 1, borderColor: '#26262a' },
+    savePanel: { gap: ds.space.sm, padding: ds.space.md, backgroundColor: '#141416', borderTopWidth: 1, borderTopColor: '#26262a' },
     stepper: { width: '100%', flexDirection: 'row', gap: ds.space.sm },
     padHeading: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: ds.space.sm },
     flex: { flex: 1 },

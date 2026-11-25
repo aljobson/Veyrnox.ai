@@ -6,7 +6,7 @@ import { CelebrationHost } from '../../components/CelebrationHost';
 import { CheckInModal } from '../../components/CheckInModal';
 import { ReferralAttach } from '../../components/ReferralAttach';
 import { Redirect, Stack } from 'expo-router';
-import { useEffect, type ReactNode } from 'react';
+import { useEffect } from 'react';
 import { forgetPendingLink } from '../../lib/pendingLink';
 import { useAuth } from '../../auth/AuthProvider';
 import { Logo } from '../../components/Logo';
@@ -23,13 +23,8 @@ import { paletteForScheme } from '../../theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { needsStackHorizontalSafeArea } from '../../lib/appScreenSafeArea';
 import { PersistentAudioQueueProvider } from '../../components/music/PersistentAudioQueue';
-import { EDITOR_REVIEW } from '../../lib/config';
 
 export const unstable_settings = { anchor: '(tabs)' };
-
-function PassThrough({ children }: { readonly children: ReactNode }) {
-    return <>{children}</>;
-}
 
 export default function AppLayout() {
     useOfflineRecovery();
@@ -37,23 +32,20 @@ export default function AppLayout() {
     // Live theme: the back chevron takes headerTintColor, so a palette read once would leave it dark-on-dark after a switch.
     const { settings, scheme } = useAppearance();
     const palette = paletteForScheme(scheme, settings);
-    const SessionGate = EDITOR_REVIEW ? PassThrough : MfaGate;
-    const AdultGate = EDITOR_REVIEW ? PassThrough : AgeConfirmationGate;
-    const BillingGate = EDITOR_REVIEW ? PassThrough : HardPaywallGate;
     // A link opened while already signed in went straight to its screen: nothing is owed after a later sign-in.
     useEffect(() => { if (status === 'signedIn') forgetPendingLink(); }, [status]);
     if (status === 'signedOut') return <Redirect href="/sign-in" />;
     return (
         <>
-            {!EDITOR_REVIEW ? <AiConsentHost /> : null}
-            {!EDITOR_REVIEW ? <CelebrationHost /> : null}
-            <SessionGate key={generation}>
-                <AdultGate>
-                {!EDITOR_REVIEW ? <FirstRunGate /> : null}
-                {!EDITOR_REVIEW ? <ReferralAttach /> : null}
-                {!EDITOR_REVIEW ? <CheckInModal /> : null}
-                {!EDITOR_REVIEW ? <PaywallPrompt /> : null}
-                <BillingGate>
+            <AiConsentHost />
+            <CelebrationHost />
+            <MfaGate key={generation}>
+                <AgeConfirmationGate>
+                <FirstRunGate />
+                <ReferralAttach />
+                <CheckInModal />
+                <PaywallPrompt />
+                <HardPaywallGate>
                 <PersistentAudioQueueProvider>
                 <Stack
                     screenLayout={({ children, route }) => (
@@ -114,9 +106,9 @@ export default function AppLayout() {
                     <Stack.Screen name="templates/[id]" options={{ title: t('presets.templates') }} />
                 </Stack>
                 </PersistentAudioQueueProvider>
-                </BillingGate>
-                </AdultGate>
-            </SessionGate>
+                </HardPaywallGate>
+                </AgeConfirmationGate>
+            </MfaGate>
         </>
     );
 }
