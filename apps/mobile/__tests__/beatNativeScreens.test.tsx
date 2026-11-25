@@ -64,7 +64,7 @@ const mockCreateBeatAudio = jest.fn(() => mockAudio);
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi, getAccessToken: mockGetAccessToken,
     generation: mockGeneration, beginSessionTask: mockBeginSessionTask }) }));
 jest.mock('../src/components/beats/ai/BeatAiPanel', () => ({ BeatAiPanel: () => null }));
-jest.mock('expo-router', () => ({ Link: ({ children }: { children: unknown }) => children, Stack: { Screen: () => null }, useRouter: () => ({ push: mockPush }),
+jest.mock('expo-router', () => ({ Link: ({ children }: { children: unknown }) => children, Stack: { Screen: ({ options }: { options?: { headerRight?(): unknown } }) => options?.headerRight?.() ?? null }, useRouter: () => ({ push: mockPush }),
     useLocalSearchParams: () => mockParams, useFocusEffect: (cb: () => void) => require('react').useEffect(cb, [cb]) }));
 jest.mock('../src/lib/beatNative/audio', () => ({ ...jest.requireActual('../src/lib/beatNative/audio'), createBeatAudio: () => mockCreateBeatAudio() }));
 jest.mock('../src/components/VeyCharacter', () => ({ VeyCharacter: () => null }));
@@ -224,8 +224,12 @@ describe('beat editor', () => {
         expect(shell.queryAll(n => n.props.testID === 'beat-editor-workspace')).toHaveLength(1);
         expect(shell.queryAll(n => n.props.testID === 'beat-editor-transport')).toHaveLength(1);
         expect(workspace.queryAll(n => n.props.testID === 'beat-editor-transport')).toHaveLength(0);
-        for (const label of [t('beat.play'), t('beat.undo'), t('beat.redo'), t('beatMix.title')]) {
+        for (const label of [t('beat.track.add'), t('beatAi.title'), t('beat.play'), t('beatMix.title')]) {
             expect(transport.queryAll(n => n.props.accessibilityLabel === label && typeof (n.props.onClick ?? n.props.onPress) === 'function')).toHaveLength(1);
+        }
+        const quickSettings = testId('beat-editor-quick-settings')[0];
+        for (const label of [t('beat.undo'), t('beat.redo')]) {
+            expect(quickSettings.queryAll(n => n.props.accessibilityLabel === label && typeof (n.props.onClick ?? n.props.onPress) === 'function')).toHaveLength(1);
         }
         expect(transport.props.accessibilityRole).toBe('toolbar');
     });

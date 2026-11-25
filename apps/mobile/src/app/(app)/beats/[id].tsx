@@ -161,6 +161,7 @@ export default function BeatEditor() {
     useEffect(() => () => { cancelPendingLaneReveal(); }, [cancelPendingLaneReveal]);
     const [mixer, setMixer] = useState(false);
     const [addTrackOpen, setAddTrackOpen] = useState(false);
+    const [aiToolsOpen, setAiToolsOpen] = useState(false);
     const setupHandled = useRef<string | null>(null);
     const [deviceImportBusy, setDeviceImportBusy] = useState(false);
     const [songLibraryOpen, setSongLibraryOpen] = useState(false);
@@ -661,6 +662,8 @@ export default function BeatEditor() {
                 headerStyle: { backgroundColor: '#0a0a0b' },
                 headerTintColor: '#f2f2f3',
                 headerTitle: () => <Text variant="title3" style={s.headerTitle}>{doc.title}</Text>,
+                headerRight: () => <Button testID="beat-editor-export" size="md" variant="tertiary" icon="arrowUp" iconOnly
+                    label={t('beatExport.title')} onPress={() => setExporting(true)} containerStyle={s.headerAction} />,
                 contentStyle: { backgroundColor: '#0a0a0b' },
             }} />
             <KeyboardScreen><KeyboardFormScrollView ref={workspace} testID="beat-editor-workspace" scrollEnabled={!held} style={s.workspaceScroll}
@@ -699,6 +702,10 @@ export default function BeatEditor() {
                         <Button size="md" variant="tertiary" icon="gauge" iconOnly label={t('beat.tempoValue', { bpm })}
                             accessibilityState={{ expanded: tempoOpen }} onPress={() => setTempoOpen(value => !value)} containerStyle={s.iconAction} />
                         <Text variant="caption" tone="secondary" style={s.tempoLabel}>{t('beat.tempoValue', { bpm })}</Text>
+                        <Button testID="beat-editor-undo" size="md" variant="tertiary" icon="seekBack" iconOnly label={t('beat.undo')}
+                            disabled={!undoable} onPress={() => navigateHistory('undo')} containerStyle={s.iconAction} />
+                        <Button testID="beat-editor-redo" size="md" variant="tertiary" icon="seekForward" iconOnly label={t('beat.redo')}
+                            disabled={!redoable} onPress={() => navigateHistory('redo')} containerStyle={s.iconAction} />
                         {layout !== 'regular' ? <Button size="md" variant="tertiary" icon="sliders" iconOnly label={t('beat.track.controls')}
                             accessibilityState={{ expanded: trackControlsOpen }} onPress={() => setTrackControlsOpen(value => !value)} containerStyle={s.iconAction} /> : null}
                     </View>
@@ -783,12 +790,9 @@ export default function BeatEditor() {
                         {doc.tracks.length >= MAX_TRACKS ? <Text variant="footnote" tone="secondary">{t('beat.track.max', { max: MAX_TRACKS })}</Text> : null}
                     </View> : null}
                 </View>
-                <View style={s.secondaryTools}>
-                    <BeatAiPanel doc={doc} apply={apply} disabled={locked} />
-                </View>
             </KeyboardFormScrollView></KeyboardScreen>
             <BeatEditorTransport playing={playing} starting={starting} locked={locked}
-                showPatterns={false}
+                showPatterns={false} showHistory={false}
                 pattern={doc.currentPattern} patternDisabled={patternLocked} canUndo={undoable} canRedo={redoable}
                 patternControlsRef={patternControlsTrigger}
                 midiRecordPhase={midiTransportVisible ? midiPhase : undefined} midiRecordDisabled={midiIdleDisabled}
@@ -798,8 +802,9 @@ export default function BeatEditor() {
                 onUndo={() => navigateHistory('undo')} onRedo={() => navigateHistory('redo')}
                 onPlay={() => void (playing || starting ? stop() : play())}
                 addDisabled={patternLocked || doc.tracks.length >= MAX_TRACKS}
-                onAdd={() => setAddTrackOpen(true)} onExport={() => setExporting(true)}
+                onAdd={() => setAddTrackOpen(true)} onAi={() => setAiToolsOpen(true)}
                 mixerDisabled={locked} onMixer={() => { if (!locked) setMixer(true); }} />
+            <BeatAiPanel doc={doc} apply={apply} disabled={locked} visible={aiToolsOpen} onClose={() => setAiToolsOpen(false)} />
             {exporting && <BeatExportSheet doc={doc} replacing={replacing}
                 recording={['opening', 'armed', 'recording', 'finishing'].includes(takes.view.status) || midiPhase !== 'idle'}
                 prepare={async () => { await settleEditorRecorders('preserve'); stop(); await closeEditorAudio(); }}
@@ -829,20 +834,20 @@ const sheets = themedStyles(p => ({
     screen: { flex: 1, backgroundColor: '#0a0a0b' },
     headerTitle: { color: '#f2f2f3' },
     workspaceScroll: { flex: 1 },
-    content: { padding: ds.space.md, gap: ds.space.md, paddingBottom: ds.space.xxl },
+    content: { flexGrow: 1, gap: 0, paddingBottom: 0 },
     contentShort: { paddingVertical: ds.space.xs, gap: ds.space.xs, paddingBottom: ds.space.lg },
     contentRegular: { width: '100%', maxWidth: 1180, alignSelf: 'center', paddingHorizontal: ds.space.xxxl },
-    actions: { gap: ds.space.sm },
+    actions: { gap: 0, borderBottomWidth: 1, borderBottomColor: '#26262a' },
     actionsShort: { gap: ds.space.xs },
-    quickSettings: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: ds.space.xs },
-    iconAction: { width: 52, flexGrow: 0 },
+    quickSettings: { minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 0, paddingHorizontal: ds.space.xs },
+    iconAction: { width: 48, flexGrow: 0 },
+    headerAction: { width: 48, flexGrow: 0 },
     tempoLabel: { marginRight: 'auto', fontVariant: ['tabular-nums'] },
-    secondaryTools: { gap: ds.space.md },
-    editor: { gap: ds.space.xl },
+    editor: { flexGrow: 1, gap: 0 },
     editorRegular: { flexDirection: 'row', alignItems: 'flex-start' },
     composer: { alignItems: 'stretch', gap: ds.space.md },
     composerRegular: { flex: 1.65, minWidth: 0 },
-    main: { flex: 1, minWidth: 0, gap: ds.space.lg },
+    main: { flex: 1, minWidth: 0, gap: 0 },
     inspector: { flex: 1, minWidth: 0, gap: ds.space.lg },
     inspectorRegular: { paddingLeft: ds.space.xl, borderLeftWidth: 1, borderLeftColor: p.borderSubtle },
     tempo: { gap: ds.space.sm, alignItems: 'center', padding: ds.space.md, borderRadius: ds.radius.lg, backgroundColor: '#141416', borderWidth: 1, borderColor: '#26262a' },

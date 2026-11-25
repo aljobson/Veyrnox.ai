@@ -97,6 +97,18 @@ test('phone transport exposes add and export as labelled icon actions', async ()
     }
 });
 
+test('focused music dock exposes add, AI, play and mixer without history chrome', async () => {
+    const onAdd = jest.fn(), onAi = jest.fn();
+    await act(async () => root.render(<BeatEditorTransport {...props} showPatterns={false} showHistory={false} onAdd={onAdd} onAi={onAi} />));
+    expect(root.container.queryAll(n => n.props.testID === 'beat-editor-history-controls')).toHaveLength(0);
+    for (const [id, action] of [['beat-editor-add-track', onAdd], ['beat-editor-ai', onAi]] as const) {
+        const button = root.container.queryAll(n => n.props.testID === id && typeof (n.props.onClick ?? n.props.onPress) === 'function')[0];
+        expect(button.props.accessibilityLabel).toBeTruthy();
+        await act(async () => (button.props.onClick ?? button.props.onPress)({ nativeEvent: {} }));
+        expect(action).toHaveBeenCalledTimes(1);
+    }
+});
+
 test('regular width uses the row layout and protects landscape sides plus the bottom safe-area edge', async () => {
     mockDimensions = { ...mockDimensions, width: 1024 };
     await render();

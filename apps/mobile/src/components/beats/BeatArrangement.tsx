@@ -147,8 +147,7 @@ export function BeatArrangement({ doc, apply, selectCurrentPattern, editTrackId,
     };
     return <View style={s.group} testID="beat-arrangement">
         <View style={s.heading}>
-            <View style={s.headingCopy}><Text variant="footnote" tone="accent" accessibilityRole="header" style={s.eyebrow}>{t('beat.view.song')}</Text>
-                <Text variant="caption" tone="secondary">{position(locator)}</Text></View>
+            <View style={s.headingCopy}><Text variant="caption" tone="secondary">{position(locator)}</Text></View>
             <View style={s.controls}>
                 <Button ref={libraryTrigger} size="md" variant="tertiary" icon="folder" iconOnly label={t('beat.library.open')}
                     disabled={disabled} onPress={() => setLibraryOpen(true)} />
@@ -194,18 +193,24 @@ export function BeatArrangement({ doc, apply, selectCurrentPattern, editTrackId,
         </View>}
         <BeatClipSearch doc={doc} choose={chooseSearchResult} disabled={navigationDisabled} />
         <BeatRulerControls locator={locator} end={end} setLocator={setPosition} cycle={doc.cycle} apply={apply} disabled={disabled} />
+        <View style={s.controls}>
+            <Button size="md" variant="tertiary" icon="seekBack" iconOnly label={t('beat.ruler.left')}
+                disabled={navigationDisabled} onPress={() => setPosition(locator - snap)} />
+            <Button size="md" variant="tertiary" icon="seekForward" iconOnly label={t('beat.ruler.right')}
+                disabled={navigationDisabled} onPress={() => setPosition(locator + snap)} />
+        </View>
         </View>
         <View style={s.timeline}>
-            <View style={s.headers}>
+            <View style={[s.headers, layout === 'compact' && s.headersCompact]}>
                 <View style={[s.addTrackSlot, { height: RULER_HEIGHT }]}><Button testID="beat-arrangement-add-track" size="md" variant="tertiary"
                     icon="plus" iconOnly label={t('beat.track.add')} disabled={disabled} onPress={onAddTrack} /></View>
                 {doc.tracks.map((track, index) => <Pressable key={track.id} accessibilityRole="button" accessibilityLabel={track.name}
                     accessibilityState={{ selected: editTrack?.id === track.id, disabled: navigationDisabled }} disabled={navigationDisabled}
                     onPress={() => { if (!navigationDisabled) onEditTrackChange(track.id); }}
                     onLayout={event => { const height = Math.max(MIN_LANE_HEIGHT, event.nativeEvent.layout.height); setHeights(values => values[track.id] === height ? values : { ...values, [track.id]: height }); }}
-                    style={[s.header, { minHeight: laneHeights[index] }, editTrack?.id === track.id && s.selected]}>
+                    style={[s.header, layout === 'compact' && s.headerCompact, { minHeight: laneHeights[index] }, editTrack?.id === track.id && s.selected]}>
                     <View style={s.trackBadge}><Text style={s.trackGlyph}>{musicTrackGlyph(track)}</Text></View>
-                    <View style={s.trackCopy}><Text variant="caption" numberOfLines={2}>{track.name}</Text><Text variant="footnote" tone="tertiary">{String(index + 1).padStart(2, '0')}</Text></View>
+                    <View style={[s.trackCopy, layout === 'compact' && s.trackCopyCompact]}>{layout !== 'compact' ? <Text variant="caption" numberOfLines={2}>{track.name}</Text> : null}<Text variant="footnote" tone="tertiary">{String(index + 1).padStart(2, '0')}</Text></View>
                 </Pressable>)}
             </View>
             <ScrollView ref={scroller} horizontal testID="arrangement-scroll" scrollEnabled={!held} style={s.scroller}
@@ -231,12 +236,6 @@ export function BeatArrangement({ doc, apply, selectCurrentPattern, editTrackId,
                 </View>
             </ScrollView>
         </View>
-        <View style={[s.controls, s.playheadControls]}>
-            <Button size="md" variant="tertiary" icon="seekBack" iconOnly label={t('beat.ruler.left')}
-                disabled={navigationDisabled} onPress={() => setPosition(locator - snap)} />
-            <Button size="md" variant="tertiary" icon="seekForward" iconOnly label={t('beat.ruler.right')}
-                disabled={navigationDisabled} onPress={() => setPosition(locator + snap)} />
-        </View>
         {selectedRegion && selectedTrack && <BeatRegionInspector doc={doc} track={selectedTrack} region={selectedRegion} snap={snap} locator={locator} ripple={ripple} disabled={disabled} apply={apply} />}
         {libraryOpen ? <BeatSongLibrarySheet layout={layout} disabled={disabled} placement={capturePlacement}
             onCommit={(asset, intent) => commitAudio(asset, intent,
@@ -246,21 +245,23 @@ export function BeatArrangement({ doc, apply, selectCurrentPattern, editTrackId,
     </View>;
 }
 const sheets = themedStyles(p => ({
-    group: { gap: 0, overflow: 'hidden', borderWidth: 1, borderColor: p.borderSubtle, borderRadius: ds.radius.lg, backgroundColor: p.bgElevated1 },
-    heading: { minHeight: 54, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: ds.space.sm, paddingHorizontal: ds.space.md, borderBottomWidth: 1, borderBottomColor: p.borderSubtle },
+    group: { flexGrow: 1, gap: 0, overflow: 'hidden', backgroundColor: p.bg },
+    heading: { minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: ds.space.sm, paddingHorizontal: ds.space.sm, borderBottomWidth: 1, borderBottomColor: p.borderSubtle },
     headingCopy: { flex: 1, gap: ds.space.xs },
-    eyebrow: { textTransform: 'uppercase', letterSpacing: 1.5 },
     hidden: { display: 'none' },
     advanced: { gap: ds.space.md, padding: ds.space.md, borderBottomWidth: 1, borderBottomColor: p.borderSubtle },
     controls: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: ds.space.sm },
     rename: { gap: ds.space.sm },
     timeline: { flexDirection: 'row', direction: 'ltr', overflow: 'hidden', backgroundColor: p.bg },
     headers: { width: 98, borderRightWidth: 1, borderRightColor: p.borderStrong },
+    headersCompact: { width: 64 },
     addTrackSlot: { alignItems: 'center', justifyContent: 'center', borderBottomWidth: 1, borderBottomColor: p.borderStrong, backgroundColor: p.bgElevated1 },
     header: { paddingHorizontal: ds.space.sm, flexDirection: 'row', justifyContent: 'flex-start', alignItems: 'center', gap: ds.space.sm, borderBottomWidth: 1, borderBottomColor: p.borderSubtle, backgroundColor: p.bgElevated1 },
+    headerCompact: { paddingHorizontal: ds.space.xs, flexDirection: 'column', justifyContent: 'center', gap: 1 },
     trackBadge: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center', borderRadius: ds.radius.md, backgroundColor: p.surface },
     trackGlyph: { fontSize: 18, lineHeight: 22 },
     trackCopy: { flex: 1, minWidth: 0, gap: 1 },
+    trackCopyCompact: { flex: 0, alignItems: 'center' },
     selected: { borderLeftWidth: 3, borderLeftColor: p.accent, backgroundColor: p.surface },
     scroller: { flex: 1 },
     grid: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 },
@@ -270,5 +271,4 @@ const sheets = themedStyles(p => ({
     emptyLane: { position: 'absolute', top: 0, left: 0, bottom: 0, right: 0 },
     preview: { position: 'absolute', top: ds.space.xs, height: 56, borderWidth: 2, borderColor: p.accent, backgroundColor: p.surface, opacity: 0.7, borderRadius: ds.radius.xs },
     playhead: { position: 'absolute', top: 0, bottom: 0, width: 2, backgroundColor: p.accent },
-    playheadControls: { minHeight: 50, justifyContent: 'center', paddingHorizontal: ds.space.md, borderTopWidth: 1, borderTopColor: p.borderSubtle },
 }));

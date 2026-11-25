@@ -10,11 +10,12 @@ import type { BeatMidiRecordPhase } from './BeatMidiRecordPanel';
 
 const PATTERNS: readonly PatternSlot[] = ['A', 'B', 'C', 'D'];
 
-export function BeatEditorTransport({ playing, starting, locked, showPatterns = true, pattern, patternDisabled, canUndo, canRedo, patternControlsRef, midiRecordControlRef, midiRecordPhase, midiRecordDisabled = false, midiRecordHint, addDisabled = false, mixerDisabled = false, onPattern, onPatternControls, onUndo, onRedo, onPlay, onAdd, onExport, onMixer, onMidiRecord }: {
+export function BeatEditorTransport({ playing, starting, locked, showPatterns = true, showHistory = true, pattern, patternDisabled, canUndo, canRedo, patternControlsRef, midiRecordControlRef, midiRecordPhase, midiRecordDisabled = false, midiRecordHint, addDisabled = false, mixerDisabled = false, onPattern, onPatternControls, onUndo, onRedo, onPlay, onAdd, onAi, onExport, onMixer, onMidiRecord }: {
     playing: boolean;
     starting: boolean;
     locked: boolean;
     showPatterns?: boolean;
+    showHistory?: boolean;
     pattern: PatternSlot;
     patternDisabled: boolean;
     canUndo: boolean;
@@ -32,6 +33,7 @@ export function BeatEditorTransport({ playing, starting, locked, showPatterns = 
     onRedo(): void;
     onPlay(): void;
     onAdd?(): void;
+    onAi?(): void;
     onExport?(): void;
     onMixer(): void;
     onMidiRecord?(): void;
@@ -79,6 +81,8 @@ export function BeatEditorTransport({ playing, starting, locked, showPatterns = 
     const projectActions = <View style={[s.group, scrollActions && s.groupAccessible]} testID="beat-editor-project-actions">
         {onAdd ? <Button testID="beat-editor-add-track" size="md" variant="tertiary" icon="plus" iconOnly label={t('beat.track.add')}
             disabled={addDisabled} onPress={onAdd} containerStyle={[s.control, scrollActions && s.controlAccessible]} /> : null}
+        {onAi ? <Button testID="beat-editor-ai" size="md" variant="tertiary" icon="magicWand" iconOnly label={t('beatAi.title')}
+            disabled={locked} onPress={onAi} containerStyle={[s.control, scrollActions && s.controlAccessible]} /> : null}
         {onExport ? <Button testID="beat-editor-export" size="md" variant="tertiary" icon="arrowUp" iconOnly label={t('beatExport.title')}
             onPress={onExport} containerStyle={[s.control, scrollActions && s.controlAccessible]} /> : null}
     </View>;
@@ -94,9 +98,9 @@ export function BeatEditorTransport({ playing, starting, locked, showPatterns = 
             </Text> : null}
             {scrollActions ? <ScrollView horizontal showsHorizontalScrollIndicator
                 testID={`beat-editor-transport-controls-${layout}`} style={s.accessibleScroller} contentContainerStyle={s.controlsAccessible}>
-                {showPatterns ? patternAction : null}{projectActions}{history}{playback}
+                {showPatterns ? patternAction : null}{projectActions}{showHistory ? history : null}{playback}
             </ScrollView> : <View testID={`beat-editor-transport-controls-${layout}`} style={s.controls}>
-                {showPatterns ? patternAction : null}{projectActions}{history}{playback}
+                {showPatterns ? patternAction : null}{projectActions}{showHistory ? history : null}{playback}
             </View>}
             {midiRecordPhase !== undefined && !compactIcons ? <View testID="beat-midi-record-row" style={s.recordRow}>
                 {midiControl}
