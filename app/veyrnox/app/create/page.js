@@ -96,6 +96,7 @@ import { SourceFitNotice } from '../../_components/SourceFitNotice';
 import { TemplatePromptReady } from '../../_components/TemplatePromptReady';
 import { generationSlotKind, generationMimeTypes } from '../../../../lib/generationSourceSlots.mjs';
 import { GENERATION_PROMPT_MAX } from '../../../../lib/generationPromptLimits.js';
+import { templateModelSwapIssue } from '../../_lib/createModelChange.js';
 import { SwapSceneEntry } from '../../_components/SwapSceneEntry';
 import { SpeechSongNudge } from '../../_components/SpeechSongNudge';
 import { swapSceneModel, applySwapScene } from '../../_lib/swapSceneForm';
@@ -374,10 +375,19 @@ function CreateStudio() {
   const hasJobs = jobs.length > 0;
   const catalogStatus = catalogLoading ? 'loading' : catalogLive ? 'live' : 'unavailable';
   const activeTemplate = templateSelectionMatches(presetParam, templateData, modelId) ? templateData : null;
-  // Changing the model keeps the chosen template on screen; it just stops being sent (the gateway takes a template only on its own model).
+  // A linked template stays on the model whose reference was reviewed. Switching
+  // providers is a fresh custom run because a successful result can still miss the preview.
   const keptTemplate = !activeTemplate && presetParam && templateData?.id === presetParam ? templateData : null;
   const keptTemplateModel = keptTemplate ? models.find((m) => m.id === templateModelId(keptTemplate)) : null;
   const prompt = promptText(typed, model); // a starter shot until then, on picture and clip models only (see promptBox)
+  const linkedTemplate = activeTemplate || keptTemplate;
+  const linkedTemplateModel = linkedTemplate ? models.find((item) => item.id === templateModelId(linkedTemplate)) : null;
+  const modelSwapIssue = (candidate) => templateModelSwapIssue({ template: linkedTemplate, templateModel: linkedTemplateModel, targetModel: candidate, prompt });
+  const modelSwapIssueText = (issue) => issue?.code === 'prompt-too-long'
+    ? t('public.TemplateRecipe.promptTooLong', { count: issue.count, max: issue.max })
+    : issue?.code === 'audio-purpose'
+      ? t('app.create.templateAudioModelSwitch')
+      : issue?.code === 'template-model' ? t('app.create.templateModelSwitch') : '';
   // An exact template prompt that points at a source video or audio we cannot supply cannot reproduce its preview (templateSourceBlock).
   const sourceTemplateId = (activeTemplate || keptTemplate)?.id;
   const sourceContract = useMemo(() => swapId ? null : templateContract(activeTemplate || keptTemplate), [swapId, activeTemplate, keptTemplate]);
@@ -526,39 +536,49 @@ function CreateStudio() {
   }
 
   const [templatesOpen, setTemplatesOpen] = useState(false);
+  const [templatePicking, setTemplatePicking] = useState(false);
+  const [templatePickError, setTemplatePickError] = useState('');
   // Picking a template here does what arriving on ?preset=<id> does: its model,
   // prompt and settings load, and the user's own files stay where the new model
   // has a slot for them. The template is a reference only; nothing is charged.
   async function applyTemplate(card) {
-    setTemplatesOpen(false);
-    // A live swap template runs on the swap screen, which sends the template's own clip.
-    if (await fetchSwapAvailability(card.id)) { router.push(swapTemplateHref(card.id)); return; }
-    const preset = await fetchTemplate(card.id); // the picker lists cards; the prompt comes with the whole template
-    if (!preset) return;
-    attachSeq.current += 1; // a paperclip conversion still running must not undo this choice
-    setAttachConverting(false);
-    setAttachNotice('');
-    const nextId = templateModelId(preset);
-    const nextModel = models.find((m) => m.id === nextId);
-    const draft = draftForTemplate(preset, nextId);
-    if (!nextModel || !draft) return;
-    setTemplateData(preset);
-    setPresetParam(preset.id);
-    setGoal(nextModel.kind || 'all');
-    setTier(null);
-    chooseModel(nextId);
-    setPrompt(draft.prompt);
-    if (draft.durationSeconds) setDuration(`${draft.durationSeconds}s`);
-    setNegative(draft.negativePrompt);
-    if (draft.aspect) {
-      if (nextId === modelId) { const nearest = nearestOption(draft.aspect, aspectOptions); if (nearest) setAspect(nearest); }
-      else incomingAspect.current = draft.aspect;
+    if (templatePicking) return;
+    setTemplatePicking(true);
+    setTemplatePickError('');
+    try {
+      // A live swap template runs on the swap screen, which sends the template's own clip.
+      if (await fetchSwapAvailability(card.id)) { setTemplatesOpen(false); router.push(swapTemplateHref(card.id)); return; }
+      const preset = await fetchTemplate(card.id); // the picker lists cards; the prompt comes with the whole template
+      const nextId = preset && templateModelId(preset);
+      const nextModel = models.find((m) => m.id === nextId);
+      const draft = preset && draftForTemplate(preset, nextId);
+      if (!preset || !nextModel || !draft) { setTemplatePickError(t('presets.swap.unavailable')); return; }
+      attachSeq.current += 1; // a paperclip conversion still running must not undo this choice
+      setAttachConverting(false);
+      setAttachNotice('');
+      setTemplateData(preset);
+      setPresetParam(preset.id);
+      setGoal(nextModel.kind || 'all');
+      setTier(null);
+      chooseModel(nextId);
+      setPrompt(draft.prompt);
+      if (draft.durationSeconds) setDuration(`${draft.durationSeconds}s`);
+      setNegative(draft.negativePrompt);
+      if (draft.aspect) {
+        if (nextId === modelId) { const nearest = nearestOption(draft.aspect, aspectOptions); if (nearest) setAspect(nearest); }
+        else incomingAspect.current = draft.aspect;
+      }
+      setSources((previous) => {
+        const { sources: kept, dropped } = sourcesForModel(previous, nextModel.media);
+        for (const item of dropped) if (item?.file) URL.revokeObjectURL(item.previewUrl);
+        return kept;
+      });
+      setTemplatesOpen(false);
+    } catch {
+      setTemplatePickError(t('presets.swap.unavailable'));
+    } finally {
+      setTemplatePicking(false);
     }
-    setSources((previous) => {
-      const { sources: kept, dropped } = sourcesForModel(previous, nextModel.media);
-      for (const item of dropped) if (item?.file) URL.revokeObjectURL(item.previewUrl);
-      return kept;
-    });
   }
   // The always-visible paperclip: the files' types pick the slots on the open model, which never changes
   // (files it has no slot for are refused); with no model open the files choose one.
@@ -1060,7 +1080,7 @@ function CreateStudio() {
           <SourceFitNotice fit={sourceFit} />
           {switchOffer && <button type="button" onClick={switchForFiles} className="mt-2 rounded-full border border-vx-border px-3 py-1.5 text-xs text-vx-fg hover:border-vx-accent">{t('app.create.attach.switchTo', { name: switchOffer.model.name })}</button>}
           {addFilesOpen && !photosUnavailable && <AddFilesDialog capacity={attachCapacity(model)} onAdd={attachFiles} onClose={() => setAddFilesOpen(false)} />}
-          {templatesOpen && <TemplatePicker models={models} goal={goal} selectedKind={model?.kind} onPick={applyTemplate} onClose={() => setTemplatesOpen(false)} />}
+          {templatesOpen && <TemplatePicker models={models} goal={goal} selectedKind={model?.kind} onPick={applyTemplate} busy={templatePicking} error={templatePickError} onClose={() => { setTemplatePickError(''); setTemplatesOpen(false); }} />}
           {['swap-recast', 'swap-quick'].includes(modelId) && <p role="note" data-testid="swap-consent-notice" className="mt-2 text-xs text-vx-fg-muted">{t('app.create.swapConsentNotice')}</p>}
           {modelId === SEEDANCE_REFERENCE_MODEL_ID && <p role="note" data-testid="reference-likeness-notice" className="mt-2 text-xs text-vx-fg-muted">{t('app.create.referenceLikenessNotice')}</p>}
           {(activeTemplate || keptTemplate)?.kind === 'image' && templateImageRequired && !boundCount && <div className="mt-3"><TemplatePhotoExample kind="scene" /></div>}
@@ -1205,6 +1225,11 @@ function CreateStudio() {
               ))}
             </div>
             <div data-assistant-target="create.models" data-selected-kind={model?.kind} className="scroll-mt-24">
+              {linkedTemplate && (
+                <p data-testid="create-template-model-lock" role="note" className="mb-3 rounded-lg border border-vx-danger/35 bg-vx-danger/[0.06] px-3 py-2 text-xs font-semibold leading-5 text-vx-danger">
+                  {t('app.create.templateModelSwitch')}
+                </p>
+              )}
               <div className="lg:hidden">
                 <label htmlFor="studio-model" className="sr-only">{t("app.create.generationModel")}</label>
                 <select
@@ -1213,11 +1238,12 @@ function CreateStudio() {
                   onChange={(event) => chooseModel(event.target.value)}
                   className="min-h-11 w-full rounded-xl border border-vx-field bg-vx-base px-3 py-2.5 text-sm font-bold text-vx-fg focus:border-vx-accent focus:outline-hidden"
                 >
-                  {visibleModels.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.name} · {item.gated ? t("app.editor.workspace.preview") : freeLeftFor(freeMap, item.id) > 0 ? t("app.create.freeToday") : creditLabel(item.credits)}
-                    </option>
-                  ))}
+                  {visibleModels.map((item) => {
+                    const issue = modelSwapIssue(item);
+                    return <option key={item.id} value={item.id} disabled={Boolean(issue)}>
+                      {item.name} · {item.gated ? t("app.editor.workspace.preview") : freeLeftFor(freeMap, item.id) > 0 ? t("app.create.freeToday") : creditLabel(item.credits)}{issue ? ` — ${modelSwapIssueText(issue)}` : ''}
+                    </option>;
+                  })}
                 </select>
                 {model && (
                   <p className="mt-2 flex items-center justify-between gap-3 text-xs text-vx-fg-muted">
@@ -1227,21 +1253,27 @@ function CreateStudio() {
                 )}
               </div>
               <div role="group" aria-label={t("pricing.col.model")} className="hidden flex-col gap-1.5 lg:flex">
-                {visibleModels.map((m) => (
-                  <button
+                {visibleModels.map((m) => {
+                  const issue = modelSwapIssue(m);
+                  return <button
                     key={m.id}
                     data-model-kind={m.kind}
                     data-requires-image={m.media?.image?.required ? 'true' : undefined}
                     onClick={() => chooseModel(m.id)}
+                    disabled={Boolean(issue)}
+                    title={modelSwapIssueText(issue)}
                     aria-pressed={modelId === m.id}
-                    className={`vx-press flex items-center justify-between rounded-lg px-3 py-2.5 border pointer-coarse:min-h-11 ${
+                    className={`vx-press flex items-center justify-between rounded-lg px-3 py-2.5 border pointer-coarse:min-h-11 disabled:cursor-not-allowed disabled:opacity-50 ${
                       modelId === m.id
                         ? 'border-vx-accent bg-vx-accent/[0.07]'
                         : 'border-transparent hover:bg-vx-fg/[0.04]'
                     }`}
                   >
                     <span className="flex items-center gap-2 min-w-0">
-                      <span className="text-sm font-bold truncate">{m.name}</span>
+                      <span className="min-w-0 text-left">
+                        <span className="block truncate text-sm font-bold">{m.name}</span>
+                        {issue && <span className="mt-0.5 block text-[10px] font-bold leading-4 text-vx-danger">{modelSwapIssueText(issue)}</span>}
+                      </span>
                       {m.gated && (
                         <span className="font-vx-mono text-[10px] tracking-[0.1em] text-vx-money shrink-0">{t("app.create.premium")}</span>
                       )}
@@ -1250,8 +1282,8 @@ function CreateStudio() {
                     {freeLeftFor(freeMap, m.id) > 0
                       ? <span className="font-vx-mono text-[12px] font-bold text-vx-accent shrink-0">{t(pluralKey(t,locale,'app.create.freeRemaining',freeLeftFor(freeMap,m.id)),{count:number(freeLeftFor(freeMap,m.id))})}</span>
                       : <span className="font-vx-mono text-[12px] font-bold text-vx-money vx-num shrink-0">{number(m.credits)} cr</span>}
-                  </button>
-                ))}
+                  </button>;
+                })}
               </div>
             </div>
           </div>}
