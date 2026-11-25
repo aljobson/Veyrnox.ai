@@ -20,10 +20,7 @@ DECLARE affected BIGINT;
 BEGIN
     UPDATE public.model_catalog
        SET active = false, updated_at = now()
-     WHERE (id = 'ace-step' AND provider = 'fal'
-            AND provider_endpoint = 'fal-ai/ace-step' AND modality = 'text-to-audio')
-        OR (id = 'ace-step-1.5' AND provider = 'fal'
-            AND provider_endpoint = 'fal-ai/ace-step-1.5' AND modality = 'text-to-audio');
+     WHERE id IN ('ace-step', 'ace-step-1.5') AND modality = 'text-to-audio';
     GET DIAGNOSTICS affected = ROW_COUNT;
     IF affected <> 2 THEN
         RAISE EXCEPTION 'Expected two stalled ACE audio offers to retire, updated %', affected;
