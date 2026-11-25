@@ -74,6 +74,22 @@ test('history upsert preserves settlement/time and strips signed asset URLs', as
     assert.ok(!JSON.stringify([...h.storage.data]).includes('signed.invalid'));
   } finally {delete globalThis.localStorage;delete globalThis.window;}
 });
+test('unchanged running reads do not broadcast job-history changes', async () => {
+  const h = historyHarness();
+  try {
+    h.pushJobHistory({ job_id: 'running' });
+    let changes = h.events.filter(e => e.type === h.JOBS_CHANGED_EVENT).length;
+    await h.markJobSettled('running', 'running');
+    assert.equal(h.events.filter(e => e.type === h.JOBS_CHANGED_EVENT).length, changes);
+
+    h.pushJobHistory({ job_id: 'replay', idempotent: true });
+    changes = h.events.filter(e => e.type === h.JOBS_CHANGED_EVENT).length;
+    await h.markJobSettled('replay', 'running');
+    assert.equal(h.events.filter(e => e.type === h.JOBS_CHANGED_EVENT).length, changes + 1, 'clearing replay suppression is a real history change');
+    await h.markJobSettled('replay', 'running');
+    assert.equal(h.events.filter(e => e.type === h.JOBS_CHANGED_EVENT).length, changes + 1);
+  } finally { delete globalThis.localStorage; delete globalThis.window; }
+});
 test('failed/refunded/cancelled, restored, idempotent and stale jobs never celebrate', async () => {
   const h=historyHarness();
   try {
