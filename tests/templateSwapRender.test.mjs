@@ -11,6 +11,7 @@ const t = translator('en');
 let available = false;
 const offer = { id:'test',model:'kling-o1-reference',credits:73,durationSeconds:5,images:2,role:'the dancer' };
 const model = {id:offer.model,name:'Catalog O1 label'};
+let catalogModels = [model], swapAttempts = [];
 const preset = {id:'test',name:'Template',category:'swap',model:'Legacy model',needs:'legacy input',prompt:'Legacy prompt',sourcePromptStatus:'recorded'};
 function load(file, mocks) {
   const mod={exports:{}};
@@ -24,12 +25,12 @@ function load(file, mocks) {
 const shared = {
   '../../../components/I18nProvider.jsx':{useI18n:()=>({t})},
   '../_lib/useTemplateSwapAvailable.js':{useTemplateSwapAvailable:()=>({id:'test',offer:available?offer:null,loading:false})},
-  '../_lib/useCatalog.js':{useCatalog:()=>({models:[model],live:true})},
+  '../_lib/useCatalog.js':{useCatalog:()=>({models:catalogModels,live:true})},
 };
 const boundary=load('app/veyrnox/_components/TemplateSwapBoundary.js',shared);
 const attempts={SwapAttemptStatus:()=>null,swapControl:'min-h-11'};
 const composer=load('app/veyrnox/_components/SwapComposer.js',{
-  ...shared,'../_lib/useSwapDraft.js':{useSwapDraft:()=>({accountId:'A',attempts:[]})},
+  ...shared,'../_lib/useSwapDraft.js':{useSwapDraft:()=>({accountId:'A',attempts:swapAttempts})},
   '../_lib/templateSwapRuntime.js':{swapActions:{}},'../_lib/templateSwapClient.mjs':{swapErrorKey:()=>'',unsettled:()=>false,swapImageCounts,swapFullBody},
   '../_lib/useOnlineStatus.js':{useOnlineStatus:()=>true},'./SwapAttemptStatus.js':attempts,'./TemplatePhotoExample.js':{TemplatePhotoExample:()=>null},
 });
@@ -76,6 +77,19 @@ test('Create preset and template query use shared availability and catalog-only 
       assert.equal(html.includes('data-swap-composer'),enabled);assert.equal(html.includes('Legacy Create'),!enabled);
     }
   }
+});
+test('an intentionally unlisted swap model keeps its reviewed template usable',()=>{
+  available=true; catalogModels=[];
+  swapAttempts=[{key:'ready',state:'ready',files:[{},{}],urls:['blob:front','blob:crop']}];
+  try {
+    const entry=load('app/veyrnox/_components/SwapCreateEntry.js',{
+      'next/navigation':{useSearchParams:()=>new URLSearchParams('preset=test')},'./TemplateSwapBoundary.js':boundary,'./SwapComposer.js':composer,'./SwapAttemptStatus.js':attempts,'./TemplatePhotoExample.js':{TemplatePhotoExample:()=>null},'./SwapTemplatePreview.js':{SwapTemplatePreview:()=>null},
+    });
+    const html=renderToStaticMarkup(React.createElement(entry.SwapCreateEntry,null,React.createElement('div',null,'Legacy Create')));
+    assert.match(html,/Kling O1 · Reference/);
+    assert.doesNotMatch(html,/Checking the model/);
+    assert.doesNotMatch(html,/<button[^>]*disabled[^>]*>Generate/);
+  } finally { available=false; catalogModels=[model]; swapAttempts=[]; }
 });
 test('rendered reconciliation survives a gate 404 and is invisible to another account', async () => {
   const {createSwapStore}=await import('../app/veyrnox/_lib/templateSwapStore.mjs');
