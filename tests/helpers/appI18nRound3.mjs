@@ -20,7 +20,7 @@ export const scenarios = [
   { area: 'media', name: 'AdvancedMediaBin', props: { tl: { media: { media } }, blobs: { current: new Map() }, loaded: [], proxies: new Set() }, key: 'app.editor.media.libraryContents' },
   { area: 'media', name: 'MediaArtwork', props: { media, blobs: { current: new Map() } } },
   { area: 'project', name: 'DocumentEditor', props: { id: 'project' }, states: [{ name: 'User project unchanged' }, document, document, 2, [{ revision: 2, created_at: at, restored_from: 1 }], 'cursor', false, false, '', false, { document, revision: 3 }, { document, revision: 1, created_at: at }, '', false, at, ''] },
-  { area: 'projects', name: 'default', states: [[{ id: 'workspace', name: 'User workspace unchanged' }], 'workspace', [{ id: 'project', name: 'User project unchanged', created_at: at }], false] },
+  { area: 'projects', name: 'default', states: [[{ id: 'workspace', name: 'User workspace unchanged' }], 'workspace', [{ id: 'project', name: 'User project unchanged', created_at: at }], [], 'all', false] },
   { area: 'projects', name: 'ProjectDialog', props: { mode: 'create', workspace: 'workspace' } },
   { area: 'projects', name: 'ProjectDialog', props: { mode: 'delete', project: { name: 'User project unchanged', version: 1 } } },
   ...['replace-background', 'skin-retouch', 'person-light', 'person-reshape', 'person-reframe'].map(tool => ({ area: 'person', name: 'PersonProcessingControls', states: [tool], props: { media, timeline: {}, blob: null } })),

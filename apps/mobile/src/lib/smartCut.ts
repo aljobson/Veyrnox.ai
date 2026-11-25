@@ -1,4 +1,5 @@
 import { parseSmartCutAnalysis, type SpeechAnalysis } from './speechCut';
+import { buildSpeechAwareCutPlan as buildCanonicalSpeechAwareCutPlan, swapSpeechAwareCutTake } from '../../../../app/veyrnox/_lib/smartCutAnalysis.js';
 
 export const SMART_CUT_MAX_SEGMENTS = 10;
 
@@ -18,6 +19,11 @@ export interface SmartCutSource {
     readonly rangeEnd?: number;
 }
 export type SmartCutTake = Required<SmartCutSource>;
+export interface SmartCutBoundaryQuality {
+    readonly timingQuality: 'word' | 'phrase' | 'unknown';
+    readonly startInsideUnit: boolean;
+    readonly endInsideUnit: boolean;
+}
 export interface SmartCutSegment {
     readonly id: string;
     readonly label: string;
@@ -26,9 +32,19 @@ export interface SmartCutSegment {
     readonly end: number;
     readonly outputOffset: number;
     readonly plannedLength: number;
+    readonly boundaryQuality?: SmartCutBoundaryQuality;
     readonly matchStatus: string;
     readonly alternates: readonly string[];
     readonly reason: string;
+    readonly matchCode?: 'script_line_matched' | 'transcript_section_kept';
+    readonly matchParameters?: Readonly<Record<string, unknown>>;
+    readonly reasonCode?: 'best_take_score' | 'transcript_continuity' | 'manual_take';
+    readonly reasonParameters?: Readonly<Record<string, unknown>>;
+    readonly alternateCandidates?: readonly { readonly takeId: string; readonly start: number; readonly end: number; readonly confidence: number; readonly coverage: number; readonly precision: number; readonly boundaryQuality?: SmartCutBoundaryQuality }[];
+}
+export interface SmartCutWarning {
+    readonly code: 'review_boundaries' | 'trim_intersects_unit' | 'segment_limit_reached' | 'output_limit_reached' | 'unit_exceeds_budget' | 'phrase_timing' | 'removal_retained' | 'source_clip_limit_reached' | 'script_not_aligned' | 'script_incomplete' | 'extra_speech_omitted' | 'false_start_omitted' | 'retake_omitted' | 'join_review' | 'language_unknown' | 'language_mixed' | 'language_override_invalid' | 'script_match_missing' | 'alignment_budget_exceeded' | 'unsafe_timed_boundary';
+    readonly parameters: Readonly<Record<string, unknown>>;
 }
 export interface SmartCutPlan {
     readonly mode: 'local-demo' | 'transcript-silence';
@@ -36,20 +52,38 @@ export interface SmartCutPlan {
     readonly pacingLabel: string;
     readonly notes: string;
     readonly scriptProvided: boolean;
+    readonly language?: string;
+    readonly languageOverride?: string | null;
+    readonly detectedLanguages?: readonly string[];
     readonly takes: readonly SmartCutTake[];
     readonly segments: readonly SmartCutSegment[];
     readonly totalDuration: number;
     readonly warnings: readonly string[];
+    readonly warningDetails?: readonly SmartCutWarning[];
     readonly silencePreset?: 'snappy' | 'natural' | 'relaxed';
     readonly silenceRemoved?: number;
     readonly removalsApplied?: number;
     readonly analysisProviders?: readonly SpeechAnalysis['provider'][];
+    readonly qualityChecks?: readonly { readonly code: 'complete_unit_boundaries' | 'clipped_timed_unit' | 'phrase_timing_review' | 'source_ranges_non_overlapping' | 'source_overlap' | 'join_review'; readonly parameters: Readonly<Record<string, unknown>> }[];
 }
 
 export interface SmartCutRemoval { readonly takeId: string; readonly start: number; readonly end: number }
 type SpeechAnalyses = ReadonlyMap<string, SpeechAnalysis> | readonly SpeechAnalysis[] | Readonly<Record<string, SpeechAnalysis>>;
 type SpeechEntry = { readonly start: number; readonly end: number; readonly text: string };
 type SpeechGroup = { readonly takeId: string; start: number; end: number; entries: SpeechEntry[] };
+type TrimIntersection = SpeechEntry & { readonly takeId: string };
+
+export class SmartCutPlanError extends Error {
+    readonly code: SmartCutWarning['code'];
+    readonly parameters: Readonly<Record<string, unknown>>;
+
+    constructor(code: SmartCutWarning['code'], message: string, parameters: Readonly<Record<string, unknown>> = {}) {
+        super(message);
+        this.name = 'SmartCutPlanError';
+        this.code = code;
+        this.parameters = parameters;
+    }
+}
 
 export function validSmartCutAnalysis(analysis: SpeechAnalysis | undefined, assetId: string, duration: number): analysis is SpeechAnalysis {
     return parseSmartCutAnalysis(analysis, { assetId, duration }).ok;
@@ -170,10 +204,7 @@ export function buildSmartCutPlan({ clips, script = '', notes = '', pacing = 'ba
 }
 
 export function swapSmartCutTake(plan: SmartCutPlan, segmentId: string, takeId: string): SmartCutPlan {
-    if (plan.mode === 'transcript-silence') return {
-        ...plan,
-        warnings: [...new Set([...plan.warnings, 'Transcript-backed sections stay on their analysed source take.'])],
-    };
+    if (plan.mode === 'transcript-silence') return swapSpeechAwareCutTake(plan, segmentId, takeId) as SmartCutPlan;
     const take = plan.takes.find((item) => item.id === takeId);
     if (!take) return plan;
     const proposed = plan.segments.map((segment) => segment.id === segmentId ? {
@@ -207,9 +238,12 @@ const analysisFor = (analyses: SpeechAnalyses, assetId: string): SpeechAnalysis 
     return (analyses as Readonly<Record<string, SpeechAnalysis>>)[assetId];
 };
 
-function transcriptGroups(analysis: SpeechAnalysis, clip: SmartCutTake, minimumSeconds: number): SpeechGroup[] {
-    const entries = analysis.chunks.filter((chunk) => chunk.end > clip.rangeStart && chunk.start < clip.rangeEnd).map((chunk) => ({
-        start: Math.max(clip.rangeStart, chunk.start), end: Math.min(clip.rangeEnd, chunk.end), text: chunk.text,
+function transcriptGroups(analysis: SpeechAnalysis, clip: SmartCutTake, minimumSeconds: number): { groups: SpeechGroup[]; intersections: TrimIntersection[] } {
+    const overlapping = analysis.chunks.filter((chunk) => chunk.end > clip.rangeStart && chunk.start < clip.rangeEnd);
+    const intersections = overlapping.filter((chunk) => chunk.start < clip.rangeStart || chunk.end > clip.rangeEnd)
+        .map((chunk) => ({ takeId: clip.id, start: chunk.start, end: chunk.end, text: chunk.text }));
+    const entries = overlapping.filter((chunk) => chunk.start >= clip.rangeStart && chunk.end <= clip.rangeEnd).map((chunk) => ({
+        start: chunk.start, end: chunk.end, text: chunk.text,
     }));
     const groups: SpeechGroup[] = [];
     for (const entry of entries) {
@@ -217,14 +251,18 @@ function transcriptGroups(analysis: SpeechAnalysis, clip: SmartCutTake, minimumS
         if (!previous || entry.start - previous.end >= minimumSeconds) groups.push({ takeId: clip.id, start: entry.start, end: entry.end, entries: [entry] });
         else { previous.end = Math.max(previous.end, entry.end); previous.entries.push(entry); }
     }
-    return groups;
+    return { groups, intersections };
 }
 
-function padAndMerge(groups: readonly SpeechGroup[], clipById: ReadonlyMap<string, SmartCutTake>, padding: number): SpeechGroup[] {
+function padAndMerge(groups: readonly SpeechGroup[], clipById: ReadonlyMap<string, SmartCutTake>, padding: number, trimIntersections: readonly TrimIntersection[] = []): SpeechGroup[] {
     const padded = groups.map((group) => {
         const clip = clipById.get(group.takeId)!;
-        const start = Math.min(clip.rangeEnd, Math.max(clip.rangeStart, ceilHundredth(group.start - padding)));
-        return { ...group, start, end: Math.max(start, Math.min(floorHundredth(clip.rangeEnd), floorHundredth(group.end + padding))), entries: [...group.entries] };
+        const leadingBarrier = trimIntersections.filter((unit) => unit.takeId === group.takeId && unit.start < clip.rangeStart && unit.end > clip.rangeStart)
+            .reduce((bound, unit) => Math.max(bound, unit.end), clip.rangeStart);
+        const trailingBarrier = trimIntersections.filter((unit) => unit.takeId === group.takeId && unit.start < clip.rangeEnd && unit.end > clip.rangeEnd)
+            .reduce((bound, unit) => Math.min(bound, unit.start), clip.rangeEnd);
+        const start = Math.min(trailingBarrier, Math.max(leadingBarrier, ceilHundredth(group.start - padding)));
+        return { ...group, start, end: Math.max(start, Math.min(floorHundredth(trailingBarrier), floorHundredth(group.end + padding))), entries: [...group.entries] };
     });
     const merged: SpeechGroup[] = [];
     for (const group of padded) {
@@ -258,7 +296,7 @@ function subtractRemovals(groups: readonly SpeechGroup[], removals: readonly Sma
     return out;
 }
 
-function mergeToSegmentLimit(groups: readonly SpeechGroup[]): SpeechGroup[] {
+function mergeToSegmentLimit(groups: readonly SpeechGroup[]): { groups: SpeechGroup[]; omitted: SpeechGroup[]; mergedCount: number } {
     const reduced = groups.map((group) => ({ ...group, entries: [...group.entries] }));
     while (reduced.length > SMART_CUT_MAX_SEGMENTS) {
         let candidate: { index: number; gap: number } | null = null;
@@ -272,7 +310,13 @@ function mergeToSegmentLimit(groups: readonly SpeechGroup[]): SpeechGroup[] {
         const left = reduced[candidate.index], right = reduced[candidate.index + 1];
         reduced.splice(candidate.index, 2, { ...left, end: right.end, entries: [...left.entries, ...right.entries] });
     }
-    return reduced.slice(0, SMART_CUT_MAX_SEGMENTS);
+    return { groups: reduced.slice(0, SMART_CUT_MAX_SEGMENTS), omitted: reduced.slice(SMART_CUT_MAX_SEGMENTS), mergedCount: groups.length - reduced.length };
+}
+
+function completeGroupEnd(group: SpeechGroup, maximumEnd: number): number | null {
+    if (group.end <= maximumEnd + 1e-9) return group.end;
+    const complete = group.entries.filter((entry) => entry.end <= maximumEnd + 1e-9).at(-1);
+    return complete ? Math.min(group.end, maximumEnd, ceilHundredth(complete.end)) : null;
 }
 
 function outputWindowEnd(take: SmartCutTake, candidateGroups: readonly SpeechGroup[], segments: readonly SmartCutSegment[]): number | null {
@@ -300,15 +344,20 @@ const speechLabel = (group: SpeechGroup, end = group.end) => {
 };
 
 /** Multi-take parity port of the web transcript-silence planner. */
-export function buildSpeechAwareCutPlan({ clips, analyses, pacing = 'balanced', removals = [] }: {
+function buildSpeechAwareCutPlanPort({ clips, analyses, script = '', notes = '', pacing = 'balanced', removals = [] }: {
     readonly clips: readonly SmartCutSource[];
     readonly analyses: SpeechAnalyses;
+    readonly script?: string;
+    readonly notes?: string;
+    readonly languageOverride?: string;
     readonly pacing?: SmartCutPacing;
     readonly removals?: readonly SmartCutRemoval[];
 }): SmartCutPlan {
     const takes = normaliseClips(clips);
     if (!takes.length) throw new Error('Speech-aware Smart Cut needs at least one loaded video clip.');
-    if (takes.length > SMART_CUT_MAX_SEGMENTS) throw new Error('Speech-aware Smart Cut supports at most 10 source clips.');
+    if (takes.length > SMART_CUT_MAX_SEGMENTS) throw new SmartCutPlanError('source_clip_limit_reached', 'Speech-aware Smart Cut supports at most 10 source clips.', {
+        sourceClips: takes.length, maximum: SMART_CUT_MAX_SEGMENTS,
+    });
     const presetName = silencePreset(pacing), preset = SILENCE_PRESETS[presetName];
     const parsed = new Map<string, SpeechAnalysis>(), clipById = new Map(takes.map((take) => [take.id, take]));
     for (const take of takes) {
@@ -321,19 +370,29 @@ export function buildSpeechAwareCutPlan({ clips, analyses, pacing = 'balanced', 
         return take && Number.isFinite(cut.start) && Number.isFinite(cut.end) && cut.end > cut.start
             && cut.end > take.rangeStart && cut.start < take.rangeEnd;
     });
-    const rawGroups = takes.flatMap((take) => transcriptGroups(parsed.get(take.id)!, take, preset.minimumSeconds));
+    const transcriptResults = takes.map((take) => transcriptGroups(parsed.get(take.id)!, take, preset.minimumSeconds));
+    const rawGroups = transcriptResults.flatMap((result) => result.groups);
+    const trimIntersections = transcriptResults.flatMap((result) => result.intersections);
+    if (!rawGroups.length && trimIntersections.length) throw new SmartCutPlanError(
+        'trim_intersects_unit',
+        'No complete timed speech unit fits inside the selected clip ranges.',
+        { reason: 'trim_intersects_all_units', units: trimIntersections },
+    );
     if (!rawGroups.length) throw new Error('No timed speech was found inside the selected clip ranges.');
-    const paddedGroups = padAndMerge(rawGroups, clipById, preset.edgePaddingSeconds);
+    const paddedGroups = padAndMerge(rawGroups, clipById, preset.edgePaddingSeconds, trimIntersections);
     const candidateGroups = subtractRemovals(paddedGroups, reviewed);
-    const groups = mergeToSegmentLimit(candidateGroups);
+    const limited = mergeToSegmentLimit(candidateGroups);
+    const groups = limited.groups;
     const segments: SmartCutSegment[] = [];
+    const outputOmitted: SpeechGroup[] = [];
+    let overBudgetUnit: SpeechGroup | null = null;
     let outputOffset = 0;
     for (const [index, group] of groups.entries()) {
         const remaining = 60 - outputOffset;
-        if (remaining <= 0.01) break;
+        if (remaining <= 0.01) { outputOmitted.push(...groups.slice(index)); break; }
         const cappedEnd = group.start + remaining;
-        const end = group.end <= cappedEnd + 1e-9 ? group.end : floorHundredth(cappedEnd);
-        if (end <= group.start) break;
+        const end = completeGroupEnd(group, cappedEnd);
+        if (end == null || end <= group.start) { overBudgetUnit = group; outputOmitted.push(...groups.slice(index)); break; }
         const start = ceilHundredth(group.start), length = round(end - start);
         if (length <= 0) continue;
         segments.push({
@@ -342,7 +401,18 @@ export function buildSpeechAwareCutPlan({ clips, analyses, pacing = 'balanced', 
             reason: `Kept transcript-backed speech from ${clipById.get(group.takeId)!.name}; pauses of at least ${preset.minimumSeconds.toFixed(2)} seconds were eligible for removal.`,
         });
         outputOffset = round(outputOffset + length);
+        if (end < group.end - 0.01) {
+            const entries = group.entries.filter((entry) => entry.end > end);
+            if (entries.length) outputOmitted.push({ ...group, start: end, entries });
+            outputOmitted.push(...groups.slice(index + 1));
+            break;
+        }
     }
+    if (!segments.length && overBudgetUnit) throw new SmartCutPlanError('unit_exceeds_budget', 'The first complete timed speech unit is longer than the Clip Editor output budget.', {
+        takeId: overBudgetUnit.takeId,
+        start: overBudgetUnit.entries[0]?.start ?? overBudgetUnit.start,
+        end: overBudgetUnit.entries[0]?.end ?? overBudgetUnit.end,
+    });
     if (!segments.length) throw new Error('No usable speech sections fit inside the Clip Editor limits.');
     const totalDuration = round(segments.reduce((sum, segment) => sum + segment.end - segment.start, 0));
     const knownRemovals = reviewed.filter((cut) => paddedGroups.some((group) => group.takeId === cut.takeId && cut.end > group.start && cut.start < group.end));
@@ -357,14 +427,50 @@ export function buildSpeechAwareCutPlan({ clips, analyses, pacing = 'balanced', 
         const windowEnd = outputWindowEnd(take, candidateGroups, segments);
         return windowEnd !== null && cut.end > take.rangeStart && cut.start < windowEnd + 0.02;
     });
-    const warnings = ['Transcript timings guide these cuts; review every boundary before creating the video.'];
-    if ([...parsed.values()].some((analysis) => analysis.timingQuality === 'phrase')) warnings.push('This transcript has phrase-level timing, so pauses inside a phrase cannot be removed.');
-    if (keptAnyway.length) warnings.push('Some removals were kept because the plan is limited to 10 sections.');
-    if (rawGroups.length > SMART_CUT_MAX_SEGMENTS) warnings.push('Some short pauses were retained to fit the Clip Editor’s 10-section limit.');
-    if (outputOffset >= 59.99) warnings.push('The speech-aware plan stopped at the Clip Editor’s 60-second output limit.');
+    const warningDetails: SmartCutWarning[] = [{ code: 'review_boundaries', parameters: {} }];
+    if (trimIntersections.length) {
+        warningDetails.push({ code: 'trim_intersects_unit', parameters: { count: trimIntersections.length, units: trimIntersections } });
+    }
+    if ([...parsed.values()].some((analysis) => analysis.timingQuality === 'phrase')) warningDetails.push({ code: 'phrase_timing', parameters: {} });
+    if (cleanText(script)) warningDetails.push({ code: 'script_not_aligned', parameters: {} });
+    if (keptAnyway.length) warningDetails.push({ code: 'removal_retained', parameters: { count: keptAnyway.length } });
+    if (limited.mergedCount || limited.omitted.length) {
+        warningDetails.push({ code: 'segment_limit_reached', parameters: { mergedGroups: limited.mergedCount, omittedGroups: limited.omitted.length, omitted: limited.omitted } });
+    }
+    if (outputOmitted.length) {
+        warningDetails.push({ code: 'output_limit_reached', parameters: { count: outputOmitted.length, groups: outputOmitted } });
+    }
+    const warnings = warningDetails.map((warning) => warning.code);
     return {
         mode: 'transcript-silence', pacing: 'speech', pacingLabel: 'Speech aware', silencePreset: presetName,
-        notes: '', scriptProvided: true, takes, segments, totalDuration, silenceRemoved: round(removedSecondsWithinOutput(takes, candidateGroups, segments)),
-        removalsApplied: appliedRemovals.length, analysisProviders: [...new Set([...parsed.values()].map((analysis) => analysis.provider))], warnings,
+        notes: cleanText(notes), scriptProvided: Boolean(cleanText(script)), takes, segments, totalDuration, silenceRemoved: round(removedSecondsWithinOutput(takes, candidateGroups, segments)),
+        removalsApplied: appliedRemovals.length, analysisProviders: [...new Set([...parsed.values()].map((analysis) => analysis.provider))], warnings, warningDetails,
     };
+}
+
+/**
+ * Mobile and web execute the same pure planner. The local port remains below as a
+ * review oracle until the shared golden corpus covers every historical fixture.
+ */
+export function buildSpeechAwareCutPlan(input: {
+    readonly clips: readonly SmartCutSource[];
+    readonly analyses: SpeechAnalyses;
+    readonly script?: string;
+    readonly notes?: string;
+    readonly languageOverride?: string;
+    readonly pacing?: SmartCutPacing;
+    readonly removals?: readonly SmartCutRemoval[];
+}): SmartCutPlan {
+    try {
+        return buildCanonicalSpeechAwareCutPlan({
+            ...input,
+            silencePreset: input.pacing,
+        }) as SmartCutPlan;
+    } catch (error) {
+        if (error && typeof error === 'object' && 'code' in error && 'parameters' in error) {
+            const value = error as { code: SmartCutWarning['code']; message?: string; parameters: Readonly<Record<string, unknown>> };
+            throw new SmartCutPlanError(value.code, value.message || value.code, value.parameters);
+        }
+        throw error;
+    }
 }

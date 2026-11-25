@@ -1,7 +1,7 @@
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { rawText } from '../../../lib/i18n';
 import { HEADER_MAX_FONT_SCALE } from '../../../lib/a11y';
-import { colors } from '../../../theme';
+import { studioColors as colors } from '../../../theme';
 import { styles } from '../fullEditorStyles';
 import { tools, type Tool } from './editorTools';
 export function ToolRail({ tool, setTool }: { tool: Tool; setTool(tool: Tool): void }) {

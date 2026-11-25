@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { colors, ds, type } from '../../../theme';
+import { studioColors as colors, ds, type } from '../../../theme';
 import { touchTarget } from '../../../lib/a11y';
 import { t, rawText } from '../../../lib/i18n';
 import { Text as AnnouncedText } from '../../ui/Text';

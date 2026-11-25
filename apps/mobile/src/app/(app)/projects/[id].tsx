@@ -4,17 +4,18 @@ import { removeProjectMedia } from '../../../lib/editorDeviceMedia';
 import { removeProjectFonts } from '../../../lib/editorFontFiles';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { ProjectDocumentCard } from '../../../components/projects/ProjectDocumentCard';
 import { useBeginTask, useProjectDocument, useProjectHistory, type RestoreBlock, type Task } from '../../../components/projects/useProjectDocument';
 import { VersionPreview } from '../../../components/projects/VersionPreview';
 import { touchTarget } from '../../../lib/a11y';
 import { getCacheUser, subscribeCacheUser } from '../../../lib/appCache';
-import { cleanProjectName, deleteProject, fetchProject, projectDates, projectsErrorMessage, renameProject, versionLabel, type Project, type Version } from '../../../lib/projects';
+import { cleanProjectName, deleteProject, fetchProject, fetchProjectFolders, folderLabel, moveProjectToFolder, projectDates, projectsErrorMessage, renameProject, versionLabel, type Project, type ProjectFolder, type Version } from '../../../lib/projects';
 import { EDITOR_ENABLED } from '../../../lib/editorFlag';
 import { formatLocale, t } from '../../../lib/i18n';
 import { REVISION_CAP } from '../../../lib/projectDocumentDraft';
+import { projectCloudSyncEnabled, setProjectCloudSyncEnabled } from '../../../lib/projectSyncPreference';
 import { colors } from '../../../theme';
 
 const changedAccount = (err: unknown) => (err as { code?: unknown } | null)?.code === 'account_changed';
@@ -43,13 +44,16 @@ function Detail({ id }: { id: string }) {
     useEffect(() => () => { mounted.current = false; }, []);
     const owned = useCallback((task?: Task) => mounted.current && getCacheUser() === owner.current && (!task || task.current()), []);
     const [project, setProject] = useState<Project | null>(null);
+    const [folders, setFolders] = useState<ProjectFolder[]>([]);
     const projectRef = useRef(project);
     projectRef.current = project;
     const [problem, setProblem] = useState<string | null>(null);
     const [renaming, setRenaming] = useState<string | null>(null);
+    const [moving, setMoving] = useState(false);
     const [busy, setBusy] = useState(false);
     const [note, setNote] = useState<{ text: string; reload: boolean } | null>(null);
     const [preview, setPreview] = useState<number | null>(null);
+    const [cloudSync, setCloudSync] = useState(true);
     const history = useProjectHistory(api, id, owned);
     const refreshHistory = history.refresh;
     const reloadProject = useCallback(async () => {
@@ -77,6 +81,10 @@ function Detail({ id }: { id: string }) {
             if (!owned(task)) return;
             if (failed) throw failed;
             setProject(p);
+            if (p?.workspaceId) {
+                const folderList = await fetchProjectFolders(api, p.workspaceId);
+                if (owned(task)) setFolders(folderList);
+            }
         } catch (err) {
             if (owned(task) && !changedAccount(err)) setProblem(projectsErrorMessage(err));
         }
@@ -85,6 +93,20 @@ function Detail({ id }: { id: string }) {
     useEffect(() => {
         void load();
     }, [load]);
+    useEffect(() => { void projectCloudSyncEnabled(id).then(value => { if (owned()) setCloudSync(value); }).catch(() => undefined); }, [id, owned]);
+
+    async function changeCloudSync(enabled: boolean) {
+        if (busy) return;
+        setBusy(true); setNote(null);
+        try {
+            await setProjectCloudSyncEnabled(id, enabled);
+            if (owned()) {
+                setCloudSync(enabled);
+                setNote({ text: enabled ? t('projectCloud.resume') : t('projectCloud.paused'), reload: false });
+            }
+        } catch { if (owned()) setNote({ text: t('projectCloud.error'), reload: false }); }
+        finally { if (owned()) setBusy(false); }
+    }
 
     function showError(err: unknown) {
         if (changedAccount(err)) return;
@@ -159,6 +181,21 @@ function Detail({ id }: { id: string }) {
         ]);
     }
 
+    function chooseFolder() {
+        if (!project || busy) return;
+        setMoving((value) => !value);
+    }
+
+    async function move(folderId: string | null) {
+        if (!project || busy || folderId === project.folderId) return;
+        const task = beginTask(); setBusy(true); setNote(null);
+        try {
+            const updated = await moveProjectToFolder(api, project.id, folderId, project.version);
+            if (owned(task) && updated) { setProject(updated); setMoving(false); setNote({ text: t('projects.projectMoved'), reload: false }); }
+        } catch (err) { if (owned(task)) showError(err); }
+        finally { if (owned()) setBusy(false); }
+    }
+
     function confirmRestore(v: Version) {
         Alert.alert(t('projects.restoreversion', { value1: v.revision }), t('projects.thissavesanewversioncopiedfrom'), [
             { text: t('projects.cancel'), style: 'cancel' },
@@ -212,6 +249,18 @@ function Detail({ id }: { id: string }) {
                         {note ? <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{note.text}</StatusText> : null}
                         {note?.reload ? <Pressable accessibilityRole="button" accessibilityLabel={t('projectDocument.reloadLatest')} disabled={busy} style={touchTarget} onPress={() => void reloadLatest()}><Text style={styles.action}>{t('projectDocument.reloadLatest')}</Text></Pressable> : null}
                         <Text style={styles.meta}>{projectDates(project, true)}</Text>
+                        <View style={styles.syncRow}>
+                            <View style={styles.syncCopy}>
+                                <Text style={styles.name}>{t('projectCloud.title')}</Text>
+                                <Text style={styles.muted}>{cloudSync ? t('projectCloud.enabled') : t('projectCloud.disabled')}</Text>
+                            </View>
+                            <Switch accessibilityLabel={t('projectCloud.title')} value={cloudSync} disabled={busy} onValueChange={value => void changeCloudSync(value)} />
+                        </View>
+                        <Pressable accessibilityRole="button" disabled={busy} style={touchTarget} onPress={chooseFolder}><Text style={styles.action}>{t('projects.folder')}: {project.folderId ? folderLabel(folders.find((folder) => folder.id === project.folderId) ?? { id: project.folderId, workspaceId: project.workspaceId ?? '', parentId: null, name: t('projects.folder'), version: 1 }, folders) : t('projects.unfiled')} · {t('projects.move')}</Text></Pressable>
+                        {moving ? <View style={styles.folderChoices}>
+                            <Pressable accessibilityRole="button" accessibilityState={{ selected: project.folderId === null }} style={touchTarget} onPress={() => void move(null)}><Text style={styles.action}>{t('projects.unfiled')}</Text></Pressable>
+                            {folders.map((folder) => <Pressable key={folder.id} accessibilityRole="button" accessibilityState={{ selected: project.folderId === folder.id }} style={touchTarget} onPress={() => void move(folder.id)}><Text style={styles.action}>{folderLabel(folder, folders)}</Text></Pressable>)}
+                        </View> : null}
                         <Text style={styles.heading} accessibilityRole="header">{t('projects.savedversions')}</Text>
                         {listBlock && listBlock !== 'current' && versions.length > 1 && !doc.dropped ? <Text style={styles.muted}>{blockReason(listBlock)}</Text> : null}
                         {listBlock === 'unloaded' && !doc.loading && !doc.dropped ? <Pressable accessibilityRole="button" accessibilityLabel={t('projectDocument.reloadText')} style={touchTarget} onPress={() => void doc.reload()}><Text style={styles.action}>{t('projectDocument.retry')}</Text></Pressable> : null}
@@ -275,7 +324,10 @@ const styles = StyleSheet.create({
     note: { color: colors.muted, fontSize: 13, paddingVertical: 20 },
     error: { color: colors.danger, flexShrink: 1 },
     actions: { flexDirection: 'row', gap: 20, alignItems: 'center' },
+    syncRow: { flexDirection: 'row', gap: 12, alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6 },
+    syncCopy: { flex: 1, gap: 2 },
     action: { color: colors.accent, fontSize: 16 },
+    folderChoices: { gap: 4, padding: 10, borderWidth: 1, borderColor: colors.border, borderRadius: 12, backgroundColor: colors.surface },
     danger: { color: colors.danger, fontSize: 16 },
     renameRow: { flexDirection: 'row', gap: 8 },
     input: { flex: 1, color: colors.text, backgroundColor: colors.surface, borderRadius: 12, paddingHorizontal: 12, minHeight: 44 },

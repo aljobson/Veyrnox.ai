@@ -84,6 +84,8 @@ enum EditorCompositor {
   private static let queue = DispatchQueue(label: "ai.veyrnox.editor-compositor")
   private static let ci = CIContext(options: [.cacheIntermediates: false])
   private static let maximumPlanBytes = 256 * 1024
+  private enum SemanticPass { case normal, base, foreground }
+  private enum PaintLayer { case visual(Int, SemanticPass), text(Int) }
 
   static func render(_ account: String, _ project: String, _ owner: String, _ token: String,
                      _ planJSON: String, _ sources: [String: String], _ width: Int, _ height: Int,
@@ -140,8 +142,15 @@ enum EditorCompositor {
         context.fill(CGRect(x: 0, y: 0, width: width, height: height))
       }
       do {
-        for visual in visuals { try drawVisual(visual, sources: sources, identity: identity, in: context, width: width, height: height) }
-        for text in texts { try drawText(text, sources: sources, identity: identity, in: context, width: width, height: height) }
+        for layer in subjectCompositeOrder(visuals: visuals, texts: texts) {
+          switch layer {
+          case let .visual(index, semantic):
+            try drawVisual(visuals[index], semantic: semantic, sources: sources, identity: identity,
+              in: context, width: width, height: height)
+          case let .text(index):
+            try drawText(texts[index], sources: sources, identity: identity, in: context, width: width, height: height)
+          }
+        }
       } catch { return false }
       return true
     }
@@ -149,7 +158,46 @@ enum EditorCompositor {
     return output
   }
 
-  private static func drawVisual(_ visual: [String: Any], sources: [String: String], identity: EditorMediaIdentity,
+  /// Matches the web compositor's deterministic paint list. A subject which owns opted-in
+  /// overlays is painted once without its person matte, then those overlays, then once through
+  /// its matte. Claimed overlays are not painted again at their ordinary layer positions.
+  private static func subjectCompositeOrder(visuals: [[String: Any]], texts: [[String: Any]]) -> [PaintLayer] {
+    var subjects = Set<String>()
+    for visual in visuals {
+      guard let clip = visual["clip"] as? [String: Any], let id = clip["id"] as? String,
+            let semantic = clip["semanticMask"] as? [String: Any], semantic["category"] as? String == "person" else { continue }
+      subjects.insert(id)
+    }
+    var visualBehind: [String: [Int]] = [:], textBehind: [String: [Int]] = [:]
+    for (index, visual) in visuals.enumerated() {
+      guard let clip = visual["clip"] as? [String: Any], let subject = clip["behindSubject"] as? String,
+            subjects.contains(subject) else { continue }
+      visualBehind[subject, default: []].append(index)
+    }
+    for (index, text) in texts.enumerated() {
+      guard let item = text["item"] as? [String: Any], let subject = item["behindSubject"] as? String,
+            subjects.contains(subject) else { continue }
+      textBehind[subject, default: []].append(index)
+    }
+    let claimedVisuals = Set(visualBehind.values.flatMap { $0 })
+    let claimedTexts = Set(textBehind.values.flatMap { $0 })
+    var result: [PaintLayer] = []
+    for (index, visual) in visuals.enumerated() {
+      if claimedVisuals.contains(index) { continue }
+      let clip = visual["clip"] as? [String: Any], id = clip?["id"] as? String
+      let behindVisuals = id.flatMap { visualBehind[$0] } ?? [], behindTexts = id.flatMap { textBehind[$0] } ?? []
+      if behindVisuals.isEmpty && behindTexts.isEmpty { result.append(.visual(index, .normal)); continue }
+      result.append(.visual(index, .base))
+      result.append(contentsOf: behindVisuals.map { .visual($0, .normal) })
+      result.append(contentsOf: behindTexts.map { .text($0) })
+      result.append(.visual(index, .foreground))
+    }
+    for index in texts.indices where !claimedTexts.contains(index) { result.append(.text(index)) }
+    return result
+  }
+
+  private static func drawVisual(_ visual: [String: Any], semantic: SemanticPass,
+                                 sources: [String: String], identity: EditorMediaIdentity,
                                  in context: CGContext, width: Int, height: Int) throws {
     guard let clip = visual["clip"] as? [String: Any], let mediaId = clip["mediaId"] as? String,
           let sourceTime = visual["sourceTimeSeconds"] as? Double, sourceTime.isFinite, sourceTime >= 0,
@@ -191,11 +239,13 @@ enum EditorCompositor {
       ty += CGFloat(number(transition["slideY"]) ?? 0) * CGFloat(height)
       zoom = CGFloat(number(transition["zoom"]) ?? 1); spin = CGFloat(number(transition["spin"]) ?? 0)
     }
-    context.saveGState()
-    if let reveal = visual["reveal"] as? [String: Any] { clipReveal(reveal, rect: CGRect(x: 0, y: 0, width: width, height: height), context: context) }
-    try drawBackground(clip: clip, visual: visual, source: image, sources: sources, identity: identity,
-      context: context, width: width, height: height, alpha: alpha)
-    context.restoreGState()
+    if semantic != .foreground {
+      context.saveGState()
+      if let reveal = visual["reveal"] as? [String: Any] { clipReveal(reveal, rect: CGRect(x: 0, y: 0, width: width, height: height), context: context) }
+      try drawBackground(clip: clip, visual: visual, source: image, sources: sources, identity: identity,
+        context: context, width: width, height: height, alpha: alpha)
+      context.restoreGState()
+    }
     context.saveGState()
     context.setAlpha(alpha); context.setBlendMode(blend(visual["blend"] as? String))
     context.translateBy(x: tx, y: ty); context.rotate(by: CGFloat((rotation + Double(spin)) * .pi / 180))
@@ -209,23 +259,23 @@ enum EditorCompositor {
     }
     if let reveal = visual["reveal"] as? [String: Any] { clipReveal(reveal, rect: destination, context: context) }
     if let mask = visual["mask"] as? [String: Any] { try Self.clip(mask: mask, size: size, context: context) }
-    if let semantic = clip["semanticMask"] as? [String: Any] {
-      if let dynamic = semantic["dynamic"] as? [String: Any] {
+    if semantic != .base, let semanticMask = clip["semanticMask"] as? [String: Any] {
+      if let dynamic = semanticMask["dynamic"] as? [String: Any] {
         guard let storedIdentity = dynamic["identity"] as? String, let currentIdentity = visual["semanticMaskIdentity"] as? String,
               storedIdentity == currentIdentity, let frames = dynamic["frames"] as? Int, frames == (clip["len"] as? Int),
               let offset = number(visual["offset"]), offset >= 0, offset < Double(frames) else {
           throw EditorMediaFailure.result(.invalidInput, "semantic-mask-source-changed")
         }
       } else {
-        guard let storedSourceFrame = number(semantic["sourceFrame"]),
+        guard let storedSourceFrame = number(semanticMask["sourceFrame"]),
               let currentSourceFrame = number(visual["semanticMaskSourceFrame"]),
               abs(storedSourceFrame - currentSourceFrame) < 0.000001 else {
           throw EditorMediaFailure.result(.invalidInput, "semantic-mask-source-changed")
         }
       }
-      guard let mediaId = semantic["mediaId"] as? String, let maskSource = sources[mediaId],
+      guard let mediaId = semanticMask["mediaId"] as? String, let maskSource = sources[mediaId],
             let maskURL = try? EditorMediaPaths.shared.inputURL(maskSource, identity: identity),
-            let decodedMask = try? sourceImage(maskURL, at: (semantic["dynamic"] as? [String: Any]).flatMap {
+            let decodedMask = try? sourceImage(maskURL, at: (semanticMask["dynamic"] as? [String: Any]).flatMap {
               guard let maskFps = number($0["fps"]), maskFps > 0 else { return nil }
               return (number(visual["offset"]) ?? 0) / maskFps
             } ?? 0),
@@ -242,7 +292,7 @@ enum EditorCompositor {
       drawEffectOverlay(effect, offset: number(visual["offset"]) ?? 0, rect: destination, source: filtered, context: context)
     }
     context.restoreGState()
-    if let transition = visual["transition"] as? [String: Any] {
+    if semantic != .base, let transition = visual["transition"] as? [String: Any] {
       let flash = number(transition["flash"]) ?? 0, leak = number(transition["lightLeak"]) ?? 0
       if flash > 0 { context.saveGState(); context.setBlendMode(.screen); context.setAlpha(CGFloat(min(1, flash * 0.75))); context.setFillColor(UIColor.white.cgColor); context.fill(CGRect(x: 0, y: 0, width: width, height: height)); context.restoreGState() }
       if leak > 0 { drawLightLeak(CGFloat(leak), context: context, width: width, height: height) }
@@ -844,7 +894,7 @@ public final class VeyrnoxEditorCompositorModule: Module {
         "features": ["timeline-background", "image-source", "graphic-source", "video-source", "fit", "crop", "transform",
           "visual-layering", "blend", "mask", "transition", "clip-animation", "animation-reveal",
           "clip-background-solid", "clip-background-blur", "clip-background-image", "basic-filter", "smart-picture",
-          "advanced-colour", "effect", "text-layer", "caption-words", "custom-font",
+          "advanced-colour", "effect", "text-layer", "caption-words", "custom-font", "behind-subject",
           "semantic-mask", "semantic-mask-dynamic", "audio-mix"]])
     }
     AsyncFunction("renderFrame") { (account: String, project: String, owner: String, token: String,

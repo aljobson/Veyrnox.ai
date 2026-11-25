@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { SPEED_PRESETS, visibleSpeedPoints } from '../../../../../../app/veyrnox/_lib/editorSpeed.mjs';
-import { colors, ds, type } from '../../../theme';
+import { studioColors as colors, ds, type } from '../../../theme';
 import { t, formatNumber } from '../../../lib/i18n';
 import { isMovingClip, type SpeedPoint } from '../../../lib/editorSpeedEdit';
 import { clipAt, type Clip, type Selection, type Timeline } from '../../../lib/nativeEditorModel';

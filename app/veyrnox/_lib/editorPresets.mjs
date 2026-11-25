@@ -55,9 +55,9 @@ export function insertEditTemplate(tl, name, mediaIds, headline, frame) {
     const selected = mediaIds.map(id => tl.media[id]).filter(m => m && m.kind !== 'audio').slice(0, 5);
     if (!['Title intro','Social quote','End card'].includes(name) && !selected.length) return { error: 'Choose video or images in the media bin first.' };
     if(name==='Split screen'&&selected.length<2)return {error:'Choose two video or image sources for split screen.'};
-    const at = name === 'Picture in picture' ? frame : sequenceEnd(tl);
+    const at = name === 'Picture in picture' ? Math.min(17999, Math.max(0, Math.round(frame))) : sequenceEnd(tl);
     let next = tl;
-    if (name === 'Picture in picture') { next = addSequenceTrack(next, 'video'); if (next.error) return next; next = addSequenceClip(next, 'video', selected[0].id, { start: at, len: Math.min(90, selected[0].frames), trackId: next.tracks.at(-1).id, transform: { x: 0.75, y: 0.3, scale: 0.35, rotation: 0, opacity: 1, flipX: false, flipY: false }, mask: 'rounded' }); }
+    if (name === 'Picture in picture') { next = addSequenceTrack(next, 'video'); if (next.error) return next; next = addSequenceClip(next, 'video', selected[0].id, { start: at, len: Math.min(90, selected[0].frames, 18000 - at), trackId: next.tracks.at(-1).id, transform: { x: 0.75, y: 0.3, scale: 0.35, rotation: 0, opacity: 1, flipX: false, flipY: false }, mask: 'rounded' }); }
     else if (name === 'Slideshow') for (const media of selected) { next = addSequenceClip(next, 'video', media.id, { start: sequenceEnd(next), len: Math.min(90, media.frames), animation: { in: 'zoom', out: 'fade', duration: 15 } }); if (next.error) return next; }
     else if(name==='Vlog opener')for(const [index,media] of selected.slice(0,3).entries()){next=addSequenceClip(next,'video',media.id,{start:sequenceEnd(next),len:Math.min(60,media.frames),animation:{in:index?'slide-left':'zoom',out:'fade',duration:12}});if(next.error)return next;}
     else if(name==='Split screen'){
@@ -65,7 +65,7 @@ export function insertEditTemplate(tl, name, mediaIds, headline, frame) {
     } else if(name==='Product promo')next=addSequenceClip(next,'video',selected[0].id,{start:sequenceEnd(next),len:Math.min(120,selected[0].frames),animation:{in:'zoom',out:'fade',duration:15}});
     if (next.error) return next;
     const start=['Slideshow','Vlog opener','Product promo'].includes(name)?at:name==='End card'?sequenceEnd(next):at;
-    return addSequenceText(next, { text: headline.trim() || (name==='End card'?'Thanks for watching':'Your story'), start, len:name==='Vlog opener'?120:90, y:['Slideshow','Product promo'].includes(name) ? 0.85 : 0.5, size:name==='Social quote'?10:8, ...(name==='Social quote'?{style:{...TEXT_DEFAULTS,color:'#101827',background:'#ffe66d',backgroundOpacity:1,strokeWidth:0}}:{}), animation: { in: name==='Vlog opener'?'slide-left':'fade', out: 'fade', duration: 15 } });
+    return addSequenceText(next, { text: headline.trim() || (name==='End card'?'Thanks for watching':'Your story'), start, len:Math.min(name==='Vlog opener'?120:90,18000-start), y:['Slideshow','Product promo'].includes(name) ? 0.85 : 0.5, size:name==='Social quote'?10:8, ...(name==='Social quote'?{style:{...TEXT_DEFAULTS,color:'#101827',background:'#ffe66d',backgroundOpacity:1,strokeWidth:0}}:{}), animation: { in: name==='Vlog opener'?'slide-left':'fade', out: 'fade', duration: 15 } });
 }
 export function insertGraphic(tl, shape, color, frame) {
     let next = addSequenceTrack(tl, 'video'); if (next.error) return next;

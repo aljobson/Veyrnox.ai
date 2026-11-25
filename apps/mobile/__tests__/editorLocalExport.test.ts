@@ -42,7 +42,7 @@ test('native compositor advertises the complete canonical web semantic surface',
         'timeline-background', 'image-source', 'graphic-source', 'video-source', 'fit', 'crop', 'transform', 'visual-layering',
         'blend', 'mask', 'transition', 'clip-animation', 'animation-reveal', 'clip-background-solid', 'clip-background-blur',
         'clip-background-image', 'basic-filter', 'smart-picture', 'advanced-colour', 'effect', 'text-layer', 'caption-words',
-        'custom-font', 'semantic-mask', 'semantic-mask-dynamic', 'audio-mix',
+        'custom-font', 'behind-subject', 'semantic-mask', 'semantic-mask-dynamic', 'audio-mix',
     ]));
 });
 
@@ -63,6 +63,12 @@ test('feeds canonical plans to S9 in bounded ordered batches and releases the au
     expect(run.rendered).toEqual(Array.from({ length: 17 }, (_, index) => index));
     expect(run.batches).toEqual([[0, 1, 2, 3, 4, 5, 6, 7], [8, 9, 10, 11, 12, 13, 14, 15], [16]]);
     expect(run.released).toEqual(['audio']); expect(run.cancelled).toEqual([]);
+});
+
+test('passes an explicit HEVC request to the native writer', async () => {
+    const timeline = exactTimeline(2), run = harness();
+    await exportEditorMp4({ timeline, width: 640, height: 360, videoBitRate: 6_000_000, codec: 'hevc' }, run);
+    expect(run.begin).toHaveBeenCalledWith(expect.objectContaining({ codec: 'hevc' }));
 });
 
 test('cancellation aborts the live session and releases transient audio', async () => {

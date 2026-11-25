@@ -81,6 +81,18 @@ export function jobRouteFromPush(data: unknown): string | null {
     return `/job/${jobId}`;
 }
 
+/** Local Smart Cut progress notifications contain no asset id; they reopen the private planner. */
+export function smartCutRouteFromPush(data: unknown): string | null {
+    if (!data || typeof data !== 'object') return null;
+    return (data as Record<string, unknown>).type === 'smart-cut' ? '/smart-cut' : null;
+}
+
+/** Export progress contains no project or media identity; it reopens the private Projects list. */
+export function editorExportRouteFromPush(data: unknown): string | null {
+    if (!data || typeof data !== 'object') return null;
+    return (data as Record<string, unknown>).type === 'editor-export' ? '/projects' : null;
+}
+
 // The OS can rotate the device push token (reinstall, restore, a vendor refresh). Without a re-register the server keeps a
 // dead token and finished-creation pushes silently stop. Returns the function that stops listening.
 export function watchPushToken(subscribe: (listener: () => void) => { remove(): void }, onChange: () => void): () => void {

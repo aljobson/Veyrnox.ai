@@ -13,7 +13,7 @@ export const CANONICAL_EDITOR_COMPOSITOR_CAPABILITIES = Object.freeze([
     'timeline-background', 'image-source', 'graphic-source', 'video-source', 'fit', 'crop', 'transform',
     'visual-layering', 'blend', 'mask', 'transition', 'clip-animation', 'animation-reveal',
     'clip-background-solid', 'clip-background-blur', 'clip-background-image', 'basic-filter', 'smart-picture',
-    'advanced-colour', 'effect', 'text-layer', 'caption-words', 'custom-font',
+    'advanced-colour', 'effect', 'text-layer', 'caption-words', 'custom-font', 'behind-subject',
     'semantic-mask', 'semantic-mask-dynamic', 'audio-mix',
 ] as const satisfies readonly EditorPreviewCapability[]);
 
@@ -53,7 +53,8 @@ export type EditorLocalExportDependencies = {
     discardFrames(frames: readonly FrameDescriptor[]): void;
     /** Build the canonical 48 kHz stereo mix. Ownership transfers to the exporter until release. */
     prepareAudio(timeline: Timeline, signal: AbortSignal, progress: (value: number) => void): Promise<NativeResult<{ artifactId: string }>>;
-    begin(request: { width: number; height: number; fps: number; videoBitRate: number; audioBitRate: number; audioArtifactId: string; alpha?: boolean }): Promise<NativeResult<EncodeSession>>;
+    begin(request: { width: number; height: number; fps: number; videoBitRate: number; audioBitRate: number; audioArtifactId: string;
+        codec?: 'h264' | 'hevc'; alpha?: boolean }): Promise<NativeResult<EncodeSession>>;
     append(session: EncodeSession, frames: readonly FrameDescriptor[]): Promise<NativeResult<EncodeSession>>;
     finish(session: EncodeSession, audioArtifactId: string): Promise<NativeResult<Mp4Artifact>>;
     cancel(session: EncodeSession): void;
@@ -66,6 +67,7 @@ export type EditorLocalExportRequest = {
     readonly height: number;
     readonly videoBitRate: number;
     readonly audioBitRate?: number;
+    readonly codec?: 'h264' | 'hevc';
     readonly preserveAlpha?: boolean;
     readonly transparentBackground?: boolean;
     readonly signal?: AbortSignal;
@@ -104,6 +106,7 @@ export async function exportEditorMp4(request: EditorLocalExportRequest, depende
         if (controller.signal.aborted) return { ok: false, code: 'cancelled' };
         const begun = await dependencies.begin({ width: request.width, height: request.height, fps: request.timeline.fps,
             videoBitRate: request.videoBitRate, audioBitRate: request.audioBitRate ?? 192_000, audioArtifactId,
+            ...(request.codec ? { codec: request.codec } : {}),
             ...(request.preserveAlpha ? { alpha: true } : {}) });
         if (!begun.ok) return begun.code === 'cancelled' ? { ok: false, code: 'cancelled' } : { ok: false, code: 'native-media', nativeCode: begun.code };
         session = begun.value;

@@ -284,5 +284,10 @@
   "music.create.suno.style.pop": "Same spelling in Portuguese and English for this label: Pop.",
   "music.create.suno.style.rock": "Same spelling in Portuguese and English for this label: Rock.",
   "musicAlbums.type.ep": "EP is the standard music-release abbreviation in Portuguese and English.",
-  "musicAlbums.type.single": "Single is the established Portuguese music-release term."
+  "musicAlbums.type.single": "Single is the established Portuguese music-release term.",
+  "bestCut.settings": "Smart Cut is the product feature name and remains unchanged across languages.",
+  "editorLocalExport.codec.h264": "H.264 is the locale-independent standard video codec name.",
+  "editorLocalExport.codec.hevc": "HEVC is the locale-independent standard video codec name.",
+  "editorCaptionTools.style.neon": "Neon is the established Portuguese style label.",
+  "projects.smartCutBatch.eyebrow": "Smart Cut is the product feature name and remains unchanged across languages."
 }

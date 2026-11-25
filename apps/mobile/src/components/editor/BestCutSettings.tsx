@@ -22,5 +22,5 @@ export function BestCutSettings({ onChange, disabled = false, showTitle = true }
                     <Text variant="caption" tone={on ? 'primary' : 'secondary'}>{label}</Text>
                 </Chip>;
             })}
-        </ScrollView></View>;
+        </ScrollView><Text variant="caption" tone="secondary">{t('bestCut.languageHelp')}</Text></View>;
 }

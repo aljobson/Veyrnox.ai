@@ -18,6 +18,16 @@ test('golden bytes, scanner, unique identities, integer ticks and offline manife
     assert.equal(media.offline,true);assert.equal(media.media.File.path,e.manifest.entries[0].virtualPath);
     const seq=sequence(doc);assert.equal(seq.video_tracks.flatMap(t=>t.items).length,1);assert.equal(seq.audio_tracks.flatMap(t=>t.items).length,1);
 });
+test('bounded custom canvas metadata survives interchange round trip',()=>{
+    const tl=fixture();tl.aspect='custom:5x8';
+    const e=exportProInterchange(tl);assert.equal(e.ok,true,JSON.stringify(e));
+    const doc=JSON.parse(new TextDecoder().decode(e.bytes)),seq=sequence(doc);
+    assert.deepEqual([seq.settings.width,seq.settings.height],[676,1080]);
+    const item=Object.values(doc.project.items).find(value=>value.kind.Sequence);
+    assert.equal(item.metadata['veyrnox.canvas.v1'],'custom:5x8');
+    const imported=importProInterchange(e.bytes,{manifest:e.manifest});assert.equal(imported.ok,true,JSON.stringify(imported));
+    assert.equal(imported.draft.aspect,'custom:5x8');
+});
 test('overlap lanes preserve array stacking, reuse gaps and sort only inside lanes',()=>{
     const clips=[{id:'A',start:0,len:10},{id:'B',start:5,len:25},{id:'C',start:10,len:10}];
     assert.deepEqual(stackingLanes(clips).map(l=>l.map(c=>c.id)),[['A'],['B'],['C']]);

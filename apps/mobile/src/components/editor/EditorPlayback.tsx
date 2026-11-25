@@ -8,6 +8,7 @@ import { rawText } from '../../lib/i18n/translate';
 import type { Timeline } from '../../lib/nativeEditorModel';
 import { Text } from '../ui/Text';
 import { EditorMediaPreview } from './EditorMediaPreview';
+import { EditorNativePreviewSurface, type EditorNativePreviewDisplay } from './EditorNativePreviewSurface';
 import { EditorStaticPreviewSurface, type EditorStaticPreviewDisplay } from './EditorStaticPreviewSurface';
 import { EditorTimeline } from './EditorTimeline';
 import { EditorTransport } from './EditorTransport';
@@ -37,31 +38,38 @@ export function PlaybackTimeline({ frameStore, ...props }: Playback & Omit<Compo
     const frame = useEditorFrame(frameStore);
     return <EditorTimeline {...props} frame={frame} />;
 }
-export function PlaybackPreview({ frameStore, timeline, api, playing, localMediaUris, motionHandle, fontReady, staticPreview = false }: Playback & {
+export function PlaybackPreview({ frameStore, timeline, api, playing, localMediaUris, motionHandle, fontReady, staticPreview = false, compositionFrame = true,
+    nativeIdentity }: Playback & {
     motionHandle?: MotionHandleProps; timeline: Timeline; api: Pick<ApiClient, 'request'>; playing: boolean; localMediaUris: Record<string, string>; fontReady?(family: string): boolean;
-    staticPreview?: boolean;
+    staticPreview?: boolean; compositionFrame?: boolean; nativeIdentity?: { readonly account: string; readonly project: string };
 }) {
     const frame = useEditorFrame(frameStore);
     const plan = editorPreviewPlan(timeline, frame, LEGACY_EDITOR_PREVIEW_CAPABILITIES);
     const [staticDisplay, setStaticDisplay] = useState<EditorStaticPreviewDisplay | null>(null);
+    const [nativeDisplay, setNativeDisplay] = useState<EditorNativePreviewDisplay | null>(null);
     const onStaticDisplayed = useCallback((display: EditorStaticPreviewDisplay | null) => setStaticDisplay(display), []);
-    // The legacy surface can show one layer. Use the canonical web order so its fallback shows the uppermost active item.
-    const visual = plan.visuals[plan.visuals.length - 1], active = visual?.media ? { clip: visual.clip, media: visual.media } : null;
+    const onNativeDisplayed = useCallback((display: EditorNativePreviewDisplay | null) => setNativeDisplay(display), []);
+    const active = plan.visuals.filter((visual): visual is typeof visual & { media: NonNullable<typeof visual.media> } => Boolean(visual.media));
     const caption = plan.texts[plan.texts.length - 1]?.item;
     const effectiveStatic = staticPreview && !playing ? staticDisplay : null;
-    const approximate = effectiveStatic ? !effectiveStatic.exact : !plan.capabilities.exact;
+    const effectiveNative = nativeDisplay?.frame === frame ? nativeDisplay : null;
+    const exactDisplay = effectiveNative ?? effectiveStatic;
+    const approximate = exactDisplay ? !exactDisplay.exact : !plan.capabilities.exact;
     return <View style={StyleSheet.absoluteFill}>
-        {effectiveStatic ? <View pointerEvents="none" accessible accessibilityRole="image" accessibilityLabel={editorPreviewAccessibilityLabel(plan)} style={StyleSheet.absoluteFill} /> : null}
-        <View pointerEvents="none" accessible={false} accessibilityElementsHidden={Boolean(effectiveStatic)}
-            importantForAccessibility={effectiveStatic ? 'no-hide-descendants' : 'auto'}
+        {exactDisplay ? <View pointerEvents="none" accessible accessibilityRole="image" accessibilityLabel={editorPreviewAccessibilityLabel(plan)} style={StyleSheet.absoluteFill} /> : null}
+        <View pointerEvents="none" accessible={false} accessibilityElementsHidden={Boolean(exactDisplay)}
+            importantForAccessibility={exactDisplay ? 'no-hide-descendants' : 'auto'}
             style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}>
             <View pointerEvents="none" style={{ position: 'absolute', inset: 0, backgroundColor: timeline.background ?? '#000000' }} />
-            {active ? <EditorMediaPreview api={api} clip={active.clip} media={active.media} frameStore={frameStore} fps={timeline.fps} playing={playing} localUri={localMediaUris[active.media.id]} /> : null}
+            {active.map(({ clip, media }) => <EditorMediaPreview key={clip.id} api={api} clip={clip} media={media} frameStore={frameStore}
+                fps={timeline.fps} playing={playing} localUri={localMediaUris[media.id]} />)}
             {staticPreview ? <EditorStaticPreviewSurface enabled={!playing} timeline={timeline} frame={frame} api={api} localMediaUris={localMediaUris}
                 onDisplayed={onStaticDisplayed} /> : null}
-            <View style={styles.safeFrame} />
-            {!active && !caption ? <><NativeText style={styles.previewMark}>{t('editor.v')}</NativeText><NativeText style={styles.previewLabel}>{timeline.video.length ? t('editor.movetheplayheadontoavisualclip') : t('editor.previewEmpty')}</NativeText></> : null}
-            {caption ? <EditorTextOverlay item={caption} frame={frame} fontReady={fontReady} /> : null}
+            {staticPreview && nativeIdentity ? <EditorNativePreviewSurface enabled account={nativeIdentity.account} project={nativeIdentity.project}
+                timeline={timeline} frame={frame} localMediaUris={localMediaUris} onDisplayed={onNativeDisplayed} /> : null}
+            {compositionFrame ? <View style={styles.safeFrame} /> : null}
+            {!active.length && !caption ? <><NativeText style={styles.previewMark}>{t('editor.v')}</NativeText><NativeText style={styles.previewLabel}>{timeline.video.length ? t('editor.movetheplayheadontoavisualclip') : t('editor.previewEmpty')}</NativeText></> : null}
+            {caption && !effectiveNative ? <EditorTextOverlay item={caption} frame={frame} fontReady={fontReady} /> : null}
         </View>
         {motionHandle ? <EditorMotionHandle timeline={timeline} {...motionHandle} /> : null}
         {approximate ? <View pointerEvents="none" style={styles.previewApproximateBadge}>

@@ -2712,6 +2712,66 @@
     "ratio": 1.81
   },
   {
+    "id": "projects.unfiled",
+    "english": "Unfiled",
+    "translation": "बिना फ़ोल्डर",
+    "ratio": 1.71
+  },
+  {
+    "id": "projects.move",
+    "english": "Move",
+    "translation": "ले जाएँ",
+    "ratio": 1.75
+  },
+  {
+    "id": "editor.safeArea",
+    "english": "Safe-area preview",
+    "translation": "सुरक्षित क्षेत्र पूर्वावलोकन",
+    "ratio": 1.65
+  },
+  {
+    "id": "app.smartCut.feedback.sending",
+    "english": "Sending…",
+    "translation": "भेजा जा रहा है…",
+    "ratio": 1.88
+  },
+  {
+    "id": "editorCaptionTools.style.box",
+    "english": "Box",
+    "translation": "बॉक्स",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorCover.textPlaceholder",
+    "english": "Add text",
+    "translation": "टेक्स्ट जोड़ें",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorSimple.text",
+    "english": "Text",
+    "translation": "टेक्स्ट",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorSimple.editText",
+    "english": "Edit Text",
+    "translation": "टेक्स्ट संपादित करें",
+    "ratio": 2.22
+  },
+  {
+    "id": "editorSimple.reportIssue",
+    "english": "Report Issue",
+    "translation": "समस्या की रिपोर्ट करें",
+    "ratio": 1.83
+  },
+  {
+    "id": "projects.smartCutBatch.retry",
+    "english": "Retry",
+    "translation": "फिर कोशिश करें",
+    "ratio": 2.8
+  },
+  {
     "id": "musicAlbums.addTrack",
     "english": "Add",
     "translation": "जोड़ें",
