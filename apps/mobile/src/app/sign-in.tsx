@@ -1,5 +1,5 @@
 import { passkeyGate } from '../lib/passkeys';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Link, useLocalSearchParams, useRouter } from 'expo-router';
@@ -13,6 +13,7 @@ import { DEV_MOCK } from '../lib/config';
 import { ds, colors } from '../theme';
 import { t } from '../lib/i18n';
 import { playSelection } from '../lib/haptics';
+import { captureEvent } from '../lib/analytics/events';
 
 const PROMISES = [
     { icon: 'image', label: 'signIn.photo' },
@@ -25,6 +26,8 @@ export default function SignIn() {
     const router = useRouter();
     const { from } = useLocalSearchParams<{ from?: string }>();
     const personalised = from === 'onboarding';
+    const compact = personalised || from === 'existing' || from === 'preview';
+    const entrySource = personalised ? 'personalised' : from === 'existing' ? 'existing' : from === 'preview' ? 'preview' : 'direct';
     const insets = useSafeAreaInsets();
     const styles = useThemedStyles(sheets);
     const [busy, setBusy] = useState(false);
@@ -32,6 +35,7 @@ export default function SignIn() {
     const [error, setError] = useState<string | null>(null);
     const [agreed, setAgreed] = useState(false);
     const blocked = busy || !agreed;
+    useEffect(() => { if (status === 'signedOut') captureEvent('sign_in_started', { source: entrySource }); }, [entrySource, status]);
     async function run(action: () => Promise<void>) {
         if (!agreed || busy || running.current) return;
         running.current = true;
@@ -66,10 +70,10 @@ export default function SignIn() {
             >
                 <View style={styles.hero}>
                     <BrandIntro fontSize={32} />
-                    {!personalised ? <Text variant="caption" tone="accent">{t('signIn.kicker')}</Text> : null}
+                    {!compact ? <Text variant="caption" tone="accent">{t('signIn.kicker')}</Text> : null}
                     <Text variant="display">{personalised ? t('onboarding.signIn.title') : t('signIn.title')}</Text>
                     <Text tone="secondary">{personalised ? t('onboarding.signIn.body') : t('signIn.subtitle')}</Text>
-                    {!personalised ? (
+                    {!compact ? (
                         <View accessible style={styles.promises}>
                             {PROMISES.map((promise) => (
                                 <View key={promise.label} style={styles.promise}>
@@ -80,9 +84,9 @@ export default function SignIn() {
                         </View>
                     ) : null}
                 </View>
-                {!personalised ? <SignupOffer /> : null}
+                {!compact ? <SignupOffer /> : null}
                 <ConsentRow agreed={agreed} onChange={setAgreed} />
-                {!personalised ? (
+                {!compact ? (
                     <Text variant="footnote" tone="tertiary" accessibilityLiveRegion="polite">
                         {t(agreed ? 'signIn.ready' : 'signIn.tickFirst')}
                     </Text>
@@ -103,13 +107,13 @@ export default function SignIn() {
                         if (!blocked) router.push('/email');
                     }}
                 />
-                {!personalised && passkeyGate() ? <Button variant="tertiary" icon="key" label={t('passkey.signIn')} disabled={blocked} onPress={() => router.push('/passkey')} /> : null}
-                {!personalised ? (
+                {!compact && passkeyGate() ? <Button variant="tertiary" icon="key" label={t('passkey.signIn')} disabled={blocked} onPress={() => router.push('/passkey')} /> : null}
+                {!compact ? (
                     <Link href="/preview" asChild>
                         <Button variant="tertiary" label={t('preview.browse')} accessibilityRole="link" accessibilityHint={t('preview.browseHint')} />
                     </Link>
                 ) : null}
-                {!personalised && DEV_MOCK ? (
+                {!compact && DEV_MOCK ? (
                     <Button
                         variant="tertiary"
                         label={t('signIn.demo')}

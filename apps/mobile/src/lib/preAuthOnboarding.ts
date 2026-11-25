@@ -1,10 +1,11 @@
 import * as SecureStore from 'expo-secure-store';
-import type { ApiClient } from './api';
+import type { ApiClient, ClientTask } from './api';
 import type { StoredFirstGoal } from './firstGoal';
 import { writeFirstGoal } from './firstGoalStore';
 import type { StoredDestination, StoredRole } from './firstProfile';
 import { writeFirstProfile } from './firstProfileStore';
 import { pushFirstAnswers } from './firstProfileSync';
+import { replayFirstOnboarding, writeFirstOnboarding } from './firstProfileStore';
 
 // Personalisation happens before authentication. This record contains only three fixed-choice words; never a prompt,
 // file, email address or credential. `completed` keeps returning signed-out people out of the quiz, while `pending`
@@ -76,13 +77,21 @@ export async function skipPreAuthOnboarding(): Promise<void> {
     await write({ ...current, completed: true, pending: false, resume: 'sign-in' });
 }
 
+// Looking around is a complete signed-out path, not a temporary detour to account creation. Keep any answers already
+// chosen, but claim them for a future account only when the full result exists.
+export async function browsePreAuthOnboarding(): Promise<void> {
+    const current = await readPreAuthOnboarding();
+    const hasResult = !!current.role && !!current.goal && !!current.destination;
+    await write({ ...current, completed: true, pending: hasResult, resume: 'preview' });
+}
+
 export async function hasCompletedPreAuthOnboarding(): Promise<boolean> {
     return (await readPreAuthOnboarding()).completed;
 }
 
 // Called only after authentication. Copy the three fixed choices into the account-backed stores and endpoint, then
 // retire the pending claim. The operation is safe to repeat if the app closes between writes.
-export async function applyPendingPreAuthOnboarding(api: Pick<ApiClient, 'request'>): Promise<boolean> {
+export async function applyPendingPreAuthOnboarding(api: Pick<ApiClient, 'request'>, task?: ClientTask): Promise<boolean> {
     const current = await readPreAuthOnboarding();
     if (!current.completed || !current.pending) return false;
     await Promise.all([
@@ -94,6 +103,23 @@ export async function applyPendingPreAuthOnboarding(api: Pick<ApiClient, 'reques
             ...(current.destination ? { destination: current.destination } : {}),
         }),
     ]);
+    if (task?.user && task.current()) {
+        // Retire the older account onboarding as part of the same handoff. A pending replay keeps an offline or
+        // interrupted completion from asking the same three questions again on a later launch.
+        const account = {
+            goal: current.goal,
+            role: current.role,
+            destination: current.destination,
+            version: 1 as const,
+            currentStep: 'recap' as const,
+            completed: false,
+            pending: true,
+            completeRequested: true,
+        };
+        await writeFirstOnboarding(task.user, account, task);
+        if (!task.current()) return false;
+        void replayFirstOnboarding(api, task, account);
+    }
     await write({ ...current, pending: false, resume: 'sign-in' });
     return true;
 }

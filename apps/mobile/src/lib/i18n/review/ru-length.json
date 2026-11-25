@@ -4932,6 +4932,18 @@
     "ratio": 2
   },
   {
+    "id": "onboarding.notifications.now",
+    "english": "now",
+    "translation": "сейчас",
+    "ratio": 2
+  },
+  {
+    "id": "onboarding.notifications.previewBody",
+    "english": "Open Veyrnox to see it.",
+    "translation": "Откройте Veyrnox, чтобы посмотреть её.",
+    "ratio": 1.65
+  },
+  {
     "id": "musicAlbums.addTrack",
     "english": "Add",
     "translation": "Добавить",

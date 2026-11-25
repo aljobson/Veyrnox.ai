@@ -1,5 +1,5 @@
 import { Stack, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Linking, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Card, Icon, Text, themedStyles, useThemedStyles } from '../../components/ui';
@@ -7,6 +7,8 @@ import { usePush } from '../../push/pushContext';
 import { t } from '../../lib/i18n';
 import type { EnableResult } from '../../push/pushContext';
 import { ds } from '../../theme';
+import { captureEvent } from '../../lib/analytics/events';
+import { completeNotificationPrimer } from '../../lib/notificationPrimer';
 
 // The explanatory screen always comes first. The one-shot iOS/Android permission dialog is requested only from the
 // explicit primary button below, never on mount, launch or one of the early personalisation questions.
@@ -18,14 +20,29 @@ export default function NotificationPrimer() {
     const [busy, setBusy] = useState(false);
     const [result, setResult] = useState<EnableResult | null>(null);
 
-    const continueToApp = () => router.replace('/');
+    useEffect(() => {
+        captureEvent('notification_primer_viewed', { trigger: 'generation' });
+        void completeNotificationPrimer();
+    }, []);
+
+    const returnToCreation = () => {
+        if (router.canGoBack()) router.back();
+        else router.replace('/');
+    };
+    const continueToApp = () => {
+        captureEvent('notification_primer_finished', { action: 'later' });
+        returnToCreation();
+    };
     const enable = async () => {
         if (busy) return;
         setBusy(true);
         const next = await push.setEnabled(true);
         setResult(next);
         setBusy(false);
-        if (next === 'on') continueToApp();
+        captureEvent('notification_primer_finished', {
+            action: next === 'on' ? 'allow' : next === 'denied' ? 'denied' : 'unavailable',
+        });
+        if (next === 'on') returnToCreation();
     };
 
     return (
@@ -41,10 +58,10 @@ export default function NotificationPrimer() {
             <Card style={styles.preview} accessible accessibilityLabel={t('onboarding.notifications.privacy')}>
                 <View style={styles.previewTop}>
                     <View style={styles.appIcon}><Icon name="sparkle" size={20} /></View>
-                    <View style={styles.previewCopy}><Text variant="bodyStrong">Veyrnox</Text><Text variant="footnote" tone="secondary">now</Text></View>
+                    <View style={styles.previewCopy}><Text variant="bodyStrong">{t('onboarding.notifications.app')}</Text><Text variant="footnote" tone="secondary">{t('onboarding.notifications.now')}</Text></View>
                 </View>
-                <Text variant="bodyStrong">Your creation is ready</Text>
-                <Text variant="footnote" tone="secondary">Open Veyrnox to see it.</Text>
+                <Text variant="bodyStrong">{t('onboarding.notifications.previewTitle')}</Text>
+                <Text variant="footnote" tone="secondary">{t('onboarding.notifications.previewBody')}</Text>
             </Card>
             <View style={styles.privacyRow}><Icon name="shieldCheck" size={20} /><Text variant="footnote" tone="secondary" style={styles.privacyText}>{t('onboarding.notifications.privacy')}</Text></View>
             {result === 'denied' ? (

@@ -370,5 +370,6 @@
   "musicAlbums.publicTitle": "Albums is spelled identically in French and English.",
   "musicAlbums.type.album": "Album and LP are standard French music-release terms.",
   "musicAlbums.type.ep": "EP is the standard music-release abbreviation in French and English.",
-  "musicAlbums.type.single": "Single is the established French music-release term."
+  "musicAlbums.type.single": "Single is the established French music-release term.",
+  "onboarding.notifications.app": "Veyrnox is the product name and is intentionally unchanged in every language."
 }

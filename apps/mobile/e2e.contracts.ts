@@ -12,6 +12,8 @@ export const STATIC_ROUTE_CRAWL_EXCLUSIONS: Readonly<Record<string, string>> = {
     'film/cloud': 'Retired Film Studio route is intentionally absent from production navigation.',
     'film/workspace': 'Retired Film Studio route is intentionally absent from production navigation.',
     'first-run': 'Covered by the dedicated fresh-install onboarding E2E path.',
+    'notification-primer': 'Contextual one-shot explanation after a long generation; generic crawling could open the system permission prompt.',
+    onboarding: 'Signed-out value-first onboarding is outside the authenticated route sweep.',
     'sign-in': 'Authentication is covered by the sign-in helper and is outside the signed-in route sweep.',
     welcome: 'Legacy onboarding entry is outside the signed-in route sweep.',
 };

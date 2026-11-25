@@ -4950,6 +4950,12 @@
     "ratio": 1.67
   },
   {
+    "id": "onboarding.notifications.now",
+    "english": "now",
+    "translation": "ahora",
+    "ratio": 1.67
+  },
+  {
     "id": "musicAlbums.addTrack",
     "english": "Add",
     "translation": "Añadir",

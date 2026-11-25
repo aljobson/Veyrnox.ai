@@ -21,7 +21,7 @@ jest.mock('expo-apple-authentication', () => ({
 jest.mock('../src/auth/AuthProvider', () => ({
     useAuth: () => ({ status: 'signedOut', appleNativeAvailable: false, signInWithApple: jest.fn(), signInWithOAuth: jest.fn(), signInWithEmail: jest.fn() }),
 }));
-jest.mock('expo-router', () => ({ Link: ({ children }: any) => children, Redirect: () => null, useRouter: () => ({ replace: jest.fn(), push: jest.fn(), back: jest.fn() }) }));
+jest.mock('expo-router', () => ({ Link: ({ children }: any) => children, Redirect: () => null, useLocalSearchParams: () => ({}), useRouter: () => ({ replace: jest.fn(), push: jest.fn(), back: jest.fn() }) }));
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 54, right: 59, bottom: 21, left: 59 }) }));
 jest.mock('../src/components/BrandIntro', () => ({ BrandIntro: () => null }));
 jest.mock('../src/components/SignupOffer', () => ({ SignupOffer: () => null }));

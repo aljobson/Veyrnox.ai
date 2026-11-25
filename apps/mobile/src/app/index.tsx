@@ -31,7 +31,7 @@ export default function Index() {
             </View>
         );
     }
-    if (status === 'signedIn') return <Redirect href="/(app)/(tabs)" />;
+    if (status === 'signedIn') return <Redirect href={'/(app)/(tabs)'} />;
     if (signedOutDestination === 'preview') return <Redirect href="/preview" />;
     if (signedOutDestination === 'personalised') return <Redirect href={{ pathname: '/sign-in', params: { from: 'onboarding' } }} />;
     return <Redirect href={signedOutDestination === 'onboarding' ? '/onboarding' : '/sign-in'} />;

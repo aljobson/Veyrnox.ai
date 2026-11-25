@@ -284,5 +284,6 @@
   "music.create.suno.style.pop": "Same spelling in Portuguese and English for this label: Pop.",
   "music.create.suno.style.rock": "Same spelling in Portuguese and English for this label: Rock.",
   "musicAlbums.type.ep": "EP is the standard music-release abbreviation in Portuguese and English.",
-  "musicAlbums.type.single": "Single is the established Portuguese music-release term."
+  "musicAlbums.type.single": "Single is the established Portuguese music-release term.",
+  "onboarding.notifications.app": "Veyrnox is the product name and is intentionally unchanged in every language."
 }

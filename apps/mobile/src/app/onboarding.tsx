@@ -10,11 +10,13 @@ import { FIRST_DESTINATIONS, FIRST_ROLES, defaultAspectFor, type StoredDestinati
 import { firstRunExample } from '../lib/firstRunExamples';
 import { t } from '../lib/i18n';
 import { markWelcomeSeen } from '../lib/markWelcomeSeen';
-import { completePreAuthOnboarding, readPreAuthOnboarding, savePreAuthAnswers, skipPreAuthOnboarding, type PreAuthAnswers } from '../lib/preAuthOnboarding';
+import { browsePreAuthOnboarding, completePreAuthOnboarding, readPreAuthOnboarding, savePreAuthAnswers, skipPreAuthOnboarding, type PreAuthAnswers } from '../lib/preAuthOnboarding';
+import { captureEvent } from '../lib/analytics/events';
 import { ds } from '../theme';
 
 type Stage = 'intro' | 'role' | 'goal' | 'destination' | 'result';
-const QUESTIONS: readonly Exclude<Stage, 'intro' | 'result'>[] = ['role', 'goal', 'destination'];
+type QuestionStage = Exclude<Stage, 'intro' | 'result'>;
+const QUESTIONS: readonly QuestionStage[] = ['role', 'goal', 'destination'];
 
 const ROLE_LABEL: Record<(typeof FIRST_ROLES)[number], () => string> = {
     creator: () => t('create.firstRun.role.creator'),
@@ -62,9 +64,12 @@ export default function Onboarding() {
     const styles = useThemedStyles(sheets);
     const pressStyle = usePressStyle();
     const [stage, setStage] = useState<Stage>('intro');
+    const [editing, setEditing] = useState<QuestionStage | null>(null);
     const [answers, setAnswers] = useState<PreAuthAnswers>(EMPTY);
     const [loading, setLoading] = useState(true);
     const leaving = useRef(false);
+    const startedTracked = useRef(false);
+    const resultTracked = useRef(false);
 
     useEffect(() => {
         let alive = true;
@@ -84,26 +89,53 @@ export default function Onboarding() {
         return () => { alive = false; };
     }, [router]);
 
+    useEffect(() => {
+        if (loading) return;
+        if (!startedTracked.current) {
+            startedTracked.current = true;
+            captureEvent('onboarding_started', { cohort: 'new' });
+        }
+        if (stage === 'result' && !resultTracked.current && answers.role && answers.goal && answers.destination) {
+            resultTracked.current = true;
+            captureEvent('onboarding_result_viewed', { role: answers.role, goal: answers.goal, destination: answers.destination });
+        }
+    }, [answers.destination, answers.goal, answers.role, loading, stage]);
+
     const choose = (key: keyof PreAuthAnswers, value: StoredRole | StoredFirstGoal | StoredDestination) => {
         const next = { ...answers, [key]: value };
         setAnswers(next);
+        captureEvent('onboarding_answered', { question: key, answer: value });
         void savePreAuthAnswers({ [key]: value });
-        setStage(key === 'role' ? 'goal' : key === 'goal' ? 'destination' : 'result');
+        if (editing === key) {
+            setEditing(null);
+            setStage('result');
+        } else setStage(key === 'role' ? 'goal' : key === 'goal' ? 'destination' : 'result');
     };
 
     const finish = async (destination: 'sign-in' | 'preview') => {
         if (leaving.current || !answers.role || !answers.goal || !answers.destination) return;
         leaving.current = true;
         await completePreAuthOnboarding(answers, destination);
-        if (destination === 'preview') router.replace('/preview');
+        if (destination === 'preview') {
+            captureEvent('guest_browse_started', { source: 'result' });
+            router.replace('/preview');
+        }
         else router.push({ pathname: '/sign-in', params: { from: 'onboarding' } });
+    };
+
+    const browseFromIntro = async () => {
+        if (leaving.current) return;
+        leaving.current = true;
+        captureEvent('guest_browse_started', { source: 'intro' });
+        await Promise.all([browsePreAuthOnboarding(), markWelcomeSeen()]);
+        router.replace('/preview');
     };
 
     const signInExisting = async () => {
         if (leaving.current) return;
         leaving.current = true;
         await Promise.all([skipPreAuthOnboarding(), markWelcomeSeen()]);
-        router.push('/sign-in');
+        router.push({ pathname: '/sign-in', params: { from: 'existing' } });
     };
 
     if (loading) return (
@@ -113,8 +145,16 @@ export default function Onboarding() {
         </View>
     );
 
-    const questionIndex = QUESTIONS.indexOf(stage as (typeof QUESTIONS)[number]);
-    const back = () => setStage(stage === 'role' ? 'intro' : stage === 'goal' ? 'role' : stage === 'destination' ? 'goal' : 'destination');
+    const questionIndex = QUESTIONS.indexOf(stage as QuestionStage);
+    const back = () => {
+        if (editing) {
+            setEditing(null);
+            setStage('result');
+            return;
+        }
+        setStage(stage === 'role' ? 'intro' : stage === 'goal' ? 'role' : stage === 'destination' ? 'goal' : 'destination');
+    };
+    const edit = (next: QuestionStage) => { setEditing(next); setStage(next); };
 
     return (
         <View style={[styles.screen, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
@@ -132,11 +172,11 @@ export default function Onboarding() {
                         <Text variant="footnote" tone="secondary">{t('onboarding.why')}</Text>
                     </Card>
                     <Button label={t('onboarding.start')} onPress={() => setStage(firstOpenStage(answers))} />
-                    <Button variant="secondary" label={t('onboarding.preview')} onPress={() => router.push('/preview')} />
+                    <Button variant="secondary" label={t('onboarding.preview')} onPress={() => void browseFromIntro()} />
                     <Button variant="tertiary" label={t('onboarding.existing')} onPress={() => void signInExisting()} />
                 </ScrollView>
             ) : stage === 'result' ? (
-                <Result answers={answers} onBack={back} onFinish={finish} />
+                <Result answers={answers} onBack={back} onEdit={edit} onFinish={finish} />
             ) : (
                 <View style={styles.questionShell}>
                     <View style={styles.questionTop}>
@@ -177,24 +217,38 @@ function Choice({ icon, label, onPress, pressStyle, styles }: { icon: MenuIcon; 
     );
 }
 
-function Result({ answers, onBack, onFinish }: { answers: PreAuthAnswers; onBack: () => void; onFinish: (destination: 'sign-in' | 'preview') => Promise<void> }) {
+function Result({ answers, onBack, onEdit, onFinish }: { answers: PreAuthAnswers; onBack: () => void; onEdit: (stage: QuestionStage) => void; onFinish: (destination: 'sign-in' | 'preview') => Promise<void> }) {
     const styles = useThemedStyles(sheets);
     const role = answers.role && answers.role !== 'skipped' ? ROLE_LABEL[answers.role]?.() : t('create.firstRun.role.beginner');
     const goal = answers.goal && answers.goal !== 'skipped' ? GOAL_LABEL[answers.goal]?.() : t('create.firstGoal.unsure');
     const destination = answers.destination && answers.destination !== 'skipped' ? DESTINATION_LABEL[answers.destination]?.() : t('create.firstRun.dest.private');
     const aspect = defaultAspectFor(answers.destination);
     const example = answers.goal === 'image' || answers.goal === 'video' || answers.goal === 'audio' ? firstRunExample(answers.role, answers.goal) : null;
+    const goalKey = answers.goal && answers.goal !== 'skipped' ? answers.goal : 'unsure';
+    const tool = t(`onboarding.result.tool.${goalKey}`);
+    const timing = t(`onboarding.result.timing.${goalKey}`);
+    const previewAspect = aspect === '9:16' ? 9 / 16 : aspect === '16:9' ? 16 / 9 : 1;
     return (
         <ScrollView contentContainerStyle={styles.result} showsVerticalScrollIndicator={false}>
             <Button variant="tertiary" size="sm" icon="arrowLeft" label={t('onboarding.back')} onPress={onBack} containerStyle={styles.backButton} />
             <Text variant="caption" tone="accent">{t('onboarding.result.kicker')}</Text>
             <Text variant="title1" accessibilityRole="header">{t('onboarding.result.title')}</Text>
             <Text tone="secondary">{t('onboarding.result.body')}</Text>
-            <Card style={styles.resultCard}>
-                <ResultRow icon="user" label={t('onboarding.result.role')} value={role} styles={styles} />
-                <ResultRow icon="sparkle" label={t('onboarding.result.goal')} value={goal} styles={styles} />
-                <ResultRow icon="phone" label={aspect ? t('onboarding.result.format') : t('onboarding.result.private')} value={aspect ? `${aspect} · ${destination}` : destination} styles={styles} />
+            <Card style={styles.starterCard}>
+                <View style={styles.starterHeading}><Icon name="sparkle" size={22} /><Text variant="bodyStrong">{t('onboarding.result.workspace')}</Text></View>
+                <View style={[styles.outputPreview, { aspectRatio: previewAspect }]}>
+                    <Icon name={GOAL_ICON[goalKey]} size={34} />
+                    <Text variant="title3" style={styles.center}>{tool}</Text>
+                    {aspect ? <View style={styles.formatBadge}><Text variant="caption">{aspect}</Text></View> : null}
+                </View>
+                <ResultRow icon="sliders" label={t('onboarding.result.tool')} value={tool} styles={styles} />
+                <ResultRow icon="hourglass" label={t('onboarding.result.timing')} value={timing} styles={styles} />
                 {example ? <ResultRow icon="lightbulb" label={t('onboarding.result.example')} value={example} styles={styles} /> : null}
+            </Card>
+            <Card style={styles.resultCard}>
+                <ResultRow icon="user" label={t('onboarding.result.role')} value={role} onChange={() => onEdit('role')} styles={styles} />
+                <ResultRow icon="sparkle" label={t('onboarding.result.goal')} value={goal} onChange={() => onEdit('goal')} styles={styles} />
+                <ResultRow icon="phone" label={aspect ? t('onboarding.result.format') : t('onboarding.result.private')} value={aspect ? `${aspect} · ${destination}` : destination} onChange={() => onEdit('destination')} styles={styles} />
             </Card>
             <Text variant="footnote" tone="secondary">{t('onboarding.why')}</Text>
             <Button label={t('onboarding.result.save')} onPress={() => void onFinish('sign-in')} />
@@ -203,8 +257,8 @@ function Result({ answers, onBack, onFinish }: { answers: PreAuthAnswers; onBack
     );
 }
 
-function ResultRow({ icon, label, value, styles }: { icon: MenuIcon; label: string; value: string; styles: ReturnType<typeof sheets> }) {
-    return <View style={styles.resultRow}><View style={styles.resultIcon}><Icon name={icon} size={20} /></View><View style={styles.resultCopy}><Text variant="footnote" tone="secondary">{label}</Text><Text variant="bodyStrong">{value}</Text></View></View>;
+function ResultRow({ icon, label, value, onChange, styles }: { icon: MenuIcon; label: string; value: string; onChange?: () => void; styles: ReturnType<typeof sheets> }) {
+    return <View style={styles.resultRow}><View style={styles.resultIcon}><Icon name={icon} size={20} /></View><View style={styles.resultCopy}><Text variant="footnote" tone="secondary">{label}</Text><Text variant="bodyStrong">{value}</Text></View>{onChange ? <Pressable accessibilityRole="button" accessibilityLabel={t('onboarding.changeField', { field: label })} onPress={onChange} style={styles.change}><Text variant="footnote" tone="accent">{t('onboarding.change')}</Text></Pressable> : null}</View>;
 }
 
 const sheets = themedStyles((p) => ({
@@ -227,8 +281,13 @@ const sheets = themedStyles((p) => ({
     choiceLabel: { flex: 1 },
     result: { flexGrow: 1, padding: ds.space.gutter, gap: ds.space.lg, justifyContent: 'center' },
     backButton: { alignSelf: 'flex-start' },
+    starterCard: { gap: ds.space.lg, backgroundColor: p.accentSubtle, borderColor: p.accent },
+    starterHeading: { flexDirection: 'row', alignItems: 'center', gap: ds.space.sm },
+    outputPreview: { width: '52%', minWidth: 150, maxHeight: 240, alignSelf: 'center', borderRadius: ds.radius.lg, backgroundColor: p.bgElevated2, borderWidth: 1, borderColor: p.borderSubtle, alignItems: 'center', justifyContent: 'center', gap: ds.space.sm, padding: ds.space.md },
+    formatBadge: { position: 'absolute', right: ds.space.sm, bottom: ds.space.sm, borderRadius: ds.radius.pill, backgroundColor: p.bgElevated1, paddingHorizontal: ds.space.sm, paddingVertical: ds.space.xs },
     resultCard: { gap: ds.space.xl, backgroundColor: p.bgElevated1 },
     resultRow: { flexDirection: 'row', alignItems: 'flex-start', gap: ds.space.md },
     resultIcon: { width: 40, height: 40, borderRadius: ds.radius.md, backgroundColor: p.accentSubtle, alignItems: 'center', justifyContent: 'center' },
     resultCopy: { flex: 1, gap: ds.space.xs },
+    change: { minHeight: 44, minWidth: 60, alignItems: 'flex-end', justifyContent: 'center' },
 }));

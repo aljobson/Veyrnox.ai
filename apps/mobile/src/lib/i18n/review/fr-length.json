@@ -7506,6 +7506,24 @@
     "ratio": 1.69
   },
   {
+    "id": "onboarding.result.kicker",
+    "english": "YOUR STARTER SETUP",
+    "translation": "VOTRE CONFIGURATION DE DÉPART",
+    "ratio": 1.61
+  },
+  {
+    "id": "onboarding.notifications.now",
+    "english": "now",
+    "translation": "maintenant",
+    "ratio": 3.33
+  },
+  {
+    "id": "onboarding.notifications.later",
+    "english": "Not now",
+    "translation": "Pas maintenant",
+    "ratio": 2
+  },
+  {
     "id": "musicAlbums.addTrack",
     "english": "Add",
     "translation": "Ajouter",

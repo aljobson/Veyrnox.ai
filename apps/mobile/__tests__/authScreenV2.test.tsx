@@ -18,7 +18,7 @@ jest.mock('../src/auth/AuthProvider', () => ({
         signUpWithEmail: mockEmail,
     }),
 }));
-jest.mock('expo-router', () => ({ Link: ({ children }: any) => children, Redirect: () => null, useRouter: () => ({ replace: mockReplace, push: jest.fn(), back: jest.fn() }) }));
+jest.mock('expo-router', () => ({ Link: ({ children }: any) => children, Redirect: () => null, useLocalSearchParams: () => ({}), useRouter: () => ({ replace: mockReplace, push: jest.fn(), back: jest.fn() }) }));
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, right: 59, bottom: 21, left: 59 }) }));
 jest.mock('../src/components/Logo', () => ({ Logo: () => null }));
 jest.mock('../src/components/BrandIntro', () => ({ BrandIntro: () => null }));

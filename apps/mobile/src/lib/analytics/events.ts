@@ -16,7 +16,22 @@ const outcome = oneOf('succeeded', 'failed', 'cancelled');
 export const APPLICATION_EVENTS: Record<string, Record<string, (v: unknown) => boolean>> = {
     app_opened: { cold: v => typeof v === 'boolean' }, app_backgrounded: {},
     onboarding_step: { step: oneOf('welcome', 'start', 'questions', 'recap', 'vibe'), action: oneOf('view', 'next', 'skip') },
-    sign_in_completed: { method: oneOf('apple', 'google', 'email', 'passkey') },
+    onboarding_started: { cohort: oneOf('new') },
+    onboarding_answered: {
+        question: oneOf('role', 'goal', 'destination'),
+        answer: oneOf('creator', 'business', 'pro', 'hobbyist', 'beginner', 'image', 'video', 'audio', 'edit', 'publish', 'unsure', 'tiktok', 'reels', 'youtube', 'private'),
+    },
+    onboarding_result_viewed: {
+        role: oneOf('creator', 'business', 'pro', 'hobbyist', 'beginner'),
+        goal: oneOf('image', 'video', 'audio', 'edit', 'publish', 'unsure'),
+        destination: oneOf('tiktok', 'reels', 'youtube', 'private'),
+    },
+    guest_browse_started: { source: oneOf('intro', 'result') }, guest_browse_viewed: {},
+    sign_in_started: { source: oneOf('direct', 'existing', 'personalised', 'preview') },
+    sign_in_completed: { method: oneOf('apple', 'google', 'email', 'email_confirm', 'passkey') },
+    notification_primer_viewed: { trigger: oneOf('generation') },
+    notification_primer_finished: { action: oneOf('allow', 'later', 'denied', 'unavailable') },
+    paywall_viewed: { mode: oneOf('hard', 'screen') },
     generation_submitted: { kind, model_id: identifier }, generation_finished: { kind, outcome },
     purchase_started: { product: oneOf('pack', 'subscription') },
     purchase_finished: { product: oneOf('pack', 'subscription'), outcome },

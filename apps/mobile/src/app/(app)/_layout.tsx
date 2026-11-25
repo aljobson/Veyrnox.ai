@@ -23,6 +23,7 @@ import { paletteForScheme } from '../../theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { needsStackHorizontalSafeArea } from '../../lib/appScreenSafeArea';
 import { PersistentAudioQueueProvider } from '../../components/music/PersistentAudioQueue';
+import { NotificationPrimerGate } from '../../components/NotificationPrimerGate';
 
 export const unstable_settings = { anchor: '(tabs)' };
 
@@ -42,6 +43,7 @@ export default function AppLayout() {
             <MfaGate key={generation}>
                 <AgeConfirmationGate>
                 <FirstRunGate />
+                <NotificationPrimerGate />
                 <ReferralAttach />
                 <CheckInModal />
                 <PaywallPrompt />
