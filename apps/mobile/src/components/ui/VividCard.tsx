@@ -52,6 +52,7 @@ export function VividCard({
     const label = rawText(accessibilityLabel ?? [eyebrow, title, detail].filter(Boolean).join('. '));
     const row = layout === 'row' || layout === 'compact';
     const compact = layout === 'compact';
+    const role = accessibilityRole ?? 'button';
     const content = (
         <>
             <View pointerEvents="none" style={[styles.glow, row && styles.glowRow, glow]} />
@@ -70,10 +71,10 @@ export function VividCard({
     const container = [styles.card, styles[layout], colour, style];
     if (onPress) return (
         <Pressable
-            accessibilityRole={accessibilityRole ?? 'button'}
+            accessibilityRole={role}
             accessibilityLabel={label}
             accessibilityHint={rawText(accessibilityHint)}
-            accessibilityState={{ selected }}
+            accessibilityState={{ selected, ...(role === 'radio' ? { checked: selected } : {}) }}
             onPress={onPress}
             style={({ pressed }) => [container, pressed && pressStyle]}
         >
