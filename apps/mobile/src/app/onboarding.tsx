@@ -51,6 +51,15 @@ const DESTINATION_ICON: Record<(typeof FIRST_DESTINATIONS)[number], MenuIcon> = 
 
 const EMPTY: PreAuthAnswers = { role: null, goal: null, destination: null };
 
+const CARD_TONES = [
+    { background: '#3B82E6', glow: '#9AD8FF' },
+    { background: '#F4813C', glow: '#FFD083' },
+    { background: '#7657E8', glow: '#C4B5FF' },
+    { background: '#45B95E', glow: '#A4EC96' },
+    { background: '#D14F74', glow: '#FFAAAF' },
+    { background: '#168DA4', glow: '#7CE1EE' },
+] as const;
+
 function firstOpenStage(answers: PreAuthAnswers): Stage {
     if (!answers.role) return 'role';
     if (!answers.goal) return 'goal';
@@ -192,12 +201,12 @@ export default function Onboarding() {
                         </Text>
                         <Text tone="secondary">{t('create.firstRun.personalise')}</Text>
                         <View style={styles.options}>
-                            {stage === 'role' ? FIRST_ROLES.map((value) => (
-                                <Choice key={value} icon={ROLE_ICON[value]} label={ROLE_LABEL[value]()} onPress={() => choose('role', value)} pressStyle={pressStyle} styles={styles} />
-                            )) : stage === 'goal' ? FIRST_GOALS.map((value) => (
-                                <Choice key={value} icon={GOAL_ICON[value]} label={GOAL_LABEL[value]()} onPress={() => choose('goal', value)} pressStyle={pressStyle} styles={styles} />
-                            )) : FIRST_DESTINATIONS.map((value) => (
-                                <Choice key={value} icon={DESTINATION_ICON[value]} label={DESTINATION_LABEL[value]()} onPress={() => choose('destination', value)} pressStyle={pressStyle} styles={styles} />
+                            {stage === 'role' ? FIRST_ROLES.map((value, index) => (
+                                <Choice key={value} icon={ROLE_ICON[value]} label={ROLE_LABEL[value]()} toneIndex={index} onPress={() => choose('role', value)} pressStyle={pressStyle} styles={styles} />
+                            )) : stage === 'goal' ? FIRST_GOALS.map((value, index) => (
+                                <Choice key={value} icon={GOAL_ICON[value]} label={GOAL_LABEL[value]()} toneIndex={index + 2} onPress={() => choose('goal', value)} pressStyle={pressStyle} styles={styles} />
+                            )) : FIRST_DESTINATIONS.map((value, index) => (
+                                <Choice key={value} icon={DESTINATION_ICON[value]} label={DESTINATION_LABEL[value]()} toneIndex={index + 1} onPress={() => choose('destination', value)} pressStyle={pressStyle} styles={styles} />
                             ))}
                         </View>
                     </ScrollView>
@@ -207,12 +216,13 @@ export default function Onboarding() {
     );
 }
 
-function Choice({ icon, label, onPress, pressStyle, styles }: { icon: MenuIcon; label: string; onPress: () => void; pressStyle: object; styles: ReturnType<typeof sheets> }) {
+function Choice({ icon, label, toneIndex, onPress, pressStyle, styles }: { icon: MenuIcon; label: string; toneIndex: number; onPress: () => void; pressStyle: object; styles: ReturnType<typeof sheets> }) {
+    const tone = CARD_TONES[toneIndex % CARD_TONES.length];
     return (
-        <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={({ pressed }) => [styles.choice, pressed && pressStyle]}>
-            <View style={styles.choiceIcon}><Icon name={icon} size={24} /></View>
-            <Text variant="bodyStrong" style={styles.choiceLabel}>{label}</Text>
-            <Icon name="caretRight" size={20} />
+        <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={({ pressed }) => [styles.choice, { backgroundColor: tone.background }, pressed && pressStyle]}>
+            <View pointerEvents="none" style={[styles.cardGlow, { backgroundColor: tone.glow }]} />
+            <View style={styles.choiceIcon}><Icon name={icon} size={40} tint="#FFFFFF" /></View>
+            <Text variant="title3" tone="onMedia" style={styles.choiceLabel}>{label}</Text>
         </Pressable>
     );
 }
@@ -227,7 +237,6 @@ function Result({ answers, onBack, onEdit, onFinish }: { answers: PreAuthAnswers
     const goalKey = answers.goal && answers.goal !== 'skipped' ? answers.goal : 'unsure';
     const tool = t(`onboarding.result.tool.${goalKey}`);
     const timing = t(`onboarding.result.timing.${goalKey}`);
-    const previewAspect = aspect === '9:16' ? 9 / 16 : aspect === '16:9' ? 16 / 9 : 1;
     return (
         <ScrollView contentContainerStyle={styles.result} showsVerticalScrollIndicator={false}>
             <Button variant="tertiary" size="sm" icon="arrowLeft" label={t('onboarding.back')} onPress={onBack} containerStyle={styles.backButton} />
@@ -236,14 +245,12 @@ function Result({ answers, onBack, onEdit, onFinish }: { answers: PreAuthAnswers
             <Text tone="secondary">{t('onboarding.result.body')}</Text>
             <Card style={styles.starterCard}>
                 <View style={styles.starterHeading}><Icon name="sparkle" size={24} /><Text variant="bodyStrong">{t('onboarding.result.workspace')}</Text></View>
-                <View style={[styles.outputPreview, { aspectRatio: previewAspect }]}>
-                    <Icon name={GOAL_ICON[goalKey]} size={36} />
-                    <Text variant="title3" style={styles.center}>{tool}</Text>
-                    {aspect ? <View style={styles.formatBadge}><Text variant="caption">{aspect}</Text></View> : null}
+                <View style={styles.resultTiles}>
+                    <ResultTile toneIndex={0} icon={GOAL_ICON[goalKey]} label={t('onboarding.result.tool')} value={tool} styles={styles} />
+                    <ResultTile toneIndex={1} icon="phone" label={aspect ? t('onboarding.result.format') : t('onboarding.result.private')} value={aspect ? `${aspect} · ${destination}` : destination} styles={styles} />
+                    <ResultTile wide toneIndex={2} icon="hourglass" label={t('onboarding.result.timing')} value={timing} styles={styles} />
+                    {example ? <ResultTile wide toneIndex={3} icon="lightbulb" label={t('onboarding.result.example')} value={example} styles={styles} /> : null}
                 </View>
-                <ResultRow icon="sliders" label={t('onboarding.result.tool')} value={tool} styles={styles} />
-                <ResultRow icon="hourglass" label={t('onboarding.result.timing')} value={timing} styles={styles} />
-                {example ? <ResultRow icon="lightbulb" label={t('onboarding.result.example')} value={example} styles={styles} /> : null}
             </Card>
             <Card style={styles.resultCard}>
                 <ResultRow icon="user" label={t('onboarding.result.role')} value={role} onChange={() => onEdit('role')} styles={styles} />
@@ -254,6 +261,20 @@ function Result({ answers, onBack, onEdit, onFinish }: { answers: PreAuthAnswers
             <Button label={t('onboarding.result.save')} onPress={() => void onFinish('sign-in')} />
             <Button variant="secondary" label={t('onboarding.result.browse')} onPress={() => void onFinish('preview')} />
         </ScrollView>
+    );
+}
+
+function ResultTile({ toneIndex, icon, label, value, wide = false, styles }: { toneIndex: number; icon: MenuIcon; label: string; value: string; wide?: boolean; styles: ReturnType<typeof sheets> }) {
+    const tone = CARD_TONES[toneIndex % CARD_TONES.length];
+    return (
+        <View accessible accessibilityLabel={`${label}: ${value}`} style={[styles.resultTile, wide && styles.resultTileWide, { backgroundColor: tone.background }]}>
+            <View pointerEvents="none" style={[styles.cardGlow, { backgroundColor: tone.glow }]} />
+            <View style={styles.resultTileIcon}><Icon name={icon} size={36} tint="#FFFFFF" /></View>
+            <View style={styles.resultTileCopy}>
+                <Text variant="caption" tone="onMedia" style={styles.tileEyebrow}>{label}</Text>
+                <Text variant="bodyStrong" tone="onMedia">{value}</Text>
+            </View>
+        </View>
     );
 }
 
@@ -275,16 +296,21 @@ const sheets = themedStyles((p) => ({
     progressBar: { flex: 1, height: 4, borderRadius: ds.radius.pill, backgroundColor: p.borderSubtle },
     progressBarOn: { backgroundColor: p.accent },
     questionBody: { padding: ds.space.gutter, paddingTop: ds.space.xxxl, gap: ds.space.md },
-    options: { gap: ds.space.sm, marginTop: ds.space.md },
-    choice: { minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: ds.space.md, padding: ds.space.md, borderRadius: ds.radius.md, backgroundColor: p.bgElevated1, borderWidth: 1, borderColor: p.borderSubtle },
-    choiceIcon: { width: 42, height: 42, borderRadius: ds.radius.md, backgroundColor: p.accentSubtle, alignItems: 'center', justifyContent: 'center' },
-    choiceLabel: { flex: 1 },
+    options: { flexDirection: 'row', flexWrap: 'wrap', gap: ds.space.sm, marginTop: ds.space.md },
+    choice: { width: '48%', minHeight: 150, justifyContent: 'flex-end', padding: ds.space.lg, borderRadius: ds.radius.lg, overflow: 'hidden' },
+    cardGlow: { position: 'absolute', width: 126, height: 126, borderRadius: 63, right: -28, top: -36, opacity: 0.48 },
+    choiceIcon: { position: 'absolute', right: ds.space.lg, top: ds.space.lg, width: 58, height: 58, borderRadius: ds.radius.lg, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
+    choiceLabel: { maxWidth: '92%' },
     result: { flexGrow: 1, padding: ds.space.gutter, gap: ds.space.lg, justifyContent: 'center' },
     backButton: { alignSelf: 'flex-start' },
-    starterCard: { gap: ds.space.lg, backgroundColor: p.accentSubtle, borderColor: p.accent },
+    starterCard: { gap: ds.space.lg, backgroundColor: p.bgElevated1, borderColor: p.borderSubtle },
     starterHeading: { flexDirection: 'row', alignItems: 'center', gap: ds.space.sm },
-    outputPreview: { width: '52%', minWidth: 150, maxHeight: 240, alignSelf: 'center', borderRadius: ds.radius.lg, backgroundColor: p.bgElevated2, borderWidth: 1, borderColor: p.borderSubtle, alignItems: 'center', justifyContent: 'center', gap: ds.space.sm, padding: ds.space.md },
-    formatBadge: { position: 'absolute', right: ds.space.sm, bottom: ds.space.sm, borderRadius: ds.radius.pill, backgroundColor: p.bgElevated1, paddingHorizontal: ds.space.sm, paddingVertical: ds.space.xs },
+    resultTiles: { flexDirection: 'row', flexWrap: 'wrap', gap: ds.space.sm },
+    resultTile: { width: '48%', minHeight: 164, borderRadius: ds.radius.lg, padding: ds.space.lg, justifyContent: 'flex-end', overflow: 'hidden' },
+    resultTileWide: { width: '100%', minHeight: 126 },
+    resultTileIcon: { position: 'absolute', right: ds.space.lg, top: ds.space.lg, width: 54, height: 54, borderRadius: ds.radius.lg, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
+    resultTileCopy: { gap: ds.space.xs, paddingTop: ds.space.xxxl },
+    tileEyebrow: { color: 'rgba(255,255,255,0.82)' },
     resultCard: { gap: ds.space.xl, backgroundColor: p.bgElevated1 },
     resultRow: { flexDirection: 'row', alignItems: 'flex-start', gap: ds.space.md },
     resultIcon: { width: 40, height: 40, borderRadius: ds.radius.md, backgroundColor: p.accentSubtle, alignItems: 'center', justifyContent: 'center' },
