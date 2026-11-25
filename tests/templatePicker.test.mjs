@@ -14,7 +14,6 @@ import { templateById } from '../app/veyrnox/_lib/templates.js';
 import { templateCards, templateDetail } from '../lib/clientTemplates.js';
 import { templateStartId } from '../lib/templateStart.js';
 import { internalModelId } from '../lib/publicModelIds.js';
-import { LICENSED_MUSIC_BASE, LICENSED_MUSIC_TRACKS } from '../lib/licensedMusicCatalog.js';
 
 const require = createRequire(import.meta.url);
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
@@ -37,11 +36,11 @@ const renderPicker = (goal, catalog = models, galleryCards) => renderToStaticMar
 const templateButtons = (html) => [...html.matchAll(/data-testid="create-template-(?!picker)[^"]+"/g)].length;
 
 test('the curated Create catalog has valid image and audio templates, no video, and bundled previews', () => {
-  assert.equal(createTemplates.CREATE_TEMPLATES.length, 23);
-  assert.equal(new Set(createTemplates.CREATE_TEMPLATES.map((item) => item.id)).size, 23);
+  assert.equal(createTemplates.CREATE_TEMPLATES.length, 9);
+  assert.equal(new Set(createTemplates.CREATE_TEMPLATES.map((item) => item.id)).size, 9);
   for (const kind of createTemplates.CREATE_TEMPLATE_KINDS) {
     const choices = createTemplates.createTemplatesFor(kind);
-    assert.equal(choices.length, { video: 0, image: 3, audio: 20 }[kind]);
+    assert.equal(choices.length, { video: 0, image: 3, audio: 6 }[kind]);
     for (const choice of choices) {
       assert.equal(models.find((model) => model.id === tokens.templateModelId(choice))?.kind, kind);
       assert.equal(templateById(choice.id), null);
@@ -51,21 +50,12 @@ test('the curated Create catalog has valid image and audio templates, no video, 
       assert.equal(templateStartId(choice.id, 'wrong-model'), null);
       assert.ok(choice.prompt.length > 40);
       assert.ok(existsSync(new URL(`../public${choice.previewImage}`, import.meta.url)), choice.previewImage);
-      if (kind === 'audio') assert.ok(existsSync(new URL(`../public${choice.previewAudio}`, import.meta.url)), choice.previewAudio);
       if (kind === 'audio') assert.equal(choice.durationSeconds, undefined);
       if (kind === 'video') assert.equal(choice.clipKey, undefined);
       if (kind !== 'audio') assert.match(choice.previewImage, /^\/(?:showcase|cinema)\//);
     }
   }
-  for (const choice of createTemplates.createTemplatesFor('audio')) {
-    const track = LICENSED_MUSIC_TRACKS.find((item) => item.id === choice.licensedTrackId);
-    assert.ok(track, choice.licensedTrackId);
-    assert.equal(choice.previewAudio, `${LICENSED_MUSIC_BASE}${track.file}`);
-    assert.equal(choice.previewImage, `${LICENSED_MUSIC_BASE}${track.artwork}`);
-    assert.equal(choice.previewAttribution, track.attribution);
-    assert.equal(choice.previewSourceUrl, track.sourceUrl);
-    assert.equal(choice.previewLicenseUrl, track.licenseUrl);
-  }
+  assert.ok(createTemplates.createTemplatesFor('audio').every((choice) => choice.model === 'Suno Sound Effects'));
 });
 
 test('Create lists the gallery video templates, each with its poster and a link to the gallery', () => {
@@ -100,18 +90,15 @@ test('Create offers exactly three image templates using bundled Veyrnox images',
   for (const source of ['cinematic-portrait.webp', 'hotel-corridor.webp', 'ripple-light-portrait.webp']) assert.match(html, new RegExp(source));
 });
 
-test('Create offers twenty audio templates with real licensed song previews', () => {
+test('Create offers six runnable Sound Effects templates without retired music previews', () => {
   const html = renderPicker('audio');
-  assert.match(html, /TEMPLATES · 20/);
-  assert.equal(templateButtons(html), 20);
-  assert.equal([...html.matchAll(/<audio /g)].length, 20);
-  for (const source of ['midnight-theme-cdk-mix.mp3', 'scott-buckley-amberlight.mp3', 'scott-buckley-rise-above.mp3']) assert.match(html, new RegExp(source));
-  assert.match(html, /CC BY 3\.0/);
-  assert.match(html, /CC BY 4\.0/);
-  assert.match(html, /Only a style direction is used/);
-  assert.ok(html.includes('href="https://ccmixter.org/files/cdk/14246"'));
-  assert.ok(html.includes('href="https://soundcloud.com/scottbuckley/amberlight-cc-by"'));
-  assert.match(html, /href="\/app\/music\/discover"/);
+  assert.match(html, /TEMPLATES · 6/);
+  assert.equal(templateButtons(html), 6);
+  assert.equal([...html.matchAll(/<audio /g)].length, 0);
+  assert.match(html, /Suno Sound Effects · 2 credits/);
+  assert.match(html, /City Rain Window/);
+  assert.match(html, /Ocean Loop/);
+  assert.match(html, /href="\/app\/music\/sounds"/);
 });
 
 test('templates whose models are unavailable are omitted', () => {
@@ -129,8 +116,8 @@ test('template metadata keeps human model names and grammatically correct credit
 
 test('the all-goal picker follows the currently selected model kind', () => {
   const html = renderToStaticMarkup(createElement(compiledModule.exports.TemplatePicker, { models, goal: 'all', selectedKind: 'audio', onPick() {}, onClose() {} }));
-  assert.equal(templateButtons(html), 20);
-  assert.equal([...html.matchAll(/<audio /g)].length, 20);
+  assert.equal(templateButtons(html), 6);
+  assert.equal([...html.matchAll(/<audio /g)].length, 0);
 });
 
 test('Create loads every medium through the same template handoff', () => {

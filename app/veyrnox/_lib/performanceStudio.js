@@ -199,7 +199,7 @@ export const SPEECH_SOURCES = [
   { id: 'record', label: 'Record', description: 'Capture speech here and review it first.' },
 ];
 
-export const DEFAULT_TTS_MODEL_ID = 'minimax-speech-2.6-hd';
+export const DEFAULT_TTS_MODEL_ID = 'qwen3-tts';
 
 export function workflowById(id) {
   return PERFORMANCE_WORKFLOWS.find((workflow) => workflow.id === id) || PERFORMANCE_WORKFLOWS[0];
