@@ -83,6 +83,21 @@ test('the video picker says it is loading until the gallery answers, and points 
   assert.match(failed, /href="\/presets"[^>]*>Open the template gallery</);
 });
 
+test('the picker keeps failures visible and prevents duplicate picks while loading', () => {
+  const html = renderToStaticMarkup(createElement(compiledModule.exports.TemplatePicker, {
+    models,
+    goal: 'image',
+    busy: true,
+    error: 'Template unavailable. Choose another or try again later.',
+    onPick() {},
+    onClose() {},
+  }));
+  assert.match(html, /data-testid="create-template-picker-error"/);
+  assert.match(html, /role="alert"/);
+  assert.match(html, /Template unavailable\. Choose another or try again later\./);
+  assert.equal([...html.matchAll(/<button[^>]* disabled=""/g)].length, 3);
+});
+
 test('Create offers exactly three image templates using bundled Veyrnox images', () => {
   const html = renderPicker('image');
   assert.match(html, /TEMPLATES · 3/);
@@ -124,6 +139,8 @@ test('Create loads every medium through the same template handoff', () => {
   const page = read('app/veyrnox/app/create/page.js');
   assert.match(page, /<TemplatePicker models=\{models\} goal=\{goal\} selectedKind=\{model\?\.kind\} onPick=\{applyTemplate\}/);
   assert.match(page, /const preset = await fetchTemplate\(card\.id\)/);
+  assert.doesNotMatch(page, /async function applyTemplate\(card\) \{\n\s+setTemplatesOpen\(false\)/);
+  assert.match(page, /if \(!preset \|\| !nextModel \|\| !draft\) \{ setTemplatePickError\(t\('presets\.swap\.unavailable'\)\); return; \}/);
 });
 
 test('Create-only template handoffs do not link to missing public preset pages', () => {
