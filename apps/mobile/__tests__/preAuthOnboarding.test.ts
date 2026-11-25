@@ -55,7 +55,7 @@ test('guest browsing remembers the route and only carries a complete result into
 
 test('a completed result is applied once and retires the older account onboarding across restarts', async () => {
     await completePreAuthOnboarding(answers, 'sign-in');
-    const request = jest.fn(async <T,>() => ({} as T)) as jest.MockedFunction<ApiClient['request']>;
+    const request = jest.fn(async <T,>() => ({} as T)) as unknown as jest.MockedFunction<ApiClient['request']>;
     const task: ClientTask = { gen: 4, user: 'account-a', current: () => true };
 
     await expect(applyPendingPreAuthOnboarding({ request }, task)).resolves.toBe(true);
