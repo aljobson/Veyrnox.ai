@@ -82,6 +82,7 @@ export type MusicEntitlements = {
         readonly studioChat: boolean;
         readonly dailyChallenge: boolean;
         readonly persistentQueue: boolean;
+        readonly sources: boolean;
     };
     readonly inspiration_sources: readonly (MusicInspirationSource | 'video_frames')[];
     readonly daily_allowance?: {
@@ -95,6 +96,24 @@ export type MusicEntitlements = {
     readonly daily_challenge?: MusicDailyChallenge;
     readonly policy: { readonly version: string; readonly pre_debit: boolean };
 };
+
+export type MusicOwnedSource = {
+    readonly id: string;
+    readonly filename: string;
+    readonly mime_type: 'audio/mpeg' | 'audio/wav';
+    readonly size_bytes: number;
+    readonly duration_seconds: number;
+    readonly status: 'ready';
+    readonly created_at: string;
+    readonly rights_statement_version: 'music-source-rights-v1';
+    readonly preview_url: string;
+    readonly preview_expires_in: number;
+};
+
+export type MusicSourceReservation =
+    | { readonly source: MusicOwnedSource; readonly idempotent: true }
+    | { readonly id: string; readonly upload_url: string; readonly content_type: 'audio/mpeg' | 'audio/wav';
+        readonly headers: Readonly<Record<string, string>>; readonly idempotent: boolean };
 
 export type MusicInspirationResult = {
     readonly analysis_id: string;

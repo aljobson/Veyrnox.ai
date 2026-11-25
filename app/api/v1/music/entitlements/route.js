@@ -4,7 +4,7 @@ import { musicDailyChallengeAt } from '../../../../../lib/musicDailyChallenge.js
 import { musicInspirationSources } from '../../../../../lib/musicInspiration.js';
 import { readFreshMusicCatalog } from '../../../../../lib/publicCatalog.js';
 import {
-    musicAlbumsEnabled, musicDailyCreditsEnabled, musicEntitlementProjection, musicGenerationEnabled, musicStudioChatEnabled,
+    musicAlbumsEnabled, musicDailyCreditsEnabled, musicEntitlementProjection, musicGenerationEnabled, musicSourcesEnabled, musicStudioChatEnabled,
     musicSchemaEnabled, validMusicAuthId,
 } from '../../../../../lib/musicBackend.js';
 
@@ -39,7 +39,8 @@ export async function GET(request) {
             }
         }
         const features = Object.fromEntries(MUSIC_MOBILE_ROLLOUT_FLAGS.map(name => [name,
-            name === 'albums' ? musicAlbumsEnabled() : name === 'studioChat' ? musicStudioChatEnabled() : musicRuntimeFlag(name)]));
+            name === 'albums' ? musicAlbumsEnabled() : name === 'studioChat' ? musicStudioChatEnabled()
+                : name === 'sources' ? musicSourcesEnabled() && musicRuntimeFlag('nativeSources') : musicRuntimeFlag(name)]));
         const inspirationSources = features.inspiration ? musicInspirationSources() : [];
         return reply({
             ...musicEntitlementProjection({
