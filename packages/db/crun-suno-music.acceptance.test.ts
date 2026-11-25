@@ -69,6 +69,9 @@ describe('Crun Suno music foundation (0591)', { skip: !local && 'disposable loca
   before(async () => {
     const pg = (await import('pg')).default;
     pool = new pg.Pool({ connectionString: url, max: 4 });
+    // 0611 unlists ACE after live provider SLA failures. This database is disposable, and the
+    // committed fixture must be visible to the suite's dedicated concurrency connections.
+    await pool.query("UPDATE public.model_catalog SET active=true WHERE id IN ('ace-step','ace-step-1.5')");
     client = await pool.connect();
     await client.query("SET TIME ZONE 'UTC'");
     await client.query('BEGIN');
