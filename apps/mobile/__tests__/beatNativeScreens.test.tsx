@@ -88,9 +88,9 @@ describe('beats home', () => {
         await act(async () => root.render(<BeatsHome />));
         expect(text(t('beat.cloud.off')).length).toBeGreaterThan(0);
         expect(byLabel(t('beat.home.new'))).toBeDefined();
-        expect(byLabel(t('music.title'))).toBeDefined();
+        expect(byLabel(t('music.title'))).toBeUndefined();
         expect(testId('music-editor-new')).toHaveLength(1);
-        expect(testId('music-editor-library')).toHaveLength(1);
+        expect(testId('music-editor-library')).toHaveLength(0);
         expect(text(t('beat.home.new'))).toHaveLength(0);
         expect(mockApi.request).toHaveBeenCalledTimes(1);
         expect(mockApi.request).toHaveBeenCalledWith('/api/v1/music/beat-projects', expect.any(Object), expect.any(Object));

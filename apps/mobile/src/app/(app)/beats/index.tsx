@@ -60,10 +60,7 @@ export default function MusicEditorHome() {
         <ScrollView style={s.screen} contentContainerStyle={s.content}>
             <Stack.Screen options={{
                 title: t('beat.title'),
-                headerRight: () => <View style={s.headerActions} accessibilityRole="toolbar" accessibilityLabel={t('beat.title')}>
-                    <HeaderAction testID="music-editor-new" label={t('beat.home.new')} icon="plus" iconOnly onPress={() => void create()} />
-                    <HeaderAction testID="music-editor-library" label={t('music.title')} icon="folder" iconOnly onPress={() => router.push('/music' as never)} />
-                </View>,
+                headerRight: () => <HeaderAction testID="music-editor-new" label={t('beat.home.new')} icon="plus" iconOnly onPress={() => void create()} />,
             }} />
             {creationFailed ? <MusicNotice message={t('beatLabs.createFailed')} /> : null}
             {state === 'checking' ? <VeyLoader label={t('beat.home.checking')} showLabel /> : null}
@@ -87,7 +84,6 @@ export default function MusicEditorHome() {
 const sheets = themedStyles(p => ({
     screen: { flex: 1, backgroundColor: p.bg },
     content: { padding: ds.space.gutter, gap: ds.space.lg },
-    headerActions: { flexDirection: 'row', alignItems: 'center', gap: ds.space.xs },
     row: { flexDirection: 'row', alignItems: 'center', gap: ds.space.sm },
     grow: { flex: 1 },
 }));

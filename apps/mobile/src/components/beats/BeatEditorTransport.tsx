@@ -83,7 +83,7 @@ export function BeatEditorTransport({ playing, starting, locked, showPatterns = 
             disabled={addDisabled} onPress={onAdd} containerStyle={[s.control, scrollActions && s.controlAccessible]} /> : null}
         {onAi ? <Button testID="beat-editor-ai" size="md" variant="secondary" tone="accent" label={t('beatAi.title')}
             disabled={locked} onPress={onAi} style={s.aiControl} containerStyle={[s.control, scrollActions && s.controlAccessible]}>
-            <View style={s.aiContent}><Icon name="sparkleFill" size={20} tint={s.aiLabel.color} /><Text variant="micro" tone="accent" style={s.aiLabel}>AI</Text></View>
+            <Icon name="sparkleFill" size={20} tint={s.aiIcon.color} />
         </Button> : null}
         {onExport ? <Button testID="beat-editor-export" size="md" variant="tertiary" icon="arrowUp" iconOnly label={t('beatExport.title')}
             onPress={onExport} containerStyle={[s.control, scrollActions && s.controlAccessible]} /> : null}
@@ -128,8 +128,7 @@ const sheets = themedStyles(p => ({
     groupAccessible: { flex: 0, width: 'auto', alignSelf: 'stretch' },
     control: { flex: 1 },
     aiControl: { borderWidth: 1, borderColor: p.accent },
-    aiContent: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-    aiLabel: { color: p.accent },
+    aiIcon: { color: p.accent },
     controlAccessible: { flex: 0, minWidth: 150 },
     patternActionAccessible: { flex: 0, minWidth: 190 },
     play: { flex: 1.2 },

@@ -2,6 +2,7 @@ import { act } from 'react';
 import { createRoot, type Root } from 'test-renderer';
 import * as RN from 'react-native';
 import { BeatEditorTransport } from '../src/components/beats/BeatEditorTransport';
+import { t } from '../src/lib/i18n';
 
 let mockDimensions = { width: 390, height: 844, scale: 3, fontScale: 1 };
 let mockBottomInset = 34;
@@ -109,7 +110,8 @@ test('focused music dock exposes add, AI, play and mixer without history chrome'
     }
     const ai = root.container.queryAll(n => n.props.testID === 'beat-editor-ai' && typeof (n.props.onClick ?? n.props.onPress) === 'function')[0];
     expect(RN.StyleSheet.flatten(ai.props.style)).toMatchObject({ borderWidth: 1 });
-    expect(ai.queryAll(n => n.props.children === 'AI')).toHaveLength(1);
+    expect(ai.props.accessibilityLabel).toBe(t('beatAi.title'));
+    expect(ai.queryAll(n => n.props.children === 'AI')).toHaveLength(0);
 });
 
 test('regular width uses the row layout and protects landscape sides plus the bottom safe-area edge', async () => {
