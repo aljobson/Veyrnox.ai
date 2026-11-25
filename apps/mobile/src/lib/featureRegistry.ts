@@ -5,7 +5,7 @@ export type FeatureAvailability = 'always' | 'film-build' | 'music-live';
 export type FeatureStatus = 'native' | 'gap' | 'system' | 'unavailable' | 'build-time' | 'capability';
 export type FeatureMenuSection = 'tools' | 'assets' | 'footer';
 export type AudioFeatureGroup = 'studios' | 'performance';
-export type FeatureEntryPoint = 'studio' | 'publish';
+export type FeatureEntryPoint = 'create' | 'publish';
 
 export interface MobileFeatureDefinition {
     readonly id: string;
@@ -57,7 +57,7 @@ const MOBILE_FEATURE_DEFINITIONS = [
     { id: 'guides', titleKey: 'helpGuides.all', href: '/guides', icon: 'help', keywords: 'guides tutorials learn', webRoutes: ['/guides', '/guides/[id]'] },
     { id: 'skills', titleKey: 'chat.skills.title', href: '/chat/skills', icon: 'sparkle', keywords: 'studio skills assistant workflows', webRoutes: ['/app/skills'] },
     { id: 'agent', titleKey: 'videoAgent.title', href: '/create/agent', icon: 'brain', keywords: 'video agent assistant', webRoutes: ['/app/video-agent'] },
-    { id: 'features', titleKey: 'menu.features', href: '/features', icon: 'magicWand', keywords: 'all features guided creative tools workflows', entryPoint: 'studio', webRoutes: ['/app/features', '/app/features/[slug]'] },
+    { id: 'features', titleKey: 'menu.features', href: '/features', icon: 'magicWand', keywords: 'guided creative workflows', entryPoint: 'create', webRoutes: ['/app/features', '/app/features/[slug]'] },
     { id: 'facelessReel', titleKey: 'facelessReel.chip', href: '/faceless-reel', icon: 'filmReel', keywords: 'faceless reel video', webRoutes: ['/app/faceless-reel'] },
     { id: 'vibe', titleKey: 'vibe.intro.title', href: '/vibe', icon: 'swatches', keywords: 'vibe taste preferences', webRoutes: ['/app/vibe'] },
 

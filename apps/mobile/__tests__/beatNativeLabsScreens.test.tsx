@@ -151,6 +151,7 @@ test.each(['hiphop', 'lofi'] as const)('%s template and added audio expose kit c
     expect(beatStore.putBeat(doc)).toBe(true);
     mockParams = { id: initial.id, song: PROJECT, revision: '2' };
     await act(async () => root.render(<BeatEditor />));
+    await press(t('beat.track.controls'));
     doc.tracks.forEach((track, index) => {
         const label = t('beat.kit', { track: t('beat.track', { n: index + 1 }) });
         const controls = root.container.queryAll(node => node.props.accessibilityLabel === label);

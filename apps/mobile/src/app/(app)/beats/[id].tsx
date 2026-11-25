@@ -5,7 +5,7 @@ import { PHONE_TIP_TARGETS } from '../../../lib/beatNative/coachMarks';
 import { BeatRecordPanel } from '../../../components/beats/BeatRecordPanel';
 import { BeatTakeLanes } from '../../../components/beats/BeatTakeLanes';
 import { useTakeRecording } from '../../../lib/beatNative/useTakeRecording';
-import { addAudioTrack, beatReadOnly } from '../../../lib/beatNative/takeShared';
+import { addAudioTrack, assertBeatWritable, beatReadOnly, discardBeatTakes } from '../../../lib/beatNative/takeShared';
 import { registerRecordingFinalizer, replacementUnderway, subscribeReplacements } from '../../../lib/beatNative/recordingFinalizers';
 import type { RecordingEdit } from '../../../lib/beatNative/takeShared';
 import type { TakeRecording } from '../../../lib/beatNative/takeRecording';
@@ -13,7 +13,7 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ComponentRef } from 'react';
 import { AccessibilityInfo, Alert, AppState, findNodeHandle, Keyboard, Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Button, SegmentedControl, Text, themedStyles, useAppearance, useThemedStyles } from '../../../components/ui';
+import { AppearanceContext, Button, SegmentedControl, Text, themedStyles, useAppearance, useThemedStyles } from '../../../components/ui';
 import { EmptyState } from '../../../components/EmptyState';
 import { MusicNotice } from '../../../components/music/MusicNotice';
 import { PadGrid } from '../../../components/beats/PadGrid';
@@ -21,7 +21,10 @@ import { StepGrid } from '../../../components/beats/StepGrid';
 import { BeatMixerSheet } from '../../../components/beats/BeatMixerSheet';
 import { automationControl, type MixDoc } from '../../../lib/beatNative/mix';
 import { BeatInstrumentsSection, openPiano } from '../../../components/beats/BeatInstrumentsSection';
+import { BeatInstrumentLibrary } from '../../../components/beats/BeatInstrumentLibrary';
+import { MusicAddTrackSheet } from '../../../components/beats/MusicAddTrackSheet';
 import { BeatArrangement } from '../../../components/beats/BeatArrangement';
+import { BeatSongLibrarySheet, type BeatSongPlacement } from '../../../components/beats/BeatSongLibrarySheet';
 import { MixerStrip } from '../../../components/beats/MixerStrip';
 import { createBeatAudio, type BeatAudio } from '../../../lib/beatNative/audio';
 import { createNativeAssetPort } from '../../../lib/beatNative/nativeAssets';
@@ -56,8 +59,20 @@ import type { MidiSoundTrack } from '../../../lib/beatNative/midi';
 import { getCacheUser } from '../../../lib/appCache';
 import { KeyboardScreen } from '../../../components/KeyboardScreen';
 import { KeyboardFormScrollView } from '../../../components/KeyboardFormScrollView';
+import { addAudioRegion as addAudioAssetRegion, type AudioAsset } from '../../../lib/beatNative/labs';
+import { pickDeviceAudio } from '../../../lib/beatNative/deviceAudioImport';
+import { position } from '../../../lib/beatNative/regionActions';
 
 const clampBpm = (n: number) => Math.min(MAX_BPM, Math.max(MIN_BPM, n));
+const studioTime = (tick: number, bpm: number) => {
+    const totalMs = Math.max(0, Math.round(tick / 960 * 60_000 / bpm));
+    const minutes = Math.floor(totalMs / 60_000), seconds = Math.floor(totalMs % 60_000 / 1000), millis = totalMs % 1000;
+    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(millis).padStart(3, '0')}`;
+};
+const studioBeat = (tick: number) => {
+    const safe = Math.max(0, tick), bar = Math.floor(safe / 3840) + 1, within = safe % 3840;
+    return `${String(bar).padStart(3, '0')}.${Math.floor(within / 960) + 1}.${Math.floor(within % 960 / 240) + 1}`;
+};
 const playbackNotice = (error: unknown) => t((error as Error)?.message === 'audio_playback_too_large' ? 'beat.audioTooLarge' : 'beat.audioError');
 const midiErrorNotice = (error: unknown) => {
     const code = (error as { code?: string })?.code ?? (error as Error)?.message ?? '';
@@ -82,6 +97,7 @@ export default function BeatEditor() {
     const { width, height, fontScale } = useWindowDimensions();
     const { settings } = useAppearance();
     const layout = beatEditorLayout(width, height, fontScale, TEXT_SCALE[settings.textSize]);
+    const shortLandscape = width > height && height < 500;
     const history = useRef<History | null>(null);
     if (doc && history.current?.present !== doc) history.current = createHistory(doc);
     const recordingRef = useRef<TakeRecording | null>(null);
@@ -97,6 +113,8 @@ export default function BeatEditor() {
     const docRef = useRef<BeatDoc | undefined>(doc);
     docRef.current = doc;
     const [held, setHeld] = useState(false);
+    const [tempoOpen, setTempoOpen] = useState(false);
+    const [trackControlsOpen, setTrackControlsOpen] = useState(false);
     const [pad, setPad] = useState<PadId>('kick');
     const [padRecord, setPadRecord] = useState(false);
     const [ordinaryPlaying, setOrdinaryPlaying] = useState(false);
@@ -159,6 +177,10 @@ export default function BeatEditor() {
     }, [attemptLaneReveal, cancelPendingLaneReveal]);
     useEffect(() => () => { cancelPendingLaneReveal(); }, [cancelPendingLaneReveal]);
     const [mixer, setMixer] = useState(false);
+    const [addTrackOpen, setAddTrackOpen] = useState(false);
+    const [deviceImportBusy, setDeviceImportBusy] = useState(false);
+    const [songLibraryOpen, setSongLibraryOpen] = useState(false);
+    const [instrumentLibrary, setInstrumentLibrary] = useState(false);
     const [patternControls, setPatternControls] = useState(false);
     const patternControlsTrigger = useRef<ComponentRef<typeof Pressable>>(null);
     const patternControlsFocusPending = useRef(false);
@@ -489,7 +511,10 @@ export default function BeatEditor() {
     const readOnly = beatReadOnly(doc);
     const patternLocked = locked || historyBusy || readOnly;
     const editTrack = doc.tracks.find(track => track.id === resolvedEditTrackId);
-    const padSurfaceAvailable = doc.view === 'pattern' || (!!editTrack && (!editTrack.kind || editTrack.kind === 'drums'));
+    // Song view is the multitrack music editor. Keep drum pads and the step
+    // sequencer in Pattern view so selecting a drum track never turns the song
+    // timeline back into a beat-editor screen.
+    const padSurfaceAvailable = doc.view === 'pattern';
     const padRecordingState = !padRecord || readOnly ? 'off' : ordinaryPlaying ? 'recording' : 'armed';
     const playheadTarget = playing && step !== null ? recordTarget(doc, step, resolvedEditTrackId) : null;
     const patternPlayhead = playheadTarget?.pattern === doc.currentPattern ? playheadTarget.step : null;
@@ -578,11 +603,68 @@ export default function BeatEditor() {
             } },
         ]);
     };
+    const addAudioTrackFromSheet = () => {
+        let createdId: string | undefined;
+        if (apply(current => {
+            const before = new Set(current.tracks.map(track => track.id));
+            const next = addAudioTrack(current);
+            createdId = next.tracks.find(track => !before.has(track.id))?.id;
+            return next;
+        }) && createdId) setEditTrackId(createdId);
+    };
+    const addDrumTrackFromSheet = () => {
+        let createdId: string | undefined;
+        if (apply(current => {
+            const before = new Set(current.tracks.map(track => track.id));
+            const next = addKitTrack(current, DRUM_KITS[0].id);
+            createdId = next.tracks.find(track => !before.has(track.id))?.id;
+            return next;
+        }) && createdId) setEditTrackId(createdId);
+    };
+    const songPlacement = (): BeatSongPlacement => ({
+        start: snapTick(arrangementLocator, arrangementSnap),
+        trackId: doc.tracks.find(track => track.id === resolvedEditTrackId && track.kind === 'audio')?.id ?? null,
+    });
+    const commitImportedAudio = (asset: AudioAsset, intent: BeatSongPlacement, message = t('beat.library.added', { name: asset.name, position: position(intent.start) })): boolean => {
+        let affectedTrackId: string | null = null;
+        const committed = apply(current => {
+            assertBeatWritable(current);
+            const before = new Set(current.tracks.map(track => track.id));
+            const next = addAudioAssetRegion(current, asset, intent.trackId ?? undefined, intent.start);
+            affectedTrackId = intent.trackId ?? next.tracks.find(track => track.kind === 'audio' && !before.has(track.id))?.id ?? null;
+            return next;
+        }, message, { silentRefusal: true });
+        if (committed && affectedTrackId) setEditTrackId(affectedTrackId);
+        return committed && !!affectedTrackId;
+    };
+    const importDeviceAudio = async () => {
+        if (deviceImportBusy || patternLocked) return;
+        setDeviceImportBusy(true); setNotice(null);
+        try {
+            const prepared = await pickDeviceAudio(doc.id);
+            if (!prepared) return;
+            const intent = songPlacement();
+            const committed = commitImportedAudio(prepared.asset, intent,
+                t('beat.track.deviceAdded', { name: prepared.asset.name, position: position(intent.start) }));
+            if (!committed) await discardBeatTakes([prepared.takeId]);
+        } catch (error) {
+            const code = (error as Error)?.message;
+            setNotice(t(code === 'device_audio_unavailable' ? 'beat.track.deviceUnavailable'
+                : code === 'account_changed' ? 'beat.track.deviceAccountChanged' : 'beat.track.deviceInvalid'));
+        } finally { setDeviceImportBusy(false); }
+    };
     return (
+        <AppearanceContext value={{ ...settings, theme: 'dark' }}>
         <SafeAreaView edges={['left', 'right']} testID="beat-editor-shell" style={s.screen}>
-            <Stack.Screen options={{ title: doc.title }} />
+            <Stack.Screen options={{
+                title: doc.title,
+                headerStyle: { backgroundColor: '#0a0a0b' },
+                headerTintColor: '#f2f2f3',
+                headerTitle: () => <Text variant="title3" style={s.headerTitle}>{doc.title}</Text>,
+                contentStyle: { backgroundColor: '#0a0a0b' },
+            }} />
             <KeyboardScreen><KeyboardFormScrollView ref={workspace} testID="beat-editor-workspace" scrollEnabled={!held} style={s.workspaceScroll}
-                contentContainerStyle={[s.content, layout === 'regular' && s.contentRegular]} keyboardShouldPersistTaps="handled"
+                contentContainerStyle={[s.content, shortLandscape && s.contentShort, layout === 'regular' && s.contentRegular]} keyboardShouldPersistTaps="handled"
                 scrollEventThrottle={16}
                 onLayout={event => {
                     const height = event.nativeEvent.layout.height;
@@ -612,13 +694,39 @@ export default function BeatEditor() {
                     revealGeneration.current++;
                     scheduleLaneRevealRetry();
                 }}>
-                <View style={s.actions}>
-                    <BeatSaveControls id={doc.id} apply={apply} />
-                    <Button variant="secondary" icon="arrowUp" label={t('beatExport.title')} onPress={() => setExporting(true)} />
-                    <BeatAiPanel doc={doc} apply={apply} disabled={locked} />
-                    {studioChat ? <BeatStudioAssistant key={doc.id} doc={doc} magicBar={MAGIC_BAR_ON_PHONE} readOnly={readOnly} recording={takes.controller.locked() || midiController.locked()} busy={replacing || historyBusy} applyOperation={applyStudioOperation} announce={setSaid} /> : null}
-                    <BeatLabsBar doc={doc} apply={apply} targets={PHONE_TIP_TARGETS} capabilities={PHONE_CAPABILITIES}
-                        showSounds={doc.view !== 'song'} />
+                <View style={[s.actions, shortLandscape && s.actionsShort]}>
+                    {!shortLandscape ? <View style={s.saveStatus}><BeatSaveControls id={doc.id} apply={apply} /></View> : null}
+                    <View style={s.topbar} accessibilityRole="toolbar" accessibilityLabel={t('beat.title')}>
+                        {doc.view === 'pattern' ? <Button size="md" variant="tertiary" icon="plus" iconOnly label={t('beat.track.add')}
+                            disabled={patternLocked || doc.tracks.length >= MAX_TRACKS} onPress={() => setAddTrackOpen(true)} containerStyle={s.iconAction} /> : null}
+                        <Button size="md" variant="tertiary" icon="arrowUp" iconOnly label={t('beatExport.title')}
+                            onPress={() => setExporting(true)} containerStyle={s.iconAction} />
+                        <Button size="md" variant="tertiary" icon="faders" iconOnly label={t('beat.mixer')} disabled={locked}
+                            onPress={() => setMixer(true)} containerStyle={s.iconAction} />
+                        <Button size="md" variant="tertiary" icon="gauge" iconOnly label={t('beat.tempoValue', { bpm })}
+                            accessibilityState={{ expanded: tempoOpen }} onPress={() => setTempoOpen(value => !value)} containerStyle={s.iconAction} />
+                        {layout !== 'regular' ? <Button size="md" variant="tertiary" icon="sliders" iconOnly label={t('beat.track.controls')}
+                            accessibilityState={{ expanded: trackControlsOpen }} onPress={() => setTrackControlsOpen(value => !value)} containerStyle={s.iconAction} /> : null}
+                    </View>
+                    {!shortLandscape ? <View testID="beat-studio-readout" style={s.readout} accessible accessibilityRole="summary"
+                        accessibilityLabel={[studioTime(arrangementLocator, bpm), studioBeat(arrangementLocator), t('beat.tempoValue', { bpm }), `4/4 ${t('music.create.advanced.meter')}`].join(', ')}>
+                        <View style={s.readoutCell}><Text variant="footnote" tone="tertiary">{t('beatMix.param.time').toUpperCase()}</Text><Text variant="caption" style={s.readoutValue}>{studioTime(arrangementLocator, bpm)}</Text></View>
+                        <View style={s.readoutCell}><Text variant="footnote" tone="tertiary">{t('beat.snap.bar').toUpperCase()}</Text><Text variant="caption" style={s.readoutValue}>{studioBeat(arrangementLocator)}</Text></View>
+                        <View style={s.readoutCell}><Text variant="footnote" tone="tertiary">{t('beat.tempo').toUpperCase()}</Text><Text variant="caption" style={s.readoutValue}>{t('beat.tempoValue', { bpm })}</Text></View>
+                        <View style={s.readoutCell}><Text variant="footnote" tone="tertiary">{t('music.create.advanced.meter').toUpperCase()}</Text><Text variant="caption" style={s.readoutValue}>4/4</Text></View>
+                    </View> : null}
+                    {tempoOpen ? <View style={s.tempo} accessibilityLabel={t('beat.tempo')}>
+                        <Text variant="title3" accessibilityLiveRegion="polite">{t('beat.tempoValue', { bpm })}</Text>
+                        <View style={s.stepper}>
+                            <Button size="md" variant="secondary" label="−5" accessibilityLabel={t('beat.tempoDown5')} onPress={() => bump(-5)} disabled={patternLocked || bpm <= MIN_BPM} containerStyle={s.flex} />
+                            <Button size="md" variant="secondary" label="−" accessibilityLabel={t('beat.tempoDown')} onPress={() => bump(-1)} disabled={patternLocked || bpm <= MIN_BPM} containerStyle={s.flex} />
+                            <Button size="md" variant="secondary" label="+" accessibilityLabel={t('beat.tempoUp')} onPress={() => bump(1)} disabled={patternLocked || bpm >= MAX_BPM} containerStyle={s.flex} />
+                            <Button size="md" variant="secondary" label="+5" accessibilityLabel={t('beat.tempoUp5')} onPress={() => bump(5)} disabled={patternLocked || bpm >= MAX_BPM} containerStyle={s.flex} />
+                        </View>
+                    </View> : null}
+                    <SegmentedControl value={doc.view} accessibilityLabel={t('beat.view.label')} disabled={patternLocked}
+                        options={[{ value: 'song', label: t('beat.view.song') }, { value: 'pattern', label: t('beat.view.pattern') }]}
+                        onChange={view => apply(d => setView(d, view), t('beat.view.changed'))} />
                 </View>
                 {replacing ? <Text accessibilityLiveRegion="polite">{t('beatTakes.replacing')}</Text> : null}
                 {notice ? <MusicNotice message={notice} /> : null}
@@ -633,26 +741,15 @@ export default function BeatEditor() {
                     onSaveAsNew={() => runMidiRecovery(() => midiController.saveAsNewBeat(), t('beat.midiRecord.newBeatSaved'))}
                     onDiscard={() => runMidiRecovery(() => midiController.discard())} /> : null}
                 <View testID={`beat-editor-layout-${layout}`} style={[s.editor, layout === 'regular' && s.editorRegular]}>
-                    <View testID="beat-editor-main" style={s.main}>
-                        <BeatRecordPanel doc={doc} controller={takes.controller} view={takes.view} playing={playing}
-                            externalLocked={midiController.locked()} />
-                        <View style={s.tempo} accessibilityLabel={t('beat.tempo')}>
-                            <View style={s.stepper}>
-                                <Button size="md" variant="secondary" label="−5" accessibilityLabel={t('beat.tempoDown5')} onPress={() => bump(-5)} disabled={patternLocked || bpm <= MIN_BPM} containerStyle={s.flex} />
-                                <Button size="md" variant="secondary" label="−" accessibilityLabel={t('beat.tempoDown')} onPress={() => bump(-1)} disabled={patternLocked || bpm <= MIN_BPM} containerStyle={s.flex} />
-                                <Button size="md" variant="secondary" label="+" accessibilityLabel={t('beat.tempoUp')} onPress={() => bump(1)} disabled={patternLocked || bpm >= MAX_BPM} containerStyle={s.flex} />
-                                <Button size="md" variant="secondary" label="+5" accessibilityLabel={t('beat.tempoUp5')} onPress={() => bump(5)} disabled={patternLocked || bpm >= MAX_BPM} containerStyle={s.flex} />
-                            </View>
-                            <Text variant="title3" accessibilityLiveRegion="polite">{t('beat.tempoValue', { bpm })}</Text>
-                        </View>
-                        <SegmentedControl value={doc.view} accessibilityLabel={t('beat.view.label')} disabled={patternLocked}
-                            options={[{ value: 'pattern', label: t('beat.view.pattern') }, { value: 'song', label: t('beat.view.song') }]}
-                            onChange={view => apply(d => setView(d, view), t('beat.view.changed'))} />
-                        {doc.view === 'song' ? <BeatArrangement manualRun={manualRun} key={doc.id} doc={doc} apply={apply} selectCurrentPattern={slot => { selectCurrentPattern(slot); }}
+                    <View style={[s.composer, layout === 'regular' && s.composerRegular]}>
+                        <View testID="beat-editor-main" style={s.main}>
+                        {doc.view === 'song' ? <BeatArrangement manualRunRef={manualRun} key={doc.id} doc={doc} apply={apply} selectCurrentPattern={slot => { selectCurrentPattern(slot); }}
                             editTrackId={resolvedEditTrackId} onEditTrackChange={setEditTrackId}
                             locator={arrangementLocator} onLocatorChange={setArrangementLocator} snap={arrangementSnap} onSnapChange={changeArrangementSnap}
                             playing={playing} step={step} disabled={patternLocked} navigationDisabled={locked || historyBusy}
-                            announce={setSaid} onHold={setHeld} onRevealLane={revealLane} layout={layout} /> : null}
+                            announce={setSaid} onHold={setHeld} onAddTrack={() => setAddTrackOpen(true)} onRevealLane={revealLane} layout={layout} /> : null}
+                        <BeatRecordPanel doc={doc} controller={takes.controller} view={takes.view} playing={playing}
+                            externalLocked={midiController.locked()} />
                         {midiVisible && midiTrack ? <BeatMidiRecordPanel track={midiTrack}
                             phase={midiPhase} noteCount={midiView.noteCount} countIn={midiCountIn} quantise={midiQuantise}
                             onCountInChange={setMidiCountIn} onQuantiseChange={setMidiQuantise} countInStep={midiView.countInBeat || undefined}
@@ -679,11 +776,12 @@ export default function BeatEditor() {
                             <StepGrid doc={doc} pad={pad} current={patternPlayhead} layout={layout} disabled={patternLocked}
                                 onToggle={n => apply(d => toggleStep(d, pad, n))}
                                 onVelocity={(n, direction) => apply(d => cycleVelocity(d, pad, n, direction))} />
-                        </> : <Text variant="footnote" tone="secondary">{t('beat.padRecord.drumOnly')}</Text>}
+                        </> : null}
                         <BeatInstrumentsSection doc={doc} apply={apply} audio={engine} disabled={locked} notice={notice}
                             onOpen={regionId => { stop(); openPiano(doc.id, regionId); }} />
+                        </View>
                     </View>
-                    <View testID="beat-editor-inspector" style={[s.inspector, layout === 'regular' && s.inspectorRegular]}>
+                    {layout === 'regular' || trackControlsOpen ? <View testID="beat-editor-inspector" style={[s.inspector, layout === 'regular' && s.inspectorRegular]}>
                         <Text variant="bodyStrong" accessibilityRole="header">{t('beat.mixer')}</Text>
                         {doc.tracks.map((track, i) => (
                             <View key={track.id}><MixerStrip track={track} index={i} canRemove={doc.tracks.length > 1} structuralLocked={locked}
@@ -698,14 +796,18 @@ export default function BeatEditor() {
                                 <BeatTakeLanes doc={doc} track={track} apply={apply} locked={locked} />
                             </View>
                         ))}
-                        <Button variant="secondary" label={t('beat.track.add')} disabled={patternLocked || doc.tracks.length >= MAX_TRACKS}
-                            onPress={() => apply(d => addKitTrack(d, DRUM_KITS[0].id))} />
-                        <Button variant="secondary" label={t('beatTakes.addTrack')} disabled={locked || doc.tracks.length >= MAX_TRACKS} onPress={() => apply(d => addAudioTrack(d))} />
                         {doc.tracks.length >= MAX_TRACKS ? <Text variant="footnote" tone="secondary">{t('beat.track.max', { max: MAX_TRACKS })}</Text> : null}
-                    </View>
+                    </View> : null}
+                </View>
+                <View style={[s.secondaryTools, doc.view === 'song' && s.secondaryToolsHidden]}
+                    accessibilityElementsHidden={doc.view === 'song'} importantForAccessibility={doc.view === 'song' ? 'no-hide-descendants' : 'auto'}>
+                    {doc.view !== 'song' ? <BeatAiPanel doc={doc} apply={apply} disabled={locked} /> : null}
+                    <BeatLabsBar doc={doc} apply={apply} targets={PHONE_TIP_TARGETS} capabilities={PHONE_CAPABILITIES}
+                        showSounds={doc.view !== 'song'} />
                 </View>
             </KeyboardFormScrollView></KeyboardScreen>
             <BeatEditorTransport playing={playing} starting={starting} locked={locked}
+                showPatterns={doc.view === 'pattern'}
                 pattern={doc.currentPattern} patternDisabled={patternLocked} canUndo={undoable} canRedo={redoable}
                 patternControlsRef={patternControlsTrigger}
                 midiRecordPhase={midiTransportVisible ? midiPhase : undefined} midiRecordDisabled={midiIdleDisabled}
@@ -721,6 +823,12 @@ export default function BeatEditor() {
                 heldAssets={heldAssets}
                 onClose={() => setExporting(false)} />}
             {mixer && <BeatMixerSheet doc={doc} audio={audio.current} apply={apply} playing={playing} step={step} notice={notice} onClose={() => setMixer(false)} />}
+            {addTrackOpen && <MusicAddTrackSheet disabled={patternLocked || doc.tracks.length >= MAX_TRACKS} busy={deviceImportBusy}
+                onLibrary={() => setSongLibraryOpen(true)} onDevice={() => void importDeviceAudio()} onRecord={addAudioTrackFromSheet} onDrums={addDrumTrackFromSheet}
+                onInstrument={() => setInstrumentLibrary(true)} onClose={() => setAddTrackOpen(false)} />}
+            {songLibraryOpen && <BeatSongLibrarySheet layout={layout} disabled={patternLocked} placement={songPlacement}
+                onCommit={commitImportedAudio} onClose={() => setSongLibraryOpen(false)} />}
+            {instrumentLibrary && <BeatInstrumentLibrary apply={apply} audio={engine} refusal={notice} onClose={() => setInstrumentLibrary(false)} />}
             {patternControls && <BeatPatternControls pattern={doc.currentPattern}
                 uses={doc.tracks.flatMap(track => track.regions).filter(region => region.pattern === doc.currentPattern).length}
                 swing={doc.swing} metronome={doc.metronome} steps={doc.steps} disabled={patternLocked}
@@ -731,20 +839,34 @@ export default function BeatEditor() {
                 onCopy={copyCurrentPattern} onClear={clearCurrentPattern} onClose={closePatternControls}
                 onDismiss={restorePatternControlsFocus} />}
         </SafeAreaView>
+        </AppearanceContext>
     );
 }
 const sheets = themedStyles(p => ({
-    screen: { flex: 1, backgroundColor: p.bg },
+    screen: { flex: 1, backgroundColor: '#0a0a0b' },
+    headerTitle: { color: '#f2f2f3' },
     workspaceScroll: { flex: 1 },
-    content: { padding: ds.space.gutter, gap: ds.space.lg, paddingBottom: ds.space.xxl },
+    content: { padding: ds.space.md, gap: ds.space.md, paddingBottom: ds.space.xxl },
+    contentShort: { paddingVertical: ds.space.xs, gap: ds.space.xs, paddingBottom: ds.space.lg },
     contentRegular: { width: '100%', maxWidth: 1180, alignSelf: 'center', paddingHorizontal: ds.space.xxxl },
-    actions: { gap: ds.space.md },
+    actions: { gap: ds.space.sm },
+    actionsShort: { gap: ds.space.xs },
+    saveStatus: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: ds.space.sm },
+    topbar: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', borderTopWidth: 1, borderBottomWidth: 1, borderColor: '#26262a' },
+    iconAction: { width: 52, flexGrow: 0 },
+    readout: { minHeight: 48, flexDirection: 'row', overflow: 'hidden', borderWidth: 1, borderColor: '#26262a', borderRadius: ds.radius.md, backgroundColor: '#111114' },
+    readoutCell: { flex: 1, minWidth: 0, alignItems: 'center', justifyContent: 'center', gap: 1, borderRightWidth: 1, borderRightColor: '#26262a' },
+    readoutValue: { fontVariant: ['tabular-nums'] },
+    secondaryTools: { gap: ds.space.md },
+    secondaryToolsHidden: { display: 'none' },
     editor: { gap: ds.space.xl },
     editorRegular: { flexDirection: 'row', alignItems: 'flex-start' },
-    main: { flex: 1.65, minWidth: 0, gap: ds.space.lg },
+    composer: { alignItems: 'stretch', gap: ds.space.md },
+    composerRegular: { flex: 1.65, minWidth: 0 },
+    main: { flex: 1, minWidth: 0, gap: ds.space.lg },
     inspector: { flex: 1, minWidth: 0, gap: ds.space.lg },
     inspectorRegular: { paddingLeft: ds.space.xl, borderLeftWidth: 1, borderLeftColor: p.borderSubtle },
-    tempo: { gap: ds.space.sm, alignItems: 'center', padding: ds.space.md, borderRadius: ds.radius.md, backgroundColor: p.bgElevated1, borderWidth: 1, borderColor: p.borderSubtle },
+    tempo: { gap: ds.space.sm, alignItems: 'center', padding: ds.space.md, borderRadius: ds.radius.lg, backgroundColor: '#141416', borderWidth: 1, borderColor: '#26262a' },
     stepper: { width: '100%', flexDirection: 'row', gap: ds.space.sm },
     padHeading: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: ds.space.sm },
     flex: { flex: 1 },

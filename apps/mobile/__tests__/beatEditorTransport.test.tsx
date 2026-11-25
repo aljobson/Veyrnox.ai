@@ -74,6 +74,16 @@ test.each([360, 390, 719])('compact width %ipt keeps every labelled 44pt action 
     }
 });
 
+test('phone transport keeps MIDI record as a labelled icon in the main action row', async () => {
+    const onMidiRecord = jest.fn();
+    await act(async () => root.render(<BeatEditorTransport {...props} midiRecordPhase="idle" onMidiRecord={onMidiRecord} />));
+    const controls = root.container.queryAll(n => n.props.testID === 'beat-editor-transport-controls-compact')[0];
+    const record = controls.queryAll(n => n.props.testID === 'beat-midi-record-control' && typeof (n.props.onClick ?? n.props.onPress) === 'function')[0];
+    expect(record.props.accessibilityLabel).toBeTruthy();
+    expect(RN.StyleSheet.flatten(record.props.style)).toMatchObject({ minWidth: 44, minHeight: 44 });
+    expect(root.container.queryAll(n => n.props.testID === 'beat-midi-record-row')).toHaveLength(0);
+});
+
 test('regular width uses the row layout and protects landscape sides plus the bottom safe-area edge', async () => {
     mockDimensions = { ...mockDimensions, width: 1024 };
     await render();
@@ -96,6 +106,13 @@ test('phone landscape stays compact and MIDI stop is a stable labelled control o
     await act(async () => root.render(<BeatEditorTransport {...props} midiRecordPhase="finishing" midiRecordDisabled onMidiRecord={onMidiRecord} />));
     const finishing = root.container.queryAll(n => n.props.testID === 'beat-midi-record-control' && typeof (n.props.onClick ?? n.props.onPress) === 'function')[0];
     expect(finishing.props.accessibilityState).toMatchObject({ disabled: false, busy: true });
+});
+
+test('short landscape removes transport status chrome to preserve the timeline', async () => {
+    mockDimensions = { ...mockDimensions, width: 844, height: 390, fontScale: 1 };
+    await render();
+    expect(root.container.queryAll(n => n.props.testID === 'beat-editor-transport-status')).toHaveLength(0);
+    expect(root.container.queryAll(n => n.props.testID === 'beat-editor-transport-controls-compact')).toHaveLength(1);
 });
 
 test('recovery lock disables a new MIDI take and the non-live mixer entry semantically', async () => {

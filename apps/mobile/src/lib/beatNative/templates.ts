@@ -1,4 +1,4 @@
-import { validateBeat, type BeatDoc } from './doc';
+import { setView, validateBeat, type BeatDoc } from './doc';
 import type { BeatStore } from './store';
 import { createBeatFromTemplate, type TemplateId } from './labs';
 export type CreationStore = Pick<BeatStore, 'newBeat' | 'putBeat' | 'flushBeat' | 'dropBeat' | 'getBeat' | 'saveState'>;
@@ -20,5 +20,6 @@ export async function createBeatRecord(store: CreationStore, title: string, buil
     }
 }
 export function createTemplateBeat(store: CreationStore, template: TemplateId, title: string) {
-    return createBeatRecord(store, title, initial => createBeatFromTemplate({ template, id: initial.id, title, now: initial.createdAt }));
+    return createBeatRecord(store, title, initial => setView(
+        createBeatFromTemplate({ template, id: initial.id, title, now: initial.createdAt }), 'song'));
 }

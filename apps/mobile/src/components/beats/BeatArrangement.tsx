@@ -16,18 +16,20 @@ import { assertBeatWritable } from '../../lib/beatNative/takeShared';
 import type { BeatEditorLayout } from '../../lib/beatNative/editorLayout';
 import { BeatSoundsSheet } from './BeatSoundsSheet';
 import { BeatSongLibrarySheet, type BeatSongPlacement } from './BeatSongLibrarySheet';
+import { musicTrackGlyph } from '../../lib/beatNative/musicTrackGlyph';
 
 type Props = {
-    manualRun: RefObject<boolean>; doc: BeatDoc; apply: Apply; selectCurrentPattern: (slot: PatternSlot) => void;
+    manualRunRef: RefObject<boolean>; doc: BeatDoc; apply: Apply; selectCurrentPattern: (slot: PatternSlot) => void;
     editTrackId: string | undefined; onEditTrackChange: (trackId: string) => void;
     locator: number; onLocatorChange: (tick: number) => void; snap: number; onSnapChange: (snap: number) => void;
     playing: boolean; step: number | null; disabled: boolean; navigationDisabled: boolean;
     announce: (message: string) => void; onHold: (held: boolean) => void;
+    onAddTrack(): void;
     onRevealLane: (lane: ComponentRef<typeof View> | null) => void;
     layout: BeatEditorLayout;
 };
 type AudioPlacement = BeatSongPlacement;
-const MIN_LANE_HEIGHT = 96;
+const MIN_LANE_HEIGHT = 64;
 export function restoreBeatLibraryTriggerFocus(
     trigger: ComponentRef<typeof Pressable> | null,
     resolve: (target: ComponentRef<typeof Pressable> | null) => number | null | undefined = findNodeHandle,
@@ -36,11 +38,12 @@ export function restoreBeatLibraryTriggerFocus(
     const node = resolve(trigger);
     if (node) focus(node);
 }
-export function BeatArrangement({ doc, apply, selectCurrentPattern, editTrackId, onEditTrackChange, locator, onLocatorChange, snap, onSnapChange, playing, step, disabled, navigationDisabled, announce, onHold, onRevealLane, manualRun, layout }: Props) {
+export function BeatArrangement({ doc, apply, selectCurrentPattern, editTrackId, onEditTrackChange, locator, onLocatorChange, snap, onSnapChange, playing, step, disabled, navigationDisabled, announce, onHold, onAddTrack, onRevealLane, manualRunRef, layout }: Props) {
     const s = useThemedStyles(sheets);
     const [zoom, setZoom] = useState(96);
     const [copy, setCopy] = useState(false);
     const [ripple, setRipple] = useState(false);
+    const [advancedOpen, setAdvancedOpen] = useState(false);
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [preview, setPreview] = useState<DragValue | null>(null);
     const [held, setHeld] = useState(false);
@@ -92,12 +95,12 @@ export function BeatArrangement({ doc, apply, selectCurrentPattern, editTrackId,
     useEffect(() => { if (!selectedRegion) setSelectedId(null); }, [selectedRegion]);
     useEffect(() => { setTrackName(editTrack?.name ?? ''); }, [editTrack?.id, editTrack?.name]);
     useEffect(() => {
-        if (!playing || manualRun.current || held || viewport.current <= 0) return;
+        if (!playing || manualRunRef.current || held || viewport.current <= 0) return;
         if (head < scroll.current || head > scroll.current + viewport.current - 32) {
             const x = Math.max(0, head - viewport.current / 4);
             scroller.current?.scrollTo({ x, animated: false }); scroll.current = x;
         }
-    }, [head, playing, held, manualRun]);
+    }, [head, playing, held, manualRunRef]);
     useEffect(() => {
         const trackId = pendingRevealTrackId.current;
         if (!trackId) return;
@@ -143,13 +146,28 @@ export function BeatArrangement({ doc, apply, selectCurrentPattern, editTrackId,
         }, t('beat.track.renamed', { track: trackName.trim() }));
     };
     return <View style={s.group} testID="beat-arrangement">
+        <View style={s.heading}>
+            <View style={s.headingCopy}><Text variant="footnote" tone="accent" accessibilityRole="header" style={s.eyebrow}>{t('beat.view.song')}</Text>
+                <Text variant="caption" tone="secondary">{position(locator)}</Text></View>
+            <View style={s.controls}>
+                <Button ref={libraryTrigger} size="md" variant="tertiary" icon="folder" iconOnly label={t('beat.library.open')}
+                    disabled={disabled} onPress={() => setLibraryOpen(true)} />
+                <Button size="md" variant="tertiary" icon="waveform" iconOnly label={t('beatLabs.sounds')}
+                    disabled={disabled} onPress={() => setSoundsOpen(true)} />
+                <Button size="md" variant="tertiary" icon="faders" iconOnly label={t('beatLabs.controls')}
+                    accessibilityState={{ expanded: advancedOpen }} onPress={() => setAdvancedOpen(value => !value)} />
+            </View>
+        </View>
+        <View style={[s.advanced, !advancedOpen && s.hidden]}>
+        <View style={s.controls}>
+            <Button size="md" variant="secondary" label={t('beat.zoom.out')} disabled={zoom === 32} onPress={() => setZoom(value => Math.max(32, value - 32))} />
+            <Button size="md" variant="secondary" label={t('beat.zoom.in')} disabled={zoom === 256} onPress={() => setZoom(value => Math.min(256, value + 32))} />
+        </View>
         <SegmentedControl accessibilityLabel={t('beat.snap.label')} value={String(snap)} disabled={disabled} onChange={value => onSnapChange(Number(value))} options={[
             { value: '3840', label: t('beat.snap.bar') }, { value: '960', label: t('beat.snap.quarter') },
             { value: '480', label: t('beat.snap.eighth') }, { value: '240', label: t('beat.snap.sixteenth') },
         ]} />
         <View style={s.controls}>
-            <Button size="md" variant="secondary" label={t('beat.zoom.out')} disabled={zoom === 32} onPress={() => setZoom(value => Math.max(32, value - 32))} />
-            <Button size="md" variant="secondary" label={t('beat.zoom.in')} disabled={zoom === 256} onPress={() => setZoom(value => Math.min(256, value + 32))} />
             <Button size="md" variant="secondary" label={t('beat.region.copy')} accessibilityState={{ selected: copy }} disabled={disabled} onPress={() => setCopy(value => !value)} />
             <Button size="md" variant="secondary" label={t(ripple ? 'beat.ripple.on' : 'beat.ripple.off')}
                 accessibilityLabel={t('beat.ripple.label')} accessibilityState={{ selected: ripple }} disabled={disabled}
@@ -174,26 +192,29 @@ export function BeatArrangement({ doc, apply, selectCurrentPattern, editTrackId,
                 returnKeyType="done" onChangeText={setTrackName} onSubmitEditing={commitTrackName} />
             <Button size="md" variant="secondary" label={t('beat.track.rename')} disabled={disabled} onPress={commitTrackName} />
         </View>}
-        <View style={s.controls}>
-            <Button ref={libraryTrigger} variant="secondary" label={t('beat.library.open')} disabled={disabled} onPress={() => setLibraryOpen(true)} />
-            <Button variant="secondary" label={t('beatLabs.sounds')} disabled={disabled} onPress={() => setSoundsOpen(true)} />
-        </View>
         <BeatClipSearch doc={doc} choose={chooseSearchResult} disabled={navigationDisabled} />
         <BeatRulerControls locator={locator} end={end} setLocator={setPosition} cycle={doc.cycle} apply={apply} disabled={disabled} />
+        </View>
         <View style={s.timeline}>
             <View style={s.headers}>
-                <View style={{ height: RULER_HEIGHT }} />
+                <View style={[s.addTrackSlot, { height: RULER_HEIGHT }]}><Button testID="beat-arrangement-add-track" size="md" variant="tertiary"
+                    icon="plus" iconOnly label={t('beat.track.add')} disabled={disabled} onPress={onAddTrack} /></View>
                 {doc.tracks.map((track, index) => <Pressable key={track.id} accessibilityRole="button" accessibilityLabel={track.name}
                     accessibilityState={{ selected: editTrack?.id === track.id, disabled: navigationDisabled }} disabled={navigationDisabled}
                     onPress={() => { if (!navigationDisabled) onEditTrackChange(track.id); }}
                     onLayout={event => { const height = Math.max(MIN_LANE_HEIGHT, event.nativeEvent.layout.height); setHeights(values => values[track.id] === height ? values : { ...values, [track.id]: height }); }}
-                    style={[s.header, { minHeight: laneHeights[index] }, editTrack?.id === track.id && s.selected]}><Text variant="caption">{track.name}</Text></Pressable>)}
+                    style={[s.header, { minHeight: laneHeights[index] }, editTrack?.id === track.id && s.selected]}>
+                    <View style={s.trackBadge}><Text style={s.trackGlyph}>{musicTrackGlyph(track)}</Text></View>
+                    <View style={s.trackCopy}><Text variant="caption" numberOfLines={2}>{track.name}</Text><Text variant="footnote" tone="tertiary">{String(index + 1).padStart(2, '0')}</Text></View>
+                </Pressable>)}
             </View>
             <ScrollView ref={scroller} horizontal testID="arrangement-scroll" scrollEnabled={!held} style={s.scroller}
                 onLayout={event => { viewport.current = event.nativeEvent.layout.width; }}
-                onScrollBeginDrag={() => { if (playing) manualRun.current = true; }}
+                onScrollBeginDrag={() => { if (playing) manualRunRef.current = true; }}
                 onScroll={event => { scroll.current = event.nativeEvent.contentOffset.x; }} scrollEventThrottle={16}>
                 <View style={{ width }}>
+                    <View pointerEvents="none" accessible={false} style={s.grid}>{Array.from({ length: bars * 4 + 1 }, (_, index) =>
+                        <View key={index} style={[index % 4 ? s.beatGridLine : s.barGridLine, { left: index * zoom / 4 }]} />)}</View>
                     <BeatRuler bars={bars} zoom={zoom} snap={snap} locator={locator} end={end} setLocator={setPosition}
                         cycle={doc.cycle} apply={apply} lock={lock} announce={announce} disabled={disabled} />
                     {doc.tracks.map((track, index) => <View key={track.id} ref={value => { lanes.current[track.id] = value; }}
@@ -210,9 +231,11 @@ export function BeatArrangement({ doc, apply, selectCurrentPattern, editTrackId,
                 </View>
             </ScrollView>
         </View>
-        <View style={s.controls}>
-            <Button size="md" variant="secondary" label={t('beat.ruler.left')} disabled={navigationDisabled} onPress={() => setPosition(locator - snap)} />
-            <Button size="md" variant="secondary" label={t('beat.ruler.right')} disabled={navigationDisabled} onPress={() => setPosition(locator + snap)} />
+        <View style={[s.controls, s.playheadControls]}>
+            <Button size="md" variant="tertiary" icon="seekBack" iconOnly label={t('beat.ruler.left')}
+                disabled={navigationDisabled} onPress={() => setPosition(locator - snap)} />
+            <Button size="md" variant="tertiary" icon="seekForward" iconOnly label={t('beat.ruler.right')}
+                disabled={navigationDisabled} onPress={() => setPosition(locator + snap)} />
         </View>
         {selectedRegion && selectedTrack && <BeatRegionInspector doc={doc} track={selectedTrack} region={selectedRegion} snap={snap} locator={locator} ripple={ripple} disabled={disabled} apply={apply} />}
         {libraryOpen ? <BeatSongLibrarySheet layout={layout} disabled={disabled} placement={capturePlacement}
@@ -223,16 +246,29 @@ export function BeatArrangement({ doc, apply, selectCurrentPattern, editTrackId,
     </View>;
 }
 const sheets = themedStyles(p => ({
-    group: { gap: ds.space.md },
-    controls: { flexDirection: 'row', flexWrap: 'wrap', gap: ds.space.sm },
+    group: { gap: 0, overflow: 'hidden', borderWidth: 1, borderColor: p.borderSubtle, borderRadius: ds.radius.lg, backgroundColor: p.bgElevated1 },
+    heading: { minHeight: 54, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: ds.space.sm, paddingHorizontal: ds.space.md, borderBottomWidth: 1, borderBottomColor: p.borderSubtle },
+    headingCopy: { flex: 1, gap: ds.space.xs },
+    eyebrow: { textTransform: 'uppercase', letterSpacing: 1.5 },
+    hidden: { display: 'none' },
+    advanced: { gap: ds.space.md, padding: ds.space.md, borderBottomWidth: 1, borderBottomColor: p.borderSubtle },
+    controls: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: ds.space.sm },
     rename: { gap: ds.space.sm },
-    timeline: { flexDirection: 'row', direction: 'ltr' },
-    headers: { width: 80 },
-    header: { padding: ds.space.sm, justifyContent: 'center', borderWidth: 1, borderColor: p.borderSubtle },
-    selected: { borderColor: p.accent },
+    timeline: { flexDirection: 'row', direction: 'ltr', overflow: 'hidden', backgroundColor: p.bg },
+    headers: { width: 98, borderRightWidth: 1, borderRightColor: p.borderStrong },
+    addTrackSlot: { alignItems: 'center', justifyContent: 'center', borderBottomWidth: 1, borderBottomColor: p.borderStrong, backgroundColor: p.bgElevated1 },
+    header: { paddingHorizontal: ds.space.sm, flexDirection: 'row', justifyContent: 'flex-start', alignItems: 'center', gap: ds.space.sm, borderBottomWidth: 1, borderBottomColor: p.borderSubtle, backgroundColor: p.bgElevated1 },
+    trackBadge: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center', borderRadius: ds.radius.md, backgroundColor: p.surface },
+    trackGlyph: { fontSize: 18, lineHeight: 22 },
+    trackCopy: { flex: 1, minWidth: 0, gap: 1 },
+    selected: { borderLeftWidth: 3, borderLeftColor: p.accent, backgroundColor: p.surface },
     scroller: { flex: 1 },
+    grid: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 },
+    beatGridLine: { position: 'absolute', top: RULER_HEIGHT, bottom: 0, width: 1, backgroundColor: p.borderSubtle, opacity: 0.28 },
+    barGridLine: { position: 'absolute', top: 0, bottom: 0, width: 1, backgroundColor: p.borderStrong, opacity: 0.7 },
     lane: { borderBottomWidth: 1, borderColor: p.borderSubtle },
     emptyLane: { position: 'absolute', top: 0, left: 0, bottom: 0, right: 0 },
-    preview: { position: 'absolute', top: ds.space.xs, height: 88, borderWidth: 2, borderColor: p.accent, backgroundColor: p.surface, opacity: 0.7, borderRadius: ds.radius.xs },
+    preview: { position: 'absolute', top: ds.space.xs, height: 56, borderWidth: 2, borderColor: p.accent, backgroundColor: p.surface, opacity: 0.7, borderRadius: ds.radius.xs },
     playhead: { position: 'absolute', top: 0, bottom: 0, width: 2, backgroundColor: p.accent },
+    playheadControls: { minHeight: 50, justifyContent: 'center', paddingHorizontal: ds.space.md, borderTopWidth: 1, borderTopColor: p.borderSubtle },
 }));

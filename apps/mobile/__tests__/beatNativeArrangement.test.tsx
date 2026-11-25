@@ -699,6 +699,7 @@ test('A8 audio gain, fades and reverse edit validated audio regions and undo', a
 });
 test('A9b mixed mixer gain and mute work on every kind and kit controls only exist on drums', async () => {
     await open(mixed);
+    await press(t('beat.track.controls'));
     for (let i = 0; i < 3; i++) {
         const track = t('beat.track', { n: i + 1 });
         const gain = root.container.queryAll(n => n.props.accessibilityLabel === t('beat.gain', { track }) && n.props.onAccessibilityAction)[0];
@@ -706,6 +707,7 @@ test('A9b mixed mixer gain and mute work on every kind and kit controls only exi
         expect(current().tracks[i].gain).toBe(0.9); await press(t('beat.mute', { track })); expect(current().tracks[i].mute).toBe(true);
         expect(root.container.queryAll(n => n.props.accessibilityLabel === t('beat.kit', { track })).length > 0).toBe(i === 0);
     }
+    await press(t('beat.track.controls'));
     await press(current().tracks[1].name); expect(control(t('beat.region.add')).props.accessibilityState.disabled).toBe(true);
     await choose('rm'); expect(node('region-inspector')).toBeDefined(); expect(control(t('beat.audio.reverse'))).toBeUndefined();
 });
@@ -770,9 +772,9 @@ test('N3-R1 touches over the label use block coordinates and cross the real lane
     expect(block.props.pointerEvents).toBe('box-only');
     for (const id of ['r1-trim', 'r1-resize', 'cycle-start', 'cycle-end']) expect(node(id).props.pointerEvents).toBe('box-only');
     expect(node('cycle-band').props.pointerEvents).toBe('none');
-    // Model native hit testing at the label: its local y=4 is 30 pt down the block
-    // (24 pt padding + 2 pt border). A non-touchable label retargets to the block.
-    const labelY = 4, blockY = 30, laneTop = 4, laneHeight = 96;
+    // Model native hit testing at the label: its local y=4 is 18 pt down the compact block
+    // (12 pt padding + 2 pt border). A non-touchable label retargets to the block.
+    const labelY = 4, blockY = 18, laneTop = 4, laneHeight = 64;
     const target = label.props.pointerEvents === 'none' ? block : label;
     const event = (dy: number) => ({ nativeEvent: { identifier: 1, target: target.props.testID,
         pageX: 100, pageY: laneTop + blockY + dy, locationY: (target === block ? blockY : labelY) + dy }, stopPropagation: jest.fn() });
