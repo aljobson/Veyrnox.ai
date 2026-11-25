@@ -7361,6 +7361,7 @@ export default {
     "beatPiano.library.add": "वाद्य यंत्र जोड़ें",
     "beatPiano.library.close": "लाइब्रेरी बंद करें",
     "beatPiano.library.search": "वाद्य यंत्र खोजें",
+    "beatPiano.library.preview": "पूर्वावलोकन",
     "beatPiano.library.audition": "{name} सुनें",
     "beatPiano.library.addNamed": "{name} जोड़ें",
     "beatPiano.library.edit": "नोट संपादित करें: {name}",

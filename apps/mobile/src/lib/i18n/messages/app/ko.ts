@@ -7270,6 +7270,7 @@ export default {
     "beatPiano.library.add": "악기 추가",
     "beatPiano.library.close": "라이브러리 닫기",
     "beatPiano.library.search": "악기 검색",
+    "beatPiano.library.preview": "미리보기",
     "beatPiano.library.audition": "{name} 미리 듣기",
     "beatPiano.library.addNamed": "{name} 추가",
     "beatPiano.library.edit": "음표 편집: {name}",

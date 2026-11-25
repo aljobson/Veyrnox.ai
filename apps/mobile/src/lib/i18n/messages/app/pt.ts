@@ -7451,6 +7451,7 @@ export default {
     "beatPiano.library.add": "Adicionar instrumento",
     "beatPiano.library.close": "Fechar biblioteca",
     "beatPiano.library.search": "Pesquisar instrumentos",
+    "beatPiano.library.preview": "Prévia",
     "beatPiano.library.audition": "Ouvir {name}",
     "beatPiano.library.addNamed": "Adicionar {name}",
     "beatPiano.library.edit": "Editar notas: {name}",

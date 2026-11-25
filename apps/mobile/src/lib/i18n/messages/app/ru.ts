@@ -7540,6 +7540,7 @@ export default {
     "beatPiano.library.add": "Добавить инструмент",
     "beatPiano.library.close": "Закрыть библиотеку",
     "beatPiano.library.search": "Поиск инструментов",
+    "beatPiano.library.preview": "Предпросмотр",
     "beatPiano.library.audition": "Прослушать {name}",
     "beatPiano.library.addNamed": "Добавить {name}",
     "beatPiano.library.edit": "Редактировать ноты: {name}",

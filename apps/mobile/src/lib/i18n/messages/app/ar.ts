@@ -7720,6 +7720,7 @@ export default {
     "beatPiano.library.add": "إضافة آلة",
     "beatPiano.library.close": "إغلاق المكتبة",
     "beatPiano.library.search": "البحث عن آلات",
+    "beatPiano.library.preview": "معاينة",
     "beatPiano.library.audition": "معاينة {name}",
     "beatPiano.library.addNamed": "إضافة {name}",
     "beatPiano.library.edit": "تحرير النوتات: {name}",

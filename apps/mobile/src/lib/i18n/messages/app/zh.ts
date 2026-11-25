@@ -7270,6 +7270,7 @@ export default {
     "beatPiano.library.add": "添加乐器",
     "beatPiano.library.close": "关闭乐器库",
     "beatPiano.library.search": "搜索乐器",
+    "beatPiano.library.preview": "预览",
     "beatPiano.library.audition": "试听 {name}",
     "beatPiano.library.addNamed": "添加 {name}",
     "beatPiano.library.edit": "编辑音符：{name}",

@@ -21,5 +21,5 @@ export function MusicAddTrackSheet({ disabled, busy = false, onLibrary, onDevice
         { id: 'drums', icon: 'waveform', label: t('beat.kind.drums'), disabled: blocked, onPress: onDrums },
         { id: 'instrument', icon: 'pianoKeys', label: t('beatPiano.library.add'), disabled: blocked, onPress: onInstrument },
     ];
-    return <SimpleEditorSheet title={t('beat.track.add')} rows={rows} onClose={onClose} />;
+    return <SimpleEditorSheet testID="music-add-track-sheet" title={t('beat.track.add')} rows={rows} onClose={onClose} />;
 }

@@ -23,7 +23,7 @@ function EditorToolIcon({ name, size = 24, active = false, muted = false }: { na
 
 // One bottom sheet for all three entries. Choosing a row closes the sheet first, then runs the action;
 // a row marked afterClose (a native picker) waits until the sheet has finished closing.
-export function SimpleEditorSheet({ title, rows, onClose, describe = false, onDescribe }: { title: string; rows: readonly SheetRow[]; onClose(): void; describe?: boolean; onDescribe?(id: string, prompt: string): void }) {
+export function SimpleEditorSheet({ title, rows, onClose, testID, describe = false, onDescribe }: { title: string; rows: readonly SheetRow[]; onClose(): void; testID?: string; describe?: boolean; onDescribe?(id: string, prompt: string): void }) {
     const reduced = useReducedMotion();
     const [prompt, setPrompt] = useState('');
     const [problem, setProblem] = useState('');
@@ -38,7 +38,7 @@ export function SimpleEditorSheet({ title, rows, onClose, describe = false, onDe
         {/* Tap-outside dismissal only: the Close button below is the accessible control. */}
         <Pressable accessibilityRole="none" accessible={false} importantForAccessibility="no-hide-descendants" style={styles.backdrop} onPress={onClose} />
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ maxHeight: '85%' }}>
-        <View style={[styles.sheet, { flexShrink: 1 }]}>
+        <View testID={testID} style={[styles.sheet, { flexShrink: 1 }]}>
             <View style={styles.sheetHeader}>
                 <Text accessibilityRole="header" style={styles.sheetTitle}>{title}</Text>
                 <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('editorSimple.close'))} onPress={onClose} style={[styles.closeButton, touchTarget]}><Icon name="close" size={24} tint={colors.accent} /></Pressable>

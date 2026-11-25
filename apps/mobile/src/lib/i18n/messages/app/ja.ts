@@ -7270,6 +7270,7 @@ export default {
     "beatPiano.library.add": "楽器を追加",
     "beatPiano.library.close": "ライブラリを閉じる",
     "beatPiano.library.search": "楽器を検索",
+    "beatPiano.library.preview": "プレビュー",
     "beatPiano.library.audition": "{name} を試聴",
     "beatPiano.library.addNamed": "{name} を追加",
     "beatPiano.library.edit": "ノートを編集：{name}",
