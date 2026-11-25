@@ -1,4 +1,4 @@
--- 0611_project_folders.sql
+-- 0618_project_folders.sql
 -- Workspace-scoped project folders, bounded nesting and conflict-safe project moves.
 -- Authenticated clients can read through RLS; all writes go through validated RPCs.
 BEGIN;

@@ -21,8 +21,9 @@ export function forgetSpeechKey(account: string, source: string, language = 'aut
 export async function fetchSpeechQuote(api: ApiClient, signal?: AbortSignal, bestCut = false): Promise<SpeechQuote | null> {
     try {
         const result = await api.request<SpeechQuote>(`${SPEECH_PATH}/quote${bestCut ? '?capability=best-cut' : ''}`, { signal });
-        if (!Number.isSafeInteger(result.credits) || result.credits < 1 || result.max_seconds !== (bestCut ? 600 : 60)
-            || (bestCut && result.billing_block_seconds !== 60) || !Array.isArray(result.languages)) throw new ApiError(200, 'bad_response');
+        if (bestCut && (result.max_seconds !== 600 || result.billing_block_seconds !== 60)) return null;
+        if (!Number.isSafeInteger(result.credits) || result.credits < 1 || result.max_seconds !== 60 && !bestCut
+            || !Array.isArray(result.languages)) throw new ApiError(200, 'bad_response');
         return result;
     } catch (error) { if (error instanceof ApiError && error.status === 501) return null; throw error; }
 }

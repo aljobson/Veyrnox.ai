@@ -60,3 +60,25 @@ test('rapid playback keeps one render in flight and replaces the trailing reques
         expect(onDisplayed).toHaveBeenLastCalledWith({ frame: 3, exact: true });
     } finally { await act(async () => root.unmount()); }
 });
+
+test('never redisplays a disposed frame and treats a same-frame timeline revision as stale', async () => {
+    const first = image(), second = deferred<ReturnType<typeof result>>(), onDisplayed = jest.fn();
+    mockRender.mockResolvedValueOnce(result(first)).mockImplementationOnce(() => second.promise);
+    const root = createRoot(), timeline = emptyTimeline(), revised = { ...timeline, seq: timeline.seq + 1 };
+    try {
+        await act(async () => root.render(<EditorNativePreviewSurface enabled account="account" project="project" timeline={timeline}
+            frame={4} localMediaUris={{}} onDisplayed={onDisplayed} />));
+        const surface = root.container.queryAll(node => node.props.testID === 'editor-native-preview-surface')[0];
+        await act(async () => surface.props.onLayout({ nativeEvent: { layout: { width: 320, height: 180 } } }));
+        expect(onDisplayed).toHaveBeenLastCalledWith({ frame: 4, exact: true });
+        await act(async () => root.render(<EditorNativePreviewSurface enabled account="account" project="project" timeline={revised}
+            frame={4} localMediaUris={{}} onDisplayed={onDisplayed} />));
+        expect(onDisplayed).toHaveBeenLastCalledWith(null);
+        expect(first.dispose).not.toHaveBeenCalled();
+        const next = image();
+        await act(async () => second.resolve(result(next)));
+        expect(first.dispose).toHaveBeenCalledTimes(1);
+        expect(root.container.queryAll(node => node.props.testID === 'native-preview-image')).toHaveLength(1);
+        expect(onDisplayed).toHaveBeenLastCalledWith({ frame: 4, exact: true });
+    } finally { await act(async () => root.unmount()); }
+});

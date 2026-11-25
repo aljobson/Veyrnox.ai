@@ -371,6 +371,7 @@ const ru = {
     'app.smartCut.error.sourceClipLimit': 'Choose no more than {maximum} source clips for one Smart Cut plan.',
     'app.smartCut.error.unitExceedsBudget': 'A timed speech unit from {start}s to {end}s is longer than the remaining 60-second output. Trim or split the clip and try again.',
     'app.smartCut.error.trimIntersectsAllUnits': 'The selected trim crosses every timed speech unit. Expand the clip range or choose another clip.',
+    'app.smartCut.error.unsafeTimedBoundary': 'A transcript boundary could not be placed safely. Review the source timing or choose another clip.',
     'app.smartCut.speechReady': 'Timed speech is ready for all selected clips. Smart Cut will keep transcript-backed sections and remove long pauses. The pacing below sets how long a pause has to be.',
     'app.smartCut.language.label': 'MATCHING LANGUAGE',
     'app.smartCut.language.auto': 'Automatic',

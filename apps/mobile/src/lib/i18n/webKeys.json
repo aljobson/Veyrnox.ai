@@ -368,6 +368,7 @@
   "app.smartCut.error.sourceClipLimit",
   "app.smartCut.error.unitExceedsBudget",
   "app.smartCut.error.trimIntersectsAllUnits",
+  "app.smartCut.error.unsafeTimedBoundary",
   "app.smartCut.speechReady",
   "app.smartCut.language.label",
   "app.smartCut.language.auto",

@@ -85,6 +85,7 @@ const SMART_CUT_WARNING_KEYS: Record<SmartCutWarning['code'], string> = {
     alignment_budget_exceeded: 'app.smartCut.notice.failed',
     source_clip_limit_reached: 'app.smartCut.notice.failed',
     unit_exceeds_budget: 'app.smartCut.notice.failed',
+    unsafe_timed_boundary: 'app.smartCut.notice.failed',
 };
 const messageParameters = (parameters: Readonly<Record<string, unknown>>): Record<string, string | number> => {
     const values: Record<string, string | number> = {};
@@ -99,6 +100,7 @@ const SMART_CUT_ERROR_KEYS: Partial<Record<SmartCutWarning['code'], string>> = {
     script_match_missing: 'app.smartCut.error.scriptMatchMissing',
     alignment_budget_exceeded: 'app.smartCut.error.alignmentBudgetExceeded',
     language_override_invalid: 'app.smartCut.error.languageOverrideInvalid',
+    unsafe_timed_boundary: 'app.smartCut.error.unsafeTimedBoundary',
 };
 const planErrorText = (error: SmartCutPlanError) => t(SMART_CUT_ERROR_KEYS[error.code] || 'app.smartCut.notice.failed', messageParameters(error.parameters));
 const segmentMatchText = (segment: SmartCutPlan['segments'][number]) => segment.matchCode === 'script_line_matched'
