@@ -76,3 +76,11 @@ test('a document picked after an account change is discarded instead of crossing
     await act(async () => finish({ canceled: false, assets: [{ uri: 'file:///late.wav', name: 'late.wav', size: 4096, mimeType: 'audio/wav' }] }));
     expect(button(t('musicSources.open'))).toBeDefined(); expect(text('late.wav')).toHaveLength(0); expect(upload).not.toHaveBeenCalled();
 });
+
+test('a native document-picker failure stays in the card as a recoverable error', async () => {
+    await click(t('musicSources.open'));
+    pick.mockRejectedValue(new Error('native picker unavailable'));
+    await click(t('musicSources.choose'));
+    expect(text(t('musicSources.error'))).not.toHaveLength(0);
+    expect(upload).not.toHaveBeenCalled();
+});

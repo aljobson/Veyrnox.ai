@@ -71,12 +71,16 @@ export function MusicOwnedSourcesCard({ api }: { readonly api: ApiClient }) {
         if (busy) return;
         setMessage(''); setNotice('');
         const owner = getCacheUser(); if (!owner) return;
-        const picked = await DocumentPicker.getDocumentAsync({ type: ['audio/mpeg', 'audio/wav', 'audio/x-wav', 'audio/wave'], copyToCacheDirectory: true });
-        if (picked.canceled) return;
-        if (!mounted.current || getCacheUser() !== owner) { discardCacheCopy(picked.assets[0].uri); return; }
-        const next = normalizeMusicSourceFile(picked.assets[0]);
-        if (!next) { discardCacheCopy(picked.assets[0].uri); setMessage(t('musicSources.invalid')); return; }
-        discardCacheCopy(fileRef.current?.uri); fileRef.current = next; setFile(next); attempt.current = null;
+        try {
+            const picked = await DocumentPicker.getDocumentAsync({ type: ['audio/mpeg', 'audio/wav', 'audio/x-wav', 'audio/wave'], copyToCacheDirectory: true });
+            if (picked.canceled) return;
+            if (!mounted.current || getCacheUser() !== owner) { discardCacheCopy(picked.assets[0].uri); return; }
+            const next = normalizeMusicSourceFile(picked.assets[0]);
+            if (!next) { discardCacheCopy(picked.assets[0].uri); setMessage(t('musicSources.invalid')); return; }
+            discardCacheCopy(fileRef.current?.uri); fileRef.current = next; setFile(next); attempt.current = null;
+        } catch (error) {
+            if (mounted.current && getCacheUser() === owner) setMessage(sourceMessage(error));
+        }
     }
 
     async function upload() {
