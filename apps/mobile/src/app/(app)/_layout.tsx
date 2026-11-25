@@ -72,6 +72,7 @@ export default function AppLayout() {
                     <Stack.Screen name="privacy-choices" options={{ title: t('analyticsConsent.choices') }} />
                     <Stack.Screen name="welcome" options={{ headerShown: false }} />
                     <Stack.Screen name="first-run" options={{ headerShown: false, gestureEnabled: false }} />
+                    <Stack.Screen name="notification-primer" options={{ headerShown: false, gestureEnabled: false }} />
                     <Stack.Screen name="vibe" options={{ headerShown: false }} />
                     <Stack.Screen name="rate" options={{ title: t('rate.title'), headerShown: false, presentation: 'modal' }} />
                     <Stack.Screen name="paywall" options={{ title: t('billing.paywall.title'), headerShown: false, presentation: 'modal' }} />

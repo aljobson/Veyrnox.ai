@@ -2,7 +2,7 @@ import { passkeyGate } from '../lib/passkeys';
 import { useRef, useState } from 'react';
 import { ActivityIndicator, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Link, useRouter } from 'expo-router';
+import { Link, useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuth } from '../auth/AuthProvider';
 import { BrandIntro } from '../components/BrandIntro';
 import { SignupOffer } from '../components/SignupOffer';
@@ -13,14 +13,18 @@ import { DEV_MOCK } from '../lib/config';
 import { ds, colors } from '../theme';
 import { t } from '../lib/i18n';
 import { playSelection } from '../lib/haptics';
+
 const PROMISES = [
     { icon: 'image', label: 'signIn.photo' },
     { icon: 'video', label: 'signIn.video' },
     { icon: 'lightbulb', label: 'signIn.idea' },
 ] as const;
+
 export default function SignIn() {
     const { appleNativeAvailable, signInWithApple, signInWithOAuth, signInWithEmail, status } = useAuth();
     const router = useRouter();
+    const { from } = useLocalSearchParams<{ from?: string }>();
+    const personalised = from === 'onboarding';
     const insets = useSafeAreaInsets();
     const styles = useThemedStyles(sheets);
     const [busy, setBusy] = useState(false);
@@ -62,23 +66,27 @@ export default function SignIn() {
             >
                 <View style={styles.hero}>
                     <BrandIntro fontSize={32} />
-                    <Text variant="caption" tone="accent">{t('signIn.kicker')}</Text>
-                    <Text variant="display">{t('signIn.title')}</Text>
-                    <Text tone="secondary">{t('signIn.subtitle')}</Text>
-                    <View accessible style={styles.promises}>
-                        {PROMISES.map((p) => (
-                            <View key={p.label} style={styles.promise}>
-                                <Icon name={p.icon} size={20} />
-                                <Text variant="footnote" tone="secondary">{t(p.label)}</Text>
-                            </View>
-                        ))}
-                    </View>
+                    {!personalised ? <Text variant="caption" tone="accent">{t('signIn.kicker')}</Text> : null}
+                    <Text variant="display">{personalised ? t('onboarding.signIn.title') : t('signIn.title')}</Text>
+                    <Text tone="secondary">{personalised ? t('onboarding.signIn.body') : t('signIn.subtitle')}</Text>
+                    {!personalised ? (
+                        <View accessible style={styles.promises}>
+                            {PROMISES.map((promise) => (
+                                <View key={promise.label} style={styles.promise}>
+                                    <Icon name={promise.icon} size={20} />
+                                    <Text variant="footnote" tone="secondary">{t(promise.label)}</Text>
+                                </View>
+                            ))}
+                        </View>
+                    ) : null}
                 </View>
-                <SignupOffer />
+                {!personalised ? <SignupOffer /> : null}
                 <ConsentRow agreed={agreed} onChange={setAgreed} />
-                <Text variant="footnote" tone="tertiary" accessibilityLiveRegion="polite">
-                    {t(agreed ? 'signIn.ready' : 'signIn.tickFirst')}
-                </Text>
+                {!personalised ? (
+                    <Text variant="footnote" tone="tertiary" accessibilityLiveRegion="polite">
+                        {t(agreed ? 'signIn.ready' : 'signIn.tickFirst')}
+                    </Text>
+                ) : null}
                 <AuthProviderButton
                     provider="apple"
                     consent={agreed}
@@ -95,11 +103,13 @@ export default function SignIn() {
                         if (!blocked) router.push('/email');
                     }}
                 />
-                {passkeyGate() ? <Button variant="tertiary" icon="key" label={t('passkey.signIn')} disabled={blocked} onPress={() => router.push('/passkey')} /> : null}
-                <Link href="/preview" asChild>
-                    <Button variant="tertiary" label={t('preview.browse')} accessibilityRole="link" accessibilityHint={t('preview.browseHint')} />
-                </Link>
-                {DEV_MOCK ? (
+                {!personalised && passkeyGate() ? <Button variant="tertiary" icon="key" label={t('passkey.signIn')} disabled={blocked} onPress={() => router.push('/passkey')} /> : null}
+                {!personalised ? (
+                    <Link href="/preview" asChild>
+                        <Button variant="tertiary" label={t('preview.browse')} accessibilityRole="link" accessibilityHint={t('preview.browseHint')} />
+                    </Link>
+                ) : null}
+                {!personalised && DEV_MOCK ? (
                     <Button
                         variant="tertiary"
                         label={t('signIn.demo')}
@@ -117,6 +127,7 @@ export default function SignIn() {
         </View>
     );
 }
+
 const sheets = themedStyles((p) => ({
     frame: { flex: 1, backgroundColor: p.bg },
     scroll: { flex: 1 },
