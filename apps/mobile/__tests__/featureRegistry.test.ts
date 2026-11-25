@@ -91,11 +91,11 @@ describe('mobile feature registry', () => {
             return !visible && !recorded;
         }).map((feature) => feature.id);
         expect(orphaned).toEqual([]);
-        const studioSource = fs.readFileSync(path.join(MOBILE_APP, '(app)', '(tabs)', 'editor.tsx'), 'utf8');
+        const createSource = fs.readFileSync(path.join(MOBILE_APP, '(app)', '(tabs)', 'create.tsx'), 'utf8');
         const publishSource = fs.readFileSync(path.join(MOBILE_APP, '(app)', '(tabs)', 'publish.tsx'), 'utf8');
         for (const feature of MOBILE_FEATURES.filter((item) => item.entryPoint)) {
-            const source = feature.entryPoint === 'studio' ? studioSource : publishSource;
-            const claim = feature.entryPoint === 'studio' ? `mobileFeature('${feature.id}')` : `path: '${feature.href}'`;
+            const source = feature.entryPoint === 'create' ? createSource : publishSource;
+            const claim = feature.entryPoint === 'create' ? `router.push('${feature.href}')` : `path: '${feature.href}'`;
             expect({ id: feature.id, entryPoint: feature.entryPoint, rendered: source.includes(claim) }).toEqual({ id: feature.id, entryPoint: feature.entryPoint, rendered: true });
         }
         expect(fs.existsSync(path.join(ROOT, 'apps', 'mobile', 'src', 'app', '(app)', '(tabs)', 'editor.tsx'))).toBe(true);

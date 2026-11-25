@@ -5,7 +5,7 @@ export type FeatureAvailability = 'always' | 'film-build' | 'music-live';
 export type FeatureStatus = 'native' | 'gap' | 'system' | 'unavailable' | 'build-time' | 'capability';
 export type FeatureMenuSection = 'tools' | 'assets' | 'footer';
 export type AudioFeatureGroup = 'studios' | 'performance';
-export type FeatureEntryPoint = 'studio' | 'publish';
+export type FeatureEntryPoint = 'create' | 'publish';
 
 export interface MobileFeatureDefinition {
     readonly id: string;
@@ -36,7 +36,7 @@ const MOBILE_FEATURE_DEFINITIONS = [
     { id: 'tools', titleKey: 'srch.s.tools', href: '/create/tools', icon: 'wrench', keywords: 'upscale remove background edit photo video', webRoutes: ['/tools'] },
     { id: 'audio', titleKey: 'menu.audio', href: '/audio', icon: 'headphones', keywords: 'music speech dialogue voice lip sync dubbing', menu: { section: 'tools', order: 1, labelKey: 'menu.audio' }, webRoutes: ['/app/audio'] },
     { id: 'smartCut', titleKey: 'menu.smartCut', href: '/smart-cut', icon: 'sparkle', keywords: 'smart cut speech silence remove ums best cut', menu: { section: 'tools', order: 2, labelKey: 'menu.smartCut', hintKey: 'menu.smartCutHint' }, webRoutes: ['/app/library#smart-cut'] },
-    { id: 'editor', titleKey: 'tabs.studio', href: '/editor', icon: 'scissors', keywords: 'studio professional editor edit trim join captions clip timeline cut projects', menu: { section: 'tools', order: 3, labelKey: 'tabs.studio' }, webRoutes: ['/app/editor'] },
+    { id: 'editor', titleKey: 'editor.title', href: '/editor', icon: 'scissors', keywords: 'editor studio edit trim join captions clip timeline cut projects', menu: { section: 'tools', order: 3, labelKey: 'editor.title' }, webRoutes: ['/app/editor'] },
     { id: 'editorReview', titleKey: 'preview.title', href: '/editor', webRoutes: ['/app/editor/review'], status: 'gap', gapReason: 'Native saved-version review is not implemented; Studio is the safe fallback.' },
     { id: 'publish', titleKey: 'srch.s.publish', href: '/publish', icon: 'send', keywords: 'post schedule social calendar', menu: { section: 'tools', order: 4, labelKey: 'menu.publish' }, webRoutes: ['/app/publish', '/publish'] },
     { id: 'publishPlan', titleKey: 'plan.navTitle', href: '/publish', webRoutes: ['/app/publish/plan'], status: 'gap', gapReason: 'Native plan status and safe period-end cancellation are scheduled for Wave 2; Publish is the safe fallback.' },
@@ -56,7 +56,7 @@ const MOBILE_FEATURE_DEFINITIONS = [
     { id: 'guides', titleKey: 'helpGuides.all', href: '/guides', icon: 'help', keywords: 'guides tutorials learn', webRoutes: ['/guides', '/guides/[id]'] },
     { id: 'skills', titleKey: 'chat.skills.title', href: '/chat/skills', icon: 'sparkle', keywords: 'studio skills assistant workflows', webRoutes: ['/app/skills'] },
     { id: 'agent', titleKey: 'videoAgent.title', href: '/create/agent', icon: 'brain', keywords: 'video agent assistant', webRoutes: ['/app/video-agent'] },
-    { id: 'features', titleKey: 'menu.features', href: '/features', icon: 'magicWand', keywords: 'all features guided creative tools workflows', entryPoint: 'studio', webRoutes: ['/app/features', '/app/features/[slug]'] },
+    { id: 'features', titleKey: 'menu.features', href: '/features', icon: 'magicWand', keywords: 'guided creative workflows', entryPoint: 'create', webRoutes: ['/app/features', '/app/features/[slug]'] },
     { id: 'facelessReel', titleKey: 'facelessReel.chip', href: '/faceless-reel', icon: 'filmReel', keywords: 'faceless reel video', webRoutes: ['/app/faceless-reel'] },
     { id: 'vibe', titleKey: 'vibe.intro.title', href: '/vibe', icon: 'swatches', keywords: 'vibe taste preferences', webRoutes: ['/app/vibe'] },
 

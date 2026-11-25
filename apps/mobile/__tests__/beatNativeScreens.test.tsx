@@ -171,34 +171,28 @@ describe('beat editor', () => {
         expect(text(t('beat.padRecord.status.armed')).length).toBeGreaterThan(0);
         expect(byLabel(t('beat.padRecord.disable')).props.accessibilityState.selected).toBe(true);
     });
-    test('Song pad recording uses the selected drum region pattern and offset', async () => {
+    test('Song view keeps beat pads and the step sequencer out of the multitrack editor', async () => {
         const doc = structuredClone(addKitTrack(newBeat('Song record'), 'lofi'));
         const selectedTrack = doc.tracks[1];
-        const region = selectedTrack.regions[0];
-        region.pattern = 'B'; region.offset = 480;
         putBeat(doc); mockParams = { id: doc.id };
-        mockAudio.nearestStepAt.mockReturnValueOnce({ step: 4, time: 4.1 });
         await act(async () => root.render(<BeatEditor />));
+        expect(byLabel(t('beat.padRecord.enable'))).toBeUndefined();
+        expect(byLabel(t('beat.pad.hit', { pad: t('beat.pad.kick') }))).toBeUndefined();
+        expect(text(t('beat.steps', { pad: t('beat.pad.kick') }))).toHaveLength(0);
+        expect(testId('beat-arrangement')).toHaveLength(1);
+
         await press(selectedTrack.name);
-        await press(t('beat.padRecord.enable'));
-        await press(t('beat.play'));
-        await press(t('beat.pad.hit', { pad: t('beat.pad.clap') }));
-        expect(getBeat(doc.id)!.patterns.B.rows.clap).toEqual([[6, 100]]);
-        expect(getBeat(doc.id)!.patterns.A.rows.clap).toEqual([]);
+        expect(byLabel(t('beat.padRecord.enable'))).toBeUndefined();
+        expect(byLabel(t('beat.pad.hit', { pad: t('beat.pad.kick') }))).toBeUndefined();
     });
-    test('Song pad recording refuses a gap without mutating the current pattern', async () => {
-        const doc = structuredClone(newBeat('Song gap'));
-        doc.tracks[0].regions[0].length = 960;
+    test('Pattern view still exposes the beat pads and step sequencer', async () => {
+        const doc = setView(newBeat('Pattern beat'), 'pattern');
         putBeat(doc); mockParams = { id: doc.id };
-        mockAudio.nearestStepAt.mockReturnValueOnce({ step: 8, time: 4.1 });
         await act(async () => root.render(<BeatEditor />));
-        await press(t('beat.padRecord.enable'));
-        await press(t('beat.play'));
-        await press(t('beat.pad.hit', { pad: t('beat.pad.clap') }));
-        expect(getBeat(doc.id)!.patterns.A.rows.clap).toEqual([]);
-        expect(RN.AccessibilityInfo.announceForAccessibility).toHaveBeenCalledWith(
-            t('beat.padRecord.noTarget', { track: doc.tracks[0].name }),
-        );
+        expect(byLabel(t('beat.padRecord.enable'))).toBeDefined();
+        expect(byLabel(t('beat.pad.hit', { pad: t('beat.pad.kick') }))).toBeDefined();
+        expect(text(t('beat.steps', { pad: t('beat.pad.kick') })).length).toBeGreaterThan(0);
+        expect(testId('beat-arrangement')).toHaveLength(0);
     });
     test('export mount releases playback before the sheet may render, and Play recreates the engine', async () => {
         await open(); await press(t('beat.play')); await press(t('beatExport.title'));
@@ -338,6 +332,7 @@ describe('beat editor', () => {
     });
     test('tempo steps change the document and stay inside the limits', async () => {
         const doc = await open();
+        await press(t('beat.tempoValue', { bpm: doc.tempo.bpm }));
         await press(t('beat.tempoUp5'));
         expect(getBeat(doc.id)!.tempo.bpm).toBe(97);
         await press(t('beat.tempoDown'));
@@ -412,6 +407,7 @@ describe('beat editor', () => {
     test('mixer: mute folds into the audio mix, solo and kit change the document', async () => {
         const doc = await open();
         const track = t('beat.track', { n: 1 });
+        await press(t('beat.track.controls'));
         await press(t('beat.play'));
         await press(t('beat.mute', { track }));
         expect(getBeat(doc.id)!.tracks[0].mute).toBe(true);
@@ -426,7 +422,10 @@ describe('beat editor', () => {
     test('add and remove a track', async () => {
         const doc = await open();
         await press(t('beat.track.add'));
+        expect(testId('music-add-track-sheet')).toHaveLength(1);
+        await press(t('beat.kind.drums'));
         expect(getBeat(doc.id)!.tracks).toHaveLength(2);
+        await press(t('beat.track.controls'));
         await press(t('beat.track.remove', { track: t('beat.track', { n: 2 }) }));
         expect(getBeat(doc.id)!.tracks).toHaveLength(1);
     });
@@ -511,6 +510,7 @@ describe('save and versions UI', () => {
         const flush = jest.spyOn(beatStore, 'flushBeats');
         const doc = newBeat('Lifecycle'); mockParams = { id: doc.id };
         await act(async () => root.render(<BeatEditor />));
+        await press(t('beat.tempoValue', { bpm: doc.tempo.bpm }));
         await press(t('beat.tempoUp5'));
         await press(t('beat.undo'));
         expect(getBeat(doc.id)?.tempo.bpm).toBe(doc.tempo.bpm);
@@ -655,7 +655,9 @@ test('signed-out home retains local controls and skips the collection probe', as
 
 test('replacement lease release alone unlocks editor controls and uses cloud-specific copy', async () => {
     const doc = newBeat('Replacement'); mockParams = { id: doc.id };
-    await act(async () => root.render(<BeatEditor />)); await press(t('beat.tempoUp'));
+    await act(async () => root.render(<BeatEditor />));
+    await press(t('beat.view.pattern'));
+    await press(t('beat.tempoValue', { bpm: doc.tempo.bpm })); await press(t('beat.tempoUp'));
     let release!: () => void;
     await act(async () => { release = await beforeReplace(doc.id); });
     const disabled = (label: string) => { const b = byLabel(label); return b?.props.accessibilityState?.disabled ?? b?.props.disabled; };
@@ -668,7 +670,7 @@ test('replacement lease release alone unlocks editor controls and uses cloud-spe
     expect(disabled(t('beat.play'))).toBe(false); expect(disabled(t('beat.undo'))).toBe(false);
     expect(disabled(t('beat.pattern.named', { pattern: 'A' }))).toBe(false);
     expect(disabled(t('beat.pattern.controlsNamed', { pattern: 'A' }))).toBe(false);
-    expect(disabled(t('beatTakes.addTrack'))).toBe(false);
+    expect(disabled(t('beat.track.add'))).toBe(false);
 });
 
 test('recording history and announcements use the localized message or fallback, never the web English label', async () => {

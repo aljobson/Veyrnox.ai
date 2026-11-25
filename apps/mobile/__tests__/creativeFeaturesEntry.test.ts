@@ -23,6 +23,8 @@ describe('guided features entry and play badge', () => {
         const list = read('src/app/(app)/features/index.tsx');
         expect(list).toContain('examplePlaysOn(feature.example, Platform.OS)');
         expect(list).not.toContain("feature.example.kind === 'video' ?");
+        expect(list).not.toContain('all-features-directory');
+        expect(list).not.toContain('directoryFeatures');
         expect(read('src/app/(app)/(tabs)/create.tsx')).toMatch(/features\.creativetools[\s\S]{0,80}router\.push\('\/features'\)/);
     });
 });

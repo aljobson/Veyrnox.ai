@@ -11,10 +11,10 @@ import { validateBeat, tryOp, MAX_TRACKS } from '../src/lib/beatNative/doc';
 import { createHistory, record, undo } from '../src/lib/beatNative/history';
 import { memoryFiles, fixedDoc, USER, deferred } from './beatNativeFixtures';
 
-test.each(BEAT_TEMPLATES)('$id produces the exact shared template, validates, and is durable before return', async ({ id: template }) => {
+test.each(BEAT_TEMPLATES)('$id opens the shared template in the arrangement and is durable before return', async ({ id: template }) => {
     const files = memoryFiles(), store = createBeatStore(files);
     const result = await createTemplateBeat(store, template, 'Starter');
-    expect(result).toEqual(createBeatFromTemplate({ template, id: result.id, title: result.title, now: result.createdAt }));
+    expect(result).toEqual({ ...createBeatFromTemplate({ template, id: result.id, title: result.title, now: result.createdAt }), updatedAt: result.updatedAt, view: 'song' });
     expect(validateBeat(result).ok).toBe(true);
     expect(files.data.size).toBe(1);
     const saved = store.getBeat(result.id)!;

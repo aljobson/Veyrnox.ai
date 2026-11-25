@@ -64,7 +64,7 @@ export const NAVIGATION_MENU_LABELS = [
     'Create',
     'Audio',
     'Smart Cut',
-    'Studio',
+    'Editor',
     'Publish',
     'Social Cinema',
     'Library',
