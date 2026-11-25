@@ -28,7 +28,7 @@ describe('Music daily allowance (0601)', { skip: !local && 'disposable localhost
     pool = new pg.Pool({ connectionString: url, max: 4 });
     await pool.query('CREATE TABLE IF NOT EXISTS auth.mfa_factors(user_id uuid,factor_type text,status text)');
     await pool.query(`UPDATE public.model_catalog SET provider='crun',provider_endpoint='crun:suno/music-generate',
-      credits_5s=4,provider_cost_per_unit=0.0536,updated_at=statement_timestamp() WHERE id='ace-step'`);
+      credits_5s=4,provider_cost_per_unit=0.0536,active=true,updated_at=statement_timestamp() WHERE id='ace-step'`);
     await pool.query("UPDATE public.provider_spend_provider_policy SET admission_open=true WHERE provider='crun'");
   });
   beforeEach(async () => {

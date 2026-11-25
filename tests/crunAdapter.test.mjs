@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { parseEndpoint, endpointKind, buildRequest, submitTask, interpretTask,
   classifyCreateTaskResponse, classifyTaskInfoResponse, sanitizeCrunFailure } from '../packages/adapters/crun.js';
 import { SOURCE_PROMPT_RECORDS } from '../app/veyrnox/_lib/sourcePromptRecords.js';
+import { validateInputs } from '../lib/generationInputValidation.js';
 
 const job = (over = {}) => ({ job_id: 'job_1', provider_endpoint: 'crun:google/veo3-1-lite-t2v', inputs: { prompt: 'a city at dusk' }, ...over });
 const reply = (status, body) => async () => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
@@ -82,6 +83,9 @@ test('Suno Sounds maps the broken SFX controls to the documented CRUN payload', 
   assert.equal(buildRequest(target, { prompt: '' }).error, 'inputs_invalid:prompt');
   assert.equal(buildRequest(target, { prompt: 'x', loop: 'yes' }).error, 'inputs_invalid:loop');
   assert.equal(buildRequest(target, { prompt: 'x', duration_seconds: 8 }).error, 'inputs_key_not_allowed:duration_seconds');
+  assert.deepEqual(validateInputs({ prompt: 'x', loop: false }), { ok: true },
+    'the shared generation gateway accepts the public seamless-loop control');
+  assert.deepEqual(validateInputs({ prompt: 'x', loop: 'false' }), { ok: false, error: 'inputs_invalid:loop' });
 });
 
 test('CreateTask and TaskInfo classifiers never retain vendor text', () => {

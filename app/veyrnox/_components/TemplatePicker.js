@@ -63,7 +63,7 @@ export function TemplatePicker({ models, goal, selectedKind, onPick, onClose, ga
                     ? <VideoPreview src={preset.previewVideo} poster={preset.previewImage} title={title} />
                     : <img src={preset.previewImage} alt={title} loading="lazy" className="absolute inset-0 h-full w-full object-cover" />}
                 </div>
-                {kind === 'audio' && (
+                {kind === 'audio' && preset.previewAudio && (
                   <div className="border-b border-vx-border px-3 py-3">
                     <audio controls preload="metadata" src={preset.previewAudio} aria-label={preset.previewTitle} className="h-10 w-full" />
                     <p className="mt-2 text-[11px] leading-4 text-vx-fg-muted">
@@ -95,7 +95,7 @@ export function TemplatePicker({ models, goal, selectedKind, onPick, onClose, ga
         </ul>}
 
         {kind === 'video' && rows.length > 0 && <div className="mt-4 text-right text-xs"><Link href="/presets" onClick={onClose} className="font-bold text-vx-accent underline underline-offset-2">{t('app.create.templates.openGallery')}</Link></div>}
-        {kind === 'audio' && <div className="mt-4 text-right text-xs"><Link href="/app/music/discover" className="font-bold text-vx-accent underline underline-offset-2">{t('musicDiscover.title')}</Link></div>}
+        {kind === 'audio' && <div className="mt-4 text-right text-xs"><Link href="/app/music/sounds" className="font-bold text-vx-accent underline underline-offset-2">{t('app.audio.sounds.open')}</Link></div>}
       </div>
     </Modal>
   );

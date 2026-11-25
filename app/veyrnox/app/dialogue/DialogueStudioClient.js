@@ -322,6 +322,7 @@ export default function DialogueStudio() {
           </div>
           <h1 className="vx-display mt-3 text-[40px] leading-[0.95] sm:text-[58px]">Direct the conversation.</h1>
           <p className="mt-4 max-w-3xl text-sm leading-6 text-vx-fg-muted sm:text-base">Create ordered multi-speaker audio, or turn one permitted two-person portrait into a short 480p conversation with a separate script and stock voice for each person.</p>
+          {!catalogLoading && !audioModel && !photoModel && <p role="status" className="mt-4 rounded-xl border border-vx-money/35 bg-vx-money/[0.06] px-4 py-3 text-sm leading-6 text-vx-fg-body">Dialogue generation is currently unavailable. Existing scripts remain editable, but no model or price is being offered.</p>}
         </header>
 
         <section className="mt-6" aria-labelledby="dialogue-mode-title">
@@ -333,13 +334,17 @@ export default function DialogueStudio() {
             <p className="max-w-xl text-xs leading-5 text-vx-fg-muted">Photo dialogue is a native two-person render, not two single-person clips stitched together. Reviewed dialogue audio can continue into Video Dubbing; automatic diarization, face mapping, overlap and per-turn uploaded audio remain unavailable.</p>
           </div>
           <div className="mt-4 grid gap-3 md:grid-cols-3">
-            {DIALOGUE_MODES.map((mode) => (
-              <button key={mode.id} type="button" disabled={mode.status !== 'available' || busy} onClick={() => chooseMode(mode.id)} aria-pressed={modeId === mode.id} className="min-h-36 rounded-2xl border border-vx-border bg-vx-panel p-4 text-left disabled:cursor-not-allowed disabled:opacity-55 aria-pressed:border-vx-accent aria-pressed:bg-vx-accent/[0.07]">
-                <span className={`font-vx-mono text-[9px] font-bold tracking-[0.12em] ${mode.status === 'available' ? 'text-vx-accent' : 'text-vx-fg-faint'}`}>{mode.eyebrow}</span>
-                <span className="mt-2 block text-sm font-black">{mode.label}</span>
-                <span className="mt-2 block text-[11px] leading-5 text-vx-fg-muted">{mode.description}</span>
-              </button>
-            ))}
+            {DIALOGUE_MODES.map((mode) => {
+              const modeModel = mode.id === 'audio-script' ? audioModel : mode.id === 'photo-dialogue' ? photoModel : null;
+              const available = mode.status === 'available' && Boolean(modeModel);
+              return (
+                <button key={mode.id} type="button" disabled={!available || busy} onClick={() => chooseMode(mode.id)} aria-pressed={modeId === mode.id} className="min-h-36 rounded-2xl border border-vx-border bg-vx-panel p-4 text-left disabled:cursor-not-allowed disabled:opacity-55 aria-pressed:border-vx-accent aria-pressed:bg-vx-accent/[0.07]">
+                  <span className={`font-vx-mono text-[9px] font-bold tracking-[0.12em] ${available ? 'text-vx-accent' : 'text-vx-fg-faint'}`}>{available ? mode.eyebrow : mode.status === 'planned' ? mode.eyebrow : 'UNAVAILABLE'}</span>
+                  <span className="mt-2 block text-sm font-black">{mode.label}</span>
+                  <span className="mt-2 block text-[11px] leading-5 text-vx-fg-muted">{mode.description}</span>
+                </button>
+              );
+            })}
           </div>
         </section>
 
@@ -496,9 +501,10 @@ export default function DialogueStudio() {
 
             <section className={`${card} p-5`}>
               <div className="flex items-baseline justify-between"><p className="font-vx-mono text-[10px] font-bold tracking-[0.14em] text-vx-fg-muted">APPROVE TOTAL</p><p className="font-vx-mono text-[11px] text-vx-fg-muted">balance {balance ?? '—'} cr</p></div>
-              <p className="mt-2 font-vx-mono text-[38px] font-black text-vx-money">−{model?.credits ?? 0} cr</p>
+              <p className="mt-2 font-vx-mono text-[38px] font-black text-vx-money">{model ? `−${model.credits} cr` : 'Unavailable'}</p>
               <p className="mt-2 text-xs leading-5 text-vx-fg-muted">One {modeId === 'photo-dialogue' ? 'short 480p video' : 'audio'} job. A failed job follows the existing refund path; nothing is spent while editing.</p>
-              <Button className="mt-5 w-full justify-between" cost={model?.credits ?? 0} disabled={blocked} onClick={submit}>{sending ? 'Submitting…' : generating ? 'Creating dialogue…' : modeId === 'photo-dialogue' ? 'Create video dialogue' : 'Create dialogue audio'}</Button>
+              <Button className="mt-5 w-full justify-between" cost={model?.credits} disabled={blocked} onClick={submit}>{!model ? 'Model unavailable' : sending ? 'Submitting…' : generating ? 'Creating dialogue…' : modeId === 'photo-dialogue' ? 'Create video dialogue' : 'Create dialogue audio'}</Button>
+              {!catalogLoading && !model && <p className="mt-3 text-xs text-vx-fg-muted">This mode is not listed in the live catalog and cannot be submitted.</p>}
               {!validation.ok && <p className="mt-3 text-xs text-vx-fg-muted">Complete at least two valid speakers and turns.</p>}
               {modeId === 'photo-dialogue' && !portrait && <p className="mt-3 text-xs text-vx-fg-muted">Add one permitted two-person portrait.</p>}
               {modeId === 'photo-dialogue' && portrait && !consent && <p className="mt-3 text-xs text-vx-fg-muted">Confirm permission from both depicted adults.</p>}
