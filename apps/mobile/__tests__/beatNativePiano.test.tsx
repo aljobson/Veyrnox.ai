@@ -10,6 +10,7 @@ import { t } from '../src/lib/i18n';
 import { Button } from '../src/components/ui';
 import { noteLengthUnits, notePosition } from '../src/lib/beatNative/rollGeometry';
 import { validateBeat } from '../src/lib/beatNative/doc';
+import { VIVID_HUES, vividHue } from '../src/theme';
 beforeAll(() => require('../src/lib/beatNative/store').beatStore.setOwner('test-owner'));
 
 jest.mock('../src/lib/beatNative/persist', () => ({ ...jest.requireActual('../src/lib/beatNative/persist'), documentFiles: () => ({ read: async () => null, write: async () => {}, remove: async () => {}, list: async () => [] }) }));
@@ -102,7 +103,10 @@ function LibraryHarness({ id }: { id: string }) {
 }
 test('library audition and add use shared voices and a single undoable store edit', async () => {
     const doc = newBeat('Library'); await act(async () => root.render(<LibraryHarness id={doc.id} />));
-    await press(t('beatPiano.library.add')); await press(t('beatPiano.library.audition', { name: 'Grand piano' }));
+    await press(t('beatPiano.library.add'));
+    const vividFills = new Set(VIVID_HUES.map(hue => vividHue(hue, 'dark').fill));
+    expect(root.container.queryAll(node => vividFills.has(RN.StyleSheet.flatten(node.props.style)?.backgroundColor)).length).toBeGreaterThanOrEqual(VIVID_HUES.length);
+    await press(t('beatPiano.library.audition', { name: 'Grand piano' }));
     expect(mockAudio.audition).toHaveBeenCalledWith({ engine: 'voice', id: 'piano', preset: 'grand' });
     await press(t('beatPiano.library.addNamed', { name: 'Grand piano' }));
     expect(midiRegions(getBeat(doc.id)!)).toHaveLength(1); expect(beatStore.saveState(doc.id)).toBe('saving');
