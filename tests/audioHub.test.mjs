@@ -4,10 +4,12 @@ import { existsSync, readFileSync } from 'node:fs';
 import { LOCALES } from '../lib/i18n/locales.mjs';
 
 const page = readFileSync('app/veyrnox/app/audio/page.js', 'utf8');
-const studios = [...page.matchAll(/\{ id: '(\w+)', href: '([^']+)' \}/g)].map((m) => ({ id: m[1], href: m[2] }));
+const studios = [...page.matchAll(/\{ id: '(\w+)', href: '([^']+)', modelIds:/g)].map((m) => ({ id: m[1], href: m[2] }));
 
-test('the Audio hub links the four studios that exist', () => {
-  assert.deepEqual(studios.map((s) => s.id), ['music', 'speech', 'dialogue', 'dub']);
+test('the Audio hub lists only studios backed by a live catalog model', () => {
+  assert.deepEqual(studios.map((s) => s.id), ['sounds', 'speech', 'dub']);
+  assert.doesNotMatch(page, /id: 'music'|id: 'dialogue'/);
+  assert.match(page, /studio\.modelIds\.some\(\(id\) => modelIds\.has\(id\)\)/);
   for (const { href } of studios) {
     const dir = `app/veyrnox${href}`;
     assert.ok(existsSync(`${dir}/page.js`), `${href} has a page`);

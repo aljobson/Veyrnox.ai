@@ -65,7 +65,7 @@ test('the preview exposes nine runnable performance workflows and labels the res
   assert.deepEqual(available.map((workflow) => workflow.modelId), ['kling-avatar-v2', 'kling-avatar-v2', 'kling-avatar-v2', 'kling-avatar-v2', 'kling-avatar-v2', 'kling-avatar-v2', 'latentsync', 'kling-avatar-v2', 'latentsync']);
   assert.deepEqual(available.map((workflow) => workflow.maxSeconds), [10, 10, 10, 10, 10, 10, 40, 10, 40]);
   assert.deepEqual(available.map((workflow) => workflow.scriptLimit), [1000, 600, 600, 600, 600, 600, 1000, 0, 360]);
-  assert.equal(DEFAULT_TTS_MODEL_ID, 'minimax-speech-2.6-hd');
+  assert.equal(DEFAULT_TTS_MODEL_ID, 'qwen3-tts');
   assert.ok(PERFORMANCE_WORKFLOWS.filter((workflow) => workflow.status === 'planned').length >= 1);
   assert.deepEqual(workflowById('dialogue'), {
     id: 'dialogue',
