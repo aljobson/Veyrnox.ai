@@ -81,11 +81,16 @@ describe('Crun Suno music foundation (0591)', { skip: !local && 'disposable loca
     if (pool) await pool.end();
   });
 
-  it('ships exactly two inactive unverified routes and no parity evidence', async () => {
+  it('ships one verified active route while the unproven 1.5 route stays on standby', async () => {
     const rows = (await client.query(`SELECT model_id,state,provenance,parity_record,cost_per_unit
       FROM public.model_routes WHERE supplier='crun' AND endpoint='crun:suno/music-generate' ORDER BY model_id`)).rows;
     assert.deepEqual(rows.map((r: any) => r.model_id), ['ace-step', 'ace-step-1.5']);
-    assert.ok(rows.every((r: any) => r.state === 'standby' && r.provenance === 'unverified' && r.parity_record === null));
+    assert.equal(rows[0].state, 'active');
+    assert.equal(rows[0].provenance, 'licensed_reseller');
+    assert.ok(rows[0].parity_record);
+    assert.equal(rows[1].state, 'standby');
+    assert.equal(rows[1].provenance, 'unverified');
+    assert.equal(rows[1].parity_record, null);
     assert.ok(rows.every((r: any) => Number(r.cost_per_unit) === 0.0536));
   });
 
@@ -105,6 +110,56 @@ describe('Crun Suno music foundation (0591)', { skip: !local && 'disposable loca
       await client.query(file);
       assert.deepEqual(await read(), before);
     });
+  });
+
+  // These pool-based concurrency cases must run before shared-transaction tests
+  // retain provider, route, or allowance locks until the suite-level rollback.
+  it('serializes simultaneous single-track submissions and rejects key reuse for another quote', { timeout: 15_000 }, async () => {
+    const auth = randomUUID();
+    const email = `${randomUUID()}@pair.accept.test`;
+    await pool.query('SELECT public.signup_grant($1,$2)', [auth, email]);
+    const quote = (await pool.query("SELECT public.music_create_quote($1,'pair race',NULL,'ace-step') r", [auth])).rows[0].r;
+    assert.equal(quote.ok, true);
+    const key = `pair.${randomUUID()}`;
+    const [left, right] = await Promise.all([
+      pool.query('SELECT public.music_submit_pair($1,$2,$3) r', [auth, quote.quote_id, key]),
+      pool.query('SELECT public.music_submit_pair($1,$2,$3) r', [auth, quote.quote_id, key]),
+    ]);
+    assert.equal(left.rows[0].r.ok, true);
+    assert.equal(right.rows[0].r.ok, true);
+    assert.deepEqual(left.rows[0].r.job_ids, right.rows[0].r.job_ids);
+    assert.equal(left.rows[0].r.job_ids.length, 1);
+    assert.equal([left.rows[0].r.idempotent, right.rows[0].r.idempotent].filter(Boolean).length, 1);
+    const other = (await pool.query("SELECT public.music_create_quote($1,'different quote',NULL,'ace-step') r", [auth])).rows[0].r;
+    const conflict = (await pool.query('SELECT public.music_submit_pair($1,$2,$3) r', [auth, other.quote_id, key])).rows[0].r;
+    assert.equal(conflict.code, 'IDEMPOTENCY_CONFLICT');
+  });
+
+  it('lets one of two concurrent submits with different keys through when the user already has three active requests', { timeout: 15_000 }, async () => {
+    const auth = randomUUID();
+    const user = (await pool.query('SELECT public.signup_grant($1,$2) id', [auth, `${randomUUID()}@limit.accept.test`])).rows[0].id;
+    const quote = async () => {
+      const q = (await pool.query("SELECT public.music_create_quote($1,'limit race',NULL,'ace-step') r", [auth])).rows[0].r;
+      assert.equal(q.ok, true);
+      return q;
+    };
+    for (let i = 0; i < 3; i += 1) {
+      const q = await quote();
+      const spec = (await pool.query('SELECT prompt_spec_id FROM public.music_generation_quotes WHERE id=$1', [q.quote_id])).rows[0].prompt_spec_id;
+      await pool.query(`INSERT INTO public.music_generation_requests(user_id,quote_id,prompt_spec_id,model_id,idempotency_key,credit_quote,status)
+        VALUES($1,$2,$3,'ace-step',$4,$5,'debited')`, [user, q.quote_id, spec, `active.${randomUUID()}`, q.total_credits]);
+    }
+    const [qa, qb] = [await quote(), await quote()];
+    const [a, b] = await Promise.all([
+      pool.query('SELECT public.music_submit_pair($1,$2,$3) r', [auth, qa.quote_id, `limit.a.${randomUUID()}`]),
+      pool.query('SELECT public.music_submit_pair($1,$2,$3) r', [auth, qb.quote_id, `limit.b.${randomUUID()}`]),
+    ]);
+    const results = [a.rows[0].r, b.rows[0].r];
+    assert.equal(results.filter((r: any) => r.ok === true).length, 1, JSON.stringify(results));
+    const rejected = results.find((r: any) => r.ok !== true);
+    assert.equal(rejected.code, 'CONCURRENCY_LIMIT', JSON.stringify(results));
+    assert.equal(Number((await pool.query(`SELECT count(*) n FROM public.music_generation_requests WHERE user_id=$1 AND status IN ('debited','running')`,
+      [user])).rows[0].n), 4);
   });
 
   it('enforces twenty CreateTask reservations in every rolling ten seconds', async () => {
@@ -153,58 +208,6 @@ describe('Crun Suno music foundation (0591)', { skip: !local && 'disposable loca
   it('keeps Crun duration pricing flat while fal retains blocks', async () => {
     assert.equal((await one("SELECT private.music_duration_price_blocks('ace-step-1.5','crun-suno-v1',135) n")).n, 1);
     assert.equal((await one("SELECT private.music_duration_price_blocks('ace-step-1.5','fal-ace-v1',135) n")).n, 3);
-  });
-
-  it('serializes simultaneous pair submissions and rejects key reuse for another quote', async () => {
-    const auth = randomUUID();
-    const email = `${randomUUID()}@pair.accept.test`;
-    await pool.query('SELECT public.signup_grant($1,$2)', [auth, email]);
-    try {
-      const quote = (await pool.query("SELECT public.music_create_quote($1,'pair race',NULL,'ace-step') r", [auth])).rows[0].r;
-      assert.equal(quote.ok, true);
-      const key = `pair.${randomUUID()}`;
-      const [left, right] = await Promise.all([
-        pool.query('SELECT public.music_submit_pair($1,$2,$3) r', [auth, quote.quote_id, key]),
-        pool.query('SELECT public.music_submit_pair($1,$2,$3) r', [auth, quote.quote_id, key]),
-      ]);
-      assert.equal(left.rows[0].r.ok, true);
-      assert.equal(right.rows[0].r.ok, true);
-      assert.deepEqual(left.rows[0].r.job_ids, right.rows[0].r.job_ids);
-      assert.equal([left.rows[0].r.idempotent, right.rows[0].r.idempotent].filter(Boolean).length, 1);
-      const other = (await pool.query("SELECT public.music_create_quote($1,'different quote',NULL,'ace-step') r", [auth])).rows[0].r;
-      const conflict = (await pool.query('SELECT public.music_submit_pair($1,$2,$3) r', [auth, other.quote_id, key])).rows[0].r;
-      assert.equal(conflict.code, 'IDEMPOTENCY_CONFLICT');
-    } finally {
-      // Users hold append-only ledger rows (FK restrict): the DB is disposable, so nothing is deleted here.
-    }
-  });
-
-  // Must run before any test that debits inside the shared transaction: those hold fal spend-policy row locks until the rollback.
-  it('lets one of two concurrent submits with different keys through when the user already has three active requests', async () => {
-    const auth = randomUUID();
-    const user = (await pool.query('SELECT public.signup_grant($1,$2) id', [auth, `${randomUUID()}@limit.accept.test`])).rows[0].id;
-    const quote = async () => {
-      const q = (await pool.query("SELECT public.music_create_quote($1,'limit race',NULL,'ace-step') r", [auth])).rows[0].r;
-      assert.equal(q.ok, true);
-      return q;
-    };
-    for (let i = 0; i < 3; i += 1) {
-      const q = await quote();
-      const spec = (await pool.query('SELECT prompt_spec_id FROM public.music_generation_quotes WHERE id=$1', [q.quote_id])).rows[0].prompt_spec_id;
-      await pool.query(`INSERT INTO public.music_generation_requests(user_id,quote_id,prompt_spec_id,model_id,idempotency_key,credit_quote,status)
-        VALUES($1,$2,$3,'ace-step',$4,$5,'debited')`, [user, q.quote_id, spec, `active.${randomUUID()}`, q.total_credits]);
-    }
-    const [qa, qb] = [await quote(), await quote()];
-    const [a, b] = await Promise.all([
-      pool.query('SELECT public.music_submit_pair($1,$2,$3) r', [auth, qa.quote_id, `limit.a.${randomUUID()}`]),
-      pool.query('SELECT public.music_submit_pair($1,$2,$3) r', [auth, qb.quote_id, `limit.b.${randomUUID()}`]),
-    ]);
-    const results = [a.rows[0].r, b.rows[0].r];
-    assert.equal(results.filter((r: any) => r.ok === true).length, 1, JSON.stringify(results));
-    const rejected = results.find((r: any) => r.ok !== true);
-    assert.equal(rejected.code, 'CONCURRENCY_LIMIT', JSON.stringify(results));
-    assert.equal(Number((await pool.query(`SELECT count(*) n FROM public.music_generation_requests WHERE user_id=$1 AND status IN ('debited','running')`,
-      [user])).rows[0].n), 4);
   });
 
   it('moves a stale STARTED dispatch to held UNKNOWN and reconciles its refund exactly once', async () => {
