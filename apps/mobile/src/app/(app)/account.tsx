@@ -4,7 +4,7 @@ import { rawText } from '../../lib/i18n/translate';
 import { isAccountChanged } from '../../auth/sessionTask';
 import { isAnalyticsEnabled } from '../../lib/analytics/consent';
 import { confirmSignOut } from '../../lib/confirmSignOut';
-import { Button, Card, ListRow, Text, PriceText, themedStyles, useThemedStyles } from '../../components/ui';
+import { Button, Card, ListRow, Text, PriceText, VividCard, themedStyles, useThemedStyles } from '../../components/ui';
 
 import { Link, Stack, useRouter, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
@@ -15,7 +15,7 @@ import { fetchProfile, type Profile } from '../../lib/auth/accountCalls';
 import { signInMethodKey } from '../../lib/accountSecurity';
 import { LEGAL_LINKS, SUPPORT_EMAIL } from '../../lib/account';
 import { usePush } from '../../push/pushContext';
-import { ds, LIST_END_PADDING } from '../../theme';
+import { ds, LIST_END_PADDING, type VividHue } from '../../theme';
 import { CREATOR_PROFILE_ENABLED, fetchVibeStatus, withVibeDeadline } from '../../lib/creatorProfile';
 import { runVibeIntent } from '../../lib/creatorProfileStore';
 import { getCacheUser, subscribeCacheUser } from '../../lib/appCache';
@@ -150,7 +150,7 @@ export default function Account() {
                 )}
                 <Row label={t('public.account.signOut')} danger onPress={() => confirmSignOut(onSignOut)} />
                 <Link href="/security" asChild>
-                    <Row icon="user" label={t('acct.securityRow')} />
+                    <Row icon="user" hue="purple" label={t('acct.securityRow')} />
                 </Link>
             </Section>
 
@@ -161,9 +161,9 @@ export default function Account() {
             ) : null}
 
             <Section title={t('opt.settings')}>
-                {ACTIVE_LOCALES.length > 1 ? <ListRow icon="globe" title={t('language.title')} onPress={() => router.push('/language' as never)} /> : null}
-                {isAnalyticsEnabled() ? <ListRow icon="shieldCheck" title={t('analyticsConsent.choices')} onPress={() => router.push('/privacy-choices')} /> : null}
-                <ListRow icon="swatches" title={t('acct.appearance')} onPress={() => router.push('/appearance')} />
+                {ACTIVE_LOCALES.length > 1 ? <Row icon="globe" hue="blue" label={t('language.title')} onPress={() => router.push('/language' as never)} /> : null}
+                {isAnalyticsEnabled() ? <ListRow icon="shieldCheck" title={t('analyticsConsent.choices')} accessibilityRole="button" onPress={() => router.push('/privacy-choices')} /> : null}
+                <Row icon="swatches" hue="pink" label={t('acct.appearance')} onPress={() => router.push('/appearance')} />
             </Section>
 
             {billing !== 'off' ? (
@@ -204,41 +204,41 @@ export default function Account() {
             <Section title={t('account.creditsSection')}>
                 <YourWinsCard linkOnly />
                 <Link href="/history" asChild>
-                    <Row icon="bookmark" label={t('account.history')} />
+                    <Row icon="bookmark" hue="green" label={t('account.history')} />
                 </Link>
                 <Link href="/topups" asChild>
-                    <Row icon="coins" label={t('topup.row')} />
+                    <Row icon="coins" hue="orange" label={t('topup.row')} />
                 </Link>
             </Section>
 
             <Section title={t('account.referSection')}>
                 <Link href="/referrals" asChild>
-                    <Row icon="heart" label={t('account.refer')} />
+                    <Row icon="heart" hue="pink" label={t('account.refer')} />
                 </Link>
             </Section>
 
             <Section title={t('acct.exploreSection')}>
                 <Link href="/search" asChild>
-                    <Row icon="sparkle" label={t('acct.search')} />
+                    <Row icon="sparkle" hue="blue" label={t('acct.search')} />
                 </Link>
                 <Link href="/models" asChild>
-                    <Row icon="cube" label={t('acct.models')} />
+                    <Row icon="cube" hue="purple" label={t('acct.models')} />
                 </Link>
                 <Link href="/pricing" asChild>
-                    <Row icon="coins" label={t('acct.pricing')} />
+                    <Row icon="coins" hue="orange" label={t('acct.pricing')} />
                 </Link>
                 <Link href="/brand-kit" asChild>
-                    <Row icon="palette" label={t('acct.brandKit')} />
+                    <Row icon="palette" hue="pink" label={t('acct.brandKit')} />
                 </Link>
-                <Link href="/developers" asChild><Row icon="cpu" label={t('developers.row')} /></Link>
+                <Link href="/developers" asChild><Row icon="cpu" hue="teal" label={t('developers.row')} /></Link>
                 <Link href="/publish/developer" asChild>
-                    <Row icon="wrench" label={t('dev.row')} />
+                    <Row icon="wrench" hue="green" label={t('dev.row')} />
                 </Link>
             </Section>
 
             <Section title={t('account.helpSection')}>
                 <Link href="/help" asChild>
-                    <Row icon="help" label={t('account.help')} />
+                    <Row icon="help" hue="blue" label={t('account.help')} />
                 </Link>
             </Section>
 
@@ -285,15 +285,17 @@ interface RowProps {
     readonly label: string;
     readonly price?: string;
     readonly icon?: MenuIcon;
+    readonly hue?: VividHue;
     readonly onPress?: () => void;
     readonly disabled?: boolean;
     readonly danger?: boolean;
 }
 
 // Forwards the ref and any props a parent Link adds, so it also works as a Link child.
-const Row = ({ label, price, icon, onPress, disabled, danger, ...rest }: RowProps) => {
+const Row = ({ label, price, icon, hue, onPress, disabled, danger, ...rest }: RowProps) => {
     const styles = useThemedStyles(sheets);
     if (danger) return <Button {...rest} variant="tertiary" tone="danger" label={label} icon={icon} style={[styles.row, { justifyContent: 'flex-start' }]} accessibilityRole="button" accessibilityState={{ disabled: Boolean(disabled) }} disabled={disabled} onPress={onPress} />;
+    if (hue && icon) return <VividCard hue={hue} icon={icon} title={label} layout="compact" showChevron accessibilityLabel={label} onPress={onPress} />;
     return <ListRow {...rest} title={price ? <PriceText text={label} price={price} variant="bodyStrong" /> : label} icon={icon} accessibilityRole="button" accessibilityState={{ disabled: Boolean(disabled) }} disabled={disabled} style={[styles.row, disabled && styles.off]} onPress={onPress} />;
 };
 

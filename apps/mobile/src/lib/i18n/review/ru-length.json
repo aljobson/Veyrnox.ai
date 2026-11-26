@@ -4956,6 +4956,18 @@
     "ratio": 2
   },
   {
+    "id": "onboarding.notifications.now",
+    "english": "now",
+    "translation": "сейчас",
+    "ratio": 2
+  },
+  {
+    "id": "onboarding.notifications.previewBody",
+    "english": "Open Veyrnox to see it.",
+    "translation": "Откройте Veyrnox, чтобы посмотреть её.",
+    "ratio": 1.65
+  },
+  {
     "id": "projects.move",
     "english": "Move",
     "translation": "Переместить",
@@ -5056,6 +5068,7 @@
     "english": "Cloud sync",
     "translation": "Облачная синхронизация",
     "ratio": 2.2
+
   },
   {
     "id": "musicAlbums.addTrack",

@@ -129,8 +129,10 @@
   "editorMotion.positionValue": "Established label or coordinate notation retained from the translated catalog; machine translation review pending.",
   "editorNativeMotion.progress": "Only translated stage and numeric placeholders with locale-independent punctuation; no English prose.",
   "musicAlbums.type.ep": "EP is the standard music-release abbreviation in Russian and English.",
-  "bestCut.settings": "Smart Cut is the product feature name and remains unchanged across languages.",
+  "onboarding.notifications.app": "Veyrnox is the product name and is intentionally unchanged in every language.",
+"bestCut.settings": "Smart Cut is the product feature name and remains unchanged across languages.",
   "editorLocalExport.codec.h264": "H.264 is the locale-independent standard video codec name.",
   "editorLocalExport.codec.hevc": "HEVC is the locale-independent standard video codec name.",
   "projects.smartCutBatch.eyebrow": "Smart Cut is the product feature name and remains unchanged across languages."
+
 }

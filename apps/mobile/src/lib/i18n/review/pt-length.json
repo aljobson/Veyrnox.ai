@@ -4854,6 +4854,12 @@
     "ratio": 1.86
   },
   {
+    "id": "onboarding.notifications.now",
+    "english": "now",
+    "translation": "agora",
+    "ratio": 1.67
+  },
+  {
     "id": "editor.safeArea.off",
     "english": "Off",
     "translation": "Desativado",
@@ -4932,6 +4938,7 @@
     "ratio": 1.74
   },
   {
+
     "id": "musicAlbums.addTrack",
     "english": "Add",
     "translation": "Adicionar",

@@ -23,6 +23,7 @@ import { paletteForScheme } from '../../theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { needsStackHorizontalSafeArea } from '../../lib/appScreenSafeArea';
 import { PersistentAudioQueueProvider } from '../../components/music/PersistentAudioQueue';
+import { NotificationPrimerGate } from '../../components/NotificationPrimerGate';
 
 export const unstable_settings = { anchor: '(tabs)' };
 
@@ -42,6 +43,7 @@ export default function AppLayout() {
             <MfaGate key={generation}>
                 <AgeConfirmationGate>
                 <FirstRunGate />
+                <NotificationPrimerGate />
                 <ReferralAttach />
                 <CheckInModal />
                 <PaywallPrompt />
@@ -72,6 +74,7 @@ export default function AppLayout() {
                     <Stack.Screen name="privacy-choices" options={{ title: t('analyticsConsent.choices') }} />
                     <Stack.Screen name="welcome" options={{ headerShown: false }} />
                     <Stack.Screen name="first-run" options={{ headerShown: false, gestureEnabled: false }} />
+                    <Stack.Screen name="notification-primer" options={{ headerShown: false, gestureEnabled: false }} />
                     <Stack.Screen name="vibe" options={{ headerShown: false }} />
                     <Stack.Screen name="rate" options={{ title: t('rate.title'), headerShown: false, presentation: 'modal' }} />
                     <Stack.Screen name="paywall" options={{ title: t('billing.paywall.title'), headerShown: false, presentation: 'modal' }} />

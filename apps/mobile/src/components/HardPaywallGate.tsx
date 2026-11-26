@@ -17,6 +17,7 @@ import { PlanCatalogNotice } from './credits/PlanCatalogNotice';
 import { VeyCharacter } from './VeyCharacter';
 import { modalSafePadding } from '../lib/modalLayout';
 import { useOptionalSafeAreaInsets } from '../lib/safeArea';
+import { captureEvent } from '../lib/analytics/events';
 
 const ENABLED = hardPaywallEnabled();
 // RevenueCat INTRO_ELIGIBILITY_STATUS_ELIGIBLE; the enum is not imported so a mocked SDK cannot break the screen.
@@ -33,6 +34,7 @@ export function HardPaywallGate({ children }: { children: ReactNode }) {
     useEffect(() => { setHardPaywallLocked(state !== 'open'); return () => setHardPaywallLocked(false); }, [state]);
     useEffect(() => onLockedAttempt(() => setDismissed(false)), []);
     const show = state === 'locked' && !dismissed && !isHardPaywallExempt(pathname);
+    useEffect(() => { if (show) captureEvent('paywall_viewed', { mode: 'hard' }); }, [show]);
     return <>
         {children}
         {show ? <Modal animationType="slide" onRequestClose={() => setDismissed(true)}><LockedScreen checking={false} onClose={() => setDismissed(true)} /></Modal> : null}

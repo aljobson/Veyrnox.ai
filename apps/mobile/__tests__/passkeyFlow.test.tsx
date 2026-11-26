@@ -20,6 +20,7 @@ jest.mock('react-native-passkeys', () => ({ isSupported: jest.fn(() => true), cr
 jest.mock('expo-router', () => ({
     Link: ({ children }: { children: React.ReactNode }) => children,
     Redirect: () => null,
+    useLocalSearchParams: () => ({}),
     useRouter: () => ({ back: jest.fn(), replace: jest.fn() }),
 }));
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, right: 59, bottom: 21, left: 59 }) }));

@@ -177,6 +177,7 @@ import area_oddlings from './en/oddlings';
 import area_oddlingsLibrary from './en/oddlingsLibrary';
 import area_oddlingsProjects from './en/oddlingsProjects';
 import area_oddlingsStudio from './en/oddlingsStudio';
+import area_onboarding from './en/onboarding';
 import area_opt from './en/opt';
 import area_optionLabels0 from './en/optionLabels0';
 import area_optionLabels1 from './en/optionLabels1';
@@ -438,6 +439,7 @@ const catalog = {
     ...area_oddlingsLibrary,
     ...area_oddlingsProjects,
     ...area_oddlingsStudio,
+    ...area_onboarding,
     ...area_opt,
     ...area_optionLabels0,
     ...area_optionLabels1,

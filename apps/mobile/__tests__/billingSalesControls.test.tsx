@@ -25,7 +25,7 @@ jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, Link: ({ childr
     }, [cb]) }));
 jest.mock('../src/components/ui', () => {
     const component = (name: string) => ({ children, ...props }: any) => require('react').createElement(name, props, children);
-    return { Text: component('text'), Card: component('card'), ListRow: component('row'), Button: component('button'), PriceText: component('price'),
+    return { Text: component('text'), Card: component('card'), ListRow: component('row'), VividCard: component('vivid-card'), Button: component('button'), PriceText: component('price'),
         themedStyles: (fn: any) => fn(require('../src/theme').tokensForScheme('dark'), {}), useThemedStyles: (s: any) => s };
 });
 void [RN.View, RN.Text, RN.Pressable, RN.ScrollView];
@@ -50,4 +50,11 @@ test.each(['Account', 'Publish'])('%s refreshes on every focus while sales are c
         await act(async () => { for (const cb of mockFocus) cb(); });
         expect(mockBilling.refreshSales).toHaveBeenCalledTimes(i);
     }
+});
+test('Account uses vivid boxes for destinations but not destructive actions', async () => {
+    await act(async () => root.render(<Account />));
+    const cards = root.container.queryAll(node => node.type === 'vivid-card');
+    expect(cards.map(node => node.props.hue)).toEqual(expect.arrayContaining(['blue', 'orange', 'purple', 'green', 'pink', 'teal']));
+    expect(cards.some(node => node.props.title === t('acct.securityRow'))).toBe(true);
+    expect(cards.some(node => node.props.title === t('public.account.signOut') || node.props.title === t('account.deleteAccount'))).toBe(false);
 });

@@ -5178,6 +5178,30 @@
     "ratio": 1.71
   },
   {
+    "id": "onboarding.result.tool.edit",
+    "english": "Smart editor",
+    "translation": "Intelligenter Editor",
+    "ratio": 1.67
+  },
+  {
+    "id": "onboarding.result.tool.publish",
+    "english": "Publisher",
+    "translation": "Veröffentlichen",
+    "ratio": 1.67
+  },
+  {
+    "id": "onboarding.result.save",
+    "english": "Save my setup and continue",
+    "translation": "Meine Konfiguration speichern und fortfahren",
+    "ratio": 1.69
+  },
+  {
+    "id": "onboarding.notifications.now",
+    "english": "now",
+    "translation": "jetzt",
+    "ratio": 1.67
+  },
+  {
     "id": "projects.unfiled",
     "english": "Unfiled",
     "translation": "Nicht abgelegt",
@@ -5310,6 +5334,7 @@
     "ratio": 2
   },
   {
+
     "id": "musicAlbums.addTrack",
     "english": "Add",
     "translation": "Hinzufügen",

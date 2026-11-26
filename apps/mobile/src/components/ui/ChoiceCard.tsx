@@ -7,6 +7,7 @@ import { Card } from './Card';
 import { Text } from './Text';
 import { Icon } from './Icon';
 import { themedStyles, useThemedStyles, useAppearance } from './AppearanceContext';
+
 // `hue` gives the card a soft wash of a feature colour and tints its icon, like the Tools tiles (IconBadge).
 export function ChoiceCard({ icon, title, detail, selected, hue, onPress }: { icon: MenuIcon; title: string; detail?: string; selected?: boolean; hue?: FeatureHue; onPress: () => void }) {
     const s = useThemedStyles(sheets);
@@ -36,6 +37,7 @@ export function ChoiceCard({ icon, title, detail, selected, hue, onPress }: { ic
         </Pressable>
     );
 }
+
 const sheets = themedStyles((p) => ({
     card: { borderWidth: 2, gap: ds.space.sm, minHeight: 144 },
     top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },

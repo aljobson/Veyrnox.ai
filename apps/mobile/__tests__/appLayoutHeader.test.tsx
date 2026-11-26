@@ -23,6 +23,7 @@ jest.mock('../src/components/ReferralAttach', () => ({ ReferralAttach: () => nul
 jest.mock('../src/components/Logo', () => ({ Logo: () => null }));
 jest.mock('../src/components/AiConsentHost', () => ({ AiConsentHost: () => null }));
 jest.mock('../src/components/FirstRunGate', () => ({ FirstRunGate: () => null }));
+jest.mock('../src/components/NotificationPrimerGate', () => ({ NotificationPrimerGate: () => null }));
 jest.mock('../src/components/OfflineBanner', () => ({ OfflineBanner: () => null }));
 jest.mock('../src/components/ServiceBanner', () => ({ ServiceBanner: () => null }));
 jest.mock('../src/components/PaywallPrompt', () => ({ PaywallPrompt: () => null }));

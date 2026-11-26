@@ -11,6 +11,9 @@ import { LookChoice, percent, type LookContentProps } from './LookPanels';
 import { Action, PanelHeading } from '../EditorControls';
 export function EffectsPanel(props: LookContentProps) {
     const { clip, actions, disabled } = props, selected = clip.effect?.type ?? 'none';
+    const openLiveEdit = () => {
+        router.push('/live-edit');
+    };
     return <View style={{ gap: ds.space.md }}>
         {EFFECT_CATEGORIES.filter(category => category !== 'All').map(category => <LookChoice key={category}
             label={t(`editorLook.category.${category}`)} value={selected} disabled={disabled} onChange={actions.effect}
@@ -22,7 +25,7 @@ export function EffectsPanel(props: LookContentProps) {
         <CropSection {...props} /><ClipBackgroundSection {...props} />
         <View style={{ gap: ds.space.sm }}>
             <PanelHeading title={t('liveEdit.tool.retouch')} detail={t('liveEdit.privacy')} />
-            <Action label={t('liveEdit.tool.retouch')} disabled={disabled} onPress={() => router.push('/live-edit')} />
+            <Action label={t('liveEdit.tool.retouch')} disabled={disabled} onPress={openLiveEdit} />
         </View>
     </View>;
 }

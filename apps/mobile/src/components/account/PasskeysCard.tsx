@@ -82,7 +82,7 @@ export function PasskeysCard() {
     }
 
     return (
-        <Card title={t('pk.title')} help={t('pk.help')}>
+        <Card title={t('pk.title')} help={t('pk.help')} icon="key" hue="blue">
             {list === null && !note ? <ActivityIndicator color={styles.accent.color} accessibilityLabel={t('pk.loading')} /> : null}
             {list?.length === 0 ? <Text variant="footnote" tone="secondary">{t('pk.none')}</Text> : null}
             {list?.map((p) => (

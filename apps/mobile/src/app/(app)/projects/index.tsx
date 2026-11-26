@@ -1,5 +1,6 @@
 import { rawText } from '../../../lib/i18n/translate';
 import { Text as StatusText } from '../../../components/ui/Text';
+import { Icon, useAppearance } from '../../../components/ui';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -15,12 +16,15 @@ import { touchTarget } from '../../../lib/a11y';
 import { cleanProjectName, createProject, createProjectFolder, deleteProject, deleteProjectFolder, editingTimeSavedClock, fetchProjectFolders, fetchProjects, fetchWorkspaces, folderLabel, projectDates, projectsErrorMessage, renameProjectFolder, type Project, type ProjectFolder, type Workspace } from '../../../lib/projects';
 import { EDITOR_ENABLED } from '../../../lib/editorFlag';
 import { t } from '../../../lib/i18n';
-import { colors } from '../../../theme';
+import { colors, vividHue } from '../../../theme';
 
 export default function Projects() {
     const { api } = useAuth();
     const links = useAssetLinks(api);
     const router = useRouter();
+    const { scheme } = useAppearance();
+    const folderTone = vividHue('purple', scheme);
+    const projectTone = vividHue('blue', scheme);
     const [workspaces, setWorkspaces] = useState<Workspace[] | null>(null);
     const [workspaceId, setWorkspaceId] = useState<string | null>(null);
     const [projects, setProjects] = useState<Project[] | null>(null);
@@ -211,7 +215,7 @@ export default function Projects() {
                     {selectedFolder ? <View style={styles.folderActions}><Text style={styles.muted}>{folderLabel(selectedFolder, folders)}</Text><Pressable accessibilityRole="button" style={touchTarget} onPress={() => { setFolderNaming(false); setFolderName(selectedFolder.name); setFolderRenaming(true); }}><Text style={styles.newText}>{t('projects.renameFolder')}</Text></Pressable><Pressable accessibilityRole="button" style={touchTarget} onPress={confirmDeleteFolder}><Text style={styles.deleteText}>{t('projects.deleteFolder')}</Text></Pressable></View> : null}
                     {folderRenaming ? <View style={styles.newBox}><TextInput style={styles.input} value={folderName} onChangeText={setFolderName} placeholder={t('projects.folderName')} placeholderTextColor={colors.muted} accessibilityLabel={t('projects.folderName')} maxLength={120} autoFocus returnKeyType="done" onSubmitEditing={saveFolderName} /><Pressable accessibilityRole="button" disabled={creating} style={[styles.go, touchTarget, creating && styles.off]} onPress={saveFolderName}><Text style={styles.goText}>{creating ? '…' : t('projects.save')}</Text></Pressable></View> : null}
                     {folderNaming ? <View style={styles.newBox}><TextInput style={styles.input} value={folderName} onChangeText={setFolderName} placeholder={t('projects.folderName')} placeholderTextColor={colors.muted} accessibilityLabel={t('projects.folderName')} maxLength={120} autoFocus returnKeyType="done" onSubmitEditing={createFolder} /><Pressable accessibilityRole="button" disabled={creating} style={[styles.go, touchTarget, creating && styles.off]} onPress={createFolder}><Text style={styles.goText}>{creating ? '…' : t('projects.create')}</Text></Pressable></View>
-                        : <Pressable accessibilityRole="button" disabled={selectedFolderDepth >= 4} style={[styles.newRow, touchTarget, selectedFolderDepth >= 4 && styles.off]} onPress={() => { setFolderRenaming(false); setFolderName(''); setFolderNaming(true); }}><Text style={styles.newText}>{t('projects.newFolder')}</Text></Pressable>}
+                        : <Pressable accessibilityRole="button" disabled={selectedFolderDepth >= 4} style={[styles.newRow, { backgroundColor: folderTone.fill, borderColor: folderTone.edge }, touchTarget, selectedFolderDepth >= 4 && styles.off]} onPress={() => { setFolderRenaming(false); setFolderName(''); setFolderNaming(true); }}><View style={[styles.actionIcon, { backgroundColor: folderTone.iconSurface }]}><Icon name="folderPlus" size={24} tint={folderTone.foreground} /></View><Text style={[styles.newActionText, { color: folderTone.foreground }]}>{t('projects.newFolder')}</Text><Icon name="caretRight" size={20} tint={folderTone.foreground} /></Pressable>}
                     {naming ? (
                         <View style={styles.newBox}>
                             <TextInput
@@ -231,8 +235,10 @@ export default function Projects() {
                             </Pressable>
                         </View>
                     ) : (
-                        <Pressable accessibilityRole="button" style={[styles.newRow, touchTarget]} onPress={() => setNaming(true)}>
-                            <Text style={styles.newText}>{t('projects.newproject')}</Text>
+                        <Pressable accessibilityRole="button" style={[styles.newRow, { backgroundColor: projectTone.fill, borderColor: projectTone.edge }, touchTarget]} onPress={() => setNaming(true)}>
+                            <View style={[styles.actionIcon, { backgroundColor: projectTone.iconSurface }]}><Icon name="slate" size={24} tint={projectTone.foreground} /></View>
+                            <Text style={[styles.newActionText, { color: projectTone.foreground }]}>{t('projects.newproject')}</Text>
+                            <Icon name="caretRight" size={20} tint={projectTone.foreground} />
                         </Pressable>
                     )}
                     {formError ? <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{formError}</StatusText> : null}
@@ -282,7 +288,9 @@ const styles = StyleSheet.create({
     saved: { color: colors.accent, fontSize: 13, fontWeight: '600' },
     note: { color: colors.muted, fontSize: 13, paddingVertical: 20 },
     error: { color: colors.danger },
-    newRow: { alignSelf: 'flex-start', justifyContent: 'center' },
+    newRow: { minHeight: 64, width: '100%', flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: StyleSheet.hairlineWidth, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 10, overflow: 'hidden' },
+    actionIcon: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 10 },
+    newActionText: { flex: 1, fontSize: 16, fontWeight: '700' },
     newText: { color: colors.accent, fontSize: 16, fontWeight: '600' },
     deleteText: { color: colors.danger, fontSize: 16, fontWeight: '600' },
     deleteButton: { minWidth: 72, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },

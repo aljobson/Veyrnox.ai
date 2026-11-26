@@ -159,6 +159,8 @@ const domains: Record<string, readonly string[]> = {
     "compose.youtube.{}": ["private", "unlisted", "public"],
     "contacts.status.{}": ["unknown", "subscribed", "unsubscribed"],
     "create.goal.{}": ["image", "video", "audio", "all"],
+    "onboarding.result.tool.{}": ["image", "video", "audio", "edit", "publish", "unsure"],
+    "onboarding.result.timing.{}": ["image", "video", "audio", "edit", "publish", "unsure"],
     "create.tier.{}": ["all", "low", "medium", "high"],
     "dev.logs.s.{}": ["all", "success", "error", "pending"],
     "dev.problem.{}": ["label", "scopes", "days", "url", "events"],

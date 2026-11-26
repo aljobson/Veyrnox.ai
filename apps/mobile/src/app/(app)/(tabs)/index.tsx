@@ -240,7 +240,7 @@ export default function Explore() {
 
                 <YourWinsCard />
                 {/* Until the order is settled the rows hold their space unseen and untappable. */}
-                <Card style={[styles.startGroup, !starts && styles.unsettled]} accessibilityLabel={t('explore.start.title')} accessibilityElementsHidden={!starts} importantForAccessibility={starts ? 'auto' : 'no-hide-descendants'} pointerEvents={starts ? 'auto' : 'none'}>
+                <View style={[styles.startGroup, !starts && styles.unsettled]} accessibilityLabel={t('explore.start.title')} accessibilityElementsHidden={!starts} importantForAccessibility={starts ? 'auto' : 'no-hide-descendants'} pointerEvents={starts ? 'auto' : 'none'}>
                     {(starts?.keys ?? phoneStarts(null, null)).map((key, index) => {
                         // The first-run answers (ADR-0339) set the order; the first option says it is suggested.
                         const badge = index === 0 && starts?.suggested ? t('create.firstRun.suggested') : undefined;
@@ -252,7 +252,7 @@ export default function Explore() {
                         return <StartOption href="/film" hue="iris" key={key} onPress={onPress} style={styles.startOption} icon="slate" title={t('menu.film')} body={t('explore.start.film.body')} hint={t('explore.start.film.hint')} divided={divided} badge={badge} />;
                     })}
                     <StartOption href="/instruments" hue="rose" style={styles.startOption} icon="pianoKeys" title={t('instruments.title')} body={t('instruments.homeBody')} hint={t('instruments.homeHint')} divided />
-                </Card>
+                </View>
 
 
                 <Card style={styles.composer} onLayout={event => { ideaY.current = event.nativeEvent.layout.y; }}>
@@ -435,7 +435,7 @@ const sheets = themedStyles((p, ramp) => ({
     intro: { gap: 8, marginBottom: 4 },
     pageTitle: { color: p.textPrimary },
     pageIntro: { color: p.textSecondary, maxWidth: 520 },
-    startGroup: { overflow: 'hidden', padding: 0 },
+    startGroup: { gap: ds.space.sm },
     unsettled: { opacity: 0 },
     startOption: { minHeight: 80 },
     composer: { gap: ds.space.md },
