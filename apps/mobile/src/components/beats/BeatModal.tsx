@@ -14,7 +14,7 @@ export function BeatModal({ title, testID, onClose, onDismiss, scrollable = true
         const node = findNodeHandle(heading.current); if (node) AccessibilityInfo.setAccessibilityFocus(node);
     }}>
         <View style={s.overlay}>
-        <Pressable accessibilityRole="button" accessibilityElementsHidden importantForAccessibility="no-hide-descendants"
+        <Pressable accessibilityRole="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants"
             accessibilityLabel="" onPress={onClose} style={StyleSheet.absoluteFill} />
         <SafeAreaView testID={testID ? `${testID}-bottom-sheet` : 'beat-bottom-sheet'} edges={['right', 'bottom', 'left']}
             style={[s.sheet, !scrollable && s.fixedSheet]} accessibilityViewIsModal onAccessibilityEscape={onClose}>
