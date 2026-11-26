@@ -6,6 +6,8 @@ const migration = await readFile(new URL('../packages/db/schema/supabase/0621_re
 
 test('reactivates only the durable ace-step Music offer', () => {
   assert.match(migration, /UPDATE public\.model_catalog\s+SET active = true/);
+  assert.match(migration, /credits_5s = 4/);
+  assert.match(migration, /credits_5s IN \(2, 4\)/);
   assert.match(migration, /WHERE id = 'ace-step'/);
   assert.match(migration, /ace-step-1\.5 must remain inactive until separately verified/);
   assert.doesNotMatch(migration, /id IN \('ace-step',\s*'ace-step-1\.5'\)/);

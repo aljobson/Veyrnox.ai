@@ -106,12 +106,13 @@ BEGIN
 
     UPDATE public.model_catalog
        SET active = true,
+           credits_5s = 4,
            updated_at = statement_timestamp()
      WHERE id = 'ace-step'
        AND modality = 'text-to-audio'
        AND provider = 'crun'
        AND provider_endpoint = 'crun:suno/music-generate'
-       AND credits_5s = 4
+       AND credits_5s IN (2, 4)
        AND provider_cost_per_unit = 0.0536
        AND cost_unit = 'per_generation'
        AND billing_seconds IS NULL
