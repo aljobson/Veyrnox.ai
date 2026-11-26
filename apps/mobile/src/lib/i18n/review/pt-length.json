@@ -3648,6 +3648,12 @@
     "ratio": 2.17
   },
   {
+    "id": "music.create.smart.tempo",
+    "english": "Tempo",
+    "translation": "Andamento",
+    "ratio": 1.8
+  },
+  {
     "id": "music.create.advanced.auto",
     "english": "Auto",
     "translation": "Automático",

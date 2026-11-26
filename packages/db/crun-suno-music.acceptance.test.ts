@@ -283,7 +283,7 @@ describe('Crun Suno music foundation (0591)', { skip: !local && 'disposable loca
     assert.equal((await one('SELECT state FROM public.jobs WHERE id=$1', [speech.job])).state, 'DEBITED');
   });
 
-  it('creates the Crun pair atomically, freezes adapter-compatible payloads, and admits before debit', async () => {
+  it('creates the Crun track atomically, freezes its adapter-compatible payload, and admits before debit', async () => {
     await client.query('SAVEPOINT crun_pair_branch');
     try {
       const auth = randomUUID();
@@ -302,7 +302,7 @@ describe('Crun Suno music foundation (0591)', { skip: !local && 'disposable loca
       const rows = (await client.query(`SELECT d.payload FROM public.crun_dispatch d
         JOIN public.music_generation_candidates c ON c.job_id=d.job_id
         WHERE c.generation_request_id=$1 ORDER BY c.ordinal`, [submitted.request_id])).rows;
-      assert.equal(rows.length, 2);
+      assert.equal(rows.length, 1);
       assert.ok(rows.every((row: any) => row.payload.input.suno_model === 'v6' && row.payload.input.model === undefined));
       assert.equal(Number((await one(`SELECT count(*) n FROM public.fal_dispatch d
         JOIN public.music_generation_candidates c ON c.job_id=d.job_id WHERE c.generation_request_id=$1`, [submitted.request_id])).n), 0);

@@ -9,7 +9,15 @@ import { validateSequence } from '../app/veyrnox/_lib/editorSequenceValidation.m
 import { emptySequence, addSequenceMedia, addSequenceClip, addSequenceText } from '../app/veyrnox/_lib/editorSequence.mjs';
 describe('editor AI parity', () => {
 const require = createRequire(new URL('../apps/mobile/package.json', import.meta.url));
-const ts = require('typescript-legacy');
+let ts;
+try {
+    ts = require('typescript-legacy');
+} catch (error) {
+    if (error?.code !== 'MODULE_NOT_FOUND') throw error;
+    // Root CI installs the root-pinned 6.0.3 compiler, while the consolidated
+    // native checkout also exposes the same version through this mobile alias.
+    ts = createRequire(import.meta.url)('typescript');
+}
 function load(file, deps) {
     const source = readFileSync(new URL(`../apps/mobile/src/lib/${file}.ts`, import.meta.url), 'utf8');
     const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;

@@ -12,7 +12,7 @@ const reply = (body, status = 200) => Response.json(body, {
     status, headers: { 'Cache-Control': 'no-store' },
 });
 
-/** Exact, short-lived quote for two independently refundable candidates. */
+/** Exact, short-lived quote for one independently refundable track. */
 export async function POST(request) {
     const authId = request.headers.get('x-veyrnox-auth-id');
     if (!validMusicAuthId(authId)) return reply({ error: 'not_authenticated' }, 401);
@@ -140,7 +140,7 @@ export async function POST(request) {
         mode: result.mode || input.mode,
         model_id: result.model_id,
         provider_contract: result.provider_contract,
-        output_count: 2,
+        output_count: 1,
         credits_per_candidate: result.unit_credits,
         total_credits: result.charged_credits ?? result.total_credits,
         ...(allowanceCapable ? {

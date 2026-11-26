@@ -27,7 +27,8 @@ const edit = async (key: string, value: string) => { await act(async () => field
 const mount = async () => { await act(async () => root.render(<MusicCreate />)); };
 const remount = async () => { await act(async () => root.unmount()); root = createRoot(); await mount(); };
 const mode = async (value: string) => {
-    const tab = root.container.queryAll(n => n.props.accessibilityRole === 'tab' && n.props.accessibilityLabel === t(`music.create.${value}`))[0];
+    const label = value === 'simple' ? 'music.create.describe' : 'music.create.lyrics';
+    const tab = root.container.queryAll(n => n.props.accessibilityRole === 'tab' && n.props.accessibilityLabel === t(label))[0];
     await act(async () => tab.props.onClick({ nativeEvent: {} }));
 };
 const baseResponse = async (path: string, init?: RequestInit): Promise<unknown> => {
@@ -189,8 +190,7 @@ test('lost acknowledgement survives expiry and remount with same key and snapsho
         return baseResponse(path, init);
     });
     await mount(); await mode('custom'); await edit('lyrics', 'Submitted words'); await edit('styles', 'warm piano');
-    const toggle = root.container.queryAll(n => n.props.accessibilityLabel === t('music.create.instrumental') && typeof n.props.onChange === 'function')[0];
-    await act(async () => toggle.props.onChange({ nativeEvent: { value: false } }));
+    await act(async () => getMusicCreateSession(mockApi as unknown as ApiClient).edit({ instrumental: false }));
     const rights = root.container.queryAll(n => n.props.accessibilityRole === 'checkbox')[0];
     await act(async () => rights.props.onClick({ nativeEvent: {} }));
     await click(t('music.create.review')); await click(t('music.create.confirm', { credits: 10 }));
@@ -296,8 +296,7 @@ test.each([[400, 'prompt_not_allowed'], [503, 'model_unavailable'], [503, 'plan_
 
 test('F3 the rights blocker has its own message, separate from the checkbox label', async () => {
     await mount(); await mode('custom'); await edit('lyrics', 'My lyrics'); await edit('styles', 'warm piano');
-    const toggle = root.container.queryAll(n => n.props.accessibilityLabel === t('music.create.instrumental') && typeof n.props.onChange === 'function')[0];
-    await act(async () => toggle.props.onChange({ nativeEvent: { value: false } }));
+    await act(async () => getMusicCreateSession(mockApi as unknown as ApiClient).edit({ instrumental: false }));
     expect(t('music.create.rights_required')).not.toBe(t('music.create.rights'));
     expect(text(t('music.create.rights_required')).length).toBeGreaterThan(0);
     expect(button(t('music.create.review')).props.accessibilityState.disabled).toBe(true);

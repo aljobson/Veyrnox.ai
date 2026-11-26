@@ -69,9 +69,9 @@ export async function POST(request) {
             p_idempotency_key: input.idempotencyKey,
         }, cfg);
     } catch (error) {
-        // A lost acknowledgement may conceal a committed pair. The caller must
+        // A lost acknowledgement may conceal a committed track. The caller must
         // replay the same idempotency key; never run a fallback debit here.
-        console.error('[music/generations] pair admission failed:', error?.message);
+        console.error('[music/generations] track admission failed:', error?.message);
         return reply({ error: 'pair_acceptance_unknown' }, 503);
     }
     if (!result?.ok) {
@@ -96,8 +96,8 @@ export async function POST(request) {
     return reply({
         generation_id: result.request_id,
         state: result.state,
-        candidates: (result.job_ids || []).map((jobId, index) => ({
-            ordinal: index + 1, label: index === 0 ? 'A' : 'B', job_id: jobId, state: 'queued',
+        candidates: (result.job_ids || []).map((jobId, index, jobs) => ({
+            ordinal: index + 1, label: jobs.length === 1 ? 'Track' : index === 0 ? 'A' : 'B', job_id: jobId, state: 'queued',
         })),
         balance_after: result.balance_after,
         ...(result.daily_free_candidates !== undefined
