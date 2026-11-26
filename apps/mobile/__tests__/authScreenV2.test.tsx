@@ -6,8 +6,11 @@ import EmailAuth from '../src/app/email';
 const mockApple = jest.fn(),
     mockOAuth = jest.fn(),
     mockEmail = jest.fn(),
-    mockReplace = jest.fn();
+    mockReplace = jest.fn(),
+    mockPush = jest.fn();
 let mockNative = true;
+let mockFrom: string | undefined;
+let mockPasskeyEnabled = false;
 jest.mock('../src/auth/AuthProvider', () => ({
     useAuth: () => ({
         status: 'signedOut',
@@ -18,14 +21,14 @@ jest.mock('../src/auth/AuthProvider', () => ({
         signUpWithEmail: mockEmail,
     }),
 }));
-jest.mock('expo-router', () => ({ Link: ({ children }: any) => children, Redirect: () => null, useLocalSearchParams: () => ({}), useRouter: () => ({ replace: mockReplace, push: jest.fn(), back: jest.fn() }) }));
+jest.mock('expo-router', () => ({ Link: ({ children }: any) => children, Redirect: () => null, useLocalSearchParams: () => ({ from: mockFrom }), useRouter: () => ({ replace: mockReplace, push: mockPush, back: jest.fn() }) }));
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, right: 59, bottom: 21, left: 59 }) }));
 jest.mock('../src/components/Logo', () => ({ Logo: () => null }));
 jest.mock('../src/components/BrandIntro', () => ({ BrandIntro: () => null }));
 jest.mock('../src/auth/TurnstileView', () => ({
     TurnstileView: (props: object) => require('react').createElement(require('react-native').View, { ...props, testID: 'captcha' }),
 }));
-jest.mock('../src/lib/passkeys', () => ({ passkeyGate: () => false }));
+jest.mock('../src/lib/passkeys', () => ({ passkeyGate: () => mockPasskeyEnabled }));
 jest.mock('../src/lib/haptics', () => ({ playSelection: jest.fn(), playSuccess: jest.fn(), playError: jest.fn() }));
 jest.mock('../src/components/ui/ConsentRow', () => ({
     ConsentRow: (props: object) => require('react').createElement(require('react-native').View, { ...props, testID: 'consent' }),
@@ -52,6 +55,8 @@ beforeEach(() => {
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
     root = createRoot();
     jest.clearAllMocks();
+    mockFrom = undefined;
+    mockPasskeyEnabled = false;
 });
 afterEach(async () => {
     await act(async () => root.unmount());
@@ -82,6 +87,20 @@ test('sign-in handler gates consent and busy independently of the button', async
         await act(async () => finish());
         jest.clearAllMocks();
     }
+});
+
+test.each(['existing', 'onboarding'])('onboarding %s sign-in keeps the passkey option', async (from) => {
+    const { t } = require('../src/lib/i18n');
+    mockFrom = from;
+    mockPasskeyEnabled = true;
+    await act(async () => root.render(<SignIn />));
+    const passkey = () => root.container.queryAll((n) => n.props.testID === t('passkey.signIn'))[0];
+    expect(passkey()).toBeDefined();
+    expect(passkey().props.disabled).toBe(true);
+    await act(async () => root.container.queryAll((n) => n.props.testID === 'consent')[0].props.onChange(true));
+    expect(passkey().props.disabled).toBe(false);
+    await act(async () => passkey().props.onPress());
+    expect(mockPush).toHaveBeenCalledWith('/passkey');
 });
 
 test.each([true, false])('email provider keeps busy gating without a consent gate (native=%s)', async (native) => {
