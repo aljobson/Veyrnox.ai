@@ -97,7 +97,7 @@ test('web Create exposes Creative tools in the same start-from flow as mobile', 
   assert.match(entry, /data-testid="create-start-creative-tools"/);
   assert.match(entry, /href="\/app\/features"/);
   assert.match(entry, /app\.create\.startFrom/);
-  assert.match(entry, /app\.features\.eyebrow/);
+  assert.match(entry, /app\.create\.creativeTools/);
 });
 
 test('studio example cards share one component and show only media we host', async () => {

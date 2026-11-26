@@ -20,7 +20,7 @@ export function CreateStartFrom() {
       >
         <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-vx-accent/10 text-lg text-vx-accent">✦</span>
         <span className="min-w-0 flex-1">
-          <span className="block text-sm font-black text-vx-fg">{t('app.features.eyebrow')}</span>
+          <span className="block text-sm font-black text-vx-fg">{t('app.create.creativeTools')}</span>
           <span className="mt-0.5 block text-xs leading-5 text-vx-fg-muted">{t('app.features.intro')}</span>
         </span>
         <span aria-hidden="true" className="shrink-0 text-vx-accent">→</span>
