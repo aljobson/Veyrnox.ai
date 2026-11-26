@@ -58,21 +58,23 @@ test('example media uses the configured asset URL without leaking a referrer', a
   assert.match(studio, /referrerPolicy="no-referrer"/);
 });
 
-test('the shared studio renders upload controls even for guarded workflows', async () => {
+test('the shared studio never asks for uploads on a guarded workflow', async () => {
   const studio = await readFile(new URL('../app/veyrnox/_components/CreativeFeatureStudio.js', import.meta.url), 'utf8');
   assert.match(studio, /feature\.media\.length > 0 && <SourcePickers/);
-  assert.doesNotMatch(studio, /feature\.media\.length && !feature\.blocked/);
+  assert.match(studio, /!feature\.blocked && <><section/);
+  assert.match(studio, /!feature\.blocked && <section className=\{`\$\{card\} p-5`\}>/);
   assert.match(studio, /data-testid="source-upload-script"/);
   assert.match(studio, /<p className="mt-2 text-sm font-black">\{copy\.title\}<\/p>/);
   assert.doesNotMatch(studio, />\{feature\.model\}<\/p>/);
 });
 
-test('voice cloning uses the live fal voice model and the shared audio upload flow', () => {
+test('retired voice cloning stays safeguarded and out of customer discovery', () => {
   const voice = creativeFeature('ai-voice-cloning');
-  assert.equal(voice.model, 'zonos2-voice-clone');
+  assert.equal(voice.model, undefined);
   assert.deepEqual(voice.media, ['audio']);
-  assert.equal(voice.blocked, undefined);
-  assert.deepEqual(CREATIVE_FEATURES.filter((item) => item.blocked), []);
+  assert.equal(voice.blocked, true);
+  assert.match(voice.blockedReason, /does not offer tools that imitate a real person\'s voice/);
+  assert.ok(!CREATIVE_FEATURE_DIRECTORY.includes(voice));
 });
 
 test('the app route and sidebar expose the workflow suite', async () => {
@@ -93,8 +95,9 @@ test('Creative tools owns guided outcomes once while Audio keeps its existing wo
   const create = await readFile(new URL('../app/veyrnox/app/create/page.js', import.meta.url), 'utf8');
   const audio = ['text-to-speech', 'lip-sync', 'ai-talking-photo-generator', 'singing-photo', 'video-dubbing'];
   assert.deepEqual(CREATIVE_FEATURES.filter((item) => creativeFeatureOwner(item) === 'audio').map((item) => item.slug), audio);
-  assert.equal(CREATIVE_FEATURE_DIRECTORY.length, CREATIVE_FEATURES.length - audio.length);
+  assert.equal(CREATIVE_FEATURE_DIRECTORY.length, CREATIVE_FEATURES.length - audio.length - 1);
   assert.ok(CREATIVE_FEATURE_DIRECTORY.some((item) => item.slug === 'ai-avatar-generator'));
+  assert.ok(!CREATIVE_FEATURE_DIRECTORY.some((item) => item.slug === 'ai-voice-cloning'));
   assert.doesNotMatch(create, /CreateStartFrom/);
 });
 
