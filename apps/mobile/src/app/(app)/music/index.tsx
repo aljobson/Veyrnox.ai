@@ -5,7 +5,7 @@ import { RefreshControl, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { Button, ListRow, SegmentedControl, Text, TextField, themedStyles, useThemedStyles } from '../../../components/ui';
 import { EmptyState } from '../../../components/EmptyState';
-import { VeyLoader } from '../../../components/VeyLoader';
+import { LoadingSkeleton } from '../../../components/LoadingSkeleton';
 import { MusicNotice } from '../../../components/music/MusicNotice';
 import { MusicPlayer } from '../../../components/music/MusicPlayer';
 import { listSongs, getEntitlements, getLibraryTab } from '../../../lib/music/client';
@@ -90,7 +90,7 @@ export default function MusicLibrary() {
                 <Button variant="secondary" label={t('music.search')} onPress={() => setApplied(query.trim())} />
                 {applied ? <Button variant="tertiary" label={t('music.clear')} onPress={() => { setQuery(''); setApplied(''); }} /> : null}
             </View> : null}
-            {loading && !result ? <VeyLoader label={t('music.loading')} showLabel /> : null}
+            {loading && !result ? <LoadingSkeleton label={t('music.loading')} variant="list" /> : null}
             {result?.state === 'error' ? <MusicNotice message={t(result.status === 0 ? 'music.offline' : 'music.loadError')} retry={() => void load()} /> :
                 partial ? <MusicNotice message={t('music.partial')} retry={() => void load()} /> : null}
             {!loading && result?.state === 'on' && rows.length === 0 && !hooksPartial ? <View>

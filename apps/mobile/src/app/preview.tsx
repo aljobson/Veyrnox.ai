@@ -11,7 +11,7 @@ import { fetchTitlesPage, posterUrl, type CinemaTitle } from '../lib/cinema';
 import { t } from '../lib/i18n';
 import { fetchPresets, presetPrice, type Preset } from '../lib/presets';
 import { colors } from '../theme';
-import { VeyLoader } from '../components/VeyLoader';
+import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import { captureEvent } from '../lib/analytics/events';
 
 type Tab = 'templates' | 'cinema';
@@ -70,7 +70,7 @@ export default function Preview() {
             </View>
             <ScrollView contentContainerStyle={styles.body}>
                 <Text variant="inherit" style={styles.heading} accessibilityRole="header">{t(tab === 'templates' ? 'preview.templates.heading' : 'preview.cinema.heading')}</Text>
-                {loading && !failed ? <VeyLoader label={t('common.loading')} showLabel /> : null}
+                {loading && !failed ? <LoadingSkeleton label={t('common.loading')} variant="grid" /> : null}
                 {failed && loading ? <Text variant="inherit" style={styles.note}>{t('preview.error')}</Text> : null}
                 {tab === 'templates'
                     ? (presets ?? []).slice(0, 30).map((p) => (

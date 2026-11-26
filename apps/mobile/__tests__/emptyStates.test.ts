@@ -51,10 +51,16 @@ describe('where the empty states and prompt show', () => {
         expect(src('components', 'VeyCharacter.tsx')).toContain('accessibilityElementsHidden');
     });
 
-    test('each main tab shows a structural placeholder on its first load', () => {
+    test('known layouts show structural placeholders on their first load', () => {
         for (const tab of ['index', 'create', 'library', 'editor', 'publish']) {
             expect(app('(tabs)', `${tab}.tsx`)).toContain('<LoadingSkeleton');
         }
+        for (const screen of [
+            app('templates', '[id].tsx'), app('music', 'index.tsx'), app('music', '[id].tsx'),
+            app('beats', 'index.tsx'), app('wins.tsx'), app('publish', 'drafts.tsx'), src('app', 'preview.tsx'),
+            src('components', 'cinema', 'CinemaProfile.tsx'), src('components', 'cinema', 'DiscoveryList.tsx'),
+            src('components', 'beats', 'BeatSongLibrarySheet.tsx'), src('components', 'editor', 'EditorLoadState.tsx'),
+        ]) expect(screen).toContain('<LoadingSkeleton');
         const skeleton = src('components', 'LoadingSkeleton.tsx');
         expect(skeleton).toContain('accessibilityRole="progressbar"');
         expect(skeleton).toContain('accessibilityState={{ busy: true }}');

@@ -5,7 +5,7 @@ import { ScrollView, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { Button, ListRow, Text, themedStyles, useThemedStyles } from '../../../components/ui';
 import { EmptyState } from '../../../components/EmptyState';
-import { VeyLoader } from '../../../components/VeyLoader';
+import { LoadingSkeleton } from '../../../components/LoadingSkeleton';
 import { MusicNotice } from '../../../components/music/MusicNotice';
 import { HeaderAction } from '../../../components/HeaderAction';
 import { beatStore, hydrateBeats, dropBeat, listBeats, subscribeBeats } from '../../../lib/beatNative/store';
@@ -63,7 +63,7 @@ export default function MusicEditorHome() {
                 headerRight: () => <HeaderAction testID="music-editor-new" label={t('beat.home.new')} icon="plus" iconOnly onPress={() => void create()} />,
             }} />
             {creationFailed ? <MusicNotice message={t('beatLabs.createFailed')} /> : null}
-            {state === 'checking' ? <VeyLoader label={t('beat.home.checking')} showLabel /> : null}
+            {state === 'checking' ? <LoadingSkeleton label={t('beat.home.checking')} variant="list" /> : null}
             {state === 'signed_out' ? <MusicNotice message={t('beat.cloud.signed_out')} /> : null}
             {state === 'off' ? <MusicNotice message={t('beat.cloud.off')} /> : null}
             {state === 'error' ? <><MusicNotice message={t('beat.cloud.error')} /><Button label={t('beat.retry')} onPress={() => void probeBeats(api).then(result => setState(result.state))} /></> : null}
