@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeCrunTemplateCatalog, readCrunTemplateCatalog } from '../lib/crunTemplateCatalog.js';
+import { normalizeCrunTemplateCatalog, readCrunTemplateCatalog, readCrunTemplateSummary } from '../lib/crunTemplateCatalog.js';
 
 test('normalizes the documented Kling template shape and drops unsafe media URLs', () => {
   const catalog = normalizeCrunTemplateCatalog('kling', {
@@ -101,4 +101,16 @@ test('catalog fails closed for an unknown provider, missing key or invalid pagin
   assert.deepEqual(await readCrunTemplateCatalog({ provider: 'veo' }, { apiKey: 'x' }), { ok: false, error: 'provider_invalid', status: 400 });
   assert.deepEqual(await readCrunTemplateCatalog({ provider: 'kling' }, { apiKey: '' }), { ok: false, error: 'not_configured', status: 503 });
   assert.deepEqual(await readCrunTemplateCatalog({ provider: 'kling', page: 0 }, { apiKey: 'x' }), { ok: false, error: 'query_invalid', status: 400 });
+});
+
+test('summary totals every CRUN template provider without returning template payloads', async () => {
+  const totals = { kling: 226, seedance: 341, vidu: 521 };
+  const result = await readCrunTemplateSummary({
+    apiKey: 'secret-key',
+    fetchImpl: async url => {
+      const provider = String(url).includes('kling-templates') ? 'kling' : String(url).includes('bytedance-templates') ? 'seedance' : 'vidu';
+      return new Response(JSON.stringify({ code: 200, data: { total: totals[provider], templates: [] } }), { status: 200 });
+    },
+  });
+  assert.deepEqual(result, { ok: true, summary: { total: 1088, providers: totals } });
 });

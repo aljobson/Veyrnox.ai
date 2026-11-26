@@ -42,3 +42,9 @@ test('provider effects are catalog-only until pricing and paid proof exist', () 
   assert.match(appEnglish['app.templates.liveHelp'], /Generation stays disabled until each effect has Veyrnox pricing and a paid proof/);
   assert.doesNotMatch(component, /CreateTask/);
 });
+
+test('the catalog requests and displays the combined live CRUN preview count', () => {
+  assert.match(component, /\/api\/template-catalog\?summary=1/);
+  assert.match(component, /data-testid="crun-template-count"/);
+  assert.match(appEnglish['app.templates.crunSummary'], /CRUN previews/);
+});
