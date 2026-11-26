@@ -13,12 +13,13 @@ export function activeStudioDestination(pathname, items) {
 // `nav: false` keeps a row out of the sidebar AND the phone menu while its route
 // stays live (deep links, the active-route lookup and search still work). The
 // visible nav is the product pillars only: Create (image and video models
-// behind its goal chips), Audio (the hub for music, speech, dialogue and lip sync), Editor, Publish and Cinema, with
+// behind its goal chips), Creative tools (guided outcomes), Audio (music, speech, dialogue and performance), Editor, Publish and Cinema, with
 // Library, Credits and the Vey chat as the utility group.
 import { FILM_STUDIO_ENABLED } from './filmStudioSwitch.js';
 
 export const STUDIO_DESTINATIONS = [
   { section: 'tools', key: 'create', href: '/app/create', labelKey: 'label.Create', icon: 'image' },
+  { section: 'tools', key: 'features', href: '/app/features', labelKey: 'app.create.creativeTools', icon: 'wand' },
   { section: 'tools', key: 'audio', href: '/app/audio', labelKey: 'app.audio.title', icon: 'music' },
   // Two editors: Smart Cut opens the Library in its clip-picking mode
   // (the #smart-cut hash the Library already reads); Professional is the timeline.
@@ -39,7 +40,6 @@ export const STUDIO_DESTINATIONS = [
   // Hidden from the nav, routes unchanged.
   { section: 'tools', key: 'skills', href: '/app/skills', labelKey: 'label.Studio skills', icon: 'wand', menu: false, nav: false },
   { section: 'tools', key: 'agent', href: '/app/video-agent', labelKey: 'app.nav.videoAgent', hintKey: 'app.nav.videoAgentHint', icon: 'agent', nav: false },
-  { section: 'tools', key: 'features', href: '/app/features', labelKey: 'label.Tools', icon: 'wand', nav: false },
   { section: 'tools', key: 'film', href: '/app/film-studio', labelKey: 'label.Film Studio', hintKey: 'app.nav.filmStudioHint', icon: 'film', nav: false },
   { section: 'tools', key: 'oddlings', href: '/app/oddlings', labelKey: 'label.Oddlings', icon: 'character', nav: false },
   { section: 'tools', href: '/mcp', labelKey: 'label.MCP', icon: 'plug', menu: false, nav: false },

@@ -1,9 +1,9 @@
 import { rawText } from '../../../lib/i18n/translate';
 import { displayLabel } from '../../../lib/displayLabels';
 import { Image } from 'expo-image';
-import { Redirect, Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { CREATIVE_FEATURE_GROUPS, examplePlaysOn } from '../../../lib/creativeFeatures';
+import { CREATIVE_FEATURE_DIRECTORY, CREATIVE_FEATURE_GROUPS, examplePlaysOn } from '../../../lib/creativeFeatures';
 import { compatibleCreativeFeatures, creativeReuseTargetHref, readCreativeReuse } from '../../../lib/creativeReuse';
 import { t } from '../../../lib/i18n';
 import { colors, fonts } from '../../../theme';
@@ -13,15 +13,14 @@ export default function CreativeFeatures() {
     const { sourceJobId, sourceKind } = useLocalSearchParams<{ sourceJobId?: string; sourceKind?: string }>();
     const router = useRouter();
     const reuse = readCreativeReuse(sourceJobId, sourceKind);
-    if (!reuse) return <Redirect href="/create/tools" />;
-    const available = compatibleCreativeFeatures(reuse.kind);
+    const available = reuse ? compatibleCreativeFeatures(reuse.kind) : CREATIVE_FEATURE_DIRECTORY;
     return (
         <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
             <Stack.Screen options={{ title: t('features.creativetools'), headerLeft: () => <HomeBackButton /> }} />
             <View style={styles.hero}>
-                <Text style={styles.kicker}>{t('features.reuse.kicker')}</Text>
-                <Text style={styles.title} accessibilityRole="header">{t('features.reuse.title', { kind: t(`mediaKind.${reuse.kind}`) })}</Text>
-                <Text style={styles.lead}>{t('features.reuse.lead')}</Text>
+                <Text style={styles.kicker}>{reuse ? t('features.reuse.kicker') : t('features.gUIDEDCREATION')}</Text>
+                <Text style={styles.title} accessibilityRole="header">{reuse ? t('features.reuse.title', { kind: t(`mediaKind.${reuse.kind}`) }) : t('features.maketheexactthingyouneed')}</Text>
+                <Text style={styles.lead}>{reuse ? t('features.reuse.lead') : t('features.chooseaworkflowVeyrnoxsetstheright')}</Text>
             </View>
             {CREATIVE_FEATURE_GROUPS.map((group) => {
                 const features = available.filter((item) => item.group === group);
@@ -29,7 +28,7 @@ export default function CreativeFeatures() {
                 return <View key={displayLabel(group)} style={styles.group}>
                     <View style={styles.groupHeading}><Text style={styles.groupTitle} accessibilityRole="header">{displayLabel(group)}</Text><Text style={styles.count}>{t('features.tools', { value1: features.length })}</Text></View>
                     <View style={styles.grid}>{features.map((feature) => (
-                        <Pressable key={feature.slug} accessibilityRole="button" accessibilityLabel={rawText(`${feature.title}. ${feature.steps.join('. ')}`)} style={({ pressed }) => [styles.card, pressed && styles.pressed]} onPress={() => router.push(creativeReuseTargetHref(feature.slug, reuse))}>
+                        <Pressable key={feature.slug} accessibilityRole="button" accessibilityLabel={rawText(`${feature.title}. ${feature.steps.join('. ')}`)} style={({ pressed }) => [styles.card, pressed && styles.pressed]} onPress={() => router.push(reuse ? creativeReuseTargetHref(feature.slug, reuse) : { pathname: '/features/[slug]', params: { slug: feature.slug } })}>
                             <View style={styles.mediaFrame}>
                                 <Image source={{ uri: feature.example.posterUrl ?? feature.example.url }} style={styles.thumb} contentFit="contain" accessibilityLabel={rawText(t('features.example', { value1: feature.title }))} accessibilityIgnoresInvertColors />
                                 {examplePlaysOn(feature.example, Platform.OS) ? <View style={styles.playBadge} accessibilityElementsHidden><Text style={styles.play}>▶</Text></View> : null}

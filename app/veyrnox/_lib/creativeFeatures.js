@@ -58,14 +58,22 @@ export const CREATIVE_FEATURES = Object.freeze([
 
 export const CREATIVE_FEATURE_SLUGS = Object.freeze(CREATIVE_FEATURES.map((item) => item.slug));
 
+const AUDIO_FEATURE_SLUGS = new Set(['text-to-speech', 'lip-sync', 'video-dubbing', 'ai-talking-photo-generator', 'singing-photo']);
+
+export function creativeFeatureOwner(item) {
+  return AUDIO_FEATURE_SLUGS.has(item.slug) ? 'audio' : 'creative';
+}
+
+export const CREATIVE_FEATURE_DIRECTORY = Object.freeze(CREATIVE_FEATURES.filter((item) => creativeFeatureOwner(item) === 'creative'));
+
 export function creativeFeature(slug) {
   return CREATIVE_FEATURES.find((item) => item.slug === slug) || null;
 }
 
-export function creativeFeatureGroups() {
-  return [...new Set(CREATIVE_FEATURES.map((item) => item.group))].map((group) => ({
+export function creativeFeatureGroups(items = CREATIVE_FEATURE_DIRECTORY) {
+  return [...new Set(items.map((item) => item.group))].map((group) => ({
     group,
-    features: CREATIVE_FEATURES.filter((item) => item.group === group),
+    features: items.filter((item) => item.group === group),
   }));
 }
 

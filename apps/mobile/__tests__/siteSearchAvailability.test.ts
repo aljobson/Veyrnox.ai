@@ -18,16 +18,17 @@ test('server-backed Music search follows the live capability while local studios
     }
 });
 
-test('duplicate creative recipes resolve to their canonical Audio or Tools directory', () => {
+test('creative recipes resolve once to their canonical Audio or Creative tools owner', () => {
     const entries = screenEntries(title, { musicAvailable: true });
     const hrefs = entries.map((entry) => entry.href);
     expect(new Set(hrefs).size).toBe(hrefs.length);
     for (const href of ['/features/lip-sync', '/features/video-dubbing', '/features/ai-talking-photo-generator', '/features/singing-photo']) {
         expect(hrefs).not.toContain(href);
     }
-    expect(searchEntries('lip sync', entries)).toEqual([expect.objectContaining({ id: 'screen:tools', href: '/create/tools' })]);
-    expect(searchEntries('talking photo', entries)).toEqual([expect.objectContaining({ id: 'screen:tools', href: '/create/tools' })]);
+    expect(searchEntries('lip sync', entries)).toEqual([expect.objectContaining({ id: 'screen:audio', href: '/audio' })]);
+    expect(searchEntries('talking photo', entries)).toEqual([expect.objectContaining({ id: 'screen:audio', href: '/audio' })]);
     expect(searchEntries('text to speech', entries)[0]).toMatchObject({ id: 'screen:speech', href: '/speech' });
+    expect(searchEntries('AI avatar generator', entries)[0]).toMatchObject({ id: 'feature:ai-avatar-generator', href: '/features/ai-avatar-generator' });
 });
 
 test('the Search screen passes the live Music probe into screen entry construction', () => {

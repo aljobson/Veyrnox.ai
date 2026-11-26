@@ -35,13 +35,13 @@ export const SCREENS: readonly ScreenDef[] = MOBILE_FEATURES.filter((feature) =>
 }));
 
 export function screenEntries(title: (key: string) => string, capabilities: SearchCapabilities = { musicAvailable: false }): SearchEntry[] {
-    const toolFeatureWords = CREATIVE_FEATURES
-        .filter((feature) => creativeFeatureOwner(feature) === 'tools')
+    const audioFeatureWords = CREATIVE_FEATURES
+        .filter((feature) => creativeFeatureOwner(feature) === 'audio')
         .map((feature) => `${feature.title} ${feature.group} ${feature.kind} ${feature.media.join(' ')} ${feature.steps.join(' ')}`)
         .join(' ')
         .toLowerCase();
-    const toolAliases = MOBILE_FEATURES
-        .filter((feature) => feature.discoveryOwner === 'tools')
+    const audioAliases = MOBILE_FEATURES
+        .filter((feature) => feature.discoveryOwner === 'audio')
         .map((feature) => `${title(feature.titleKey)} ${feature.keywords ?? ''}`)
         .join(' ')
         .toLowerCase();
@@ -51,7 +51,7 @@ export function screenEntries(title: (key: string) => string, capabilities: Sear
         title: title(s.titleKey),
         detail: '',
         href: s.href,
-        keywords: `${s.keywords as string}${s.id === 'tools' ? ` ${toolAliases} ${toolFeatureWords}` : ''}`,
+        keywords: `${s.keywords as string}${s.id === 'audio' ? ` ${audioAliases} ${audioFeatureWords}` : ''}`,
     }));
     const registeredHrefs = new Set(registry.map((entry) => entry.href));
     return [

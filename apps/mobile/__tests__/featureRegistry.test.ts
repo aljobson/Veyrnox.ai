@@ -38,7 +38,7 @@ const studioWebRoutes = (): string[] => {
 describe('mobile feature registry', () => {
     test('owns unique feature ids, routes, menu placement, Audio groups and first-goal targets', () => {
         expect(new Set(MOBILE_FEATURES.map((feature) => feature.id)).size).toBe(MOBILE_FEATURES.length);
-        expect(menuFeatures('tools').map((feature) => feature.id)).toEqual(['create', 'audio', 'smartCut', 'editor', 'publish', 'cinema']);
+        expect(menuFeatures('tools').map((feature) => feature.id)).toEqual(['create', 'features', 'audio', 'smartCut', 'editor', 'publish', 'cinema']);
         expect(menuFeatures('assets').map((feature) => feature.id)).toEqual(['library', 'brandKit', 'credits', 'chat']);
         expect(menuFeatures('footer').map((feature) => feature.id)).toEqual(['help']);
         expect(audioFeatureIds('studios')).toEqual(['music', 'speech', 'dialogue']);
@@ -57,9 +57,10 @@ describe('mobile feature registry', () => {
         expect(musicOff.some((feature) => feature.id === 'music')).toBe(false);
         expect(off.find((feature) => feature.id === 'editor')?.keywords).toContain('studio');
         expect(off.find((feature) => feature.id === 'tools')?.keywords).not.toContain('face filters');
-        for (const duplicate of ['features', 'lipSync', 'dubbing', 'talkingPhoto', 'singingPhoto']) {
+        for (const duplicate of ['lipSync', 'dubbing', 'talkingPhoto', 'singingPhoto']) {
             expect(on.some((feature) => feature.id === duplicate)).toBe(false);
         }
+        expect(on.some((feature) => feature.id === 'features')).toBe(true);
     });
 
     test('every feature has translated copy and a real native route', () => {
