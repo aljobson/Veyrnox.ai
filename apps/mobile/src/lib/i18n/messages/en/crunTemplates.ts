@@ -1,0 +1,15 @@
+export default {
+    'crunTemplates.providerLabel': 'CRUN provider',
+    'crunTemplates.provider.kling': 'Kling',
+    'crunTemplates.provider.seedance': 'Seedance',
+    'crunTemplates.provider.vidu': 'Vidu',
+    'crunTemplates.count': '{loaded} of {total} previews loaded',
+    'crunTemplates.help': 'Browse the live CRUN catalog. These are previews only until Veyrnox pricing and generation are enabled.',
+    'crunTemplates.previewOnly': 'Preview only',
+    'crunTemplates.previewLabel': '{name} CRUN preview',
+    'crunTemplates.previewUnavailable': 'Preview unavailable',
+    'crunTemplates.inputCount': 'Input images: {count}',
+    'crunTemplates.input': 'Input: {input}',
+    'crunTemplates.providerCredits': 'Provider credits: {credits}',
+    'crunTemplates.loadMore': 'Load 50 more',
+} as const;
