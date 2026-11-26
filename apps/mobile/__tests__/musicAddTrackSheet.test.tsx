@@ -50,6 +50,7 @@ test('presents track choices as a clean icon grid without disclosure chevrons', 
         onRecord={() => {}} onDrums={() => {}} onInstrument={() => {}} onClose={() => {}} />));
     const icons = root.container.queryAll(node => node.props.accessibilityElementsHidden && node.props.style);
     expect(icons.length).toBeGreaterThanOrEqual(5);
+    expect(root.container.queryAll(node => node.props.source?.testUri?.endsWith('/drum.png')).length).toBeGreaterThan(0);
     expect(root.container.queryAll(node => node.props.accessibilityLabel === 'caretRight')).toHaveLength(0);
 });
 

@@ -9,9 +9,11 @@ import type { BeatAudio } from '../../lib/beatNative/audio';
 import { t } from '../../lib/i18n';
 import type { MenuIcon } from '../../lib/menuIcons';
 
-const groupIcon = (group: string): MenuIcon => group === 'drums' ? 'waveform'
-    : group === 'guitars' ? 'waveSine'
-        : group === 'bass' ? 'speaker' : 'pianoKeys';
+const groupIcon = (group: string): MenuIcon => group === 'drums' ? 'drum'
+    : group === 'guitar' ? 'guitar'
+        : group === 'bass' ? 'guitar'
+            : group === 'synth' ? 'keyboard'
+                : group === 'wavetable' ? 'waveSine' : 'pianoKeys';
 
 export function BeatInstrumentLibrary({ apply, audio, onClose, onDismiss, refusal }: { apply(op: Edit, label?: string): boolean; audio(): BeatAudio | null; onClose(): void; onDismiss?(): void; refusal?: string | null }) {
     const [query, setQuery] = useState(''), [notice, setNotice] = useState<{ message: string; announce: boolean } | null>(null);
