@@ -43,7 +43,7 @@ describe('music pair foundation (0250)', { skip: !DATABASE_URL && 'DATABASE_URL 
     // This suite proves the historical 0457 pair contract in isolation. The current 0619
     // trigger intentionally converts ordinary live Create quotes to one track, so suspend
     // only that trigger inside this rolled-back historical fixture.
-    await client.query('ALTER TABLE public.music_generation_quotes DISABLE TRIGGER music_quote_single_track_default');
+    await client.query('ALTER TABLE public.music_generation_quotes DISABLE TRIGGER music_quote_aaa_single_generation');
   });
 
   after(async () => {

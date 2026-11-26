@@ -26,6 +26,10 @@ describe('music long-song pricing and ceiling (0563, 0567)', { skip: !DATABASE_U
       await client.query(sql);
       await client.query(sql);
     }
+    // This suite deliberately reinstalls the historical 0563/0567 pair RPCs
+    // after the current schema. Suspend only the current 0619 quote normalizer
+    // inside this rolled-back fixture so the historical contract stays coherent.
+    await client.query('ALTER TABLE public.music_generation_quotes DISABLE TRIGGER music_quote_aaa_single_generation');
     const updated = await client.query(`UPDATE public.model_catalog
       SET active=true, gated_flag=false, credits_5s=3
       WHERE id='ace-step-1.5' RETURNING provider, provider_endpoint, modality`);
@@ -77,25 +81,25 @@ describe('music long-song pricing and ceiling (0563, 0567)', { skip: !DATABASE_U
     assert.equal(q.ok, true, JSON.stringify(q));
     assert.equal(q.duration_seconds, duration);
     assert.equal(q.unit_credits, unit);
-    assert.equal(q.total_credits, unit);
-    assert.equal(q.balance_after, q.balance - unit);
-    assert.equal(q.affordable, q.balance >= unit);
+    assert.equal(q.total_credits, unit * 2);
+    assert.equal(q.balance_after, q.balance - unit * 2);
+    assert.equal(q.affordable, q.balance >= unit * 2);
     const frozen = await one(`SELECT q.unit_credits,q.total_credits,q.output_count,s.duration_seconds
       FROM public.music_generation_quotes q JOIN public.music_prompt_specs s ON s.id=q.prompt_spec_id
       WHERE q.id=$1`, [q.quote_id]);
-    assert.deepEqual(frozen, { unit_credits: unit, total_credits: unit, output_count: 1, duration_seconds: duration });
+    assert.deepEqual(frozen, { unit_credits: unit, total_credits: unit * 2, output_count: 2, duration_seconds: duration });
   }
 
-  async function assertTrack(result, unit: number, duration: number) {
+  async function assertPair(result, unit: number, duration: number) {
     assert.equal(result.ok, true, JSON.stringify(result));
-    assert.equal(result.job_ids.length, 1);
-    assert.equal(new Set(result.job_ids).size, 1);
+    assert.equal(result.job_ids.length, 2);
+    assert.equal(new Set(result.job_ids).size, 2);
     const debits = await rows('SELECT delta FROM public.ledger_entries WHERE job_id=ANY($1::uuid[]) AND delta<0 ORDER BY job_id', [result.job_ids]);
-    assert.deepEqual(debits, [{ delta: -unit }]);
+    assert.deepEqual(debits, [{ delta: -unit }, { delta: -unit }]);
     const jobs = await rows('SELECT credits FROM public.jobs WHERE id=ANY($1::uuid[]) ORDER BY id', [result.job_ids]);
-    assert.deepEqual(jobs, [{ credits: unit }]);
+    assert.deepEqual(jobs, [{ credits: unit }, { credits: unit }]);
     const dispatch = await rows('SELECT payload FROM public.fal_dispatch WHERE job_id=ANY($1::uuid[])', [result.job_ids]);
-    assert.equal(dispatch.length, 1);
+    assert.equal(dispatch.length, 2);
     for (const row of dispatch) assert.equal(row.payload.duration, duration, 'existing trigger dispatches the frozen duration');
   }
 
@@ -116,7 +120,7 @@ describe('music long-song pricing and ceiling (0563, 0567)', { skip: !DATABASE_U
     }
   });
 
-  it('60 seconds retains the pre-migration JSON shape and values, with one 3-Credit debit', async () => {
+  it('60 seconds retains the pre-migration JSON shape and values, with two 3-Credit debits', async () => {
     const owner = await user();
     // The previous duration wrapper returned this unchanged seven-arg result plus duration_seconds.
     const base = (await one('SELECT public.music_create_quote($1,$2,$3,$4,NULL::integer,NULL::integer,NULL::text) AS r',
@@ -129,7 +133,7 @@ describe('music long-song pricing and ceiling (0563, 0567)', { skip: !DATABASE_U
     // IDs necessarily differ; expires_at is identical because both calls share one transaction.
     assert.deepEqual({ ...q, quote_id: base.quote_id }, expected);
     const made = await submit(owner.authId, q.quote_id);
-    await assertTrack(made, 3, 60);
+    await assertPair(made, 3, 60);
     assert.equal(made.balance_after, q.balance_after);
   });
 
@@ -140,13 +144,13 @@ describe('music long-song pricing and ceiling (0563, 0567)', { skip: !DATABASE_U
     }
   });
 
-  it('135 seconds debits 9 once and replaying the compatibility key adds no debit or dispatch', async () => {
+  it('135 seconds debits 9 twice and replaying the pair key adds no debit or dispatch', async () => {
     const owner = await user();
     const q = await quote(owner.authId, 135);
     await assertPrice(q, 135, 9);
     const key = `long.${randomUUID()}`;
     const made = await submit(owner.authId, q.quote_id, key);
-    await assertTrack(made, 9, 135);
+    await assertPair(made, 9, 135);
     assert.equal(made.balance_after, q.balance_after);
     const beforeCounts = await counts(owner.id);
     const replay = await submit(owner.authId, q.quote_id, key);
@@ -155,7 +159,7 @@ describe('music long-song pricing and ceiling (0563, 0567)', { skip: !DATABASE_U
     assert.deepEqual(replay.job_ids, made.job_ids);
     assert.equal(replay.balance_after, made.balance_after);
     assert.deepEqual(await counts(owner.id), beforeCounts);
-    await assertTrack(replay, 9, 135);
+    await assertPair(replay, 9, 135);
   });
 
   it('invalid durations create no prompt, quote, job or debit', async () => {
@@ -221,7 +225,7 @@ describe('music long-song pricing and ceiling (0563, 0567)', { skip: !DATABASE_U
     const owner = await user();
     const q = await quote(owner.authId, 135);
     const made = await submit(owner.authId, q.quote_id);
-    await assertTrack(made, 9, 135);
+    await assertPair(made, 9, 135);
     const job = await one('SELECT id,user_id,credits FROM public.jobs WHERE id=$1', [made.job_ids[0]]);
     // lib/falWebhookHandler.js passes these same persisted fields to ledger_refund.
     const refund = async () => (await one("SELECT public.ledger_refund($1,$2,$3,'refund:provider_failed') AS r",
@@ -254,7 +258,7 @@ describe('music long-song pricing and ceiling (0563, 0567)', { skip: !DATABASE_U
         assert.deepEqual(await quote(owner.authId, 61, model.id), { ok: false, code: 'INVALID_INPUTS' });
         assert.deepEqual(await counts(owner.id), beforeCounts);
         const q = await quote(owner.authId, 60, model.id);
-        await assertTrack(await submit(owner.authId, q.quote_id), model.credits_5s, 60);
+        await assertPair(await submit(owner.authId, q.quote_id), model.credits_5s, 60);
       }
     } finally {
       await client.query('ROLLBACK TO SAVEPOINT legacy_models');
