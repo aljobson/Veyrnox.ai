@@ -57,6 +57,9 @@ describe('mobile feature registry', () => {
         expect(musicOff.some((feature) => feature.id === 'music')).toBe(false);
         expect(off.find((feature) => feature.id === 'editor')?.keywords).toContain('studio');
         expect(off.find((feature) => feature.id === 'tools')?.keywords).not.toContain('face filters');
+        for (const duplicate of ['features', 'lipSync', 'dubbing', 'talkingPhoto', 'singingPhoto']) {
+            expect(on.some((feature) => feature.id === duplicate)).toBe(false);
+        }
     });
 
     test('every feature has translated copy and a real native route', () => {

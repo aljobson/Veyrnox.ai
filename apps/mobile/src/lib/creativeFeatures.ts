@@ -17,6 +17,8 @@ export interface CreativeFeature {
     readonly scriptUpload?: boolean;
 }
 
+export type CreativeFeatureOwner = 'audio' | 'tools' | 'creative';
+
 const feature = (value: CreativeFeature): CreativeFeature =>
     Object.freeze({ ...value, example: Object.freeze({ ...value.example }) });
 
@@ -47,6 +49,17 @@ export const CREATIVE_FEATURES: readonly CreativeFeature[] = Object.freeze([
 export const CREATIVE_FEATURE_GROUPS = Object.freeze([...new Set(CREATIVE_FEATURES.map((item) => item.group))]);
 export const creativeFeature = (slug: string | undefined): CreativeFeature | null =>
     CREATIVE_FEATURES.find((item) => item.slug === slug) ?? null;
+
+// One capability has one discovery owner. Audio owns prompt-only speech creation; Tools owns every workflow that
+// starts from a file the person already has. A future guided workflow with neither shape can remain discoverable in
+// the Creative Features directory. Direct feature links stay valid for saved links and contextual reuse actions.
+export function creativeFeatureOwner(feature: CreativeFeature): CreativeFeatureOwner {
+    if (feature.slug === 'text-to-speech') return 'audio';
+    if (feature.media.length > 0) return 'tools';
+    return 'creative';
+}
+
+export const CREATIVE_FEATURE_DIRECTORY = CREATIVE_FEATURES.filter((feature) => creativeFeatureOwner(feature) === 'creative');
 
 export function featurePrompt(feature: CreativeFeature, brief: string): string {
     return `${feature.prompt}${brief.trim()}`.trim();

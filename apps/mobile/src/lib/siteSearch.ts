@@ -1,6 +1,6 @@
 import { kindOf, type CatalogModel } from './media';
 import { FILM_STUDIO_ENABLED } from './filmStudioSwitch';
-import { CREATIVE_FEATURES } from './creativeFeatures';
+import { CREATIVE_FEATURES, creativeFeatureOwner } from './creativeFeatures';
 import { MOBILE_FEATURES, searchableFeatures } from './featureRegistry';
 
 // Search over the app's own screens and the model catalogue (parity P7, the web's site search). It works on the
@@ -27,7 +27,7 @@ export interface SearchCapabilities {
 }
 
 // Only screens a signed-in person can open. Titles are looked up by the caller so they follow the language.
-export const SCREENS: readonly ScreenDef[] = MOBILE_FEATURES.filter((feature) => feature.keywords).map((feature) => ({
+export const SCREENS: readonly ScreenDef[] = MOBILE_FEATURES.filter((feature) => feature.keywords && !feature.discoveryOwner).map((feature) => ({
     id: feature.id,
     titleKey: feature.titleKey,
     href: feature.href,
@@ -35,18 +35,28 @@ export const SCREENS: readonly ScreenDef[] = MOBILE_FEATURES.filter((feature) =>
 }));
 
 export function screenEntries(title: (key: string) => string, capabilities: SearchCapabilities = { musicAvailable: false }): SearchEntry[] {
+    const toolFeatureWords = CREATIVE_FEATURES
+        .filter((feature) => creativeFeatureOwner(feature) === 'tools')
+        .map((feature) => `${feature.title} ${feature.group} ${feature.kind} ${feature.media.join(' ')} ${feature.steps.join(' ')}`)
+        .join(' ')
+        .toLowerCase();
+    const toolAliases = MOBILE_FEATURES
+        .filter((feature) => feature.discoveryOwner === 'tools')
+        .map((feature) => `${title(feature.titleKey)} ${feature.keywords ?? ''}`)
+        .join(' ')
+        .toLowerCase();
     const registry = searchableFeatures({ filmStudio: FILM_STUDIO_ENABLED, musicAvailable: capabilities.musicAvailable }).map((s) => ({
         id: `screen:${s.id}`,
         kind: 'screen' as const,
         title: title(s.titleKey),
         detail: '',
         href: s.href,
-        keywords: s.keywords as string,
+        keywords: `${s.keywords as string}${s.id === 'tools' ? ` ${toolAliases} ${toolFeatureWords}` : ''}`,
     }));
     const registeredHrefs = new Set(registry.map((entry) => entry.href));
     return [
         ...registry,
-        ...CREATIVE_FEATURES.map((feature) => ({
+        ...CREATIVE_FEATURES.filter((feature) => creativeFeatureOwner(feature) === 'creative').map((feature) => ({
             id: `feature:${feature.slug}`,
             kind: 'screen' as const,
             title: feature.title,
