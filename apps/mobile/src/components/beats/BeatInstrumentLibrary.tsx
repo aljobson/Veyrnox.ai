@@ -26,7 +26,7 @@ export function BeatInstrumentLibrary({ apply, audio, onClose, onDismiss, refusa
         {notice && <Text accessibilityLiveRegion={notice.announce ? 'polite' : 'none'}>{notice.message}</Text>}
         {failed && <Text accessibilityLiveRegion="none">{refusal || t('beat.refused', { reason: '' })}</Text>}
         {groups.map(group => <View key={group.id} style={s.section}>
-            <View style={s.groupTitle}><Icon name={groupIcon(group.id)} size={18} /><Text accessibilityRole="header" variant="bodyStrong">{t(`beatPiano.library.group.${group.id}`)}</Text></View>
+            <View style={s.groupTitle}><Icon name={groupIcon(group.id)} size={20} /><Text accessibilityRole="header" variant="bodyStrong">{t(`beatPiano.library.group.${group.id}`)}</Text></View>
             <View style={s.presetGrid}>{group.presets.map(p => <View key={p.instrument.preset} style={s.presetTile}>
                 <Button testID={`instrument-add-${p.instrument.id}-${p.instrument.preset}`}
                     label={t('beatPiano.library.addNamed', { name: p.label })} accessibilityLabel={t('beatPiano.library.addNamed', { name: p.label })}
@@ -34,7 +34,7 @@ export function BeatInstrumentLibrary({ apply, audio, onClose, onDismiss, refusa
                     setNotice(null); setFailed(false);
                     if (apply(d => addInstrumentTrack(d, p.instrument), t('beatPiano.library.add'))) onClose();
                     else setFailed(true);
-                    }}><View style={s.presetIcon}><Icon name={groupIcon(group.id)} size={22} /></View>
+                    }}><View style={s.presetIcon}><Icon name={groupIcon(group.id)} size={24} /></View>
                     <Text variant="caption" numberOfLines={2} style={s.presetName}>{p.label}</Text>
                     <View style={s.addMark}><Icon name="plus" size={16} /></View>
                 </Button>
