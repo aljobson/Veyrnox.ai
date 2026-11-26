@@ -1,6 +1,18 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "explore.templateTotalWithCrun": "사용 가능 {ready}개 · CRUN 미리보기 {previews}개",
+  "templates.kind.crun": "CRUN 미리보기",
+  "crunTemplates.providerLabel": "CRUN 제공업체",
+  "crunTemplates.count": "미리보기 {total}개 중 {loaded}개 로드됨",
+  "crunTemplates.help": "실시간 CRUN 카탈로그를 둘러보세요. Veyrnox에서 가격 및 생성 기능이 활성화되기 전까지는 미리보기만 제공됩니다.",
+  "crunTemplates.previewOnly": "미리보기 전용",
+  "crunTemplates.previewLabel": "{name} CRUN 미리보기",
+  "crunTemplates.previewUnavailable": "미리보기를 사용할 수 없습니다",
+  "crunTemplates.inputCount": "입력 이미지: {count}개",
+  "crunTemplates.input": "입력: {input}",
+  "crunTemplates.providerCredits": "제공업체 크레딧: {credits}",
+  "crunTemplates.loadMore": "50개 더 로드",
   "music.queue.add": "재생 대기열에 추가",
   "music.queue.title": "재생 대기열",
   "music.queue.position": "재생 대기열 · {total}개 중 {position}번째",

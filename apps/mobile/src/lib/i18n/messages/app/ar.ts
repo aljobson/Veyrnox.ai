@@ -1,6 +1,18 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "explore.templateTotalWithCrun": "{ready} جاهز · {previews} معاينة من CRUN",
+  "templates.kind.crun": "معاينات CRUN",
+  "crunTemplates.providerLabel": "موفّر CRUN",
+  "crunTemplates.count": "تم تحميل {loaded} من {total} معاينة",
+  "crunTemplates.help": "تصفّح كتالوج CRUN المباشر. هذه معاينات فقط إلى أن يتم تفعيل الأسعار والإنشاء في Veyrnox.",
+  "crunTemplates.previewOnly": "معاينة فقط",
+  "crunTemplates.previewLabel": "معاينة CRUN لـ {name}",
+  "crunTemplates.previewUnavailable": "المعاينة غير متاحة",
+  "crunTemplates.inputCount": "صور الإدخال: {count}",
+  "crunTemplates.input": "الإدخال: {input}",
+  "crunTemplates.providerCredits": "أرصدة الموفّر: {credits}",
+  "crunTemplates.loadMore": "تحميل 50 إضافية",
   "music.queue.add": "إضافة إلى قائمة انتظار الاستماع",
   "music.queue.title": "قائمة انتظار الاستماع",
   "music.queue.position": "قائمة انتظار الاستماع · {position} من {total}",

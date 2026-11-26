@@ -8,7 +8,7 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { celebrateFinished } from '../../../lib/celebrate';
 import { ALL_CATEGORIES, ALL_TYPES, filterPresets, pickUp, promptHref, recentCreations, type TypeFilter } from '../../../lib/explore';
-import { plural, t } from '../../../lib/i18n';
+import { formatNumber, plural, t } from '../../../lib/i18n';
 import { templateCountLabel } from '../../../lib/templateCountLabel';
 import { rawText } from '../../../lib/i18n/translate';
 import { useAnnouncement } from '../../../lib/useAnnouncement';
@@ -25,6 +25,7 @@ import { useBalance } from '../../../lib/useBalance';
 import { fetchPresets, type Preset } from '../../../lib/presets';
 import { fetchImageTemplates, type ImageTemplate } from '../../../lib/imageTemplates';
 import { fetchAudioTemplates, type AudioTemplate } from '../../../lib/audioTemplates';
+import { fetchCrunTemplateSummary } from '../../../lib/crunTemplateSummary';
 import { isDirectTemplate, listedTemplates, mixKinds } from '../../../lib/exploreTemplates';
 import { fetchPopularIds, templateChips, templatesFor, templatePageHref } from '../../../lib/templateFilters';
 import { colors, ds, LIST_END_PADDING } from '../../../theme';
@@ -102,10 +103,12 @@ export default function Explore() {
     // Image and audio templates come from the same lists as Create > Templates; if one fails, Explore keeps the rest.
     const [imageList, setImageList] = useState<ImageTemplate[]>([]);
     const [audioList, setAudioList] = useState<AudioTemplate[]>([]);
+    const [crunPreviewCount, setCrunPreviewCount] = useState<number | null>(null);
     useEffect(() => {
         let live = true;
         fetchImageTemplates().then((list) => live && setImageList(list)).catch(() => {});
         fetchAudioTemplates().then((list) => live && setAudioList(list)).catch(() => {});
+        fetchCrunTemplateSummary().then((summary) => live && setCrunPreviewCount(summary.total)).catch(() => {});
         return () => { live = false; };
     }, []);
     const models = useMemo(() => new Map((catalog ?? []).map((m) => [m.id, m])), [catalog]);
@@ -248,7 +251,7 @@ export default function Explore() {
                         </Text>
                         {presets ? (
                             <Text variant="footnote" style={styles.count}>
-                                {templateCountLabel({ t, plural }, allTemplates?.length ?? presets.length)}
+                                {templateCountLabel({ t, plural, formatNumber }, allTemplates?.length ?? presets.length, crunPreviewCount)}
                             </Text>
                         ) : null}
                     </View>

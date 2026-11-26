@@ -73,6 +73,7 @@ import area_creativeFeatures from './en/creativeFeatures';
 import area_creditHistory from './en/creditHistory';
 import area_credits from './en/credits';
 import area_creditsPage from './en/creditsPage';
+import area_crunTemplates from './en/crunTemplates';
 import area_deleteCreation from './en/deleteCreation';
 import area_deleteaccount from './en/deleteaccount';
 import area_dev from './en/dev';
@@ -335,6 +336,7 @@ const catalog = {
     ...area_creditHistory,
     ...area_credits,
     ...area_creditsPage,
+    ...area_crunTemplates,
     ...area_deleteCreation,
     ...area_deleteaccount,
     ...area_dev,

@@ -142,6 +142,7 @@ export function TemplateCatalog({ kling, seedance, veo, suno }) {
   const { t } = useI18n();
   const [provider, setProvider] = useState('kling');
   const [query, setQuery] = useState('');
+  const [crunPreviewCount, setCrunPreviewCount] = useState(null);
   const [remote, setRemote] = useState({ kling: null, seedance: null, vidu: null });
   const [loading, setLoading] = useState(null);
   const [error, setError] = useState({});
@@ -151,6 +152,17 @@ export function TemplateCatalog({ kling, seedance, veo, suno }) {
   const requested = useRef(new Set());
   const stopPreviewRef = useRef(null);
   const needle = query.trim().toLocaleLowerCase();
+
+  useEffect(() => {
+    let live = true;
+    fetch('/api/template-catalog?summary=1')
+      .then(response => response.ok ? response.json() : null)
+      .then(body => {
+        if (live && Number.isInteger(body?.total) && body.total >= 0) setCrunPreviewCount(body.total);
+      })
+      .catch(() => {});
+    return () => { live = false; };
+  }, []);
 
   const loadRemote = useCallback(async (kind, page = 1) => {
     setLoading(kind);
@@ -218,6 +230,11 @@ export function TemplateCatalog({ kling, seedance, veo, suno }) {
   const info = PROVIDERS.find(item => item.id === provider);
   return (
     <section className="mt-10" data-testid="template-catalog">
+      {crunPreviewCount !== null && (
+        <p className="mb-5 font-vx-mono text-xs font-bold uppercase tracking-[0.12em] text-vx-fg-muted" data-testid="crun-template-count">
+          {t('app.templates.crunSummary', { count: crunPreviewCount.toLocaleString() })}
+        </p>
+      )}
       <nav aria-label={t('app.templates.providerLabel')} className="flex flex-wrap gap-2" role="tablist">
         {PROVIDERS.map(item => (
           <button key={item.id} type="button" role="tab" aria-selected={provider === item.id} onClick={() => { stopSunoPreview(); setProvider(item.id); setQuery(''); }}
