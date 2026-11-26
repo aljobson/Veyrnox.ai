@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { VEO_TEMPLATE_RECIPES } from '../app/veyrnox/_lib/veoTemplateRecipes.js';
 import { MUSIC_DISCOVER_BEATS } from '../lib/musicDiscover.js';
+import appEnglish from '../lib/i18n/messages/app/en.mjs';
 
 const component = await readFile(new URL('../app/veyrnox/_components/TemplateCatalog.js', import.meta.url), 'utf8');
 const navigation = await readFile(new URL('../app/veyrnox/_lib/studioNavigation.js', import.meta.url), 'utf8');
@@ -21,9 +22,20 @@ test('Veo recipes are Veyrnox-owned runnable handoffs and SUNO exposes all 100 m
   assert.equal(MUSIC_DISCOVER_BEATS.length, 100);
   assert.match(component, /writeStudioDraft\(window\.sessionStorage, item\)/);
   assert.match(component, /\/app\/music\/create\?sample=/);
+  assert.match(component, /scheduleMusicSamplePreview\(item/);
+  assert.match(page, /root: beat\.root/);
+});
+
+test('every catalog family has an in-card preview surface', () => {
+  assert.match(page, /video: card\.clip\?\.video/);
+  assert.match(component, /<video src=\{item\.video\}/);
+  assert.match(component, /<video src=\{item\.previewUrl\}/);
+  assert.match(component, /conceptPreviewLabel/);
+  assert.match(component, /listenPreview/);
 });
 
 test('provider effects are catalog-only until pricing and paid proof exist', () => {
-  assert.match(component, /Generation stays disabled until each effect has Veyrnox pricing and a paid proof/);
+  assert.match(component, /app\.templates\.liveHelp/);
+  assert.match(appEnglish['app.templates.liveHelp'], /Generation stays disabled until each effect has Veyrnox pricing and a paid proof/);
   assert.doesNotMatch(component, /CreateTask/);
 });
