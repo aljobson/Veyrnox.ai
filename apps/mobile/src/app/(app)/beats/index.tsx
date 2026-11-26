@@ -68,8 +68,15 @@ export default function MusicEditorHome() {
             {state === 'off' ? <MusicNotice message={t('beat.cloud.off')} /> : null}
             {state === 'error' ? <><MusicNotice message={t('beat.cloud.error')} /><Button label={t('beat.retry')} onPress={() => void probeBeats(api).then(result => setState(result.state))} /></> : null}
             {beatStore.hydrationState() === 'error' ? <><MusicNotice message={t('beat.local.loadError')} /><Button label={t('beat.retry')} onPress={() => void hydrateBeats().catch(() => undefined)} /></> : null}
-                {state === 'offline' ? <MusicNotice message={t('beat.offline')} /> : null}
-                {beats.length === 0 ? <EmptyState title={t('beat.home.empty')} body={t('beat.home.emptyBody')} /> : beats.map(beat => (
+            {state === 'offline' ? <MusicNotice message={t('beat.offline')} /> : null}
+            <Button
+                testID="music-editor-new-primary"
+                label={t('beat.home.new')}
+                icon="plus"
+                loading={creating}
+                onPress={() => void create()}
+            />
+            {beats.length === 0 ? <EmptyState title={t('beat.home.empty')} body={t('beat.home.emptyBody')} /> : beats.map(beat => (
                     <View key={beat.id} style={s.row}>
                         <View style={s.grow}>
                             <ListRow title={beat.title} subtitle={t('beat.tempoValue', { bpm: beat.tempo.bpm })} accessibilityLabel={t('beat.home.openNamed', { title: beat.title })} onPress={() => open(beat.id)} />
@@ -77,7 +84,7 @@ export default function MusicEditorHome() {
                         {state === 'on' && linked(beat.id) ? <Text variant="caption">{t('beat.cloud.linked')}</Text> : null}
                         <Button size="sm" variant="tertiary" label={t('beat.home.delete', { title: beat.title })} iconOnly icon="close" onPress={() => dropBeat(beat.id)} />
                     </View>
-                ))}
+            ))}
         </ScrollView>
     );
 }

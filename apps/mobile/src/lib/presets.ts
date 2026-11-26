@@ -1,3 +1,4 @@
+import { hasExactPromptOrigin } from '../../../../lib/templatePromptOrigin.mjs';
 import { rememberTemplateSource } from './templateSourceCache';
 import { templateRoute } from './templateRoute';
 import { t } from './i18n';
@@ -29,7 +30,7 @@ export interface Preset {
     // Exact text published with the source community record. Template detail always exposes
     // the full value and carries it into Create regardless of sourcePromptRunnable.
     readonly sourcePrompt?: string | null;
-    readonly sourcePromptOrigin?: 'community-source-exact' | null;
+    readonly sourcePromptOrigin?: 'community-source-exact' | 'veyrnox-original' | null;
     readonly sourcePromptStatus?: 'exact' | 'exact-truncated' | 'unavailable' | 'adaptation-only';
     readonly sourcePromptRunnable?: boolean;
     readonly sourcePromptIssues?: readonly string[];
@@ -63,7 +64,8 @@ function parseOne(raw: unknown): Preset | null {
     const title = str(r.title);
     const modelId = internalModelIdOrNull(str(r.modelId));
     const prompt = str(r.prompt);
-    const sourcePrompt = r.sourcePromptOrigin === 'community-source-exact' ? str(r.sourcePrompt) : null;
+    const exactOrigin = hasExactPromptOrigin(r.sourcePromptOrigin) ? r.sourcePromptOrigin : null;
+    const sourcePrompt = exactOrigin ? str(r.sourcePrompt) : null;
     const requestedSourceStatus = SOURCE_PROMPT_STATUSES.has(String(r.sourcePromptStatus)) ? String(r.sourcePromptStatus) : null;
     const sourcePromptStatus: Preset['sourcePromptStatus'] = sourcePrompt
         ? requestedSourceStatus === 'exact-truncated' ? 'exact-truncated' : 'exact'
@@ -84,7 +86,7 @@ function parseOne(raw: unknown): Preset | null {
         negativePrompt: typeof r.negativePrompt === 'string' ? r.negativePrompt.trim().slice(0, 2000).trimEnd() : '',
         promptOrigin: str(r.promptOrigin),
         sourcePrompt,
-        sourcePromptOrigin: sourcePrompt && r.sourcePromptOrigin === 'community-source-exact' ? 'community-source-exact' : null,
+        sourcePromptOrigin: sourcePrompt ? exactOrigin : null,
         sourcePromptStatus,
         sourcePromptRunnable: r.sourcePromptRunnable === true,
         sourcePromptIssues: Array.isArray(r.sourcePromptIssues) ? r.sourcePromptIssues.map(str).filter((v): v is string => v !== null) : [],

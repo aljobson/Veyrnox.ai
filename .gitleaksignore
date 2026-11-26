@@ -360,3 +360,5 @@ a06eb781d7ff2d08309e24f4c4320b294674678b:app/veyrnox/_lib/templateClips.js:gener
 
 # Veyrnox install-reset localStorage key on the onboarding branch; not a credential.
 579c00f954fe4491e6e9c724a896058447bb39d4:apps/mobile/src/lib/installReset.ts:generic-api-key:7
+# Same reviewed localStorage key after the onboarding PR was squash-merged to main (#2719); not a credential.
+b405e6622c4249adfa62cca2f8c042e76bdc9ad7:apps/mobile/src/lib/installReset.ts:generic-api-key:7

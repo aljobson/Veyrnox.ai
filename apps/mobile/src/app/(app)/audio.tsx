@@ -57,7 +57,7 @@ export default function AudioHub() {
                                     accessibilityLabel={rawText(t(musicEditor.titleKey as Parameters<typeof t>[0]))}
                                     title={<Text variant="bodyStrong">{t(musicEditor.titleKey as Parameters<typeof t>[0])}</Text>}
                                     subtitle={t('beat.home.emptyBody')}
-                                    onPress={() => router.push(musicEditor.href as never)}
+                                    onPress={() => router.push('/beats/new' as never)}
                                 />;
                             }
                             const credits = fromCredits(catalog.models, id, musicAvailable, fresh);

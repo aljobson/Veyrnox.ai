@@ -51,8 +51,7 @@ describe('tab shell', () => {
         expect(layout).toContain("title: t('editor.title')");
         expect(layout).toContain("tabBarIcon: tabIcon('scissors')");
         expect(layout).not.toContain('href: EDITOR_ENABLED');
-        expect(editor).toContain("pathname: '/editor/new'");
-        expect(editor).toContain("params: { blank: '1' }");
+        expect(editor).toContain("pathname: '/editor/new', params: { blank: '1', add: '1' }");
         expect(editor).toContain("pathname: '/editor/[projectId]'");
         expect(editor).not.toContain("mobileFeature('beats')");
         expect(editor).not.toContain("mobileFeature('features')");

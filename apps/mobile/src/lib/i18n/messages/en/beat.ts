@@ -146,7 +146,7 @@ export default {
     'beat.kit.lofi': 'Lo-fi',
     'beat.track.add': 'Add a track',
     'beat.track.library': 'Veyrnox Library',
-    'beat.track.device': 'Import audio from this device',
+    'beat.track.device': 'Import audio from Files or this device',
     'beat.track.deviceBusy': 'Importing audio…',
     'beat.track.deviceAdded': '{name} imported at {position}.',
     'beat.track.deviceInvalid': 'That audio file could not be read. Choose an MP3, WAV, M4A, AAC or OGG file.',

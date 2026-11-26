@@ -5,7 +5,7 @@ import { Text, useAppearance } from '../../components/ui';
 import { CelebrationHost } from '../../components/CelebrationHost';
 import { CheckInModal } from '../../components/CheckInModal';
 import { ReferralAttach } from '../../components/ReferralAttach';
-import { Redirect, Stack } from 'expo-router';
+import { Redirect, Stack, useCanGoBack } from 'expo-router';
 import { useEffect } from 'react';
 import { forgetPendingLink } from '../../lib/pendingLink';
 import { useAuth } from '../../auth/AuthProvider';
@@ -29,6 +29,10 @@ export const unstable_settings = { anchor: '(tabs)' };
 
 export default function AppLayout() {
     useOfflineRecovery();
+    // Reading navigation.canGoBack() inside screenOptions happens during render and React
+    // Navigation warns that the value may be stale. The router hook subscribes to the
+    // navigation state, so every pushed screen reliably gets either native Back or Home Back.
+    const canGoBack = useCanGoBack();
     const { status, generation } = useAuth();
     // Live theme: the back chevron takes headerTintColor, so a palette read once would leave it dark-on-dark after a switch.
     const { settings, scheme } = useAppearance();
@@ -59,14 +63,14 @@ export default function AppLayout() {
                                 : children}
                         </>
                     )}
-                    screenOptions={({ navigation }) => ({
+                    screenOptions={() => ({
                         headerStyle: { backgroundColor: palette.background },
                         headerTintColor: palette.text,
                         headerTitle: ({ children }) => <Text variant="title3" numberOfLines={1}>{children}</Text>,
                         headerBackButtonDisplayMode: 'minimal',
                         contentStyle: { backgroundColor: palette.background },
                         // Every screen has a way back: the native back when there is history, otherwise a button to Explore.
-                        ...(navigation.canGoBack() ? {} : { headerLeft: () => <HomeBackButton /> }),
+                        ...(canGoBack ? {} : { headerLeft: () => <HomeBackButton /> }),
                     })}
                 >
                     <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

@@ -105,7 +105,7 @@ export default function EditorHome() {
                             accessibilityLabel={t('editor.new')}
                             accessibilityHint={t('editor.home.newHint')}
                             style={styles.primary}
-                            onPress={() => router.push({ pathname: '/editor/new', params: { blank: '1' } })}
+                            onPress={() => router.push({ pathname: '/editor/new', params: { blank: '1', add: '1' } })}
                         >
                             <View style={styles.primaryIconBox}>
                                 <Image source={MENU_ICONS.slate} style={styles.primaryIcon} tintColor={styles.onAccentInk.color} contentFit="contain" alt="" accessibilityElementsHidden />

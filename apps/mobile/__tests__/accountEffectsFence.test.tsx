@@ -91,7 +91,7 @@ const mockRouter = { replace: jest.fn(), push: jest.fn() };
 let mockScreenLoads = 0;
 function MockScreen() { const { api } = useAuth(); require('react').useEffect(() => { mockScreenLoads++; void api.request('/screen'); }, [api]); return <RN.Text>Screen</RN.Text>; }
 jest.mock('expo-router', () => ({ Stack: Object.assign(() => <MockScreen />, { Screen: () => null }), Redirect: () => null,
-    useRouter: () => mockRouter, usePathname: () => '/account', useSegments: () => [], useGlobalSearchParams: () => ({}) }));
+    useRouter: () => mockRouter, useCanGoBack: () => false, usePathname: () => '/account', useSegments: () => [], useGlobalSearchParams: () => ({}) }));
 jest.mock('../src/lib/languageDirection', () => ({ directionReconciler: { takeReturnPath: () => null, handledRepair: () => false }, languageReturnPath: () => '/account', reconcileLanguageDirection: jest.fn(async () => true) }));
 jest.mock('../src/lib/languageStore', () => ({ readLanguage: () => 'en', syncPendingAccountLanguage: jest.fn(async () => {}) }));
 jest.mock('../src/components/LanguageChoice', () => ({ LanguageChoice: () => null }));

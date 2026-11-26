@@ -92,8 +92,8 @@ import { useEditorSpeechCaptions } from './tools/useEditorSpeechCaptions';
 import { editorMotionSelectedRange, useEditorMotionProcessing } from './tools/useEditorMotionProcessing';
 import { useEditorPersonMask } from './tools/useEditorPersonMask';
 type PickedEditorAsset = { uri: string; fileName?: string | null; name?: string; mimeType?: string | null; duration?: number | null; fileSize?: number | null; size?: number | null; width?: number; height?: number };
-export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false, startBestCut = false }: { projectId: string; jobId?: string; cuts?: readonly Cut[] | null; startAdvanced?:
-    boolean; startBestCut?: boolean }) {
+export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false, startBestCut = false, startAdd = false }: { projectId: string; jobId?: string; cuts?: readonly Cut[] | null; startAdvanced?:
+    boolean; startBestCut?: boolean; startAdd?: boolean }) {
     const mounted = useRef(true); const [libraryPending, setLibraryPending] = useState(false); const [viewport, setViewport] = useState(0);
     const [timelineTouch, setTimelineTouch] = useState(false); useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
     const [voiceoverAt, setVoiceoverAt] = useState<number | null>(null);
@@ -108,6 +108,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     const [fileImport, setFileImport] = useState<{ status: 'idle' | 'waiting' | 'unavailable'; asset?: PickedEditorAsset }>({ status: 'idle' });
     // Simple view is the default: preview, short timeline and Add / AI Edit / More. "All editing tools" opens the full set.
     const [advanced, setAdvanced] = useState(startAdvanced); const [sheet, setSheet] = useState<SimpleSheetName | null>(null); const [panelOpen, setPanelOpen] = useState(false);
+    const openedStartAdd = useRef(false);
     const [safeAreaGuideId, setSafeAreaGuideId] = useState<SafeAreaGuideId>('off');
     const session = useFullEditorSession({ projectId, jobId, cuts, onOwnerChange: () => guard.teardown(() => router.back()), onCopy: id => guard.teardown(() => router.replace({ pathname:
         '/editor/[projectId]', params: { projectId: id } })) });
@@ -132,6 +133,11 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     const [generate, setGenerate] = useState<{ visible: boolean; kind: Kind; frame: number; owner?: string; prompt?: string } | null>(null);
     const [stemChoice, setStemChoice] = useState<{ choice: LibraryChoice; stems: EditorStem[] } | null>(null);
     const isReady = () => currentDocument()?.project_id === projectId && sync.draftDecided && !sync.sheet && !sync.replacing && sync.live(), ready = isReady();
+    useEffect(() => {
+        if (!startAdd || !ready || openedStartAdd.current) return;
+        openedStartAdd.current = true;
+        setSheet('add');
+    }, [ready, startAdd]);
     const liveProject = useRef(projectId), readiness = useRef(ready); liveProject.current = projectId; readiness.current = ready;
     const openRename = () => { setRenameDraft(displayName); setRenameOpen(true); setProblem(null); };
     const saveRename = async () => {
@@ -520,7 +526,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     const simpleDockTab: SimpleDockTab = sheet === 'ai' ? 'ai' : sheet === 'cut' ? 'cut'
         : sheet === 'sound' ? 'audio' : sheet === 'text' ? 'text' : sheet === 'layers' ? 'media'
         : panelOpen && (tool === 'audio' || tool === 'text' || tool === 'media') ? tool : 'cut';
-    const simpleTrayRows = sheet === 'sound' ? soundRows : sheet === 'text' ? textRows : sheet === 'layers' ? layerRows
+    const simpleTrayRows = sheet === 'add' ? addRows : sheet === 'sound' ? soundRows : sheet === 'text' ? textRows : sheet === 'layers' ? layerRows
         : sheet === 'cut' || sheet === null ? cutRows : null;
     const openVoiceover = () => { setPlaying(false); setVoiceoverAt(clampFrame(frameStore.get())); setVoiceoverMessage(null); };
     const brandProps = { title: t('editor.brandkit'), body: t('editor.managelogosfontscoloursandapprovedassets'),
@@ -728,7 +734,6 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
                 const result = commitTimeline(next); if (result.status !== 'accepted') return result;
                 setAiAnnouncement(t('editorAi.applied')); return result; }}
             onClose={() => setAiEditOpen(false)} onUnavailable={() => { setAiEditOpen(false); setAiQuote(null); }} /> : null}
-        {sheet === 'add' ? <SimpleEditorSheet title={t('editorSimple.addTitle')} rows={addRows} onClose={() => setSheet(null)} /> : null}
         {sheet === 'ai' ? <SimpleEditorSheet title={t('editorSimple.aiTitle')} rows={aiRows} describe onDescribe={(id, prompt) => {
             if (id === 'make-clip' || id === 'make-audio') { showPanel('generate'); openGenerate(id === 'make-clip' ? 'video' : 'audio', prompt); }
             else aiRows.find(row => row.id === id)?.onPress();
