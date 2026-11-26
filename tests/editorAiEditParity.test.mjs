@@ -9,7 +9,7 @@ import { validateSequence } from '../app/veyrnox/_lib/editorSequenceValidation.m
 import { emptySequence, addSequenceMedia, addSequenceClip, addSequenceText } from '../app/veyrnox/_lib/editorSequence.mjs';
 describe('editor AI parity', () => {
 const require = createRequire(new URL('../apps/mobile/package.json', import.meta.url));
-const ts = require('typescript');
+const ts = require('typescript-legacy');
 function load(file, deps) {
     const source = readFileSync(new URL(`../apps/mobile/src/lib/${file}.ts`, import.meta.url), 'utf8');
     const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
