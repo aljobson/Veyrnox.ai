@@ -1,64 +1,42 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'test-renderer';
 import * as RN from 'react-native';
-import { MusicAddTrackSheet } from '../src/components/beats/MusicAddTrackSheet';
+import { MusicAddTrackTray } from '../src/components/beats/MusicAddTrackSheet';
 import { t } from '../src/lib/i18n';
 
-void [RN.View, RN.Pressable, RN.Text, RN.Modal];
+void [RN.View, RN.Pressable, RN.Text];
 
 let root: Root;
 beforeEach(() => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; root = createRoot(); });
 afterEach(async () => { await act(async () => root.unmount()); });
 
+const callbacks = () => ({ onLibrary: jest.fn(), onDevice: jest.fn(), onRecord: jest.fn(), onInstrument: jest.fn() });
 const press = async (label: string) => {
     const button = root.container.queryAll(node => node.props.accessibilityRole === 'button' && node.props.accessibilityLabel === label)[0];
     await act(async () => (button.props.onClick ?? button.props.onPress)({ nativeEvent: {} }));
 };
 
-test('offers the library, device import, recording, drums, and the shared instrument library', async () => {
-    const callbacks = {
-        onLibrary: jest.fn(), onDevice: jest.fn(), onRecord: jest.fn(),
-        onDrums: jest.fn(), onInstrument: jest.fn(), onClose: jest.fn(),
-    };
-    await act(async () => root.render(<MusicAddTrackSheet disabled={false} {...callbacks} />));
-
-    const choices = [
-        [t('beat.track.library'), callbacks.onLibrary],
-        [t('beat.track.device'), callbacks.onDevice],
-        [t('beatTakes.addTrack'), callbacks.onRecord],
-        [t('beat.kind.drums'), callbacks.onDrums],
-        [t('beatPiano.library.add'), callbacks.onInstrument],
-    ] as const;
-    for (const [title, callback] of choices) {
-        await press(title);
-        expect(callback).toHaveBeenCalledTimes(1);
-    }
-    expect(callbacks.onClose).toHaveBeenCalledTimes(5);
+test('offers four focused music sources inline without a duplicate drum shortcut', async () => {
+    const actions = callbacks();
+    await act(async () => root.render(<MusicAddTrackTray disabled={false} {...actions} />));
+    for (const [title, callback] of [
+        [t('beat.track.library'), actions.onLibrary], [t('beat.track.device'), actions.onDevice],
+        [t('beatTakes.addTrack'), actions.onRecord], [t('beatPiano.library.add'), actions.onInstrument],
+    ] as const) { await press(title); expect(callback).toHaveBeenCalledTimes(1); }
+    expect(root.container.queryAll(node => node.props.testID === 'music-add-track-drums')).toHaveLength(0);
 });
 
 test('disables every track creation choice when the song cannot accept another track', async () => {
-    await act(async () => root.render(<MusicAddTrackSheet disabled onLibrary={() => {}} onDevice={() => {}}
-        onRecord={() => {}} onDrums={() => {}} onInstrument={() => {}} onClose={() => {}} />));
-    for (const label of [t('beat.track.library'), t('beat.track.device'), t('beatTakes.addTrack'), t('beat.kind.drums'), t('beatPiano.library.add')]) {
+    await act(async () => root.render(<MusicAddTrackTray disabled {...callbacks()} />));
+    for (const label of [t('beat.track.library'), t('beat.track.device'), t('beatTakes.addTrack'), t('beatPiano.library.add')]) {
         const button = root.container.queryAll(node => node.props.accessibilityRole === 'button' && node.props.accessibilityLabel === label)[0];
         expect(button.props.accessibilityState.disabled).toBe(true);
     }
 });
 
-test('presents track choices as a clean icon grid without disclosure chevrons', async () => {
-    await act(async () => root.render(<MusicAddTrackSheet disabled={false} onLibrary={() => {}} onDevice={() => {}}
-        onRecord={() => {}} onDrums={() => {}} onInstrument={() => {}} onClose={() => {}} />));
-    const icons = root.container.queryAll(node => node.props.accessibilityElementsHidden && node.props.style);
-    expect(icons.length).toBeGreaterThanOrEqual(5);
-    expect(root.container.queryAll(node => node.props.source?.testUri?.endsWith('/drum.png')).length).toBeGreaterThan(0);
-    expect(root.container.queryAll(node => node.props.accessibilityLabel === 'caretRight')).toHaveLength(0);
-});
-
-test('keeps the editor visible by presenting the submenu as a bottom sheet', async () => {
-    await act(async () => root.render(<MusicAddTrackSheet disabled={false} onLibrary={() => {}} onDevice={() => {}}
-        onRecord={() => {}} onDrums={() => {}} onInstrument={() => {}} onClose={() => {}} />));
-    const modal = root.container.queryAll(node => node.props.testID === 'music-add-track-sheet')[0];
-    expect(modal.props.transparent).toBe(true);
-    expect(modal.props.presentationStyle).toBe('overFullScreen');
-    expect(root.container.queryAll(node => node.props.testID === 'music-add-track-sheet-bottom-sheet')).toHaveLength(1);
+test('is an inline toolbar rather than a modal or second screen', async () => {
+    await act(async () => root.render(<MusicAddTrackTray disabled={false} {...callbacks()} />));
+    expect(root.container.queryAll(node => node.props.testID === 'music-add-track-tray')).toHaveLength(1);
+    expect(root.container.queryAll(node => node.type === RN.Modal)).toHaveLength(0);
+    expect(root.container.queryAll(node => node.props.accessibilityRole === 'button')).toHaveLength(4);
 });

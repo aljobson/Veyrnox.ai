@@ -19,8 +19,6 @@ export const pianoStyles = themedStyles(p => ({
     presetAdd: { flex: 1, minHeight: 96, flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'flex-start', gap: ds.space.sm, padding: ds.space.sm, borderRadius: ds.radius.md },
     presetIcon: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center', borderRadius: ds.radius.sm, backgroundColor: p.surface },
     presetName: { maxWidth: '100%', textAlign: 'left', fontWeight: '600' },
-    presetPreview: { position: 'absolute', top: ds.space.xs, right: ds.space.xs, zIndex: 2, width: 32, height: 32, minHeight: 32 },
-    previewButton: { width: 32, minWidth: 32, minHeight: 32, paddingHorizontal: 0 },
     field: { minHeight: 44, minWidth: 100, borderWidth: 1, borderColor: p.borderSubtle, borderRadius: ds.radius.sm, color: p.textPrimary, padding: ds.space.sm },
     choiceSelected: { borderWidth: 2, borderColor: p.textPrimary },
     key: { minWidth: 44, height: 120, borderWidth: 1, borderColor: p.borderSubtle, backgroundColor: p.bgElevated1, justifyContent: 'flex-end', alignItems: 'center', paddingBottom: 12 },

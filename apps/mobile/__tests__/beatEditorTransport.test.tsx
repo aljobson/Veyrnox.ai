@@ -114,6 +114,16 @@ test('focused music dock exposes add, AI, play and mixer without history chrome'
     expect(ai.queryAll(n => n.props.children === 'AI')).toHaveLength(0);
 });
 
+test('selected bottom tool owns one inline submenu directly below the dock', async () => {
+    const onAdd = jest.fn();
+    await act(async () => root.render(<BeatEditorTransport {...props} showPatterns={false} showHistory={false}
+        addOpen onAdd={onAdd} subMenu={<RN.View testID="inline-add-tools" />} />));
+    const add = root.container.queryAll(n => n.props.testID === 'beat-editor-add-track' && typeof (n.props.onClick ?? n.props.onPress) === 'function')[0];
+    expect(add.props.accessibilityState.selected).toBe(true);
+    expect(root.container.queryAll(n => n.props.testID === 'beat-editor-submenu')).toHaveLength(1);
+    expect(root.container.queryAll(n => n.props.testID === 'inline-add-tools')).toHaveLength(1);
+});
+
 test('regular width uses the row layout and protects landscape sides plus the bottom safe-area edge', async () => {
     mockDimensions = { ...mockDimensions, width: 1024 };
     await render();
