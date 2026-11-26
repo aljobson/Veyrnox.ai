@@ -8,6 +8,7 @@ import { useAuth } from '../../../auth/AuthProvider';
 import { Button, Text, themedStyles, useThemedStyles } from '../../../components/ui';
 import { EmptyState } from '../../../components/EmptyState';
 import { VeyLoader } from '../../../components/VeyLoader';
+import { LoadingSkeleton } from '../../../components/LoadingSkeleton';
 import { MusicNotice } from '../../../components/music/MusicNotice';
 import { MusicPlayer } from '../../../components/music/MusicPlayer';
 import { MusicShares } from '../../../components/music/MusicShares';
@@ -71,7 +72,7 @@ export default function SongDetail() {
     }, [song, trashed]);
     return <SafeContentScrollView style={s.screen} contentContainerStyle={s.content} gutter={ds.space.lg}>
         <Stack.Screen options={{ title: song?.title ?? t('music.title') }} />
-        {!result ? <VeyLoader label={t('music.loading')} showLabel /> : null}
+        {!result ? <LoadingSkeleton label={t('music.loading')} variant="dashboard" /> : null}
         {result?.state === 'off' ? <EmptyState title={t('music.off')} body={t('music.offBody')} actionLabel={t('music.back')} href="/music" /> : null}
         {result?.state === 'error' && !trashed ? <MusicNotice message={t(result.status === 0 ? 'music.offline' : result.code === 'not_found' ? 'music.missing' : 'music.loadError')} retry={() => void load()} /> : null}
         {message ? <MusicNotice message={message} /> : null}
