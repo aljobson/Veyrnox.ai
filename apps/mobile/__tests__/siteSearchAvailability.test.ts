@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { screenEntries } from '../src/lib/siteSearch';
+import { screenEntries, searchEntries } from '../src/lib/siteSearch';
 
 const title = (key: string): string => key;
 
@@ -18,15 +18,16 @@ test('server-backed Music search follows the live capability while local studios
     }
 });
 
-test('registry screens win duplicate creative-feature hrefs and search hrefs stay unique', () => {
+test('duplicate creative recipes resolve to their canonical Audio or Tools directory', () => {
     const entries = screenEntries(title, { musicAvailable: true });
     const hrefs = entries.map((entry) => entry.href);
     expect(new Set(hrefs).size).toBe(hrefs.length);
     for (const href of ['/features/lip-sync', '/features/video-dubbing', '/features/ai-talking-photo-generator', '/features/singing-photo']) {
-        const matches = entries.filter((entry) => entry.href === href);
-        expect(matches).toHaveLength(1);
-        expect(matches[0].id).toMatch(/^screen:/);
+        expect(hrefs).not.toContain(href);
     }
+    expect(searchEntries('lip sync', entries)).toEqual([expect.objectContaining({ id: 'screen:tools', href: '/create/tools' })]);
+    expect(searchEntries('talking photo', entries)).toEqual([expect.objectContaining({ id: 'screen:tools', href: '/create/tools' })]);
+    expect(searchEntries('text to speech', entries)[0]).toMatchObject({ id: 'screen:speech', href: '/speech' });
 });
 
 test('the Search screen passes the live Music probe into screen entry construction', () => {
