@@ -36,7 +36,6 @@ export function BeatInstrumentLibrary({ apply, audio, onClose, onDismiss, refusa
                     else setFailed(true);
                     }}><View style={s.presetIcon}><Icon name={groupIcon(group.id)} size={24} /></View>
                     <Text variant="caption" numberOfLines={2} style={s.presetName}>{p.label}</Text>
-                    <View style={s.addMark}><Icon name="plus" size={16} /></View>
                 </Button>
                 <Button label={t('beatPiano.library.audition', { name: p.label })} accessibilityLabel={t('beatPiano.library.audition', { name: p.label })}
                     icon="play" iconOnly size="sm" variant="tertiary" containerStyle={s.presetPreview} onPress={() => void audition(p.instrument)} />
