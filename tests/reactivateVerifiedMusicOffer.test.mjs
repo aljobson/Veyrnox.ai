@@ -9,7 +9,8 @@ test('reactivates only the durable ace-step Music offer', () => {
   assert.match(migration, /WHERE id = 'ace-step'/);
   assert.match(migration, /ace-step-1\.5 must remain inactive until separately verified/);
   assert.doesNotMatch(migration, /id IN \('ace-step',\s*'ace-step-1\.5'\)/);
-  assert.doesNotMatch(migration, /UPDATE public\.model_routes/i);
+  assert.match(migration, /UPDATE public\.model_routes[\s\S]*WHERE model_id = 'ace-step'/i);
+  assert.match(migration, /public\.model_route_reorder\(/);
 });
 
 test('requires live worker, breaker, provider and margin gates', () => {
@@ -22,6 +23,7 @@ test('requires live worker, breaker, provider and margin gates', () => {
 });
 
 test('proves the actual create-to-library path instead of generic QA jobs', () => {
+  assert.match(migration, /IF EXISTS \(SELECT 1 FROM public\.jobs\) THEN/);
   for (const relation of [
     'music_generation_candidates',
     'music_generation_requests',

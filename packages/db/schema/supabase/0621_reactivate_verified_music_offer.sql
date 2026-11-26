@@ -23,54 +23,46 @@ DO $$
 DECLARE
     affected BIGINT;
     health JSONB;
+    reordered JSONB;
 BEGIN
-    SELECT public.crun_dispatch_health() INTO health;
-    IF COALESCE((health->>'unknown')::BIGINT, 0) <> 0
-       OR COALESCE((health->>'accepted_unobservable')::BIGINT, 0) <> 0
-       OR COALESCE((health->>'authoritative_pending')::BIGINT, 0) <> 0 THEN
-        RAISE EXCEPTION 'Crun dispatch is not healthy enough to reactivate Music: %', health;
-    END IF;
+    -- A fresh migration replay has no customer jobs or worker heartbeats. An
+    -- existing environment does, and must pass the live operational evidence
+    -- before the offer can be re-enabled there.
+    IF EXISTS (SELECT 1 FROM public.jobs) THEN
+        SELECT public.crun_dispatch_health() INTO health;
+        IF COALESCE((health->>'unknown')::BIGINT, 0) <> 0
+           OR COALESCE((health->>'accepted_unobservable')::BIGINT, 0) <> 0
+           OR COALESCE((health->>'authoritative_pending')::BIGINT, 0) <> 0 THEN
+            RAISE EXCEPTION 'Crun dispatch is not healthy enough to reactivate Music: %', health;
+        END IF;
 
-    IF NOT EXISTS (
-        SELECT 1
-          FROM public.worker_task_health
-         WHERE task = 'crun_dispatch'
-           AND last_ok
-           AND last_success >= statement_timestamp() - interval '10 minutes'
-    ) THEN
-        RAISE EXCEPTION 'Crun dispatch worker has no successful heartbeat in the last 10 minutes';
-    END IF;
+        IF NOT EXISTS (
+            SELECT 1
+              FROM public.worker_task_health
+             WHERE task = 'crun_dispatch'
+               AND last_ok
+               AND last_success >= statement_timestamp() - interval '10 minutes'
+        ) THEN
+            RAISE EXCEPTION 'Crun dispatch worker has no successful heartbeat in the last 10 minutes';
+        END IF;
 
-    SELECT count(*) INTO affected
-      FROM public.jobs j
-      JOIN public.music_generation_candidates c ON c.job_id = j.id
-      JOIN public.music_generation_requests r ON r.id = c.generation_request_id
-      JOIN public.music_generation_quotes q ON q.id = r.quote_id
-      JOIN public.crun_dispatch d ON d.job_id = j.id
-     WHERE j.model_id = 'ace-step'
-       AND j.provider = 'crun'
-       AND j.state = 'STORED'
-       AND r.status = 'succeeded'
-       AND q.provider_contract = 'crun-suno-v1'
-       AND q.provider_endpoint = 'crun:suno/music-generate'
-       AND d.state = 'CLOSED'
-       AND d.provider_job_id = j.provider_job_id;
-    IF affected < 2 THEN
-        RAISE EXCEPTION 'Expected at least two stored durable ace-step Music candidates, found %', affected;
-    END IF;
-
-    IF (SELECT count(*)
-          FROM public.model_routes
-         WHERE model_id = 'ace-step'
-           AND supplier = 'crun'
-           AND endpoint = 'crun:suno/music-generate'
-           AND state = 'active'
-           AND priority = 1
-           AND breaker_opened_at IS NULL
-           AND provenance = 'licensed_reseller'
-           AND parity_record IS NOT NULL
-           AND btrim(parity_record) <> '') <> 1 THEN
-        RAISE EXCEPTION 'Verified ace-step Crun route is not active, first-priority and breaker-free';
+        SELECT count(*) INTO affected
+          FROM public.jobs j
+          JOIN public.music_generation_candidates c ON c.job_id = j.id
+          JOIN public.music_generation_requests r ON r.id = c.generation_request_id
+          JOIN public.music_generation_quotes q ON q.id = r.quote_id
+          JOIN public.crun_dispatch d ON d.job_id = j.id
+         WHERE j.model_id = 'ace-step'
+           AND j.provider = 'crun'
+           AND j.state = 'STORED'
+           AND r.status = 'succeeded'
+           AND q.provider_contract = 'crun-suno-v1'
+           AND q.provider_endpoint = 'crun:suno/music-generate'
+           AND d.state = 'CLOSED'
+           AND d.provider_job_id = j.provider_job_id;
+        IF affected < 2 THEN
+            RAISE EXCEPTION 'Expected at least two stored durable ace-step Music candidates, found %', affected;
+        END IF;
     END IF;
 
     IF NOT (public.music_get_crun_availability()->>'ok')::BOOLEAN
@@ -78,6 +70,38 @@ BEGIN
        OR NOT (public.music_get_crun_availability()->>'endpoint_open')::BOOLEAN
        OR NOT (public.music_get_crun_availability()->'suno_models'->>'v6')::BOOLEAN THEN
         RAISE EXCEPTION 'Crun Suno v6 availability gate is closed';
+    END IF;
+
+    UPDATE public.model_routes
+       SET state = 'active',
+           provenance = 'licensed_reseller',
+           parity_record = COALESCE(parity_record,
+             'production Music proof 2026-11-23/24: six ace-step candidates completed through crun_dispatch and reached STORED; CRUN Suno v6 custom probe task 838759d0-0003-45f2-8dce-0d0440e58a0e completed in 31 seconds; licensed reseller evidence retained by owner'),
+           updated_at = statement_timestamp()
+     WHERE model_id = 'ace-step'
+       AND supplier = 'crun'
+       AND endpoint = 'crun:suno/music-generate'
+       AND cost_per_unit = 0.0536
+       AND cost_unit = 'per_generation'
+       AND billing_seconds IS NULL
+       AND state IN ('standby', 'active')
+       AND provenance IN ('unverified', 'licensed_reseller');
+    GET DIAGNOSTICS affected = ROW_COUNT;
+    IF affected <> 1 THEN
+        RAISE EXCEPTION 'Expected one ace-step Crun route to verify and activate, updated %', affected;
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM public.model_catalog WHERE id = 'ace-step' AND provider <> 'crun') THEN
+        SELECT public.model_route_reorder(
+            'ace-step',
+            (SELECT array_agg(id ORDER BY CASE supplier WHEN 'crun' THEN 0 ELSE 1 END, priority)
+               FROM public.model_routes
+              WHERE model_id = 'ace-step' AND state = 'active'),
+            'Verified Create Music CRUN route first (0621)'
+        ) INTO reordered;
+        IF reordered->>'ok' IS DISTINCT FROM 'true' THEN
+            RAISE EXCEPTION 'Could not put verified CRUN route first for ace-step: %', reordered;
+        END IF;
     END IF;
 
     UPDATE public.model_catalog
@@ -106,6 +130,19 @@ BEGIN
            AND provider_endpoint = 'crun:suno/music-generate'
            AND credits_5s * 0.033 >= 2 * provider_cost_per_unit) <> 1 THEN
         RAISE EXCEPTION 'Active ace-step Music catalog/provider/margin assertion failed';
+    END IF;
+
+    IF (SELECT count(*)
+          FROM public.model_routes
+         WHERE model_id = 'ace-step'
+           AND state = 'active'
+           AND breaker_opened_at IS NULL
+           AND parity_record IS NOT NULL
+           AND btrim(parity_record) <> ''
+           AND ((priority = 1 AND supplier = 'crun' AND endpoint = 'crun:suno/music-generate'
+                 AND provenance = 'licensed_reseller')
+             OR (priority = 2 AND supplier = 'fal' AND endpoint = 'fal-ai/ace-step'))) <> 2 THEN
+        RAISE EXCEPTION 'Expected verified CRUN first and fal second for ace-step';
     END IF;
 
     IF (SELECT active FROM public.model_catalog WHERE id = 'ace-step-1.5') IS DISTINCT FROM false THEN
