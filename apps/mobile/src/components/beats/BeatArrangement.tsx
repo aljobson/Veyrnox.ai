@@ -218,8 +218,9 @@ export function BeatArrangement({ doc, apply, selectCurrentPattern, editTrackId,
                 onScrollBeginDrag={() => { if (playing) manualRunRef.current = true; }}
                 onScroll={event => { scroll.current = event.nativeEvent.contentOffset.x; }} scrollEventThrottle={16}>
                 <View style={{ width }}>
-                    <View pointerEvents="none" accessible={false} style={s.grid}>{Array.from({ length: bars * 4 + 1 }, (_, index) =>
-                        <View key={index} style={[index % 4 ? s.beatGridLine : s.barGridLine, { left: index * zoom / 4 }]} />)}</View>
+                    <View pointerEvents="none" accessible={false} testID="arrangement-grid" style={s.grid}>{Array.from({ length: bars * 4 + 1 }, (_, index) =>
+                        <View key={index} testID={index % 4 ? 'arrangement-beat-line' : 'arrangement-bar-line'}
+                            style={[index % 4 ? s.beatGridLine : s.barGridLine, { left: index * zoom / 4 }]} />)}</View>
                     <BeatRuler bars={bars} zoom={zoom} snap={snap} locator={locator} end={end} setLocator={setPosition}
                         cycle={doc.cycle} apply={apply} lock={lock} announce={announce} disabled={disabled} />
                     {doc.tracks.map((track, index) => <View key={track.id} ref={value => { lanes.current[track.id] = value; }}
@@ -265,9 +266,9 @@ const sheets = themedStyles(p => ({
     selected: { borderLeftWidth: 3, borderLeftColor: p.accent, backgroundColor: p.surface },
     scroller: { flex: 1 },
     grid: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 },
-    beatGridLine: { position: 'absolute', top: RULER_HEIGHT, bottom: 0, width: 1, backgroundColor: p.borderSubtle, opacity: 0.28 },
-    barGridLine: { position: 'absolute', top: 0, bottom: 0, width: 1, backgroundColor: p.borderStrong, opacity: 0.7 },
-    lane: { borderBottomWidth: 1, borderColor: p.borderSubtle },
+    beatGridLine: { position: 'absolute', top: RULER_HEIGHT, bottom: 0, width: 1, backgroundColor: '#34343b', opacity: 0.9 },
+    barGridLine: { position: 'absolute', top: 0, bottom: 0, width: 2, backgroundColor: '#5a5a64', opacity: 0.95 },
+    lane: { borderBottomWidth: 1, borderColor: '#34343b' },
     emptyLane: { position: 'absolute', top: 0, left: 0, bottom: 0, right: 0 },
     preview: { position: 'absolute', top: ds.space.xs, height: 56, borderWidth: 2, borderColor: p.accent, backgroundColor: p.surface, opacity: 0.7, borderRadius: ds.radius.xs },
     playhead: { position: 'absolute', top: 0, bottom: 0, width: 2, backgroundColor: p.accent },
