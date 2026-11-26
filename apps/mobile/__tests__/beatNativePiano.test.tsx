@@ -101,11 +101,12 @@ function LibraryHarness({ id }: { id: string }) {
     const edit = useBeatEdit(id);
     return <><BeatInstrumentsSection doc={edit.doc!} apply={edit.apply} audio={() => mockAudio} onOpen={() => {}} /><Button label={t('beat.undo')} onPress={edit.undo} /></>;
 }
-test('library audition and add use shared voices and a single undoable store edit', async () => {
+test('compact neutral instrument tiles audition and add with one undoable store edit', async () => {
     const doc = newBeat('Library'); await act(async () => root.render(<LibraryHarness id={doc.id} />));
     await press(t('beatPiano.library.add'));
     const vividFills = new Set(VIVID_HUES.map(hue => vividHue(hue, 'dark').fill));
-    expect(root.container.queryAll(node => vividFills.has(RN.StyleSheet.flatten(node.props.style)?.backgroundColor)).length).toBeGreaterThanOrEqual(VIVID_HUES.length);
+    expect(root.container.queryAll(node => RN.StyleSheet.flatten(node.props.style)?.width === '31%').length).toBeGreaterThan(0);
+    expect(root.container.queryAll(node => vividFills.has(RN.StyleSheet.flatten(node.props.style)?.backgroundColor))).toHaveLength(0);
     await press(t('beatPiano.library.audition', { name: 'Grand piano' }));
     expect(mockAudio.audition).toHaveBeenCalledWith({ engine: 'voice', id: 'piano', preset: 'grand' });
     await press(t('beatPiano.library.addNamed', { name: 'Grand piano' }));
