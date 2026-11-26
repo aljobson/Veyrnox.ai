@@ -120,7 +120,7 @@ test('every text-driven audio capability record refuses an empty prompt', () => 
     }
 });
 
-test('the gateway refuses an empty prompt on each live sound model before any debit', async (t) => {
+test('the gateway keeps Music on its durable endpoint and validates generic sound prompts before any debit', async (t) => {
     const calls = [];
     let row = null;
     t.mock.method(console, 'error', () => {});
@@ -140,7 +140,10 @@ test('the gateway refuses an empty prompt on each live sound model before any de
                 method: 'POST', headers: { 'x-veyrnox-auth-id': '11111111-1111-4111-8111-111111111111', 'content-type': 'application/json' },
                 body: JSON.stringify({ model_id: id, idempotency_key: 'sound-empty-prompt', inputs: { prompt, aspect_ratio: '16:9' } }),
             }));
-            assert.deepEqual([response.status, await response.json()], [400, { error: 'inputs_invalid:prompt' }], id);
+            const expected = id.startsWith('ace-step')
+                ? [409, { error: 'music_generation_required' }]
+                : [400, { error: 'inputs_invalid:prompt' }];
+            assert.deepEqual([response.status, await response.json()], expected, id);
         }
     }
     assert.equal(calls.some((p) => p.endsWith('/rpc/ledger_debit')), false, 'no debit');
