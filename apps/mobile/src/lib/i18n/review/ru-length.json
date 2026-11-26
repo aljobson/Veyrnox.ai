@@ -4965,8 +4965,10 @@
     "id": "onboarding.notifications.previewBody",
     "english": "Open Veyrnox to see it.",
     "translation": "Откройте Veyrnox, чтобы посмотреть её.",
-    "ratio": 1.65,
-"id": "projects.move",
+    "ratio": 1.65
+  },
+  {
+    "id": "projects.move",
     "english": "Move",
     "translation": "Переместить",
     "ratio": 2.75

@@ -17,7 +17,7 @@ export function VividCard({
     detail,
     eyebrow,
     layout = 'tile',
-    selected = false,
+    selected,
     showChevron = false,
     onPress,
     accessibilityLabel,
@@ -41,11 +41,12 @@ export function VividCard({
 }) {
     const { scheme } = useAppearance();
     const tone = vividHue(hue, scheme);
+    const isSelected = selected ?? false;
     const pressStyle = usePressStyle(layout === 'row' ? 'row' : 'card');
     const colour = useMemo(() => ({
         backgroundColor: tone.fill,
-        borderColor: selected ? tone.foreground : tone.edge,
-    }), [selected, tone.edge, tone.fill, tone.foreground]);
+        borderColor: isSelected ? tone.foreground : tone.edge,
+    }), [isSelected, tone.edge, tone.fill, tone.foreground]);
     const selectedSurface = useMemo(() => ({ backgroundColor: tone.foreground }), [tone.foreground]);
     const glow = useMemo(() => ({ backgroundColor: tone.glow }), [tone.glow]);
     const iconSurface = useMemo(() => ({ backgroundColor: tone.iconSurface }), [tone.iconSurface]);
@@ -65,7 +66,7 @@ export function VividCard({
                 {detail ? <Text variant="footnote" style={{ color: tone.foregroundMuted }} numberOfLines={row ? 2 : 4}>{detail}</Text> : null}
             </View>
             {showChevron ? <View style={styles.chevron}><Icon name="caretRight" size={20} tint={tone.foreground} /></View> : null}
-            {selected ? <View style={[styles.selected, selectedSurface]}><Icon name="check" size={16} tint={tone.fill} /></View> : null}
+            {isSelected ? <View style={[styles.selected, selectedSurface]}><Icon name="check" size={16} tint={tone.fill} /></View> : null}
         </>
     );
     const container = [styles.card, styles[layout], colour, style];
@@ -74,7 +75,7 @@ export function VividCard({
             accessibilityRole={role}
             accessibilityLabel={label}
             accessibilityHint={rawText(accessibilityHint)}
-            accessibilityState={{ selected, ...(role === 'radio' ? { checked: selected } : {}) }}
+            accessibilityState={{ ...(selected === undefined ? {} : { selected: isSelected }), ...(role === 'radio' ? { checked: isSelected } : {}) }}
             onPress={onPress}
             style={({ pressed }) => [container, pressed && pressStyle]}
         >
@@ -120,7 +121,7 @@ const styles = StyleSheet.create({
         position: 'absolute',
         width: 126,
         height: 126,
-        borderRadius: 63,
+        borderRadius: ds.radius.pill,
         right: -28,
         top: -36,
         opacity: 0.48,

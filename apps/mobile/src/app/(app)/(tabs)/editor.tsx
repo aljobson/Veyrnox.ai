@@ -1,6 +1,6 @@
 import { rawText } from '../../../lib/i18n/translate';
 import { directionalStyle } from '../../../lib/rtl';
-import { Button, Card, Text, VividCard, themedStyles, useThemedStyles, useAppearance } from '../../../components/ui';
+import { Button, Card, Text, themedStyles, useThemedStyles, useAppearance } from '../../../components/ui';
 import { VeyLoader } from '../../../components/VeyLoader';
 import { Image } from 'expo-image';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
@@ -10,15 +10,12 @@ import { FlatList, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { useAssetLinks } from '../../../components/JobThumb';
 import { ProjectThumb } from '../../../components/CreationThumbs';
-import { BestCutEntry } from '../../../components/editor/BestCutEntry';
 import { EDITOR_ENABLED } from '../../../lib/editorFlag';
-import { FILM_STUDIO_ENABLED } from '../../../lib/filmStudioSwitch';
-import { mobileFeature, type MobileFeatureDefinition } from '../../../lib/featureRegistry';
 import { formatLocale, t } from '../../../lib/i18n';
 import { MENU_ICONS } from '../../../lib/menuIcons';
 import { fetchProjects, fetchWorkspaces, projectSavedAt, projectsErrorMessage, projectVersion, type Project, type Workspace } from '../../../lib/projects';
 import { projectsChangedGeneration, subscribeProjectsChanged } from '../../../lib/projectsChanged';
-import { ds, type VividHue } from '../../../theme';
+import { ds } from '../../../theme';
 
 const newestFirst = (items: readonly Project[]): Project[] => [...items].sort((a, b) => {
     const aSaved = projectSavedAt(a);
@@ -28,21 +25,12 @@ const newestFirst = (items: readonly Project[]): Project[] => [...items].sort((a
     return bTime - aTime || projectVersion(b) - projectVersion(a) || a.name.localeCompare(b.name);
 });
 
-function StudioRow({ feature, body, hue, onPress }: { feature: MobileFeatureDefinition; body: string; hue: VividHue; onPress: () => void }) {
-    const title = t(feature.titleKey as Parameters<typeof t>[0]);
-    return <VividCard hue={hue} icon={feature.icon ?? 'sparkle'} title={title} detail={body} layout="row" showChevron accessibilityLabel={rawText(title)} onPress={onPress} />;
-}
 export default function EditorHome() {
     const styles = useThemedStyles(sheets);
     const { scheme } = useAppearance();
     const { api } = useAuth();
     const links = useAssetLinks(api);
     const router = useRouter();
-    const projectsFeature = mobileFeature('projects');
-    const beatsFeature = mobileFeature('beats');
-    const smartCutFeature = mobileFeature('smartCut');
-    const featuresFeature = mobileFeature('features');
-    const filmFeature = mobileFeature('film');
     const selectedWorkspace = useRef<string | null>(null);
     const request = useRef(0);
     const loadedOnce = useRef(false);
@@ -112,12 +100,6 @@ export default function EditorHome() {
                             <Text variant="display" style={styles.heading} accessibilityRole="header">{t('editor.title')}</Text>
                             <Text variant="body" style={styles.summary}>{t('editor.home.summary')}</Text>
                         </View>
-                        <StudioRow hue="blue" feature={projectsFeature} body={t('studio.projectsBody')} onPress={() => router.push(projectsFeature.href as never)} />
-                        <StudioRow hue="purple" feature={beatsFeature} body={t('studio.beatsBody')} onPress={() => router.push(beatsFeature.href as never)} />
-                        <StudioRow hue="orange" feature={smartCutFeature} body={t('app.explore.smartCutStart')} onPress={() => router.push(smartCutFeature.href as never)} />
-                        <StudioRow hue="teal" feature={featuresFeature} body={t('features.chooseaworkflowVeyrnoxsetstheright')} onPress={() => router.push(featuresFeature.href as never)} />
-                        <BestCutEntry />
-                        {FILM_STUDIO_ENABLED ? <StudioRow hue="green" feature={filmFeature} body={t('filmCloud.intro')} onPress={() => router.push(filmFeature.href as never)} /> : null}
                         {EDITOR_ENABLED ? <Button label={t('editor.new')} variant="primary"
                             accessibilityRole="button"
                             accessibilityLabel={t('editor.new')}

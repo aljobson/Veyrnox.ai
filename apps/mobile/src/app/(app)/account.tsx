@@ -162,7 +162,7 @@ export default function Account() {
 
             <Section title={t('opt.settings')}>
                 {ACTIVE_LOCALES.length > 1 ? <Row icon="globe" hue="blue" label={t('language.title')} onPress={() => router.push('/language' as never)} /> : null}
-                {isAnalyticsEnabled() ? <Row icon="shieldCheck" hue="teal" label={t('analyticsConsent.choices')} onPress={() => router.push('/privacy-choices')} /> : null}
+                {isAnalyticsEnabled() ? <ListRow icon="shieldCheck" title={t('analyticsConsent.choices')} accessibilityRole="button" onPress={() => router.push('/privacy-choices')} /> : null}
                 <Row icon="swatches" hue="pink" label={t('acct.appearance')} onPress={() => router.push('/appearance')} />
             </Section>
 
