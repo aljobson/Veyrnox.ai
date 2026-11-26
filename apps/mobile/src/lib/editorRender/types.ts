@@ -17,6 +17,7 @@ export type StaticPreviewBlend = (typeof STATIC_PREVIEW_BLENDS)[number];
 export type StaticPreviewMaskShape = 'circle' | 'rounded' | 'horizontal' | 'vertical';
 export type StaticPreviewUnsupportedFeature =
     | 'animation-reveal'
+    | 'behind-subject'
     | 'colour'
     | 'effect'
     | 'filter'

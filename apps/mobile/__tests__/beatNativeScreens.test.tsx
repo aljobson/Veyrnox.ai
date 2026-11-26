@@ -12,7 +12,7 @@ import BeatEditor from '../src/app/(app)/beats/[id]';
 import { ApiError } from '../src/lib/api';
 import { t } from '../src/lib/i18n';
 import { beatStore, createBeatStore, newBeat, resetBeats, getBeat, putBeat } from '../src/lib/beatNative/store';
-import { audibleGain, addKitTrack, createBeat, eventsAtStep, hasHit, loopSteps, patternHasHits, selectPattern, validateBeat, DRUM_PADS, MAX_BPM, setView } from '../src/lib/beatNative/doc';
+import { audibleGain, addKitTrack, createBeat, eventsAtStep, loopSteps, DRUM_PADS, MAX_BPM } from '../src/lib/beatNative/doc';
 import { BeatVersionsSheet } from '../src/components/beats/BeatVersionsSheet';
 import { BeatCloudConflictModal } from '../src/components/beats/BeatCloudConflictModal';
 import { BeatCloudSync, type SyncView } from '../src/lib/beatNative/cloudSync';
@@ -64,7 +64,7 @@ const mockCreateBeatAudio = jest.fn(() => mockAudio);
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi, getAccessToken: mockGetAccessToken,
     generation: mockGeneration, beginSessionTask: mockBeginSessionTask }) }));
 jest.mock('../src/components/beats/ai/BeatAiPanel', () => ({ BeatAiPanel: () => null }));
-jest.mock('expo-router', () => ({ Link: ({ children }: { children: unknown }) => children, Stack: { Screen: () => null }, useRouter: () => ({ push: mockPush }),
+jest.mock('expo-router', () => ({ Link: ({ children }: { children: unknown }) => children, Stack: { Screen: ({ options }: { options?: { headerRight?(): unknown } }) => options?.headerRight?.() ?? null }, useRouter: () => ({ push: mockPush }),
     useLocalSearchParams: () => mockParams, useFocusEffect: (cb: () => void) => require('react').useEffect(cb, [cb]) }));
 jest.mock('../src/lib/beatNative/audio', () => ({ ...jest.requireActual('../src/lib/beatNative/audio'), createBeatAudio: () => mockCreateBeatAudio() }));
 jest.mock('../src/components/VeyCharacter', () => ({ VeyCharacter: () => null }));
@@ -88,18 +88,23 @@ describe('beats home', () => {
         await act(async () => root.render(<BeatsHome />));
         expect(text(t('beat.cloud.off')).length).toBeGreaterThan(0);
         expect(byLabel(t('beat.home.new'))).toBeDefined();
+        expect(byLabel(t('music.title'))).toBeUndefined();
+        expect(testId('music-editor-new')).toHaveLength(1);
+        expect(testId('music-editor-library')).toHaveLength(0);
+        expect(text(t('beat.home.new'))).toHaveLength(0);
         expect(mockApi.request).toHaveBeenCalledTimes(1);
         expect(mockApi.request).toHaveBeenCalledWith('/api/v1/music/beat-projects', expect.any(Object), expect.any(Object));
     });
-    test('on: empty list, new beat opens the editor route', async () => {
+    test('on: empty list, new music edit opens an audio-first editor', async () => {
         await act(async () => root.render(<BeatsHome />));
         expect(text(t('beat.home.empty')).length).toBeGreaterThan(0);
         await press(t('beat.home.new'));
-        expect(mockPush).not.toHaveBeenCalled();
-        await press(t('beatLabs.template.blank'));
         expect(mockPush).toHaveBeenCalledTimes(1);
         const id = (mockPush.mock.calls[0][0] as { params: { id: string } }).params.id;
         expect(getBeat(id)?.title).toBe(t('beat.home.untitled', { n: 1 }));
+        expect(getBeat(id)?.view).toBe('song');
+        expect(getBeat(id)?.tracks).toEqual([expect.objectContaining({ kind: 'audio', name: 'Audio 1', regions: [] })]);
+        expect(mockPush.mock.calls[0][0]).toMatchObject({ pathname: '/beats/[id]', params: { id, setup: '1' } });
     });
     test('offline still lets a beat be made, with a notice', async () => {
         mockApi.request.mockRejectedValue(new ApiError(0, 'network'));
@@ -110,95 +115,25 @@ describe('beats home', () => {
 });
 
 describe('beat editor', () => {
-    // Pads and the step grid live in Pattern view since N3; new beats retain the web Song default.
-    const open = async () => { const doc = setView(newBeat('Test'), 'pattern'); putBeat(doc); mockParams = { id: doc.id }; await act(async () => root.render(<BeatEditor />)); return doc; };
+    const open = async () => { const doc = newBeat('Test'); putBeat(doc); mockParams = { id: doc.id }; await act(async () => root.render(<BeatEditor />)); return doc; };
     test('a missing beat shows the empty state', async () => {
         mockParams = { id: 'nope' };
         await act(async () => root.render(<BeatEditor />));
         expect(text(t('beat.missing')).length).toBeGreaterThan(0);
     });
-    test('step toggle edits the shared document and passes validation', async () => {
-        const doc = await open();
-        const label = t('beat.step.off', { n: 2, total: 16, pad: t('beat.pad.kick') });
-        expect(testId('step-selected-1')).toHaveLength(0);
-        await press(label);
-        const next = getBeat(doc.id)!;
-        expect(hasHit(next, 'kick', 1)).toBe(true);
-        expect(validateBeat(next).ok).toBe(true);
-        expect(byLabel(t('beat.step.on', { n: 2, total: 16, pad: t('beat.pad.kick') }))).toBeDefined();
-        expect(testId('step-selected-1')).toHaveLength(1);
-    });
-    test('pad hit selects the pad, plays it, and the step grid follows', async () => {
-        await open();
-        expect(testId('pad-selected-kick')).toHaveLength(1);
-        await press(t('beat.pad.hit', { pad: t('beat.pad.snare') }));
-        expect(mockAudio.hitPad).toHaveBeenCalledWith('snare', '808');
-        expect(byLabel(t('beat.step.on', { n: 5, total: 16, pad: t('beat.pad.snare') }))).toBeDefined();
-        expect(testId('pad-selected-kick')).toHaveLength(0);
-        expect(testId('pad-selected-snare')).toHaveLength(1);
-    });
-    test('pad recording off or armed while stopped auditions without writing', async () => {
-        const doc = await open();
-        const clap = t('beat.pad.hit', { pad: t('beat.pad.clap') });
-        await press(clap);
-        expect(mockAudio.hitPad).toHaveBeenLastCalledWith('clap', '808');
-        expect(getBeat(doc.id)!.patterns.A.rows.clap).toEqual([]);
-        expect(mockAudio.nearestStepAt).not.toHaveBeenCalled();
-
-        await press(t('beat.padRecord.enable'));
-        expect(text(t('beat.padRecord.status.armed')).length).toBeGreaterThan(0);
-        await press(clap);
-        expect(getBeat(doc.id)!.patterns.A.rows.clap).toEqual([]);
-        expect(mockAudio.nearestStepAt).not.toHaveBeenCalled();
-    });
-    test('armed ordinary playback records one undoable nearest-step hit and Stop preserves arming', async () => {
-        const doc = await open();
-        const clap = t('beat.pad.hit', { pad: t('beat.pad.clap') });
-        await press(t('beat.padRecord.enable'));
-        await press(t('beat.play'));
-        expect(text(t('beat.padRecord.status.recording')).length).toBeGreaterThan(0);
-        await press(clap);
-        expect(mockAudio.nearestStepAt).toHaveBeenLastCalledWith(4.2);
-        expect(getBeat(doc.id)!.patterns.A.rows.clap).toEqual([[3, 100]]);
-
-        // Recording the same pad into the same destination is an identity edit, not another history entry.
-        await press(clap);
-        expect(getBeat(doc.id)!.patterns.A.rows.clap).toEqual([[3, 100]]);
-        await press(t('beat.undo'));
-        expect(getBeat(doc.id)!.patterns.A.rows.clap).toEqual([]);
-
-        await press(t('beat.stop'));
-        expect(text(t('beat.padRecord.status.armed')).length).toBeGreaterThan(0);
-        expect(byLabel(t('beat.padRecord.disable')).props.accessibilityState.selected).toBe(true);
-    });
-    test('Song pad recording uses the selected drum region pattern and offset', async () => {
+    test('Song view keeps beat pads and the step sequencer out of the multitrack editor', async () => {
         const doc = structuredClone(addKitTrack(newBeat('Song record'), 'lofi'));
         const selectedTrack = doc.tracks[1];
-        const region = selectedTrack.regions[0];
-        region.pattern = 'B'; region.offset = 480;
         putBeat(doc); mockParams = { id: doc.id };
-        mockAudio.nearestStepAt.mockReturnValueOnce({ step: 4, time: 4.1 });
         await act(async () => root.render(<BeatEditor />));
+        expect(byLabel(t('beat.padRecord.enable'))).toBeUndefined();
+        expect(byLabel(t('beat.pad.hit', { pad: t('beat.pad.kick') }))).toBeUndefined();
+        expect(text(t('beat.steps', { pad: t('beat.pad.kick') }))).toHaveLength(0);
+        expect(testId('beat-arrangement')).toHaveLength(1);
+
         await press(selectedTrack.name);
-        await press(t('beat.padRecord.enable'));
-        await press(t('beat.play'));
-        await press(t('beat.pad.hit', { pad: t('beat.pad.clap') }));
-        expect(getBeat(doc.id)!.patterns.B.rows.clap).toEqual([[6, 100]]);
-        expect(getBeat(doc.id)!.patterns.A.rows.clap).toEqual([]);
-    });
-    test('Song pad recording refuses a gap without mutating the current pattern', async () => {
-        const doc = structuredClone(newBeat('Song gap'));
-        doc.tracks[0].regions[0].length = 960;
-        putBeat(doc); mockParams = { id: doc.id };
-        mockAudio.nearestStepAt.mockReturnValueOnce({ step: 8, time: 4.1 });
-        await act(async () => root.render(<BeatEditor />));
-        await press(t('beat.padRecord.enable'));
-        await press(t('beat.play'));
-        await press(t('beat.pad.hit', { pad: t('beat.pad.clap') }));
-        expect(getBeat(doc.id)!.patterns.A.rows.clap).toEqual([]);
-        expect(RN.AccessibilityInfo.announceForAccessibility).toHaveBeenCalledWith(
-            t('beat.padRecord.noTarget', { track: doc.tracks[0].name }),
-        );
+        expect(byLabel(t('beat.padRecord.enable'))).toBeUndefined();
+        expect(byLabel(t('beat.pad.hit', { pad: t('beat.pad.kick') }))).toBeUndefined();
     });
     test('export mount releases playback before the sheet may render, and Play recreates the engine', async () => {
         await open(); await press(t('beat.play')); await press(t('beatExport.title'));
@@ -293,8 +228,12 @@ describe('beat editor', () => {
         expect(shell.queryAll(n => n.props.testID === 'beat-editor-workspace')).toHaveLength(1);
         expect(shell.queryAll(n => n.props.testID === 'beat-editor-transport')).toHaveLength(1);
         expect(workspace.queryAll(n => n.props.testID === 'beat-editor-transport')).toHaveLength(0);
-        for (const label of [t('beat.play'), t('beat.undo'), t('beat.redo'), t('beatMix.title')]) {
+        for (const label of [t('beat.track.add'), t('beatAi.title'), t('beat.play'), t('beatMix.title')]) {
             expect(transport.queryAll(n => n.props.accessibilityLabel === label && typeof (n.props.onClick ?? n.props.onPress) === 'function')).toHaveLength(1);
+        }
+        const quickSettings = testId('beat-editor-quick-settings')[0];
+        for (const label of [t('beat.undo'), t('beat.redo')]) {
+            expect(quickSettings.queryAll(n => n.props.accessibilityLabel === label && typeof (n.props.onClick ?? n.props.onPress) === 'function')).toHaveLength(1);
         }
         expect(transport.props.accessibilityRole).toBe('toolbar');
     });
@@ -338,80 +277,17 @@ describe('beat editor', () => {
     });
     test('tempo steps change the document and stay inside the limits', async () => {
         const doc = await open();
+        await press(t('beat.tempoValue', { bpm: doc.tempo.bpm }));
         await press(t('beat.tempoUp5'));
         expect(getBeat(doc.id)!.tempo.bpm).toBe(97);
         await press(t('beat.tempoDown'));
         expect(getBeat(doc.id)!.tempo.bpm).toBe(96);
         expect(MAX_BPM).toBe(240);
     });
-    test('pinned A-D navigation persists without adding an undo entry and the grid follows the selected pattern', async () => {
-        const doc = await open();
-        const undo = byLabel(t('beat.undo'));
-        expect(undo.props.accessibilityState?.disabled ?? undo.props.disabled).toBe(true);
-        await press(t('beat.pattern.named', { pattern: 'B' }));
-        expect(getBeat(doc.id)!.currentPattern).toBe('B');
-        expect(byLabel(t('beat.undo')).props.accessibilityState?.disabled ?? byLabel(t('beat.undo')).props.disabled).toBe(true);
-        expect(byLabel(t('beat.step.off', { n: 1, total: 16, pad: t('beat.pad.kick') }))).toBeDefined();
-        expect(testId('beat-editor-pattern-selector')).toHaveLength(1);
-        expect(testId('beat-editor-workspace')[0].queryAll(n => n.props.testID === 'beat-editor-pattern-selector')).toHaveLength(0);
-    });
-    test('pattern controls persist swing, metronome and 16/32 length while preserving hidden hits', async () => {
-        const doc = await open();
-        await press(t('beat.pattern.controlsNamed', { pattern: 'A' }));
-        const swing = root.container.queryAll(n => n.props.accessibilityRole === 'adjustable' && n.props.accessibilityLabel === t('beat.pattern.swing'))[0];
-        expect(swing.props.accessibilityValue.text).toBe('0%');
-        await act(async () => swing.props.onAccessibilityAction({ nativeEvent: { actionName: 'increment' } }));
-        expect(getBeat(doc.id)!.swing).toBe(0.01);
-        await press(t('beat.pattern.metronome'));
-        expect(getBeat(doc.id)!.metronome).toBe(true);
-        expect(testId('beat-pattern-metronome-on')).toHaveLength(1);
-        await press(t('beat.pattern.length32'));
-        expect(getBeat(doc.id)!.steps).toBe(32);
-        await press(t('beat.step.off', { n: 21, total: 32, pad: t('beat.pad.kick') }));
-        expect(hasHit(getBeat(doc.id)!, 'kick', 20)).toBe(true);
-        await press(t('beat.pattern.length16'));
-        expect(getBeat(doc.id)!.steps).toBe(16);
-        expect(byLabel(t('beat.step.on', { n: 21, total: 32, pad: t('beat.pad.kick') }))).toBeUndefined();
-        expect(hasHit(getBeat(doc.id)!, 'kick', 20)).toBe(true);
-        await press(t('beat.pattern.length32'));
-        expect(byLabel(t('beat.step.on', { n: 21, total: 32, pad: t('beat.pad.kick') }))).toBeDefined();
-    });
-    test('copy and clear use overwrite/destructive confirmation and remain one-step undoable edits', async () => {
-        const doc = await open();
-        const alert = jest.spyOn(RN.Alert, 'alert').mockImplementation(() => undefined);
-        try {
-            await press(t('beat.pattern.controlsNamed', { pattern: 'A' }));
-            await press(t('beat.pattern.copy', { from: 'A', to: 'B' }));
-            expect(patternHasHits(getBeat(doc.id)!, 'B')).toBe(true);
-            expect(alert).not.toHaveBeenCalled();
-            await press(t('beat.undo'));
-            expect(patternHasHits(getBeat(doc.id)!, 'B')).toBe(false);
-            await press(t('beat.redo'));
-            expect(patternHasHits(getBeat(doc.id)!, 'B')).toBe(true);
-            await press(t('beat.pattern.copy', { from: 'A', to: 'B' }));
-            expect(alert).toHaveBeenLastCalledWith(t('beat.pattern.replaceTitle', { to: 'B' }), t('beat.pattern.replaceBody', { to: 'B' }), expect.any(Array));
-            const replace = alert.mock.calls.at(-1)![2]!.find(option => option.style === 'destructive')!;
-            await act(async () => replace.onPress?.());
-            alert.mockClear();
-            await press(t('beat.pattern.clear', { pattern: 'A' }));
-            expect(alert).toHaveBeenLastCalledWith(t('beat.pattern.clearTitle', { pattern: 'A' }), t('beat.pattern.clearBody'), expect.any(Array));
-            expect(patternHasHits(getBeat(doc.id)!, 'A')).toBe(true);
-            const clear = alert.mock.calls.at(-1)![2]!.find(option => option.style === 'destructive')!;
-            await act(async () => { putBeat(selectPattern(getBeat(doc.id)!, 'B')); });
-            await act(async () => clear.onPress?.());
-            expect(patternHasHits(getBeat(doc.id)!, 'A')).toBe(true);
-            await press(t('beat.pattern.named', { pattern: 'A' }));
-            await press(t('beat.pattern.clear', { pattern: 'A' }));
-            const clearCurrent = alert.mock.calls.at(-1)![2]!.find(option => option.style === 'destructive')!;
-            await act(async () => clearCurrent.onPress?.());
-            expect(patternHasHits(getBeat(doc.id)!, 'A')).toBe(false);
-            await press(t('beat.undo'));
-            expect(patternHasHits(getBeat(doc.id)!, 'A')).toBe(true);
-        } finally { alert.mockRestore(); }
-    });
     test('mixer: mute folds into the audio mix, solo and kit change the document', async () => {
         const doc = await open();
         const track = t('beat.track', { n: 1 });
+        await press(t('beat.track.controls'));
         await press(t('beat.play'));
         await press(t('beat.mute', { track }));
         expect(getBeat(doc.id)!.tracks[0].mute).toBe(true);
@@ -426,7 +302,10 @@ describe('beat editor', () => {
     test('add and remove a track', async () => {
         const doc = await open();
         await press(t('beat.track.add'));
+        expect(testId('music-add-track-sheet')).toHaveLength(1);
+        await press(t('beat.kind.drums'));
         expect(getBeat(doc.id)!.tracks).toHaveLength(2);
+        await press(t('beat.track.controls'));
         await press(t('beat.track.remove', { track: t('beat.track', { n: 2 }) }));
         expect(getBeat(doc.id)!.tracks).toHaveLength(1);
     });
@@ -511,6 +390,8 @@ describe('save and versions UI', () => {
         const flush = jest.spyOn(beatStore, 'flushBeats');
         const doc = newBeat('Lifecycle'); mockParams = { id: doc.id };
         await act(async () => root.render(<BeatEditor />));
+        await press(t('beat.saveNote'));
+        await press(t('beat.tempoValue', { bpm: doc.tempo.bpm }));
         await press(t('beat.tempoUp5'));
         await press(t('beat.undo'));
         expect(getBeat(doc.id)?.tempo.bpm).toBe(doc.tempo.bpm);
@@ -602,6 +483,7 @@ describe('accepted inspection regressions', () => {
         beatStore.setCloudLink(doc.id, { userId: USER, projectId: null, revision: 0 });
         mockApi.request.mockImplementation(async (_path, init) => init?.method === 'PUT' ? { project: project(doc.id, 1) } : { projects: [] });
         await act(async () => root.render(<BeatEditor />));
+        await press(t('beat.saveNote'));
         await press(t('beat.cloud.linkAgain'));
         const put = mockApi.request.mock.calls.find(([, init]) => init?.method === 'PUT');
         expect(put).toBeDefined(); expect(JSON.parse(put![1].body).expected_revision).toBe(0);
@@ -613,7 +495,9 @@ describe('accepted inspection regressions', () => {
             if (init?.method === 'PUT') throw new ApiError(409, 'unknown', { error: { code: 'VERSION_CONFLICT' } });
             return path.endsWith(doc.id) ? { project: project(doc.id, 2), doc_json: JSON.stringify({ ...doc, title: 'Theirs' }) } : { projects: [] };
         });
-        await act(async () => root.render(<BeatEditor />)); await press(t('beat.cloud.link'));
+        await act(async () => root.render(<BeatEditor />));
+        await press(t('beat.saveNote'));
+        await press(t('beat.cloud.link'));
         await press(t('beat.conflict.later'));
         expect(text(t('beat.cloud.paused_conflict')).length).toBeGreaterThan(0);
         expect(text(t('beat.cloud.error'))).toHaveLength(0);
@@ -655,20 +539,17 @@ test('signed-out home retains local controls and skips the collection probe', as
 
 test('replacement lease release alone unlocks editor controls and uses cloud-specific copy', async () => {
     const doc = newBeat('Replacement'); mockParams = { id: doc.id };
-    await act(async () => root.render(<BeatEditor />)); await press(t('beat.tempoUp'));
+    await act(async () => root.render(<BeatEditor />));
+    await press(t('beat.tempoValue', { bpm: doc.tempo.bpm })); await press(t('beat.tempoUp'));
     let release!: () => void;
     await act(async () => { release = await beforeReplace(doc.id); });
     const disabled = (label: string) => { const b = byLabel(label); return b?.props.accessibilityState?.disabled ?? b?.props.disabled; };
     expect(disabled(t('beat.play'))).toBe(true); expect(disabled(t('beat.undo'))).toBe(true);
-    expect(disabled(t('beat.pattern.named', { pattern: 'A' }))).toBe(true);
-    expect(disabled(t('beat.pattern.controlsNamed', { pattern: 'A' }))).toBe(true);
     expect(text(t('beatTakes.replacing')).length).toBeGreaterThan(0);
     await press(t('beat.tempoUp')); expect(text(t('beatTakes.locked'))).toHaveLength(0);
     await act(async () => release());
     expect(disabled(t('beat.play'))).toBe(false); expect(disabled(t('beat.undo'))).toBe(false);
-    expect(disabled(t('beat.pattern.named', { pattern: 'A' }))).toBe(false);
-    expect(disabled(t('beat.pattern.controlsNamed', { pattern: 'A' }))).toBe(false);
-    expect(disabled(t('beatTakes.addTrack'))).toBe(false);
+    expect(disabled(t('beat.track.add'))).toBe(false);
 });
 
 test('recording history and announcements use the localized message or fallback, never the web English label', async () => {
@@ -702,6 +583,7 @@ test('a linked beat with a local-only take offers Retry and usable Versions', as
     const retry = jest.spyOn(BeatCloudSync.prototype, 'retry');
     try {
         mockParams = { id: doc.id }; await act(async () => root.render(<BeatEditor />));
+        await press(t('beat.saveNote'));
         expect(text(t('beat.cloud.takes')).length).toBeGreaterThan(0);
         expect(byLabel(t('beat.retry'))).toBeDefined();
         expect(mockApi.request.mock.calls.filter(([, init]) => init?.method === 'POST')).toHaveLength(1);

@@ -66,6 +66,7 @@ const domains: Record<string, readonly string[]> = {
     "musicGenerationActions.{}.title": ["extend", "cover"],
     "musicGenerationActions.{}.limit": ["extend", "cover"],
     "musicGenerationActions.state.{}": ["queued", "running", "succeeded", "partial", "failed", "refunded"],
+    "projects.smartCutBatch.state.{}": ["pending", "active", "completed", "failed", "cancelled"],
     'musicTargetStems.state.{}': ['queued', 'running', 'ready', 'failed', 'refunded'],
     'musicTargetStems.instrument.{}': ['vocals', 'drums', 'bass', 'guitar', 'piano', 'strings', 'synthesizer', 'brass', 'woodwinds'],
     'musicActions.stems.{}': ['queued', 'running', 'ready', 'failed', 'refunded'],

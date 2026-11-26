@@ -54,7 +54,7 @@ test('numeric parity normalizes grouping and Arabic-Indic/Devanagari digits with
 // GDPR retains its ADR-0317 date. Copy changes bump dates, as in commits 20e0672c8 and 797884f91.
 // 14 November: product naming (Veyrnox.ai) in privacy, terms and cinema-content bumps their dates.
 const amendments0317 = {
-  privacy: { keys: ['b077', 'b078', 'b080', 'b081', 'b082'], previousDate: '28 October 2026', currentDate: '17 November 2026' },
+  privacy: { keys: ['b077', 'b078', 'b080', 'b081', 'b082', 'b083', 'b084'], previousDate: '28 October 2026', currentDate: '23 November 2026' },
   gdpr: { keys: [], previousDate: '18 October 2026', currentDate: '17 November 2026' },
 };
 for (const document of LEGAL_DOCUMENTS) {

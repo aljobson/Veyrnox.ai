@@ -127,7 +127,8 @@ function syncPlayer(player: VideoPlayer, clip: Clip, wanted: number, playing: bo
 }
 
 const styles = StyleSheet.create({
-    center: { position: 'absolute', inset: 0, alignItems: 'center', justifyContent: 'center', gap: 7, padding: 20, backgroundColor: '#08080a' },
+    // A loading or failed upper layer must never obscure valid footage below it.
+    center: { position: 'absolute', inset: 0, alignItems: 'center', justifyContent: 'center', gap: 7, padding: 20, backgroundColor: 'transparent' },
     problem: { color: '#f2f2f3', fontSize: 13, fontWeight: '800' },
     detail: { maxWidth: 250, color: '#a5a5ad', fontSize: 12, lineHeight: 16, textAlign: 'center' },
 });

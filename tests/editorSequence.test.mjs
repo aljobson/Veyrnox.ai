@@ -58,6 +58,16 @@ test('overlapping caption layers render in their track order after a reorder', (
     [tracks[index], tracks[index - 1]] = [tracks[index - 1], tracks[index]];
     assert.deepEqual(sequenceLayers({ ...tl, tracks }, 30).texts.map(t => t.text), ['Second', 'First']);
 });
+test('hiding a caption track keeps every cue intact and removes only its rendered layer', () => {
+    let tl = ok(addSequenceText(emptySequence(), { text: 'Keep this cue', start: 0, len: 90 }));
+    const trackId = tl.text[0].trackId;
+    assert.equal(sequenceLayers(tl, 30).texts[0].text, 'Keep this cue');
+    tl = ok(updateSequenceTrack(tl, trackId, { hidden: true }));
+    assert.equal(sequenceLayers(tl, 30).texts.length, 0);
+    assert.equal(tl.text[0].text, 'Keep this cue');
+    tl = ok(updateSequenceTrack(tl, trackId, { hidden: false }));
+    assert.equal(sequenceLayers(tl, 30).texts[0].text, 'Keep this cue');
+});
 test('splitSequenceAtFrames cuts a clip at several frames as one edit, last to first, and is all or nothing', () => {
     const tl = ok(addSequenceClip(ok(addSequenceMedia(emptySequence(), media)), 'video', media.id, { len: 240 }));
     const cut = ok(splitSequenceAtFrames(tl, 'video', 'v1', [180, 60, 120, 60]));

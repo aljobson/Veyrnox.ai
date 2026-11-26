@@ -56,3 +56,20 @@ test('availability holds when the public offer row is served by Crun first (0586
   assert.equal(templateSwapAvailable(id, { ...options, catalog: [{ ...crunRow, provider_endpoint: 'crun:kling/o1-r2v' }] }), null, 'the private swap endpoint is not the public row');
   assert.equal(templateSwapAvailable(id, { ...options, catalog: [{ ...crunRow, provider: 'fal' }] }), null, 'record and row must agree on the supplier');
 });
+
+test('a retired public offer stays unlisted while its active private CRUN swap row keeps templates available', async () => {
+  const publicRow = { ...catalog[0], provider: 'crun', provider_endpoint: 'crun:kling/o1-r2v-ref', active: false };
+  const privateRow = { id: 'kling-o1-swap-crun', provider: 'crun', provider_endpoint: 'crun:kling/o1-r2v',
+    modality: publicRow.modality, credits_5s: publicRow.credits_5s, active: true, gated_flag: false };
+  const rows = [publicRow, privateRow];
+  assert.ok(templateSwapAvailable(id, { ...options, catalog: rows }));
+  const filters = [];
+  const loaded = await loadTemplateSwapClip(id, {}, { ...options, readManifest: async () => manifest, read: async (_table, query) => {
+    filters.push(query.filter); return rows.filter(row => query.filter === `id=eq.${row.id}`);
+  } });
+  assert.ok(loaded);
+  assert.deepEqual(filters, ['id=eq.kling-o1-reference', 'id=eq.kling-o1-swap-crun']);
+  for (const patch of [{ active: false }, { gated_flag: true }, { credits_5s: 48 }, { provider_endpoint: 'crun:kling/v3' }]) {
+    assert.equal(templateSwapAvailable(id, { ...options, catalog: [publicRow, { ...privateRow, ...patch }] }), null);
+  }
+});

@@ -9,7 +9,7 @@ final class EditorMp4Encoder {
   private let audioArtifactId: String?, audioFolder: URL?
   private let adaptor: AVAssetWriterInputPixelBufferAdaptor
   private let width: Int, height: Int, fps: Int
-  private let preservesAlpha: Bool
+  private let preservesAlpha: Bool, codec: String
   let projectGeneration: Int
   private let partial: URL, output: URL
   private(set) var lastActivity = Date(), framesWritten = 0, cancelled = false
@@ -33,8 +33,12 @@ final class EditorMp4Encoder {
       throw EditorMediaFailure.result(.invalidInput, "invalid-encode-settings")
     }
     let alpha = request.alpha == true
+    let codec = request.codec ?? "h264"
+    guard ["h264", "hevc"].contains(codec), !(alpha && request.codec != nil) else {
+      throw EditorMediaFailure.result(.invalidInput, "invalid-encode-codec")
+    }
     self.identity = identity; self.paths = paths; self.projectGeneration = projectGeneration
-    width = request.width; height = request.height; fps = request.fps; preservesAlpha = alpha
+    width = request.width; height = request.height; fps = request.fps; preservesAlpha = alpha; self.codec = codec
     sessionId = "vx-session-\(UUID().uuidString.lowercased())"
     let configuredAudio = try request.audioArtifactId.map {
       try Self.configureAudio(identity: identity, projectGeneration: projectGeneration,
@@ -52,11 +56,12 @@ final class EditorMp4Encoder {
     catch { try? FileManager.default.removeItem(at: folder); throw EditorMediaFailure.result(.writeFailed) }
     var compression: [String: Any] = [AVVideoAverageBitRateKey: request.videoBitRate,
       AVVideoExpectedSourceFrameRateKey: request.fps, AVVideoMaxKeyFrameIntervalKey: request.fps * 2]
-    if !alpha { compression[AVVideoProfileLevelKey] = AVVideoProfileLevelH264HighAutoLevel }
+    if !alpha && codec == "h264" { compression[AVVideoProfileLevelKey] = AVVideoProfileLevelH264HighAutoLevel }
     let color: [String: Any] = [AVVideoColorPrimariesKey: AVVideoColorPrimaries_ITU_R_709_2,
       AVVideoTransferFunctionKey: AVVideoTransferFunction_ITU_R_709_2,
       AVVideoYCbCrMatrixKey: AVVideoYCbCrMatrix_ITU_R_709_2]
-    video = AVAssetWriterInput(mediaType: .video, outputSettings: [AVVideoCodecKey: alpha ? AVVideoCodecType.hevcWithAlpha : AVVideoCodecType.h264,
+    let videoCodec: AVVideoCodecType = alpha ? .hevcWithAlpha : codec == "hevc" ? .hevc : .h264
+    video = AVAssetWriterInput(mediaType: .video, outputSettings: [AVVideoCodecKey: videoCodec,
       AVVideoWidthKey: request.width, AVVideoHeightKey: request.height,
       AVVideoCompressionPropertiesKey: compression, AVVideoColorPropertiesKey: color])
     video.expectsMediaDataInRealTime = false
@@ -156,6 +161,13 @@ final class EditorMp4Encoder {
     }
     do { try FileManager.default.moveItem(at: partial, to: output) }
     catch { cancel(); throw EditorMediaFailure.result(.writeFailed) }
+    let actualCodec: String
+    do { actualCodec = try inspectVideoCodec() }
+    catch { cancel(); throw error }
+    let expectedCodec = preservesAlpha ? "hvc1-alpha" : codec == "hevc" ? "hvc1" : "avc1"
+    guard actualCodec == expectedCodec else {
+      cancel(); throw EditorMediaFailure.result(.unsupportedCodec, "encoded-codec-mismatch")
+    }
     guard validBeforePublish(), !cancelledExternally() else {
       cancel(); throw EditorMediaFailure.result(.cancelled)
     }
@@ -170,7 +182,7 @@ final class EditorMp4Encoder {
     let durationUs = Int64((Double(framesWritten) * 1_000_000 / Double(fps)).rounded())
     var result: [String: Any] = ["ok": true, "artifactId": artifactId, "uri": output.absoluteString,
       "kind": "mp4", "size": size, "frames": framesWritten, "width": width, "height": height,
-      "fps": fps, "durationUs": durationUs, "videoCodec": preservesAlpha ? "hvc1-alpha" : "avc1"]
+      "fps": fps, "durationUs": durationUs, "videoCodec": actualCodec]
     if self.audioArtifactId != nil {
       result["audioCodec"] = "mp4a"; result["audioSampleRate"] = 48_000; result["audioChannels"] = 2
     }
@@ -187,6 +199,19 @@ final class EditorMp4Encoder {
   }
   func cleanupExclusions() -> Set<String> {
     Set([folder.path] + (audioFolder.map { [$0.path] } ?? []))
+  }
+
+  private func inspectVideoCodec() throws -> String {
+    let asset = AVURLAsset(url: output)
+    guard let track = asset.tracks(withMediaType: .video).first,
+          let rawDescription = track.formatDescriptions.first else {
+      throw EditorMediaFailure.result(.writeFailed, "missing-video-format")
+    }
+    let description = rawDescription as! CMFormatDescription
+    let subtype = CMFormatDescriptionGetMediaSubType(description)
+    if subtype == kCMVideoCodecType_H264 { return "avc1" }
+    if subtype == kCMVideoCodecType_HEVC { return preservesAlpha ? "hvc1-alpha" : "hvc1" }
+    throw EditorMediaFailure.result(.unsupportedCodec, "unexpected-video-codec")
   }
 
   private func fill(_ pixel: CVPixelBuffer, rgba: Data) throws {

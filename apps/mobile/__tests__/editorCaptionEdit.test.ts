@@ -1,6 +1,6 @@
 import { emptyTimeline, type Timeline } from '../src/lib/nativeEditorModel';
 import { importCaptionText, captionExport, wordEdit, wordStyleEdit, wordsDistribute, wordsClear,
-    transcriptCut, transcriptCorrect, lyricsAlign, captionStyleAll } from '../src/lib/editorCaptionEdit';
+    transcriptCut, transcriptCorrect, lyricsAlign, captionStyleAll, CAPTION_STYLE_PRESETS, captionStylePresetId } from '../src/lib/editorCaptionEdit';
 import { parseCaptions, insertCaptions, exportCaptions, applyCaptionStyle } from '../../../app/veyrnox/_lib/editorCaptions.mjs';
 import { WORD_STYLE, distributeWords } from '../../../app/veyrnox/_lib/editorWords.mjs';
 import { updateSequenceClip } from '../../../app/veyrnox/_lib/editorSequence.mjs';
@@ -33,6 +33,11 @@ test('all edit wrappers match shared functions', () => {
     same(lyricsAlign(tl, 'Hello world', id), alignLyricCaptions(tl, 'Hello world', id));
     same(captionStyleAll(tl, 'web'), applyCaptionStyle(tl, { ...TEXT_DEFAULTS, color: '#ffe66d', backgroundOpacity: .7 }));
     same(captionStyleAll(tl, { color: '#ffffff' }), applyCaptionStyle(tl, { ...TEXT_DEFAULTS, color: '#ffffff' }));
+    expect(CAPTION_STYLE_PRESETS.map(preset => preset.id)).toEqual(['clean', 'classic', 'highlight', 'box', 'neon', 'subtitle']);
+    for (const preset of CAPTION_STYLE_PRESETS) {
+        same(captionStyleAll(tl, preset.style), applyCaptionStyle(tl, preset.style));
+        expect(captionStylePresetId(preset.style)).toBe(preset.id); expect(Object.isFrozen(preset.style)).toBe(true);
+    }
     expect(JSON.stringify(tl)).toBe(before);
 });
 test('exports subtitle files and scoped transcripts', () => {

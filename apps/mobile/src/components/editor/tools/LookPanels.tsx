@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Pressable, View } from 'react-native';
 import { Text } from '../../ui/Text';
 import { t, rawText, formatNumber } from '../../../lib/i18n';
-import { colors, ds, type } from '../../../theme';
+import { studioColors as colors, ds, type } from '../../../theme';
 import { touchTarget } from '../../../lib/a11y';
 import { styles } from '../fullEditorStyles';
 import { EmptyPanel, PanelHeading } from '../EditorControls';

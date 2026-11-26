@@ -1,22 +1,25 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { Linking, Platform, View } from 'react-native';
-import { Button, Text } from '../ui';
+import { Button, Text, themedStyles, useThemedStyles } from '../ui';
 import { t, plural } from '../../lib/i18n';
 import type { BeatDoc } from '../../lib/beatNative/doc';
 import type { TakeRecording, TakeRecordingView } from '../../lib/beatNative/takeRecording';
 import { beatReadOnly, readLatency } from '../../lib/beatNative/takeShared';
 import { latencyStorage } from '../../lib/beatNative/latencyStore';
 import { BeatCalibrationSheet } from './BeatCalibrationSheet';
+import { ds } from '../../theme';
 export function BeatRecordPanel({ doc, controller, view, playing, externalLocked = false }: { doc: BeatDoc; controller: TakeRecording; view: TakeRecordingView; playing: boolean; externalLocked?: boolean }) {
+    const s = useThemedStyles(sheets);
     const [countIn, setCountIn] = useState(false), [calibrate, setCalibrate] = useState(false);
     const storage = latencyStorage();
     useSyncExternalStore(storage.subscribe, storage.snapshot, storage.snapshot);
     const capture = controller.capture(), latency = readLatency('default', storage), locked = controller.locked();
     useEffect(() => { if (!view.armedId) setCalibrate(false); }, [view.armedId]);
     const readOnly = beatReadOnly(doc);
-    return <View>
+    return <View style={s.panel}>
         {doc.tracks.filter(track => track.kind === 'audio').map(track => <Button key={track.id}
             label={t(view.armedId === track.id ? 'beatTakes.disarm' : 'beatTakes.arm', { track: track.name })}
+            icon="microphone" iconOnly size="md" variant="tertiary" tone={view.armedId === track.id ? 'accent' : 'secondary'}
             accessibilityState={{ selected: view.armedId === track.id }} disabled={Platform.OS === 'android' || locked || externalLocked || readOnly || calibrate}
             onPress={() => void controller.arm(view.armedId === track.id ? null : track.id)} />)}
         {Platform.OS === 'android' ? <Text>{t('beatTakes.android')}</Text> : null}
@@ -45,3 +48,6 @@ export function BeatRecordPanel({ doc, controller, view, playing, externalLocked
         {calibrate && capture && view.armedId ? <BeatCalibrationSheet capture={capture} onClose={() => setCalibrate(false)} /> : null}
     </View>;
 }
+const sheets = themedStyles(() => ({
+    panel: { alignItems: 'flex-start', gap: ds.space.sm },
+}));

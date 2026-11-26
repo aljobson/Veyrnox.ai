@@ -69,7 +69,7 @@
       }
     },
     "privacy": {
-      "translationsReviewedAgainstEnglishDated": "17 November 2026",
+      "translationsReviewedAgainstEnglishDated": "23 November 2026",
       "hashes": {
         "title": "506ff394621596dd88138642eddfc1e41833b3ae92d95e5c77c94327098abd9a",
         "description": "2daea83bdeb04f5f2dab5edebaf8f93d261b8945276b92a3bc7726eac502c3d9",
@@ -124,7 +124,9 @@
         "b078": "2c26c3053de402a0055e1c40d73b7fcef4ee15614a3efe0dac1b28b6a61e31eb",
         "b080": "4d44685ab0f1d3a977b3822ba1293b3f2109a5707528f5683b61c47ca98e00d3",
         "b081": "d7a1f20fe0f189c8649866eea4cfd512116620fd39a372f8ca5d533f058f168c",
-        "b082": "3c1a61d9d93f5dfb6889ab2fc63e5d1187fa5c6904316759c37765a099a260fc"
+        "b082": "3c1a61d9d93f5dfb6889ab2fc63e5d1187fa5c6904316759c37765a099a260fc",
+        "b083": "9b63ecab7d65ba6e7b78f597695c578cd2ea7769389d360c561888bfde00da40",
+        "b084": "52a998a94d4d38f7ff2ee2f22eaf9c726bc89e733568345fca86896469d27e3c"
       }
     },
     "refund": {

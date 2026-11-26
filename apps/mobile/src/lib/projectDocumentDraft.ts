@@ -2,11 +2,13 @@ import { randomUUID } from 'expo-crypto';
 import { ApiError, type ApiClient } from './api';
 import { documentIdentity, isObject, utf8Bytes, validDocument, type ProjectDocument } from './editorBridge';
 import { observe } from './network';
+import { customCanvasParts, formatCustomCanvasAspect, validCanvasAspect, type ProjectCanvasAspect } from '../../../../app/veyrnox/_lib/editorCanvasFormat.mjs';
 
 // The brief and canvas of a project document (ADR-0055), as the phone project screen edits them. No React here.
-export const ASPECT_RATIOS = ['16:9', '9:16', '1:1'] as const;
+export const ASPECT_RATIOS = ['16:9', '9:16', '1:1', '4:5'] as const;
+export { customCanvasParts, formatCustomCanvasAspect };
 export const FRAME_RATES = [24, 25, 30, 60] as const;
-export type Editable = { brief: string; aspectRatio: '16:9' | '9:16' | '1:1'; frameRate: 24 | 25 | 30 | 60 };
+export type Editable = { brief: string; aspectRatio: ProjectCanvasAspect; frameRate: 24 | 25 | 30 | 60 };
 export interface Head { revision: number; document: ProjectDocument }
 export const BRIEF_MAX = 6000;
 export const DOCUMENT_MAX_BYTES = 32768;
@@ -18,7 +20,7 @@ export type DocumentStatus = 'dropped' | 'unsupported' | 'offline' | 'conflict' 
 export function readEditable(doc: ProjectDocument): Editable | null {
     const canvas = isObject(doc.canvas) ? doc.canvas : null;
     const aspect = canvas?.aspect_ratio, rate = canvas?.frame_rate;
-    if (!ASPECT_RATIOS.includes(aspect as Editable['aspectRatio']) || !FRAME_RATES.includes(rate as Editable['frameRate'])) return null;
+    if (!validCanvasAspect(aspect) || !FRAME_RATES.includes(rate as Editable['frameRate'])) return null;
     return { brief: typeof doc.brief === 'string' ? doc.brief : '', aspectRatio: aspect as Editable['aspectRatio'], frameRate: rate as Editable['frameRate'] };
 }
 

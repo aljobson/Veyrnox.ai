@@ -40,3 +40,14 @@ test('bounded 429 reads cancel oversized streams and never expose upstream messa
   globalThis.fetch = async () => new Response('secret', { status: 409 });
   await assert.rejects(call({ limitAware: true }), e => e.code === 'CONFLICT' && !e.message.includes('secret'));
 });
+
+test('folder-aware requests expose only the bounded folder error allowlist', async () => {
+  for (const [status, code] of [[409, 'VERSION_CONFLICT'], [409, 'IDEMPOTENCY_CONFLICT'], [409, 'NAME_CONFLICT'], [409, 'FOLDER_NOT_EMPTY'], [409, 'FOLDER_DEPTH_LIMIT'], [429, 'LIMIT_REACHED']]) {
+    globalThis.fetch = async () => Response.json({ code: `PT${status}`, message: code, details: 'private detail' }, { status });
+    await rejectsCode(call({ folderAware: true }), status, code);
+  }
+  globalThis.fetch = async () => Response.json({ message: 'SECRET_VENDOR_CONFLICT' }, { status: 409 });
+  await rejectsCode(call({ folderAware: true }), 409, 'CONFLICT');
+  globalThis.fetch = async () => Response.json({ message: 'RATE_LIMITED' }, { status: 429 });
+  await rejectsCode(call({ folderAware: true }), 429, 'RATE_LIMITED');
+});

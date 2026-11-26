@@ -112,8 +112,8 @@ test('Discover filters without network and routes the selected sample to Create'
     await mount(<Discover />); expect(mockApi.request).not.toHaveBeenCalled();
     const tab = root.container.queryAll(n => n.props.accessibilityRole === 'tab' && n.props.accessibilityLabel === t('musicDiscover.mood.Rock'))[0];
     await act(async () => tab.props.onClick({ nativeEvent: {} })); expect(text('Neon Rain')).toHaveLength(0);
-    await click(t('musicDiscover.use', { title: 'Iron Harbour' }));
-    expect(mockPush).toHaveBeenCalledWith({ pathname: '/music/create', params: { sample: 'iron-harbour' } });
+    await click(t('musicDiscover.use', { title: 'Velvet Circuit' }));
+    expect(mockPush).toHaveBeenCalledWith({ pathname: '/music/create', params: { sample: 'velvet-circuit' } });
 });
 test('valid sample prefills untouched Create without a paid request', async () => {
     mockParams = { sample: 'neon-rain' }; await mount(<MusicCreate />);

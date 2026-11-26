@@ -24,9 +24,10 @@ test('a MOV export has no inline preview (browsers cannot play it) but keeps the
   assert.match(html, /Download Cut\.mov/);
 });
 
-test('no Ready card while exporting; progress shows a percentage and the keep-open line', async () => {
-  const html = renderScenario(scenario({ exporting: true, progress: 0.42, result: null }), 'en', await appMessagesFor('en'));
+test('no Ready card while exporting; progress shows the current footage, percentage and keep-open line', async () => {
+  const html = renderScenario(scenario({ exporting: true, progress: 0.42, preview: 'blob:preview', result: null }), 'en', await appMessagesFor('en'));
   assert.doesNotMatch(html, /Ready to share/);
+  assert.match(html, /<img[^>]*src="blob:preview"[^>]*alt="Preview of your exported video"/);
   assert.match(html, /42%/);
   assert.match(html, /keep this tab open/);
   assert.match(html, /Cancel export/);

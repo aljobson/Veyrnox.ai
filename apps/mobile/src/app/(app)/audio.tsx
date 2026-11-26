@@ -12,7 +12,7 @@ import { Card, ListRow, Text, themedStyles, useThemedStyles } from '../../compon
 import { mobileFeature } from '../../lib/featureRegistry';
 
 const upperFirst = (s: string) => s.charAt(0).toLocaleUpperCase() + s.slice(1);
-type AudioRowId = AudioHubId | 'beats';
+type AudioRowId = AudioHubId | 'musicEditor';
 
 const copy = (): Record<AudioHubId, { title: string; blurb: string }> => ({
     yourMusic: { title: t('music.title'), blurb: t('music.entryBody') },
@@ -30,13 +30,13 @@ export default function AudioHub() {
     const styles = useThemedStyles(sheets);
     const router = useRouter();
     const text = copy();
-    const beats = mobileFeature('beats');
+    const musicEditor = mobileFeature('beats');
     const musicAvailable = useMusicAvailable();
     const [catalog, setCatalog] = useState<{ models: CatalogModel[] | null; meta: CacheMeta | null }>({ models: null, meta: null });
     useEffect(() => { void fetchCatalogCached((models, meta) => setCatalog({ models, meta })).catch(() => {}); }, []);
     const fresh = catalog.meta !== null && !catalog.meta.stale;
     const groups: { title: string; ids: readonly AudioRowId[] }[] = [
-        { title: t('audioHub.groups.musicVoice'), ids: musicAvailable ? ['yourMusic', 'beats', ...AUDIO_STUDIOS] : ['beats', ...AUDIO_STUDIOS] },
+        { title: t('audioHub.groups.musicVoice'), ids: musicAvailable ? ['yourMusic', 'musicEditor', ...AUDIO_STUDIOS] : ['musicEditor', ...AUDIO_STUDIOS] },
         { title: t('audioHub.groups.performance'), ids: AUDIO_PERFORMANCES },
     ];
     return (
@@ -49,15 +49,15 @@ export default function AudioHub() {
                     <Text variant="bodyStrong" accessibilityRole="header">{group.title}</Text>
                     <Card>
                         {group.ids.map((id) => {
-                            if (id === 'beats') {
+                            if (id === 'musicEditor') {
                                 return <ListRow
                                     key={id}
-                                    icon={beats.icon}
+                                    icon={musicEditor.icon}
                                     accessibilityRole="button"
-                                    accessibilityLabel={rawText(t(beats.titleKey as Parameters<typeof t>[0]))}
-                                    title={<Text variant="bodyStrong">{t(beats.titleKey as Parameters<typeof t>[0])}</Text>}
+                                    accessibilityLabel={rawText(t(musicEditor.titleKey as Parameters<typeof t>[0]))}
+                                    title={<Text variant="bodyStrong">{t(musicEditor.titleKey as Parameters<typeof t>[0])}</Text>}
                                     subtitle={t('beat.home.emptyBody')}
-                                    onPress={() => router.push(beats.href as never)}
+                                    onPress={() => router.push(musicEditor.href as never)}
                                 />;
                             }
                             const credits = fromCredits(catalog.models, id, musicAvailable, fresh);

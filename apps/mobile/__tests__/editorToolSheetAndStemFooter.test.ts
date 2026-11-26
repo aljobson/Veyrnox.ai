@@ -7,9 +7,9 @@ describe('editor tool panels sit in a bottom sheet', () => {
     it('renders the inspector inside EditorToolSheet, not as an inline flex sibling', () => {
         expect(screen).toMatch(/<EditorToolSheet[\s\S]*styles\.inspector[\s\S]*<\/EditorToolSheet>/);
     });
-    it('does not draw the Add / AI Edit / More bar over an open panel (QA 8.7: the bar floated mid-panel)', () => {
-        expect(screen).toMatch(/\{advanced \|\| panelOpen \? null : <SimpleEditorBar/);
-        expect(screen).not.toMatch(/\{advanced \? null : <SimpleEditorBar/);
+    it('keeps the five-tab simple dock available while its tool panel is open', () => {
+        expect(screen).toMatch(/\{advanced \? null : <SimpleEditorBar/);
+        expect(screen).not.toMatch(/\{advanced \|\| panelOpen \? null : <SimpleEditorBar/);
     });
     it('keeps the sheet clear of the home indicator and above the keyboard', () => {
         const sheet = read('components/editor/EditorToolSheet.tsx');

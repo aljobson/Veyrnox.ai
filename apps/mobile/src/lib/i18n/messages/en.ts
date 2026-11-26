@@ -87,6 +87,7 @@ import area_editorAudioTools from './en/editorAudioTools';
 import area_editorCaptionTools from './en/editorCaptionTools';
 import area_editorClips from './en/editorClips';
 import area_editorCore from './en/editorCore';
+import area_editorCover from './en/editorCover';
 import area_editorEditGate from './en/editorEditGate';
 import area_editorExportRefusal from './en/editorExportRefusal';
 import area_editorFont from './en/editorFont';
@@ -189,6 +190,7 @@ import area_presets from './en/presets';
 import area_preview from './en/preview';
 import area_pricing from './en/pricing';
 import area_privacyExport from './en/privacyExport';
+import area_projectCloud from './en/projectCloud';
 import area_projectDocument from './en/projectDocument';
 import area_projectHome from './en/projectHome';
 import area_projects from './en/projects';
@@ -347,6 +349,7 @@ const catalog = {
     ...area_editorCaptionTools,
     ...area_editorClips,
     ...area_editorCore,
+    ...area_editorCover,
     ...area_editorEditGate,
     ...area_editorExportRefusal,
     ...area_editorFont,
@@ -449,6 +452,7 @@ const catalog = {
     ...area_preview,
     ...area_pricing,
     ...area_privacyExport,
+    ...area_projectCloud,
     ...area_projectDocument,
     ...area_projectHome,
     ...area_projects,

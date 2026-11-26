@@ -1,12 +1,18 @@
+import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { t } from '../../lib/i18n';
-import { ASPECT_RATIOS, BRIEF_MAX, FRAME_RATES, REVISION_CAP, type Editable, type Head } from '../../lib/projectDocumentDraft';
+import { ASPECT_RATIOS, BRIEF_MAX, FRAME_RATES, REVISION_CAP, customCanvasParts, formatCustomCanvasAspect, type Editable, type Head } from '../../lib/projectDocumentDraft';
 import { ds } from '../../theme';
 import { Button, Card, SegmentedControl, Text, TextField, themedStyles, useThemedStyles } from '../ui';
 import type { ProjectDocumentState } from './useProjectDocument';
 
 const ASPECT_KEYS = { '16:9': 'projectDocument.landscape', '9:16': 'projectDocument.portrait', '1:1': 'projectDocument.square' } as const;
-export const aspectLabel = (value: unknown) => (typeof value === 'string' && value in ASPECT_KEYS ? t(ASPECT_KEYS[value as Editable['aspectRatio']]) : '');
+export const aspectLabel = (value: unknown) => {
+    if (value === '4:5') return '4:5';
+    const custom = customCanvasParts(value);
+    if (custom) return `${t('editorTools.custom')} ${custom.width}:${custom.height}`;
+    return typeof value === 'string' && value in ASPECT_KEYS ? t(ASPECT_KEYS[value as keyof typeof ASPECT_KEYS]) : '';
+};
 export const fpsLabel = (value: unknown) => (typeof value === 'number' ? t('projectDocument.fps', { value1: value }) : '');
 
 function statusLine(doc: ProjectDocumentState): string | null {
@@ -79,11 +85,19 @@ function ConflictPanel({ doc }: { doc: ProjectDocumentState }) {
 export function ProjectDocumentCard({ doc }: { doc: ProjectDocumentState }) {
     const s = useThemedStyles(sheets);
     const draft = doc.draft;
+    const initialCustom = customCanvasParts(draft?.aspectRatio);
+    const [customWidth, setCustomWidth] = useState(() => String(initialCustom?.width ?? 4));
+    const [customHeight, setCustomHeight] = useState(() => String(initialCustom?.height ?? 5));
+    useEffect(() => {
+        const value = customCanvasParts(draft?.aspectRatio);
+        if (value) { setCustomWidth(String(value.width)); setCustomHeight(String(value.height)); }
+    }, [draft?.aspectRatio]);
     const blocked = doc.status === 'unavailable' || doc.status === 'unsupported' || doc.status === 'revision_limit';
     const locked = !draft || doc.phase === 'restoring' || doc.phase === 'suspended' || doc.status === 'unsupported' || doc.status === 'revision_limit' || (doc.status === 'unavailable' && !doc.head);
     const retryLabel = ['failed', 'offline', 'paused', 'held', 'daily_limit'].includes(doc.status ?? '') ? t('projectDocument.retrySave') : t('projectDocument.saveNow');
     const line = statusLine(doc);
     const pick = <K extends keyof Editable>(key: K, value: Editable[K]) => { if (!locked) doc.edit({ [key]: value } as Partial<Editable>); };
+    const custom = customCanvasParts(draft?.aspectRatio), customValue = formatCustomCanvasAspect(customWidth, customHeight);
     return (
         <Card style={s.card}>
             <Text variant="title3" accessibilityRole="header">{t('projectDocument.creating')}</Text>
@@ -105,11 +119,17 @@ export function ProjectDocumentCard({ doc }: { doc: ProjectDocumentState }) {
                     <View {...lockedProps(locked, t('projectDocument.aspectRatio'), aspectLabel(draft.aspectRatio), s.off)}>
                         <SegmentedControl
                             accessibilityLabel={t('projectDocument.aspectRatio')}
-                            options={ASPECT_RATIOS.map((value) => ({ value, label: aspectLabel(value), accessibilityLabel: aspectLabel(value) }))}
-                            value={draft.aspectRatio}
-                            onChange={(value) => pick('aspectRatio', value)}
+                            options={[...ASPECT_RATIOS.map((value) => ({ value, label: aspectLabel(value), accessibilityLabel: aspectLabel(value) })),
+                                { value: 'custom', label: t('editorTools.custom'), accessibilityLabel: t('editorTools.custom') }]}
+                            value={custom ? 'custom' : draft.aspectRatio}
+                            onChange={(value) => pick('aspectRatio', value === 'custom' ? customValue ?? 'custom:4x5' : value as Editable['aspectRatio'])}
                         />
                     </View>
+                    {custom ? <><View style={s.customRow}><TextField label={t('editorLook.crop.width')} value={customWidth} maxLength={3} keyboardType="number-pad"
+                        editable={!locked} onChangeText={setCustomWidth} containerStyle={s.customField} /><TextField label={t('editorLook.crop.height')} value={customHeight} maxLength={3}
+                        keyboardType="number-pad" editable={!locked} onChangeText={setCustomHeight} containerStyle={s.customField}
+                        error={customValue ? false : '1–100 · 1:4–4:1'} /></View><Button variant="secondary" size="md" label={t('editorAi.apply')}
+                        disabled={locked || !customValue} onPress={() => { if (customValue) pick('aspectRatio', customValue); }} /></> : null}
                     <Text variant="footnote" tone="secondary">{t('projectDocument.frameRate')}</Text>
                     <View {...lockedProps(locked, t('projectDocument.frameRate'), fpsLabel(draft.frameRate), s.off)}>
                         <SegmentedControl
@@ -144,5 +164,7 @@ const sheets = themedStyles((p) => ({
     brief: { minHeight: 120, textAlignVertical: 'top' },
     counter: { alignSelf: 'flex-end' },
     off: { opacity: 0.4 },
+    customRow: { flexDirection: 'row', gap: ds.space.sm },
+    customField: { flex: 1 },
     panel: { gap: ds.space.sm, padding: ds.space.md, borderRadius: ds.radius.md, borderWidth: 1, borderColor: p.borderStrong },
 }));

@@ -1,6 +1,6 @@
 // Pure browser contract: prices always come from the server, never arithmetic here.
 export const SERVER_RENDER_PATH = '/editor/server-render';
-export const serverResolution = height => height === 720 ? '720p' : height === 1080 ? '1080p' : null;
+export const serverResolution = height => height === 720 ? '720p' : height === 1080 ? '1080p' : height === 2160 ? '2160p' : null;
 export function serverRenderVisible(mode, storage) {
     if (!['preview', 'on'].includes(mode)) return false;
     try { return storage?.getItem('veyrnox_editor_server_render') === '1'; } catch { return false; }

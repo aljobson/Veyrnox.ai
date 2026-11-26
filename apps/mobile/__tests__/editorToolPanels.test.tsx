@@ -127,7 +127,7 @@ function panelFixture(): ToolPanelProps {
     return { timeline, selection: { track: 'video', id: 'v1' }, selected: timeline.video[0], selections: [],
         selectedMedia: timeline.media.m, selectedTrack: timeline.tracks[0], patchSelected: noop, applyTimeline: () => true,
         availableMedia: Object.values(timeline.media), addMediaToTimeline: noop, libraryPending: false, replacing: false,
-        setLibraryKind: noop, choosePhotos: async () => {}, chooseFiles: async () => {}, selectClip: noop, openVoiceover: noop,
+        setLibraryKind: noop, choosePhotos: async () => {}, chooseFiles: async () => {}, filesPending: false, selectClip: noop, openVoiceover: noop,
         openGenerate: noop, addTimelineTrack: noop, addText: noop, addCaption: noop, updateSelectedText: noop,
         setFrame: noop, setPlaying: noop, addTimelineMarker: noop, currentDocument: () => envelope(timeline), document: envelope(timeline),
         markDocument: () => ({ status: 'accepted' }), canvas: { aspect_ratio: '16:9', frame_rate: 30 }, updateCanvas: noop, updateTrack: noop,
@@ -138,6 +138,10 @@ test.each(panelCases)('%s retains its accessible heading and a representative co
     await act(async () => root.render(<Panel {...panelFixture()} />));
     expect(root.container.queryAll(n => n.props.accessibilityRole === 'header' && n.children.includes(header)).length).toBeGreaterThan(0);
     expect(labelled(label).length).toBeGreaterThan(0);
+});
+test('media panel prevents a second Files pick while a provider download is pending', async () => {
+    await act(async () => root.render(<MediaPanel {...panelFixture()} filesPending />));
+    expect(labelled(t('editor.files'))[0]?.props.accessibilityState?.disabled).toBe(true);
 });
 test('tool rail preserves order and selected state', async () => {
     await act(async () => root.render(<ToolRail tool="animation" setTool={() => {}} />));
@@ -150,6 +154,6 @@ test('tool rail preserves order and selected state', async () => {
     const ids = tools.map(tool => tool.id), at = ids.indexOf('animation');
     expect(ids.slice(at + 1, at + 3)).toEqual(['motion', 'mask']);
     const timeline = webSequenceV3();
-    await act(async () => root.render(<><MotionPanel timeline={timeline} selection={null} /><MaskPanel timeline={timeline} selection={null} /></>));
+    await act(async () => root.render(<><MotionPanel timeline={timeline} selection={null} /><MaskPanel timeline={timeline} selection={null} patchSelected={() => {}} /></>));
     expect(visible('Select a video clip or title.')).toBe(true); expect(visible('Select a video clip.')).toBe(true);
 });

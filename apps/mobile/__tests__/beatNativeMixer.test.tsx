@@ -107,6 +107,7 @@ test('compressor topology settings preview during a drag and commit only once on
 });
 test('both mixer entry points disable automated gain and pan with translated reasons', async () => {
     await open(d => addAutomationPoint(addAutomationPoint(d, 't1', 'gain', 0, 0.8), 't1', 'pan', 0, 0));
+    await press(t('beat.track.controls'));
     for (const lane of ['gain', 'pan'] as const) {
         const old = t(`beat.${lane}`, { track: t('beat.track', { n: 1 }) });
         expect(slider(old).props.accessibilityState.disabled).toBe(true);
@@ -121,7 +122,7 @@ test('both mixer entry points disable automated gain and pan with translated rea
 test.each([false, true])('slider edits coalesce into one history entry and undo restores (sheet %s)', async sheet => {
     const recorded = jest.spyOn(history, 'record'); await open();
     jest.spyOn(Date, 'now').mockReturnValue(Date.now());
-    if (sheet) await press(t('beatMix.title'));
+    if (sheet) await press(t('beatMix.title')); else await press(t('beat.track.controls'));
     const label = t('beat.gain', { track: sheet ? track().name : t('beat.track', { n: 1 }) });
     await adjust(label, 'decrement'); await adjust(label, 'decrement'); await adjust(label, 'decrement');
     expect(track().gain).toBe(0.7); expect(recorded).toHaveBeenCalledTimes(3);

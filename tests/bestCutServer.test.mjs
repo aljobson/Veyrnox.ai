@@ -15,13 +15,14 @@ function handlers(extra = {}) {
     return { calls, submits, ...speechAnalysisHandlers({ env: { ...env, ...extra.env }, cfg: {}, r2cfg: r2,
         select: async table => table === 'model_catalog' ? [{ id: 'elevenlabs-scribe-v2', active: true, provider: 'fal', provider_endpoint: 'fal-ai/elevenlabs/speech-to-text/scribe-v2', credits_5s: 3 }]
             : table === 'upload_reservations' ? [{ r2_key: key, size_bytes: 500 }] : table === 'fal_capacity_policy' ? [{ enabled: false }] : [{ paused: false }],
-        resolveUpload: async () => ({ ok: true, r2_key: key, sha256: fingerprint, size_bytes: 500, mime_type: 'video/quicktime', probe: { fingerprint, mime: 'video/quicktime', duration: 12 } }),
+        resolveUpload: extra.resolveUpload || (async () => ({ ok: true, r2_key: key, sha256: fingerprint, size_bytes: 500, mime_type: 'video/quicktime',
+            probe: { fingerprint, mime: 'video/quicktime', duration: extra.measuredDuration ?? 12 } })),
         sign: async () => ({ url: 'https://storage.test/file' }), submit: async value => { submits.push(value); return { ok: true, providerJobId: 'provider-1' }; },
         rpc: async (name, args) => {
             calls.push({ name, args }); if (extra.rpc?.[name]) return extra.rpc[name](args);
             if (name === 'speech_analysis_by_key') return { ok: true, found: false };
-            if (name === 'speech_analysis_preflight') return { ok: true, cached: true, credits: 0 };
-            if (name === 'speech_analysis_request_v2') return { ok: true, fresh: true, id: JOB };
+            if (name === 'speech_analysis_preflight_v2') return { ok: true, cached: true, credits: 0 };
+            if (name === 'speech_analysis_request_v2' || name === 'speech_analysis_request_v3') return { ok: true, fresh: true, id: JOB, requested_language: args.p_requested_language || 'auto' };
             return { ok: true };
         },
     }) };
@@ -31,20 +32,47 @@ test('bestCut defaults off and capability quote requires both flags, legacy quot
     const h = handlers({ env: { EDITOR_RUNTIME_FLAGS: '{"speechCut":"true"}' } });
     assert.equal((await h.quote(req(null, '/quote?capability=best-cut'))).status, 501);
     const legacy = await (await h.quote(req(null, '/quote'))).json(); assert.equal(legacy.credits, 3); assert.equal(legacy.source_types, undefined);
-    assert.deepEqual((await (await handlers().quote(req(null, '/quote?capability=best-cut'))).json()).source_types, ['job', 'upload']);
+    const best = await (await handlers().quote(req(null, '/quote?capability=best-cut'))).json();
+    assert.deepEqual(best.source_types, ['job', 'upload']);
+    assert.equal(best.max_seconds, 600); assert.equal(best.billing_block_seconds, 60); assert.equal(legacy.max_seconds, 60);
 });
 test('preflight is non-debiting and upload start binds only verified metadata and receipt capability', async () => {
     const h = handlers();
-    assert.deepEqual(await (await h.preflight(req({ sources: [input().source] }))).json(), { clips: [{ cached: true, credits: 0 }] });
+    assert.deepEqual(await (await h.preflight(req({ sources: [input().source], durations: [12] }))).json(), { clips: [{ cached: true, credits: 0 }] });
     assert.ok(!h.calls.some(c => c.name === 'speech_analysis_request_v2')); assert.equal(h.submits.length, 0);
     assert.equal((await h.run(req(input()))).status, 202);
     const args = h.calls.find(c => c.name === 'speech_analysis_request_v2').args;
     assert.equal(args.p_accepts_no_speech, true); assert.equal(args.p_fingerprint, fingerprint); assert.equal(args.p_size, 500); assert.equal(args.p_asset_job_id, null);
     assert.equal(h.submits.length, 1);
 });
-test('cached amount must explicitly be cacheOnly and expiry returns price_changed without dispatch', async () => {
+test('legacy preflight requests without durations stay compatible and use the server measurement', async () => {
+    const h = handlers({ measuredDuration: 60.1, rpc: { speech_analysis_preflight_v2: () => ({ ok: true, cached: false, credits: 3 }) } });
+    assert.deepEqual(await (await h.preflight(req({ sources: [input().source] }))).json(), { clips: [{ cached: false, credits: 6 }] });
+});
+test('preflight and admission price the same server duration across a 60-second boundary', async () => {
+    const shorter = handlers({ measuredDuration: 59.95, rpc: { speech_analysis_preflight_v2: () => ({ ok: true, cached: false, credits: 3 }) } });
+    assert.deepEqual(await (await shorter.preflight(req({ sources: [input().source], durations: [60.1] }))).json(), { clips: [{ cached: false, credits: 3 }] });
+    const longer = handlers({ measuredDuration: 60.1, rpc: { speech_analysis_preflight_v2: () => ({ ok: true, cached: false, credits: 3 }) } });
+    assert.deepEqual(await (await longer.preflight(req({ sources: [input().source], durations: [59.95] }))).json(), { clips: [{ cached: false, credits: 6 }] });
+});
+test('chosen transcription language scopes preflight, admission and provider submission', async () => {
+    const h = handlers();
+    assert.deepEqual(await (await h.preflight(req({ sources: [input().source], durations: [12], language: 'es' }))).json(), { clips: [{ cached: true, credits: 0 }] });
+    assert.equal(h.calls.find(c => c.name === 'speech_analysis_preflight_v2').args.p_requested_language, 'es');
+    assert.equal((await h.run(req({ ...input(), language: 'es' }))).status, 202);
+    assert.equal(h.calls.find(c => c.name === 'speech_analysis_request_v3').args.p_requested_language, 'es');
+    assert.equal(h.submits[0].inputs.language_code, 'es');
+});
+test('invalid chosen language fails before preflight, debit or provider submission', async () => {
+    const h = handlers();
+    assert.equal((await h.preflight(req({ sources: [input().source], durations: [12], language: 'und' }))).status, 400);
+    assert.equal((await h.run(req({ ...input(), language: 'xx' }))).status, 400);
+    assert.ok(!h.calls.some(c => c.name === 'speech_analysis_request_v2' || c.name === 'speech_analysis_request_v3'));
+    assert.equal(h.submits.length, 0);
+});
+test('zero-credit Best Cut is adjudicated by the durable entitlement RPC and never dispatched on price change', async () => {
     const h = handlers({ rpc: { speech_analysis_request_v2: () => ({ ok: false, code: 'PRICE_CHANGED', credits: 3 }) } });
-    assert.equal((await h.run(req({ ...input(), expectedCredits: 0 }))).status, 400);
+    assert.equal((await h.run(req({ ...input(), expectedCredits: 0 }))).status, 409);
     const result = await h.run(req({ ...input(), expectedCredits: 0, cacheOnly: true }));
     assert.equal(result.status, 409); assert.deepEqual(await result.json(), { error: 'price_changed', credits: 3 }); assert.equal(h.submits.length, 0);
 });
@@ -55,7 +83,7 @@ test('daily quota and admission closure reject before dispatch', async () => {
 });
 test('receipt-specific no-speech replay survives both flags off and never resolves the expired upload', async () => {
     const h = handlers({ env: { EDITOR_RUNTIME_FLAGS: '{}' }, rpc: { speech_analysis_by_key: () => ({ ok: true, found: true, id: JOB, status: 'completed', speech: false, refunded: true, credits: 3, source_ref: key, accepts_no_speech: true }) } });
-    assert.deepEqual(await (await h.run(req(input()))).json(), { id: JOB, status: 'completed', speech: false, refunded: true, credits: 3 });
+    assert.deepEqual(await (await h.run(req(input()))).json(), { id: JOB, status: 'completed', speech: false, refunded: true, credits: 3, requested_language: 'auto' });
     assert.ok(!h.calls.some(c => c.name === 'speech_source')); assert.equal(h.submits.length, 0);
 });
 function uploadDeps(patch = {}) {
@@ -79,7 +107,7 @@ test('size/type mismatch, short stream and overly long measured media are refuse
         { fetcher: async () => new Response(new Uint8Array(16), { status: 206, headers: { 'Content-Range': 'bytes 0-15/104857601', 'Content-Type': 'video/quicktime', ETag: '"fixed"' } }) },
         { fetcher: async () => new Response(new Uint8Array(16), { status: 206, headers: { 'Content-Range': 'bytes 0-15/16', 'Content-Type': 'video/mp4', ETag: '"fixed"' } }) },
         { stream: async () => ({ status: 200, bytes: 15 }) },
-        { probe: async () => ({ duration: 61 }) },
+        { probe: async () => ({ duration: 601 }) },
     ]) assert.equal((await resolveSpeechUpload(AUTH, key, r2, uploadDeps(patch).deps)).ok, false);
 });
 test('migration guards: receipt capability, source-independent upload reads, atomic quota, owner erasure and ledger-only money', () => {
@@ -93,8 +121,33 @@ test('migration guards: receipt capability, source-independent upload reads, ato
     assert.match(sql, /mp4\|mov\|mp3\|wav/);
     assert.doesNotMatch(sql, /INSERT INTO public.ledger_entries|UPDATE public.credit_balances/);
 });
+test('requested-language migration scopes cache and idempotency while preserving legacy auto', () => {
+    const sql = readFileSync(new URL('../packages/db/schema/supabase/0616_speech_requested_language.sql', import.meta.url), 'utf8');
+    assert.match(sql, /speech_analysis_request_v3/);
+    assert.match(sql, /speech_analysis_preflight_v2/);
+    assert.match(sql, /COALESCE\(j\.inputs->>'requested_language','auto'\)=p_requested_language/);
+    assert.match(sql, /p_requested_language<>'auto'.*digest_source/s);
+    assert.match(sql, /p_requested_language='auto'.*'\{\}'::jsonb/s);
+    assert.match(sql, /speech_analysis_request_v3\([^;]+,'auto'\)/s);
+    assert.match(sql, /speech_analysis_preflight_v2\([^;]+,'auto'\)/s);
+    assert.match(sql, /duration BETWEEN 0\.5 AND 600/);
+    assert.match(sql, /charge:=model\.credits_5s\*ceil\(probe\.duration\/60\.0\)::integer/);
+    assert.match(sql, /ledger_debit\(u,p_key,charge/);
+    assert.match(sql, /CREATE TABLE IF NOT EXISTS public\.smart_cut_first_edits/);
+    assert.match(sql, /VALUES\(u,p_key,model\.id,0,job_inputs,'DEBITED'\)/);
+    assert.match(sql, /DELETE FROM public\.smart_cut_first_edits WHERE claimed_job_id=j\.id/);
+    assert.doesNotMatch(sql, /INSERT INTO public\.ledger_entries|UPDATE public\.credit_balances/);
+});
 test('preflight meters one hashed clip per call', async () => {
     const h = handlers(); const source = input().source;
-    assert.equal((await h.preflight(req({ sources: [source, source] }))).status, 400);
-    assert.equal((await h.preflight(req({ sources: [] }))).status, 400);
+    assert.equal((await h.preflight(req({ sources: [source, source], durations: [12, 12] }))).status, 400);
+    assert.equal((await h.preflight(req({ sources: [], durations: [] }))).status, 400);
+});
+test('preflight charges every started minute for a long Best Cut source', async () => {
+    const h = handlers({ measuredDuration: 146, rpc: { speech_analysis_preflight_v2: () => ({ ok: true, cached: false, credits: 3 }) } });
+    assert.deepEqual(await (await h.preflight(req({ sources: [input().source], durations: [146] }))).json(), { clips: [{ cached: false, credits: 9 }] });
+});
+test('preflight exposes a dedicated zero-credit first Smart Cut', async () => {
+    const h = handlers({ measuredDuration: 146, rpc: { speech_analysis_preflight_v2: () => ({ ok: true, cached: false, first_free: true, credits: 3 }) } });
+    assert.deepEqual(await (await h.preflight(req({ sources: [input().source], durations: [146] }))).json(), { clips: [{ cached: false, free: true, paidCredits: 9, credits: 0 }] });
 });

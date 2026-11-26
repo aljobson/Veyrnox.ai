@@ -30,7 +30,7 @@ function tabIcon(name: MenuIcon) {
     };
 }
 
-// Five bottom tabs. Studio is a top-level destination at the stable /editor route; Cinema remains available from the main menu without
+// Five bottom tabs. Editor is a top-level destination at the stable /editor route; Cinema remains available from the main menu without
 // crowding the bar with a sixth item. The (tabs) folder is a group, so each tab keeps its short public URL.
 const TAB_HUES: Record<string, VividHue> = { index: 'blue', create: 'purple', editor: 'orange', library: 'green', publish: 'pink' };
 
@@ -73,7 +73,7 @@ export default function TabsLayout() {
             />
             <Tabs.Screen
                 name="editor"
-                options={{ tabBarIcon: tabIcon('scissors'), title: t('tabs.studio'), tabBarLabel: tabLabel('tabs.studio'), tabBarAccessibilityLabel: t('tabs.studio') }}
+                options={{ tabBarIcon: tabIcon('scissors'), title: t('editor.title'), tabBarLabel: tabLabel('editor.title'), tabBarAccessibilityLabel: t('editor.title') }}
             />
             <Tabs.Screen
                 name="library"

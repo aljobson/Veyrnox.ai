@@ -1,6 +1,6 @@
 import { upgradeSequence, splitSequenceClip } from '../../../app/veyrnox/_lib/editorSequence.mjs';
 import { validateSequence } from '../../../app/veyrnox/_lib/editorSequenceValidation.mjs';
-import { timelineOf, framesIn, splitClip, validCustomFonts } from '../src/lib/nativeEditorModel';
+import { canvasOf, timelineOf, framesIn, splitClip, validCustomFonts } from '../src/lib/nativeEditorModel';
 import { moveItems } from '../src/lib/editorTimeline';
 import { utf8Bytes } from '../src/lib/editorBridge';
 import { webSequenceV2 } from './fixtures/webSequenceV2';
@@ -23,6 +23,15 @@ test('v3 survives native move, split, serialization and validation with every ad
         expect(split).toEqual(splitSequenceClip(raw, selection.track, selection.id, 30));
         expect(validateSequence(JSON.parse(JSON.stringify(envelope(split))).timeline)).toBeNull(); expect(framesIn(split)).toBe(240);
     }
+});
+test('bounded custom canvases survive native document normalization', () => {
+    expect(canvasOf({ aspect_ratio: '4:5', frame_rate: 30 }).aspect_ratio).toBe('4:5');
+    expect(canvasOf({ aspect_ratio: 'custom:5x8', frame_rate: 30 }).aspect_ratio).toBe('custom:5x8');
+    expect(canvasOf({ aspect_ratio: 'custom:10x16', frame_rate: 30 }).aspect_ratio).toBe('16:9');
+    const raw = webSequenceV3(); raw.aspect = 'custom:5x8' as typeof raw.aspect;
+    expect(timelineOf(raw).aspect).toBe('custom:5x8');
+    raw.aspect = 'custom:10x16' as typeof raw.aspect;
+    expect(timelineOf(raw).aspect).toBe('16:9');
 });
 test('solo is retained only when boolean; starter tracks remain key-exact', () => {
     for (const solo of [true, false, undefined, 'yes']) {

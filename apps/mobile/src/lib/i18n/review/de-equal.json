@@ -232,8 +232,6 @@
   "musicPublic.genre.jazz": "Established musical genre or reaction loanword in this locale. Machine translated; native review pending.",
   "musicPublic.genre.ambient": "Established musical genre or reaction loanword in this locale. Machine translated; native review pending.",
   "musicPublic.genre.latin": "Established musical genre or reaction loanword in this locale. Machine translated; native review pending.",
-  "beat.home.untitled": "Same in de: a loanword, brand-style name or number used unchanged in this language.",
-  "beat.home.loaded": "Same in de: a loanword, brand-style name or number used unchanged in this language.",
   "beat.tempo": "Same in de: a loanword, brand-style name or number used unchanged in this language.",
   "beat.tempoValue": "Same in de: a loanword, brand-style name or number used unchanged in this language.",
   "beat.pattern.swing": "Swing is established German music-production terminology and is intentionally unchanged.",
@@ -356,5 +354,14 @@
   "musicAlbums.type.album": "Album and LP are standard German music-release terms.",
   "musicAlbums.type.ep": "EP is the standard music-release abbreviation in German and English.",
   "musicAlbums.type.single": "Single is the established German music-release term.",
-  "onboarding.notifications.app": "Veyrnox is the product name and is intentionally unchanged in every language."
+  "onboarding.notifications.app": "Veyrnox is the product name and is intentionally unchanged in every language.",
+"bestCut.settings": "Smart Cut is the product feature name and remains unchanged across languages.",
+  "editorLocalExport.quality.standard": "Standard is the established German quality label.",
+  "editorLocalExport.codec.h264": "H.264 is the locale-independent standard video codec name.",
+  "editorLocalExport.codec.hevc": "HEVC is the locale-independent standard video codec name.",
+  "editorCaptionTools.style.neon": "Neon is the established German style label.",
+  "editorSimple.text": "Text is spelled identically in German and English.",
+  "editorSimple.video": "Video is spelled identically in German and English.",
+  "projects.smartCutBatch.eyebrow": "Smart Cut is the product feature name and remains unchanged across languages."
+
 }

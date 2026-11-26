@@ -5,8 +5,6 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { CREATIVE_FEATURE_GROUPS, CREATIVE_FEATURES, examplePlaysOn } from '../../../lib/creativeFeatures';
 import { compatibleCreativeFeatures, creativeReuseTargetHref, readCreativeReuse } from '../../../lib/creativeReuse';
-import { directoryFeatures } from '../../../lib/featureRegistry';
-import { FILM_STUDIO_ENABLED } from '../../../lib/filmStudioSwitch';
 import { t } from '../../../lib/i18n';
 import { useMusicAvailable } from '../../../lib/music/useMusicAvailable';
 import { colors, fonts, VIVID_HUES } from '../../../theme';
@@ -17,8 +15,6 @@ export default function CreativeFeatures() {
     const router = useRouter();
     const reuse = readCreativeReuse(sourceJobId, sourceKind);
     const available = reuse ? compatibleCreativeFeatures(reuse.kind) : CREATIVE_FEATURES;
-    const musicAvailable = useMusicAvailable();
-    const directory = directoryFeatures({ filmStudio: FILM_STUDIO_ENABLED, musicAvailable });
     return (
         <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
             <Stack.Screen options={{ title: t('features.creativetools') }} />

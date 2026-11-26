@@ -10,10 +10,7 @@ import { FlatList, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { useAssetLinks } from '../../../components/JobThumb';
 import { ProjectThumb } from '../../../components/CreationThumbs';
-import { BestCutEntry } from '../../../components/editor/BestCutEntry';
 import { EDITOR_ENABLED } from '../../../lib/editorFlag';
-import { FILM_STUDIO_ENABLED } from '../../../lib/filmStudioSwitch';
-import { mobileFeature, type MobileFeatureDefinition } from '../../../lib/featureRegistry';
 import { formatLocale, t } from '../../../lib/i18n';
 import { MENU_ICONS } from '../../../lib/menuIcons';
 import { fetchProjects, fetchWorkspaces, projectSavedAt, projectsErrorMessage, projectVersion, type Project, type Workspace } from '../../../lib/projects';
@@ -32,18 +29,12 @@ function StudioRow({ feature, body, hue, onPress }: { feature: MobileFeatureDefi
     const title = t(feature.titleKey as Parameters<typeof t>[0]);
     return <VividCard hue={hue} icon={feature.icon ?? 'sparkle'} title={title} detail={body} layout="row" showChevron accessibilityLabel={rawText(title)} onPress={onPress} />;
 }
-
 export default function EditorHome() {
     const styles = useThemedStyles(sheets);
     const { scheme } = useAppearance();
     const { api } = useAuth();
     const links = useAssetLinks(api);
     const router = useRouter();
-    const projectsFeature = mobileFeature('projects');
-    const beatsFeature = mobileFeature('beats');
-    const smartCutFeature = mobileFeature('smartCut');
-    const featuresFeature = mobileFeature('features');
-    const filmFeature = mobileFeature('film');
     const selectedWorkspace = useRef<string | null>(null);
     const request = useRef(0);
     const loadedOnce = useRef(false);
@@ -98,7 +89,7 @@ export default function EditorHome() {
 
     return (
         <View style={styles.screen}>
-            <Stack.Screen options={{ title: t('tabs.studio') }} />
+            <Stack.Screen options={{ title: t('editor.title') }} />
             <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
             <FlatList
                 data={EDITOR_ENABLED ? projects ?? [] : []}
@@ -109,9 +100,9 @@ export default function EditorHome() {
                 ListHeaderComponent={
                     <View style={styles.header}>
                         <View style={styles.intro}>
-                            <Text variant="caption" style={styles.eyebrow}>{t('studio.eyebrow')}</Text>
-                            <Text variant="display" style={styles.heading} accessibilityRole="header">{t('tabs.studio')}</Text>
-                            <Text variant="body" style={styles.summary}>{t('studio.summary')}</Text>
+                            <Text variant="caption" style={styles.eyebrow}>{t('editor.home.eyebrow')}</Text>
+                            <Text variant="display" style={styles.heading} accessibilityRole="header">{t('editor.title')}</Text>
+                            <Text variant="body" style={styles.summary}>{t('editor.home.summary')}</Text>
                         </View>
                         <StudioRow hue="blue" feature={projectsFeature} body={t('studio.projectsBody')} onPress={() => router.push(projectsFeature.href as never)} />
                         <StudioRow hue="purple" feature={beatsFeature} body={t('studio.beatsBody')} onPress={() => router.push(beatsFeature.href as never)} />
@@ -119,9 +110,9 @@ export default function EditorHome() {
                         <StudioRow hue="teal" feature={featuresFeature} body={t('features.chooseaworkflowVeyrnoxsetstheright')} onPress={() => router.push(featuresFeature.href as never)} />
                         <BestCutEntry />
                         {FILM_STUDIO_ENABLED ? <StudioRow hue="green" feature={filmFeature} body={t('filmCloud.intro')} onPress={() => router.push(filmFeature.href as never)} /> : null}
-                        {EDITOR_ENABLED ? <Button label={t('menu.professional')} variant="primary"
+                        {EDITOR_ENABLED ? <Button label={t('editor.new')} variant="primary"
                             accessibilityRole="button"
-                            accessibilityLabel={t('menu.professional')}
+                            accessibilityLabel={t('editor.new')}
                             accessibilityHint={t('editor.home.newHint')}
                             style={styles.primary}
                             onPress={() => router.push({ pathname: '/editor/new', params: { blank: '1' } })}
@@ -130,7 +121,7 @@ export default function EditorHome() {
                                 <Image source={MENU_ICONS.slate} style={styles.primaryIcon} tintColor={styles.onAccentInk.color} contentFit="contain" alt="" accessibilityElementsHidden />
                             </View>
                             <View style={styles.primaryCopy}>
-                                <Text variant="bodyStrong" style={styles.primaryTitle}>{t('menu.professional')}</Text>
+                                <Text variant="bodyStrong" style={styles.primaryTitle}>{t('editor.new')}</Text>
                                 <Text variant="footnote" style={styles.primaryBody}>{t('editor.home.newBody')}</Text>
                             </View>
                             <Image source={MENU_ICONS.caretRight} style={[styles.caret, directionalStyle()]} tintColor={styles.onAccentInk.color} contentFit="contain" alt="" accessibilityElementsHidden />
@@ -193,7 +184,6 @@ export default function EditorHome() {
 
 const sheets = themedStyles((p) => ({
     mutedInk: { color: p.textSecondary },
-    accentInk: { color: p.accent },
     onAccentInk: { color: p.onAccent },
     screen: { flex: 1, backgroundColor: p.bg },
     list: { paddingHorizontal: ds.space.gutter, paddingTop: ds.space.xxl, paddingBottom: ds.space.huge, gap: ds.space.md },

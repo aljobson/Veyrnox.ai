@@ -16,9 +16,9 @@ const err = (status, code, body = {}) => Object.assign(new Error(code), { status
 test('quote reads the typed price and treats 501 as unavailable', async () => {
   const seen = [];
   const quote = await fetchSpeechQuote(async (path) => { seen.push(path); return { credits: 3, max_seconds: 60, languages: ['en'] }; });
-  assert.deepEqual(quote, { credits: 3, maxSeconds: 60 });
+  assert.deepEqual(quote, { credits: 3, maxSeconds: 60, languages: ['en'] });
   assert.equal(seen[0], `${SPEECH_PATH}/quote`);
-  assert.deepEqual(await fetchSpeechQuote(async () => ({ credits: 3, max_seconds: 90, languages: ['en'] })), { credits: 3, maxSeconds: 90 });
+  assert.deepEqual(await fetchSpeechQuote(async () => ({ credits: 3, max_seconds: 90, languages: ['en'] })), { credits: 3, maxSeconds: 90, languages: ['en'] });
   assert.equal(await fetchSpeechQuote(async () => { throw err(501, 'speech_cut_unavailable'); }), null);
   await assert.rejects(fetchSpeechQuote(async () => ({ credits: 0, max_seconds: 60, languages: [] })), /bad_response/);
   await assert.rejects(fetchSpeechQuote(async () => { throw err(500, 'gateway_error'); }));
@@ -32,6 +32,15 @@ test('start posts only the owned job, the duration, the key and the price the pe
   assert.equal(call.init.method, 'POST');
   assert.deepEqual(JSON.parse(call.init.body), { source: { type: 'job', jobId: 'b8f1c0de-0000-4000-8000-000000000001' }, duration: 8, idempotencyKey: 'smart-cut-key-0001', expectedCredits: 3 });
   assert.equal(out.status, 'queued');
+});
+test('web start sends an explicit transcription language and preserves automatic legacy payloads', async () => {
+  const bodies = [];
+  const fetcher = async (_path, init) => { bodies.push(JSON.parse(init.body)); return { id: 'a1', status: 'queued' }; };
+  const base = { jobId: 'job-a', duration: 8, key: 'smart-cut-key-0001', credits: 3 };
+  await startSpeech(fetcher, { ...base, language: 'es' });
+  await startSpeech(fetcher, { ...base, language: 'auto' });
+  assert.equal(bodies[0].language, 'es');
+  assert.equal(Object.hasOwn(bodies[1], 'language'), false);
 });
 
 test('a completed analysis is re-validated and a bad one fails closed', async () => {
@@ -72,6 +81,35 @@ test('polling follows queued to completed, reports progress and stops on abort o
 
   let now = 0;
   await assert.rejects(pollSpeech(async () => ({ id: 'a1', status: 'queued' }), 'smart-cut-key-0001', { signal: new AbortController().signal, sleep: async () => { now += 100000; }, now: () => now }), { code: 'poll_timeout' });
+});
+
+test('polling retries transient owner-only reads with the same key and never repeats the paid POST', async () => {
+  const paths = [];
+  const replies = [err(0, 'network'), err(503, 'gateway_error'), { id: 'a1', status: 'completed', analysis }];
+  const progress = [];
+  const out = await pollSpeech(async (path, init) => {
+    paths.push({ path, method: init?.method || 'GET' });
+    const next = replies.shift();
+    if (next instanceof Error) throw next;
+    return next;
+  }, 'smart-cut-key-0001', { signal: new AbortController().signal, onProgress: (p) => progress.push(p), sleep: async () => {} });
+
+  assert.equal(out.status, 'completed');
+  assert.deepEqual(progress, ['retrying', 'retrying']);
+  assert.deepEqual(paths, Array.from({ length: 3 }, () => ({ path: `${SPEECH_PATH}/by-key/smart-cut-key-0001`, method: 'GET' })));
+});
+
+test('polling retries a real statusless fetch network failure', async () => {
+  let calls = 0;
+  const progress = [];
+  const out = await pollSpeech(async () => {
+    calls += 1;
+    if (calls === 1) throw new TypeError('fetch failed');
+    return { id: 'a1', status: 'completed', analysis };
+  }, 'smart-cut-key-0001', { onProgress: value => progress.push(value), sleep: async () => {} });
+  assert.equal(out.status, 'completed');
+  assert.equal(calls, 2);
+  assert.deepEqual(progress, ['retrying']);
 });
 
 test('price and eligibility helpers use the saved clip lengths', () => {

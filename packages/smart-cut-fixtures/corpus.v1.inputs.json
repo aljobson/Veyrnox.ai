@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 1,
+  "fixtures": [
+    {
+      "id": "multi-take-script-and-notes",
+      "input": {
+        "clips": [
+          { "id": "take-a", "assetId": "asset-a", "name": "Take A", "duration": 8, "rangeStart": 0, "rangeEnd": 8 },
+          { "id": "take-b", "assetId": "asset-b", "name": "Take B", "duration": 8, "rangeStart": 0, "rangeEnd": 8 }
+        ],
+        "analyses": {
+          "asset-a": {
+            "version": 1, "assetId": "asset-a", "duration": 8, "provider": "fal-scribe-v2", "transcript": "First line. Extra thought.", "language": "en",
+            "chunks": [
+              { "start": 0.5, "end": 0.9, "text": "First" },
+              { "start": 1, "end": 1.4, "text": "line." },
+              { "start": 3, "end": 3.4, "text": "Extra" },
+              { "start": 3.5, "end": 4, "text": "thought." }
+            ]
+          },
+          "asset-b": {
+            "version": 1, "assetId": "asset-b", "duration": 8, "provider": "fal-scribe-v2", "transcript": "Second line.", "language": "en",
+            "chunks": [
+              { "start": 0.6, "end": 1, "text": "Second" },
+              { "start": 1.1, "end": 1.5, "text": "line." }
+            ]
+          }
+        },
+        "script": "First line.\nSecond line.",
+        "notes": "Prefer the cleanest complete take.",
+        "silencePreset": "natural"
+      }
+    },
+    {
+      "id": "complete-word-output-cap",
+      "input": {
+        "clips": [
+          { "id": "intro", "assetId": "intro", "name": "Intro", "duration": 1, "rangeStart": 0, "rangeEnd": 1 },
+          { "id": "main", "assetId": "main", "name": "Main", "duration": 60, "rangeStart": 0, "rangeEnd": 60 }
+        ],
+        "analyses": {
+          "intro": {
+            "version": 1, "assetId": "intro", "duration": 1, "provider": "fal-scribe-v2", "transcript": "Intro.", "language": "en",
+            "chunks": [{ "start": 0.12, "end": 0.88, "text": "Intro." }]
+          },
+          "main": {
+            "version": 1, "assetId": "main", "duration": 60, "provider": "fal-scribe-v2", "transcript": "Main crossing.", "language": "en",
+            "chunks": [
+              { "start": 0, "end": 59, "text": "Main" },
+              { "start": 59.2, "end": 60, "text": "crossing." }
+            ]
+          }
+        },
+        "script": "",
+        "notes": "",
+        "silencePreset": "natural"
+      }
+    },
+    {
+      "id": "trim-boundary-complete-unit",
+      "input": {
+        "clips": [
+          { "id": "trimmed", "assetId": "trimmed", "name": "Trimmed", "duration": 5, "rangeStart": 1.2, "rangeEnd": 3.4 }
+        ],
+        "analyses": {
+          "trimmed": {
+            "version": 1, "assetId": "trimmed", "duration": 5, "provider": "fal-wizper", "transcript": "leading keep trailing", "language": "en",
+            "chunks": [
+              { "start": 1, "end": 1.4, "text": "leading" },
+              { "start": 1.5, "end": 3, "text": "keep" },
+              { "start": 3.2, "end": 3.6, "text": "trailing" }
+            ]
+          }
+        },
+        "script": "",
+        "notes": "",
+        "silencePreset": "natural"
+      }
+    },
+    {
+      "id": "no-script-repeated-takes",
+      "input": {
+        "clips": [
+          { "id": "take-one", "assetId": "take-one", "name": "Take One", "duration": 4, "rangeStart": 0, "rangeEnd": 4 },
+          { "id": "take-two", "assetId": "take-two", "name": "Take Two", "duration": 4, "rangeStart": 0, "rangeEnd": 4 }
+        ],
+        "analyses": {
+          "take-one": {
+            "version": 1, "assetId": "take-one", "duration": 4, "provider": "fal-scribe-v2", "transcript": "Thanks for watching.", "language": "en",
+            "chunks": [
+              { "start": 0.5, "end": 0.8, "text": "Thanks" },
+              { "start": 0.9, "end": 1.2, "text": "for" },
+              { "start": 1.3, "end": 1.6, "text": "watching." }
+            ]
+          },
+          "take-two": {
+            "version": 1, "assetId": "take-two", "duration": 4, "provider": "fal-scribe-v2", "transcript": "Thanks for watching.", "language": "en",
+            "chunks": [
+              { "start": 0.6, "end": 0.9, "text": "Thanks" },
+              { "start": 1.0, "end": 1.3, "text": "for" },
+              { "start": 1.4, "end": 1.7, "text": "watching." }
+            ]
+          }
+        },
+        "script": "",
+        "notes": "",
+        "silencePreset": "natural"
+      }
+    }
+  ]
+}
