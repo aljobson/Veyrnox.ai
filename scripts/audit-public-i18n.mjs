@@ -31,6 +31,7 @@ const exceptions = [
   { file: /^lib\/templateClipPrompt\.mjs$/, pattern: /^@(?:video1|image1)$/, reason: 'canonical provider reference token, shared verbatim by the prompt editor and provider adapter' },
   { file: /^lib\/crunKlingO1Reference\.js$/, pattern: /./, reason: 'provider prompt wording only (the default sentence and the words that replace @Image/@Video tags) sent to Crun, never shown to a person (0586)' },
   { file: /^lib\/templateClipPrompt\.mjs$/, pattern: /^Use @video1 as the scene reference\./, reason: 'canonical generation prompt sent to the provider, not localized UI copy (ADR-0333)' },
+  { file: /^lib\/templateReferencePriority\.js$/, pattern: /^REFERENCE PRIORITY:/, reason: 'canonical generation prompt sent to video providers, never displayed as interface copy' },
   { file: /^app\/veyrnox\/_components\/music\/(?!MusicPublicPrompt|MusicPublicProfile|MusicPublicTrack|MusicSharedSong)[^/]+\.jsx$/, pattern: /./, reason: 'disabled-by-default private Music preview copy remains English-only until rollout localization; public Music surfaces stay audited' },
   { file: /^app\/veyrnox\/app\/music\//, pattern: /./, reason: 'disabled-by-default private Music preview routes remain English-only until rollout localization; public Music surfaces stay audited' },
   { file: /^lib\/musicInstruments\.js$/, pattern: /./, reason: 'instrument and sound-template names for the disabled-by-default private Music preview, which stays English-only until rollout localization' },

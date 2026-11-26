@@ -61,4 +61,8 @@ test('Create keeps the linked-template model rule visible beside the model picke
   const source = await import('node:fs/promises').then(({ readFile }) => readFile(new URL('../app/veyrnox/app/create/page.js', import.meta.url), 'utf8'));
   assert.match(source, /data-testid="create-template-model-lock"/);
   assert.match(source, /linkedTemplate\s*&&[\s\S]*t\('app\.create\.templateModelSwitch'\)/);
+  assert.match(source, /id="create-template-model-lock"[\s\S]*text-vx-fg-muted/);
+  assert.match(source, /aria-describedby=\{linkedTemplate \? 'create-template-model-lock' : undefined\}/);
+  assert.doesNotMatch(source, /\{issue \? ` — \$\{modelSwapIssueText\(issue\)\}` : ''\}/);
+  assert.doesNotMatch(source, /\{issue && <span[^>]*text-vx-danger[^>]*>\{modelSwapIssueText\(issue\)\}<\/span>\}/);
 });

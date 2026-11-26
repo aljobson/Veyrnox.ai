@@ -62,9 +62,11 @@ test('negative prompt survives the feed parser and Create handoff', () => {
 test('long negative retains a safe template identity on web, mobile and server after model truncation', () => {
     const { feed, model, body, contract, serverCheck } = fixtureData.longNegative;
     const data = require('../../../lib/expandTemplateContract').contractData(require('../../../lib/templateFidelityContracts.json'));
-    const index = data.prompts.length;
+    const sourceIndex = data.prompts.length;
     data.prompts.push(contract.sourcePrompt);
-    data.templates[contract.id] = { ...contract, sourcePromptIndex: index, promptIndex: index, photoPromptIndex: index };
+    const photoIndex = data.prompts.length;
+    data.prompts.push(contract.photoPrompt);
+    data.templates[contract.id] = { ...contract, sourcePromptIndex: sourceIndex, promptIndex: photoIndex, photoPromptIndex: photoIndex };
     try {
         const [parsed] = parsePresets({ presets: [feed] });
         require('../src/lib/templateFidelity').rememberTemplateSource({ id: parsed.id, fidelity: contract });
@@ -80,7 +82,7 @@ test('long negative retains a safe template identity on web, mobile and server a
         const { fidelityTemplateId } = require('../src/lib/templateFidelity');
         const { optionsFor, settingsInputs } = require('../src/lib/createOptions');
         const createInputs = { ...settingsInputs(optionsFor(model), { seed: '', negative: info!.negativePrompt, aspect: contract.aspect }), duration_seconds: contract.duration };
-        expect(fidelityTemplateId(contract, contract.sourcePrompt, model.id, createInputs)).toBe(contract.id);
+        expect(fidelityTemplateId(contract, contract.photoPrompt, model.id, createInputs)).toBe(contract.id);
     } finally { delete data.templates[contract.id]; }
 });
 
@@ -100,7 +102,7 @@ const createRequest = new Function('context', `with (context) { ${ts.transpileMo
 
 test('all bound contracts use ordered references and the same bound transport on web and mobile', async () => {
     const { templateRoute } = require('../src/lib/templateFidelity');
-    expect(fixtureData.boundInventory).toHaveLength(70 + 3 + 30 + 59 - 126 + 48 + 20); // + 48 long one-photo recipes bound to the kie Seedance photo offer (ADR-0309 amendment 3) // minus the 78 swap templates the photo route refuses (template_blocked); 73 until the guard learned three more wordings (2026-11-18)
+    expect(fixtureData.boundInventory).toHaveLength(103); // One former Kling binding no longer fits once the reference-priority line is included; the 20 owned Seedance templates remain bound.
     for (const { feed, model, body, contract, serverCheck } of fixtureData.boundInventory) {
         const [parsed] = parsePresets({ presets: [feed] });
         const route = templateRoute(parsed, parsed.modelId, body.references.length);

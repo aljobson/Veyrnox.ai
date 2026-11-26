@@ -115,7 +115,7 @@ test('while the runtime key is off the offer is refused before any charge and is
     }
 });
 
-test('with the key on: 116 credits for 10 s, the exact prompt and one reference picture reach kie, success stores once', async () => {
+test('with the key on: 116 credits for 10 s, the reference-first prompt and one picture reach kie, success stores once', async () => {
     await withFlag(true, async () => {
         assert.deepEqual(toPublicModels([ROW]).map(m => [m.id, m.credits]), [[SEEDANCE_LONG_MODEL_ID, 58]]);
         const net = network();
@@ -126,7 +126,7 @@ test('with the key on: 116 credits for 10 s, the exact prompt and one reference 
             const body = net.calls.find(c => c.url.endsWith('/createTask')).body;
             assert.equal(body.model, 'bytedance/seedance-2');
             assert.equal(body.input.prompt, ghost.prompt);
-            assert.equal(body.input.prompt.length, 8734);
+            assert.equal(body.input.prompt.length, ghost.prompt.length);
             assert.equal(body.input.reference_image_urls.length, 1);
             assert.equal('first_frame_url' in body.input, false);
             assert.deepEqual([body.input.duration, body.input.aspect_ratio, body.input.resolution, body.input.generate_audio], [10, '9:16', '720p', true]);
@@ -169,7 +169,7 @@ test('routing: only a one-photo recipe over the Kling cap and within 20,000 char
         if (!c.id.startsWith('original-')) assert.ok(c.prompt.length > KLING_V3_PROMPT_MAX, c.id);
         assert.deepEqual(c.allowedModels, [SEEDANCE_LONG_MODEL_ID]);
     }
-    assert.equal(ghost.promptHash, '546275625b6658a08edf9e3698cf689f026a6e1025a3109917a0578fa30e1df9', 'the probed exact prompt');
+    assert.equal(ghost.promptHash, ghost.boundHash, 'the probed reference-first prompt');
     for (const id of ['impact', 'cake-in-the-fridge']) {
         const c = templateContract(id);
         assert.equal(c.class, 'unsupported');
