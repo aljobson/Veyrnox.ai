@@ -1,4 +1,3 @@
-import { hasExactPromptOrigin } from '../../../lib/templatePromptOrigin.mjs';
 import { swapRequest } from './templateSwapClient.mjs';
 import { templateContract, fidelityTemplateId, templateBoundPrompt } from '../../../lib/templateClientContract.js';
 // Generate from the template page itself (ADR-0120 amendment 1). Pure pieces, so they are unit-tested without React.
@@ -41,7 +40,7 @@ export function inlineBlockReason(preset, model, { photo = false } = {}) {
 /** The inputs object Create builds for this template: prompt, shape, length, the template's own negative prompt. */
 const auditedInputs = new WeakSet();
 export function templateInputs(preset, model, { prompt, aspect, durationSeconds, aspectOptions, withPhoto = false }) {
-  const exactOrigin = hasExactPromptOrigin(preset.sourcePromptOrigin);
+  const exactOrigin = preset.sourcePromptOrigin === 'community-source-exact';
   const exact = exactOrigin && typeof preset.sourcePrompt === 'string' ? preset.sourcePrompt : preset.prompt;
   const uneditedExact = exactOrigin && prompt === exact;
   const text = prompt === exact ? prompt : prompt.trim();

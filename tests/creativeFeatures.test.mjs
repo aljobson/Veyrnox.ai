@@ -88,6 +88,18 @@ test('the app route and sidebar expose the workflow suite', async () => {
   assert.match(nav, /key: 'features', href: '\/app\/features'/);
 });
 
+test('web Create exposes Creative tools in the same start-from flow as mobile', async () => {
+  const [create, entry] = await Promise.all([
+    readFile(new URL('../app/veyrnox/app/create/page.js', import.meta.url), 'utf8'),
+    readFile(new URL('../app/veyrnox/_components/CreateStartFrom.js', import.meta.url), 'utf8'),
+  ]);
+  assert.match(create, /<CreateStartFrom \/>/);
+  assert.match(entry, /data-testid="create-start-creative-tools"/);
+  assert.match(entry, /href="\/app\/features"/);
+  assert.match(entry, /app\.create\.startFrom/);
+  assert.match(entry, /app\.create\.creativeTools/);
+});
+
 test('studio example cards share one component and show only media we host', async () => {
   const [card, performance, speech, tools] = await Promise.all([
     readFile(new URL('../app/veyrnox/_components/StudioExampleCard.js', import.meta.url), 'utf8'),

@@ -3,13 +3,13 @@
 Offline structural audit, contract version 1. Reproduce with `node scripts/audit-template-fidelity.mjs`; regenerate with `--write`.
 
 - like-for-like-safe: 220
-- bound: 181
+- bound: 161
 - blocked-needs-video: 392
 - unsupported: 111
 
 Original source hashes remain unchanged. Every runnable photo-driven video contract prepends the shared reference-priority instruction while preserving the complete source prompt after it; contracts that cannot fit the instruction inside the target model's prompt limit are classified unsupported. Only recognized image tokens change in bound source text; final prompt hashes and occurrence maps are recorded in `lib/templateFidelityContracts.json`. Bound templates use Seedance reference with 1–9 ordered photos, fixed generated audio, and catalog pricing. No external source audio can be supplied by an active template route.
 
-A2-3 routes all 181 bound templates by the contract model on feed, card, detail and Create. Web and mobile show exactly N required, ordered photo slots; only complete valid photo selections carry template_id. The web handoff holds up to nine photos in memory only; the mobile handoff uses the existing short-lived, owner-scoped memory store. Unsupported templates remain admitted with the notice. Source-video dependencies are blocked, including harmless prompt edits; independent custom text is admitted.
+A2-3 routes all 161 bound templates by the contract model on feed, card, detail and Create. Web and mobile show exactly N required, ordered photo slots; only complete valid photo selections carry template_id. The web handoff holds up to nine photos in memory only; the mobile handoff uses the existing short-lived, owner-scoped memory store. Unsupported templates remain admitted with the notice. Source-video dependencies are blocked, including harmless prompt edits; independent custom text is admitted.
 
 Structurally validated, not output-verified. No paid provider call, migration, flag or price configuration change. TemplateRecipe and detail markup remain unchanged for non-bound, non-blocked recipes; bound detail model links/names and obsolete crop hints follow the effective model; prose-only video-blocked recipes now show the existing source-video note. The same reference-priority instruction is applied by both Create and inline template generation for any selected image-to-video model, including Kling, Seedance and Veo.
 

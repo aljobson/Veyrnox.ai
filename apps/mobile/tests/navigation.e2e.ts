@@ -31,12 +31,13 @@ test('the menu exposes tools, assets and Social Cinema', { tags: ['smoke', 'navi
   await expect(screen.getByText('Continue watching')).toBeVisible({ timeout: 30_000 });
 });
 
-test('the Creative Tools directory renders the complete catalogue', { tags: ['smoke', 'creative-tools'] }, async ({ app, device, screen }) => {
+test('the simplified Creative Tools view starts with avatars and renders the complete catalogue', { tags: ['smoke', 'creative-tools'] }, async ({ app, device, screen }) => {
   await openSignedIn(app, screen);
   await device.openLink('ai.veyrnox.app://features');
 
-  await expect(screen.getByText('Make the exact thing you need')).toBeVisible();
-  await expect(screen.getByRole('button', { name: /AI Avatar Generator/ })).toBeAttached();
+  await expect(screen.getByRole('button', 'Back')).toBeVisible();
+  await expect(screen.getByText('Avatars')).toBeVisible();
+  await expect(screen.getByRole('button', { name: /AI Avatar Generator/ })).toBeVisible();
   await expect(screen.getByRole('button', { name: /Talking Avatar/ })).toBeAttached();
 
   const last = screen.getByRole('button', { name: /Product Image Generator/ });

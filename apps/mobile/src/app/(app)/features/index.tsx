@@ -7,6 +7,7 @@ import { CREATIVE_FEATURE_GROUPS, CREATIVE_FEATURES, examplePlaysOn } from '../.
 import { compatibleCreativeFeatures, creativeReuseTargetHref, readCreativeReuse } from '../../../lib/creativeReuse';
 import { t } from '../../../lib/i18n';
 import { colors, fonts } from '../../../theme';
+import { HomeBackButton } from '../../../components/HomeBackButton';
 
 export default function CreativeFeatures() {
     const { sourceJobId, sourceKind } = useLocalSearchParams<{ sourceJobId?: string; sourceKind?: string }>();
@@ -15,12 +16,14 @@ export default function CreativeFeatures() {
     const available = reuse ? compatibleCreativeFeatures(reuse.kind) : CREATIVE_FEATURES;
     return (
         <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-            <Stack.Screen options={{ title: t('features.creativetools') }} />
-            <View style={styles.hero}>
-                <Text style={styles.kicker}>{reuse ? t('features.reuse.kicker') : t('features.gUIDEDCREATION')}</Text>
-                <Text style={styles.title} accessibilityRole="header">{reuse ? t('features.reuse.title', { kind: t(`mediaKind.${reuse.kind}`) }) : t('features.maketheexactthingyouneed')}</Text>
-                <Text style={styles.lead}>{reuse ? t('features.reuse.lead') : t('features.chooseaworkflowVeyrnoxsetstheright')}</Text>
-            </View>
+            <Stack.Screen options={{ title: t('features.creativetools'), headerLeft: () => <HomeBackButton /> }} />
+            {reuse ? (
+                <View style={styles.hero}>
+                    <Text style={styles.kicker}>{t('features.reuse.kicker')}</Text>
+                    <Text style={styles.title} accessibilityRole="header">{t('features.reuse.title', { kind: t(`mediaKind.${reuse.kind}`) })}</Text>
+                    <Text style={styles.lead}>{t('features.reuse.lead')}</Text>
+                </View>
+            ) : null}
             {CREATIVE_FEATURE_GROUPS.map((group) => {
                 const features = available.filter((item) => item.group === group);
                 if (!features.length) return null;

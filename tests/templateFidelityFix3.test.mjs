@@ -168,7 +168,7 @@ test('duration fixes move zero inventory templates to unsupported and preserve 3
   const { audit } = await import('../scripts/audit-template-fidelity.mjs');
   const report = audit();
   // Baseline classifications plus the independently audited 46-video split (syntx100Templates.test.mjs).
-  assert.deepEqual(report.totals, {"like-for-like-safe":220,"bound":181,"blocked-needs-video":392,"unsupported":111} /* One former Kling binding cannot fit the reference-priority line; 49 long one-photo prompts and 20 owned Seedance templates remain bound. */);
+  assert.deepEqual(report.totals, {"like-for-like-safe":220,"bound":161,"blocked-needs-video":392,"unsupported":111} /* One former Kling binding cannot fit the reference-priority line; the 20 withdrawn Veyrnox originals are excluded. */);
   const cs = Object.values(report.contracts);
   assert.equal(cs.filter(c => c.reasons.includes('unsupported-duration')).length, 0);
   for (const c of cs.filter(c => c.class === 'exact-transport-unbound-tokens')) {
