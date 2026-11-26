@@ -57,7 +57,7 @@ export function VividCard({
         <>
             <View pointerEvents="none" style={[styles.glow, row && styles.glowRow, glow]} />
             <View style={[styles.icon, row ? styles.iconRow : styles.iconTile, compact && styles.iconCompact, iconSurface]}>
-                <Icon name={icon} size={compact ? 22 : row ? 28 : 40} tint={tone.foreground} />
+                <Icon name={icon} size={compact ? 24 : row ? 28 : 40} tint={tone.foreground} />
             </View>
             <View style={[styles.copy, row && styles.copyRow]}>
                 {eyebrow ? <Text variant="caption" style={[styles.eyebrow, { color: tone.foregroundMuted }]}>{eyebrow}</Text> : null}
