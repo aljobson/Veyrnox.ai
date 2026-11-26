@@ -92,7 +92,7 @@ export default function SignIn() {
                         if (!blocked) router.push('/email');
                     }}
                 />
-                {!compact && passkeyGate() ? <Button variant="tertiary" icon="key" label={t('passkey.signIn')} disabled={blocked} onPress={() => router.push('/passkey')} /> : null}
+                {passkeyGate() ? <Button variant="tertiary" icon="key" label={t('passkey.signIn')} disabled={blocked} onPress={() => router.push('/passkey')} /> : null}
                 {!compact ? (
                     <Link href="/preview" asChild>
                         <Button variant="tertiary" label={t('preview.browse')} accessibilityRole="link" accessibilityHint={t('preview.browseHint')} />
