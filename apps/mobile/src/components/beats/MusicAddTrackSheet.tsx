@@ -29,7 +29,7 @@ export function MusicAddTrackSheet({ disabled, busy = false, onLibrary, onDevice
             <TrackChoice testID="music-add-track-library" icon="folder" title={t('beat.track.library')} disabled={disabled || busy} onPress={() => choose(onLibrary)} />
             <TrackChoice testID="music-add-track-device" icon="arrowUp" title={t(busy ? 'beat.track.deviceBusy' : 'beat.track.device')} disabled={disabled || busy} onPress={() => choose(onDevice)} />
             <TrackChoice testID="music-add-track-record" icon="microphone" title={t('beatTakes.addTrack')} disabled={disabled || busy} onPress={() => choose(onRecord)} />
-            <TrackChoice testID="music-add-track-drums" icon="waveform" title={t('beat.kind.drums')} disabled={disabled || busy} onPress={() => choose(onDrums)} />
+            <TrackChoice testID="music-add-track-drums" icon="drum" title={t('beat.kind.drums')} disabled={disabled || busy} onPress={() => choose(onDrums)} />
             <TrackChoice testID="music-add-track-instrument" icon="pianoKeys" title={t('beatPiano.library.add')} disabled={disabled || busy} onPress={() => choose(onInstrument)} />
         </View>
     </BeatModal>;
