@@ -50,7 +50,7 @@ export function MusicInstrumentTray({ apply, disabled, refusal, onBack, onAdded 
                 size="sm" variant="tertiary" disabled={disabled}
                 label={t('beatPiano.library.addNamed', { name: preset.label })}
                 onPress={() => add(preset.instrument)} containerStyle={s.presetHit} style={s.preset}>
-                <Icon name={groupIcon(selected.id)} size={22} />
+                <Icon name={groupIcon(selected.id)} size={24} />
                 <Text variant="footnote" numberOfLines={1}>{preset.label}</Text>
             </Button>)}
         </ScrollView> : null}

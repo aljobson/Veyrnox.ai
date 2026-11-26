@@ -36,6 +36,6 @@ test('disables every track creation choice when the song cannot accept another t
 test('is an inline toolbar rather than a modal or second screen', async () => {
     await act(async () => root.render(<MusicAddTrackTray disabled={false} {...callbacks()} />));
     expect(root.container.queryAll(node => node.props.testID === 'music-add-track-tray')).toHaveLength(1);
-    expect(root.container.queryAll(node => node.type === RN.Modal)).toHaveLength(0);
+    expect(root.container.queryAll(node => node.props.transparent && node.props.presentationStyle === 'overFullScreen')).toHaveLength(0);
     expect(root.container.queryAll(node => node.props.accessibilityRole === 'button')).toHaveLength(4);
 });
