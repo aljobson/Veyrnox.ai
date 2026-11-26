@@ -6,7 +6,7 @@ export default {
     'editor.home.eyebrow': 'Create & cut',
     'editor.home.summary': 'Open a recent edit or start a new project. Everything happens in the native mobile editor.',
     'editor.home.newHint': 'Creates a blank project and opens the editor',
-    'editor.home.newBody': 'Choose a video from your Library or start with an empty timeline',
+    'editor.home.newBody': 'Open the editor, then add video, photos or audio from your Library, phone or Files',
     'editor.home.recent': 'Recent edits',
     'editor.home.allProjects': 'All projects',
     'editor.home.retry': 'Tap to try again',

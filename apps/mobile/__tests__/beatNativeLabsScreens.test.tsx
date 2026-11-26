@@ -18,7 +18,7 @@ import { t } from '../src/lib/i18n';
 import { BEAT_SHORTCUTS, BEAT_SOUNDS, createBeatFromTemplate, addAudioRegion, soundAsset } from '../src/lib/beatNative/labs';
 import { PHONE_CAPABILITIES, SHORTCUT_CAPABILITY } from '../src/lib/beatNative/controls';
 import { PHONE_TIP_TARGETS } from '../src/lib/beatNative/coachMarks';
-import { beatStore, resetBeats } from '../src/lib/beatNative/store';
+import { beatStore, listBeats, resetBeats } from '../src/lib/beatNative/store';
 import { createTemplateBeat } from '../src/lib/beatNative/templates';
 import { fixedDoc, USER, PROJECT, deferred } from './beatNativeFixtures';
 import type { MusicSongDetail } from '../src/lib/music/types';
@@ -29,7 +29,7 @@ const mockApi = { request: jest.fn(async () => ({ projects: [] })) };
 const mockGetAccessToken = jest.fn(async () => `h.${btoa(JSON.stringify({ sub: USER }))}.s`);
 const mockSeen = new Map<string, string>();
 const mockDecode = jest.fn();
-let mockParams = { id: PROJECT, song: PROJECT, revision: '2' };
+let mockParams: Record<string, string> = { id: PROJECT, song: PROJECT, revision: '2' };
 let mockPreviewFinish = () => {};
 jest.mock('expo-router', () => ({ Stack: { Screen: ({ options }: { options?: { headerRight?(): unknown } }) => options?.headerRight?.() ?? null }, useRouter: () => ({ push: mockPush, replace: mockReplace }), useLocalSearchParams: () => mockParams, useFocusEffect: (cb: () => void) => require('react').useEffect(cb, [cb]) }));
 jest.mock('../src/components/beats/ai/BeatAiPanel', () => ({ BeatAiPanel: () => null }));
@@ -203,4 +203,11 @@ test('successful seed route replaces itself with the editor; unmount releases it
     await act(async () => root.render(<NewSongBeat />));
     expect(mockReplace).toHaveBeenCalledWith({ pathname: '/beats/[id]', params: { id: PROJECT } });
     await act(async () => root.unmount()); expect(session.release).toHaveBeenCalledTimes(1); root = createRoot();
+});
+
+test('opening Music Editor directly creates an empty edit and shows the add-track sheet', async () => {
+    mockParams = { id: PROJECT, revision: '2' };
+    await act(async () => root.render(<NewSongBeat />));
+    expect(mockReplace).toHaveBeenCalledWith({ pathname: '/beats/[id]', params: expect.objectContaining({ setup: '1' }) });
+    expect(listBeats()).toHaveLength(1);
 });

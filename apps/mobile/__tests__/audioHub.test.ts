@@ -127,7 +127,7 @@ test('Audio exposes the native Music Editor as a first-class studio', () => {
     expect(audio).toContain("const musicEditor = mobileFeature('beats')");
     expect(audio).toContain('icon={musicEditor.icon}');
     expect(audio).toContain("subtitle={t('beat.home.emptyBody')}");
-    expect(audio).toContain('router.push(musicEditor.href as never)');
+    expect(audio).toContain("router.push('/beats/new' as never)");
 });
 
 // Evaluate only the selected prop expression, without mounting a native screen or starting playback.

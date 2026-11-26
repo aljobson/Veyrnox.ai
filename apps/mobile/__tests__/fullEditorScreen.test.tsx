@@ -98,6 +98,10 @@ async function renderSimple() {
     await act(async () => root.render(<FullEditorScreen projectId={projectId} />));
     await act(async () => Promise.resolve());
 }
+async function renderStartAdd() {
+    await act(async () => root.render(<FullEditorScreen projectId={projectId} startAdd />));
+    await act(async () => Promise.resolve());
+}
 const labelled = (label: string) => root.container.queryAll((node) => node.props.accessibilityLabel === label);
 
 test('opens in the simple view with the ByeCut-style five-tab dock and full toolbars hidden', async () => {
@@ -114,6 +118,14 @@ test('opens in the simple view with the ByeCut-style five-tab dock and full tool
     expect(labelled('Export')).toHaveLength(1);
     expect(labelled('Canvas · 16:9')).toHaveLength(1);
     expect(root.container.queryAll((node) => node.props.testID === 'editor-tool-rail')).toHaveLength(0);
+});
+
+test('a new video edit opens the real workspace with Library, phone and Files sources ready', async () => {
+    await renderStartAdd();
+    expect(root.container.queryAll(node => node.props.testID === 'editor-workspace')).toHaveLength(1);
+    for (const label of ['Library video', 'Library image', 'Library audio', 'Photos & videos', 'Files']) {
+        expect(labelled(label)).toHaveLength(1);
+    }
 });
 
 test('renames the project from the editable simple header', async () => {
