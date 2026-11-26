@@ -303,8 +303,16 @@ describe('beat editor', () => {
     test('add and remove a track', async () => {
         const doc = await open();
         await press(t('beat.track.add'));
-        expect(testId('music-add-track-sheet')).toHaveLength(1);
-        await press(t('beat.kind.drums'));
+        expect(testId('music-add-track-tray')).toHaveLength(1);
+        await act(async () => {
+            const instrument = testId('music-add-track-instrument')[0];
+            (instrument.props.onClick ?? instrument.props.onPress)({ nativeEvent: {} });
+        });
+        expect(testId('music-instrument-tray')).toHaveLength(1);
+        await act(async () => {
+            const drum = testId('music-instrument-add-drums-acoustic')[0];
+            (drum.props.onClick ?? drum.props.onPress)({ nativeEvent: {} });
+        });
         expect(getBeat(doc.id)!.tracks).toHaveLength(2);
         await press(t('beat.track.controls'));
         await press(t('beat.track.remove', { track: t('beat.track', { n: 2 }) }));

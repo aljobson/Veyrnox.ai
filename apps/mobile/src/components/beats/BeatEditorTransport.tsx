@@ -1,4 +1,4 @@
-import type { ComponentRef, Ref } from 'react';
+import type { ComponentRef, ReactNode, Ref } from 'react';
 import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Icon, SegmentedControl, Text, themedStyles, useAppearance, useThemedStyles } from '../ui';
@@ -10,7 +10,7 @@ import type { BeatMidiRecordPhase } from './BeatMidiRecordPanel';
 
 const PATTERNS: readonly PatternSlot[] = ['A', 'B', 'C', 'D'];
 
-export function BeatEditorTransport({ playing, starting, locked, showPatterns = true, showHistory = true, pattern, patternDisabled, canUndo, canRedo, patternControlsRef, midiRecordControlRef, midiRecordPhase, midiRecordDisabled = false, midiRecordHint, addDisabled = false, mixerDisabled = false, onPattern, onPatternControls, onUndo, onRedo, onPlay, onAdd, onAi, onExport, onMixer, onMidiRecord }: {
+export function BeatEditorTransport({ playing, starting, locked, showPatterns = true, showHistory = true, pattern, patternDisabled, canUndo, canRedo, patternControlsRef, midiRecordControlRef, midiRecordPhase, midiRecordDisabled = false, midiRecordHint, addDisabled = false, addOpen = false, aiOpen = false, mixerDisabled = false, subMenu, onPattern, onPatternControls, onUndo, onRedo, onPlay, onAdd, onAi, onExport, onMixer, onMidiRecord }: {
     playing: boolean;
     starting: boolean;
     locked: boolean;
@@ -26,7 +26,10 @@ export function BeatEditorTransport({ playing, starting, locked, showPatterns = 
     midiRecordDisabled?: boolean;
     midiRecordHint?: string;
     addDisabled?: boolean;
+    addOpen?: boolean;
+    aiOpen?: boolean;
     mixerDisabled?: boolean;
+    subMenu?: ReactNode;
     onPattern(pattern: PatternSlot): void;
     onPatternControls(): void;
     onUndo(): void;
@@ -79,10 +82,10 @@ export function BeatEditorTransport({ playing, starting, locked, showPatterns = 
         {compactIcons ? midiControl : null}
     </View>;
     const projectActions = <View style={[s.group, scrollActions && s.groupAccessible]} testID="beat-editor-project-actions">
-        {onAdd ? <Button testID="beat-editor-add-track" size="md" variant="tertiary" icon="plus" iconOnly label={t('beat.track.add')}
-            disabled={addDisabled} onPress={onAdd} containerStyle={[s.control, scrollActions && s.controlAccessible]} /> : null}
-        {onAi ? <Button testID="beat-editor-ai" size="md" variant="secondary" tone="accent" label={t('beatAi.title')}
-            disabled={locked} onPress={onAi} style={s.aiControl} containerStyle={[s.control, scrollActions && s.controlAccessible]}>
+        {onAdd ? <Button testID="beat-editor-add-track" size="md" variant={addOpen ? 'secondary' : 'tertiary'} icon="plus" iconOnly label={t('beat.track.add')}
+            accessibilityState={{ selected: addOpen }} disabled={addDisabled} onPress={onAdd} containerStyle={[s.control, scrollActions && s.controlAccessible]} /> : null}
+        {onAi ? <Button testID="beat-editor-ai" size="md" variant={aiOpen ? 'primary' : 'secondary'} tone="accent" label={t('beatAi.title')}
+            accessibilityState={{ selected: aiOpen }} disabled={locked} onPress={onAi} style={s.aiControl} containerStyle={[s.control, scrollActions && s.controlAccessible]}>
             <Icon name="sparkleFill" size={20} tint={s.aiIcon.color} />
         </Button> : null}
         {onExport ? <Button testID="beat-editor-export" size="md" variant="tertiary" icon="arrowUp" iconOnly label={t('beatExport.title')}
@@ -107,6 +110,7 @@ export function BeatEditorTransport({ playing, starting, locked, showPatterns = 
             {midiRecordPhase !== undefined && !compactIcons ? <View testID="beat-midi-record-row" style={s.recordRow}>
                 {midiControl}
             </View> : null}
+            {subMenu ? <View testID="beat-editor-submenu" style={s.subMenu}>{subMenu}</View> : null}
         </View>
     </SafeAreaView>;
 }
@@ -138,4 +142,5 @@ const sheets = themedStyles(p => ({
     recordRow: { width: '100%', maxWidth: 820, alignSelf: 'center' },
     recordControl: { width: '100%', minHeight: 44 },
     recordCompact: { width: 56, flexGrow: 0 },
+    subMenu: { width: '100%', maxWidth: 820, alignSelf: 'center' },
 }));
