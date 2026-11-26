@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import type { MenuIcon } from '../../lib/menuIcons';
+import { t } from '../../lib/i18n';
 import { ds } from '../../theme';
 import { Chip, Icon, Text, themedStyles, useThemedStyles } from '../ui';
 
@@ -18,12 +19,12 @@ export const EMPTY_MUSIC_SMART_DIRECTION: MusicSmartDirection = Object.freeze({
 
 type DirectionKey = keyof MusicSmartDirection;
 const KEYS: readonly DirectionKey[] = ['voice', 'genre', 'mood', 'tempo'];
-const META: Record<DirectionKey, { label: string; icon: MenuIcon }> = {
-    voice: { label: 'Voice', icon: 'microphone' },
-    genre: { label: 'Genre', icon: 'waveform' },
-    mood: { label: 'Mood', icon: 'smiley' },
-    tempo: { label: 'Tempo', icon: 'gauge' },
-    structure: { label: 'Song structure', icon: 'playlist' },
+const META: Record<DirectionKey, { labelKey: string; promptLabel: string; icon: MenuIcon }> = {
+    voice: { labelKey: 'music.create.smart.voice', promptLabel: 'Voice', icon: 'microphone' },
+    genre: { labelKey: 'music.create.smart.genre', promptLabel: 'Genre', icon: 'waveform' },
+    mood: { labelKey: 'music.create.smart.mood', promptLabel: 'Mood', icon: 'smiley' },
+    tempo: { labelKey: 'music.create.smart.tempo', promptLabel: 'Tempo', icon: 'gauge' },
+    structure: { labelKey: 'music.create.smart.structure', promptLabel: 'Song structure', icon: 'playlist' },
 };
 const OPTIONS: Record<DirectionKey, readonly string[]> = {
     voice: ['Female vocal', 'Male vocal', 'Duet', 'Choir', 'Spoken word', 'Instrumental'],
@@ -34,7 +35,7 @@ const OPTIONS: Record<DirectionKey, readonly string[]> = {
 };
 
 const smartText = (value: MusicSmartDirection) => (Object.keys(META) as DirectionKey[])
-    .map(key => value[key] ? `${META[key].label}: ${value[key]}` : '').filter(Boolean).join('; ');
+    .map(key => value[key] ? `${META[key].promptLabel}: ${value[key]}` : '').filter(Boolean).join('; ');
 
 export function canMergeSmartDirectionText(base: string, value: MusicSmartDirection, max: number): boolean {
     const clean = base.replace(/\n?\[Smart direction: [^\]]*\]\s*$/u, '').trimEnd();
@@ -60,6 +61,7 @@ export function MusicSmartDirectionControls({ value, onChange, voiceLocked = fal
 }) {
     const s = useThemedStyles(sheets);
     const [open, setOpen] = useState<DirectionKey | null>(null);
+    const label = (key: DirectionKey) => t(META[key].labelKey);
     const visible = (key: DirectionKey) => voiceLocked && key === 'voice' ? 'Instrumental' : value[key] || 'Auto';
     const tileValue = (key: DirectionKey) => visible(key).split(' · ')[0];
     const toggle = (key: DirectionKey) => {
@@ -73,31 +75,31 @@ export function MusicSmartDirectionControls({ value, onChange, voiceLocked = fal
     };
     return <View style={s.panel}>
         <View style={s.heading}>
-            <Text variant="bodyStrong">Smart direction</Text>
-            <Text variant="footnote" tone="tertiary">Optional</Text>
+            <Text variant="bodyStrong">{t('music.create.smart.title')}</Text>
+            <Text variant="footnote" tone="tertiary">{t('modelPage.fact.optional')}</Text>
         </View>
-        <View accessibilityLabel="Smart music controls" style={s.tiles}>
+        <View accessibilityLabel={t('music.create.smart.controls')} style={s.tiles}>
             {KEYS.map(key => {
                 const selected = !!value[key] || (voiceLocked && key === 'voice');
-                return <Pressable key={key} accessibilityRole="button" accessibilityLabel={`${META[key].label}: ${visible(key)}`}
+                return <Pressable key={key} accessibilityRole="button" accessibilityLabel={t('music.create.smart.selected', { label: label(key), value: visible(key) })}
                     accessibilityState={{ expanded: open === key, disabled: voiceLocked && key === 'voice' }}
                     disabled={voiceLocked && key === 'voice'} onPress={() => toggle(key)}
                     style={({ pressed }) => [s.tileHit, pressed && s.pressed]}>
                     <View style={[s.iconBox, selected && s.iconSelected]}><Icon name={META[key].icon} size={28} /></View>
-                    <Text variant="caption" numberOfLines={1}>{META[key].label}</Text>
+                    <Text variant="caption" numberOfLines={1}>{label(key)}</Text>
                     <Text variant="caption" tone={selected ? 'primary' : 'tertiary'} numberOfLines={2} style={s.tileValue}>{tileValue(key)}</Text>
                 </Pressable>;
             })}
         </View>
-        <Pressable accessibilityRole="button" accessibilityLabel={`Song structure: ${visible('structure')}`}
+        <Pressable accessibilityRole="button" accessibilityLabel={t('music.create.smart.selected', { label: label('structure'), value: visible('structure') })}
             accessibilityState={{ expanded: open === 'structure' }} onPress={() => toggle('structure')}
             style={({ pressed }) => [s.structure, pressed && s.pressed]}>
-            <Icon name="playlist" size={20} /><Text variant="bodyStrong">Song structure</Text>
+            <Icon name="playlist" size={20} /><Text variant="bodyStrong">{label('structure')}</Text>
             <Text variant="footnote" tone="secondary" numberOfLines={1} style={s.structureValue}>{visible('structure')}</Text>
             <Icon name={open === 'structure' ? 'caretDown' : 'caretRight'} size={16} />
         </Pressable>
-        {open ? <View accessibilityRole="radiogroup" accessibilityLabel={`${META[open].label} choices`} style={s.choices}>
-            <Chip label="Auto" selected={!value[open]} onPress={() => choose('')} />
+        {open ? <View accessibilityRole="radiogroup" accessibilityLabel={t('music.create.smart.choices', { label: label(open) })} style={s.choices}>
+            <Chip label={t('music.create.advanced.auto')} selected={!value[open]} onPress={() => choose('')} />
             {OPTIONS[open].map(option => <Chip key={option} label={option} selected={value[open] === option} onPress={() => choose(option)} />)}
         </View> : null}
     </View>;

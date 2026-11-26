@@ -3576,6 +3576,12 @@
     "ratio": 2
   },
   {
+    "id": "music.create.smart.structure",
+    "english": "Song structure",
+    "translation": "Estructura de la canción",
+    "ratio": 1.71
+  },
+  {
     "id": "music.create.advanced.auto",
     "english": "Auto",
     "translation": "Automático",

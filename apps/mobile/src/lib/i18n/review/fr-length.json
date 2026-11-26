@@ -5682,6 +5682,24 @@
     "ratio": 2
   },
   {
+    "id": "music.create.smart.controls",
+    "english": "Smart music controls",
+    "translation": "Commandes musicales intelligentes",
+    "ratio": 1.65
+  },
+  {
+    "id": "music.create.smart.genre",
+    "english": "Genre",
+    "translation": "Style musical",
+    "ratio": 2.6
+  },
+  {
+    "id": "music.create.smart.mood",
+    "english": "Mood",
+    "translation": "Ambiance",
+    "ratio": 2
+  },
+  {
     "id": "music.create.advanced.auto",
     "english": "Auto",
     "translation": "Automatique",

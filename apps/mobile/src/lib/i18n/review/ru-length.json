@@ -3726,6 +3726,12 @@
     "ratio": 1.83
   },
   {
+    "id": "music.create.smart.mood",
+    "english": "Mood",
+    "translation": "Настроение",
+    "ratio": 2.5
+  },
+  {
     "id": "music.create.advanced.variety",
     "english": "Variety",
     "translation": "Разнообразие",
