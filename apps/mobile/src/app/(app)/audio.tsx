@@ -3,7 +3,7 @@ import { Stack, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { rawText } from '../../lib/i18n/translate';
-import { AUDIO_ICONS, AUDIO_PERFORMANCES, AUDIO_STUDIOS, audioTarget, fromCredits, type AudioHubId } from '../../lib/audioHub';
+import { AUDIO_HUB_PERFORMANCES, AUDIO_ICONS, AUDIO_STUDIOS, audioTarget, fromCredits, type AudioHubId } from '../../lib/audioHub';
 import { plural, t } from '../../lib/i18n';
 import { fetchCatalogCached, type CatalogModel } from '../../lib/media';
 import type { CacheMeta } from '../../lib/cache';
@@ -35,10 +35,11 @@ export default function AudioHub() {
     const [catalog, setCatalog] = useState<{ models: CatalogModel[] | null; meta: CacheMeta | null }>({ models: null, meta: null });
     useEffect(() => { void fetchCatalogCached((models, meta) => setCatalog({ models, meta })).catch(() => {}); }, []);
     const fresh = catalog.meta !== null && !catalog.meta.stale;
+    const studios: readonly AudioRowId[] = musicAvailable ? ['yourMusic', 'musicEditor', ...AUDIO_STUDIOS] : ['musicEditor', ...AUDIO_STUDIOS];
     const groups: { title: string; ids: readonly AudioRowId[] }[] = [
-        { title: t('audioHub.groups.musicVoice'), ids: musicAvailable ? ['yourMusic', 'musicEditor', ...AUDIO_STUDIOS] : ['musicEditor', ...AUDIO_STUDIOS] },
-        { title: t('audioHub.groups.performance'), ids: AUDIO_PERFORMANCES },
-    ];
+        { title: t('audioHub.groups.musicVoice'), ids: studios },
+        { title: t('audioHub.groups.performance'), ids: AUDIO_HUB_PERFORMANCES },
+    ].filter((group) => group.ids.length > 0);
     return (
         <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
             <Stack.Screen options={{ title: t('audioHub.title') }} />

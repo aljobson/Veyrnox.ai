@@ -6,11 +6,11 @@ import type { MenuIcon } from './menuIcons';
 import { audioFamily, starterModel } from './createOptions';
 import { estimateCredits, kindOf, type CatalogModel } from './media';
 import { audioFeatureIds } from './featureRegistry';
+import { TOOL_TASKS } from './toolDirectory';
 
 export type AudioStudioId = 'yourMusic' | 'music' | 'speech' | 'dialogue' | 'dub' | 'lipSync' | 'dubbing' | 'talkingPhoto' | 'singingPhoto';
 export type AudioHubId = Exclude<AudioStudioId, 'dub'>;
 export const AUDIO_STUDIOS = audioFeatureIds('studios') as readonly AudioHubId[];
-export const AUDIO_PERFORMANCES = audioFeatureIds('performance') as readonly AudioHubId[];
 export const AUDIO_ICONS = {
     yourMusic: 'vinylRecord', music: 'audio', speech: 'microphone', dialogue: 'chatsCircle',
     lipSync: 'waveform', dubbing: 'monitorPlay', talkingPhoto: 'userSound', singingPhoto: 'pianoKeys',
@@ -20,6 +20,18 @@ const FEATURE_SLUGS: Partial<Record<AudioStudioId, string>> = {
     dub: 'lip-sync', lipSync: 'lip-sync', dubbing: 'video-dubbing',
     talkingPhoto: 'ai-talking-photo-generator', singingPhoto: 'singing-photo',
 };
+
+export const AUDIO_PERFORMANCES = audioFeatureIds('performance') as readonly AudioHubId[];
+const TOOL_MODEL_IDS = new Set(TOOL_TASKS.flatMap((task) => task.ids));
+
+// Audio owns making and editing sound. A performance recipe that uses a model already listed in Tools belongs to
+// Tools/Creative Tools instead of being repeated here under another label. Deriving this from the two catalogues keeps
+// a newly registered performance from silently creating the same duplicate journey again.
+export const AUDIO_HUB_PERFORMANCES = AUDIO_PERFORMANCES.filter((id) => {
+    const slug = FEATURE_SLUGS[id];
+    const modelId = slug ? creativeFeature(slug)?.model : null;
+    return !modelId || !TOOL_MODEL_IDS.has(modelId);
+});
 
 export type AudioTarget = { pathname: '/music' | '/music/create' | '/speech' | '/dialogue' } | { pathname: '/create/[modelId]'; params: { modelId: string } } | { pathname: '/features/[slug]'; params: { slug: string } } | { pathname: '/create' };
 
