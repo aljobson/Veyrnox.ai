@@ -159,7 +159,9 @@ jobs:
     # The schema is replayed once, then PostgreSQL template clones provide the
     # isolated databases needed by mutation-heavy acceptance suites. This keeps
     # full replay coverage without paying for the same 621 migrations four times.
-    timeout-minutes: 30
+    # The retained acceptance inventory still exceeds 30 minutes on hosted
+    # runners, so give the exhaustive gate enough time to report a real verdict.
+    timeout-minutes: 60
 
     services:
       postgres:
