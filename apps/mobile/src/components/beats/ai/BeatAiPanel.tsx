@@ -94,7 +94,8 @@ function OwnerPanel({ api, owner, doc, apply, current, disabled, onClose }: { ap
         </View>
         {contextOpen ? <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.actions} testID="music-ai-actions">
             {AI_ACTIONS.map(action => <Button key={action.op} testID={`music-ai-${action.op}`} size="sm"
-                variant={action.op === op ? 'secondary' : 'tertiary'} icon={action.icon} label={t(`beatAi.${action.op}`)}
+                variant={action.op === op ? 'secondary' : 'tertiary'} icon={action.icon} iconOnly label={t(`beatAi.${action.op}`)}
+                accessibilityState={{ selected: action.op === op }}
                 disabled={disabled || view.busy} onPress={() => { setOp(action.op); setContextOpen(false); request.close(); request.open(); }} />)}
         </ScrollView> : null}
         <View style={s.panel}>
