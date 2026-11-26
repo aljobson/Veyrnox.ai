@@ -62,10 +62,10 @@ function ProviderCard({ item, provider, t }) {
     <li className="flex min-h-64 flex-col overflow-hidden rounded-2xl border border-vx-border bg-vx-panel">
       <div className="relative aspect-[4/3] overflow-hidden bg-vx-base">
         {previewing && hasVideo && !previewFailed ? (
-          <video src={item.previewUrl} poster={item.coverUrl || undefined} controls autoPlay playsInline preload="metadata" onError={() => setPreviewFailed(true)} aria-label={t('app.templates.previewLabel', { name: item.name })} className="h-full w-full object-cover">
+          <video src={item.previewUrl} poster={item.coverUrl || undefined} controls autoPlay playsInline preload="metadata" referrerPolicy="no-referrer" onError={() => setPreviewFailed(true)} aria-label={t('app.templates.previewLabel', { name: item.name })} className="h-full w-full object-cover">
             {t('app.templates.videoFallback')}
           </video>
-        ) : stillPreview ? <img src={stillPreview} alt="" loading="lazy" className="h-full w-full object-cover" /> : (
+        ) : stillPreview ? <img src={stillPreview} alt="" loading="lazy" referrerPolicy="no-referrer" className="h-full w-full object-cover" /> : (
           <div role="img" aria-label={t('app.templates.previewUnavailable', { name: item.name })} className="flex h-full items-center justify-center bg-[radial-gradient(circle_at_top_left,var(--color-vx-accent),transparent_55%),linear-gradient(145deg,#0d1824,#152d3f)] px-6 text-center font-vx-mono text-xs font-bold uppercase tracking-[0.12em] text-white/75">{t('app.templates.previewUnavailableShort')}</div>
         )}
         {hasVideo && (!previewing || previewFailed) && (
