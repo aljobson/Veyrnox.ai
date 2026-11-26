@@ -23,6 +23,7 @@ type Props = {
     waveforms?: Readonly<Record<string, readonly number[]>>;
     // Tapping a track name; the screen decides what that does (remove an empty extra track).
     onTrackPress?(trackId: string): void;
+    onToggleTrackMute?(trackId: string): void;
     onSeek(frame: number): void; onSelect(selection: Selection): void; onApply(timeline: Timeline): void; onViewport(width: number): void;
 };
 export type AnalysisMark = { frame: number; kind: 'hard' | 'possible'; selected: boolean };
@@ -35,7 +36,7 @@ type Gesture = {
 const ROW = 56;
 const position = (item: Clip | TextClip, ppf: number) => ({ position: 'absolute' as const, left: item.start * ppf, top: 6, width: Math.max(8, item.len * ppf - 2), height: 44 });
 
-export function EditorTimeline({ timeline, selections, ppf, total, frame, playing, snap, ripple, analysisMarks = [], clipRanges = [], onSeek, onSelect, onApply, onViewport, onGestureActive, onTrackPress,
+export function EditorTimeline({ timeline, selections, ppf, total, frame, playing, snap, ripple, analysisMarks = [], clipRanges = [], onSeek, onSelect, onApply, onViewport, onGestureActive, onTrackPress, onToggleTrackMute,
     clipThumb, waveforms = {} }: Props) {
     const scroller = useRef<ComponentRef<typeof ScrollView>>(null);
     const gesture = useRef<Gesture | null>(null);
@@ -122,12 +123,13 @@ export function EditorTimeline({ timeline, selections, ppf, total, frame, playin
     return <View style={local.container}>
         <View style={local.headers}>
             <View style={local.ruler} />
-            {timeline.tracks.map(track => <Pressable key={track.id} testID={`track-header-${track.id}`} style={local.header} disabled={!onTrackPress} onPress={() => onTrackPress?.(track.id)} accessibilityRole="button" accessibilityLabel={editorTrackLabel(track)} accessibilityHint={onTrackPress ? t('editor.trackhint') : undefined}>
-                <Icon name={track.kind === 'video' ? 'video' : track.kind === 'audio' ? 'audio' : 'textSize'} size={16} />
-                <View style={local.headerCopy}><Text style={styles.trackLabel} numberOfLines={1} maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE}>{editorTrackLabel(track)}</Text><Text testID={`track-state-${track.id}`} style={styles.trackState} numberOfLines={1} maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE}>{[
+            {timeline.tracks.map(track => <View key={track.id} style={local.header}>
+                {track.kind !== 'text' ? <Pressable accessibilityRole="button" accessibilityLabel={`${track.muted ? 'Unmute' : 'Mute'} ${editorTrackLabel(track)}`} accessibilityState={{ checked: track.muted }} onPress={() => onToggleTrackMute?.(track.id)} disabled={!onToggleTrackMute} style={[local.muteButton, track.muted && local.muted]}><Icon name="speaker" size={16} tint={track.muted ? colors.muted : colors.text} /></Pressable>
+                    : <Icon name="textSize" size={16} />}
+                <Pressable testID={`track-header-${track.id}`} style={local.headerCopy} disabled={!onTrackPress} onPress={() => onTrackPress?.(track.id)} accessibilityRole="button" accessibilityLabel={editorTrackLabel(track)} accessibilityHint={onTrackPress ? t('editor.trackhint') : undefined}><Text style={styles.trackLabel} numberOfLines={1} maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE}>{editorTrackLabel(track)}</Text><Text testID={`track-state-${track.id}`} style={styles.trackState} numberOfLines={1} maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE}>{[
                     track.locked ? t('editor.lOCK') : '', track.muted ? t('editor.mUTE') : '', track.hidden ? t('editor.hIDE') : '',
-                ].map(value => value.trim()).filter(Boolean).join(' · ')}</Text></View>
-            </Pressable>)}
+                ].map(value => value.trim()).filter(Boolean).join(' · ')}</Text></Pressable>
+            </View>)}
         </View>
         <ScrollView ref={scroller} horizontal scrollEnabled={scrollEnabled} style={local.scroller} contentContainerStyle={{ width, direction: 'ltr' }}
             onLayout={event => { const size = event.nativeEvent.layout.width; setViewport(size); onViewport(size); }}
@@ -224,7 +226,7 @@ const local = StyleSheet.create({
     clipBody: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 }, clipText: { flexShrink: 1 },
     waveform: { position: 'absolute', left: 2, right: 2, top: 5, bottom: 5, flexDirection: 'row', alignItems: 'center', gap: 1, opacity: .45, overflow: 'hidden' },
     waveformBar: { flex: 1, minWidth: 1, maxWidth: 3, borderRadius: 1, backgroundColor: colors.text },
-    container: { flexDirection: 'row', direction: 'ltr' }, headers: { width: 92 }, header: { height: ROW, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 4, gap: 4 }, headerCopy: { flex: 1 },
+    container: { flexDirection: 'row', direction: 'ltr' }, headers: { width: 92 }, header: { height: ROW, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 4, gap: 4 }, headerCopy: { flex: 1, minHeight: 44, justifyContent: 'center' }, muteButton: { width: 28, minHeight: 44, alignItems: 'center', justifyContent: 'center' }, muted: { opacity: .55 },
     scroller: { flex: 1 }, ruler: { height: 32 }, row: { height: ROW, borderTopWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
     tick: { position: 'absolute', top: 0, height: 32, borderLeftWidth: 1, borderColor: colors.border, paddingLeft: 3 },
     marker: { position: 'absolute', top: 22, width: 8, height: 8, backgroundColor: colors.accent, transform: [{ rotate: '45deg' }] },

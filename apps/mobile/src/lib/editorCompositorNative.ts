@@ -5,6 +5,7 @@ import { advancedAudioMixClips } from '../../../../app/veyrnox/_lib/editorAdvanc
 import { editorMedia } from './editorMedia';
 import { framesIn, type Timeline } from './nativeEditorModel';
 import type { EditorLocalExportDependencies } from './editorLocalExport';
+import { createAudioExportFileDependencies, type EditorAudioExportDependencies } from './editorAudioExport';
 
 type NativeCompositor = {
     capabilities(): Promise<Record<string, unknown>>;
@@ -89,6 +90,25 @@ export function createNativeEditorLocalExportDependencies(account: string, proje
         append: (session, frames) => editorMedia.appendFrameBatch(session, [...frames]),
         finish: session => editorMedia.finishEncode(session),
         cancel: session => editorMedia.cancel(session),
+        release: async artifactId => { await editorMedia.release(project, artifactId); },
+    };
+}
+
+/** Production audio-only dependency bundle: canonical native mix -> portable WAV file. */
+export function createNativeEditorAudioExportDependencies(account: string, project: string, timeline: Timeline,
+    sources: EditorCompositorSourceMap): EditorAudioExportDependencies {
+    const files = createAudioExportFileDependencies();
+    return {
+        ...files,
+        async prepareAudio(candidate, signal, progress) {
+            if (candidate !== timeline) return { ok: false, code: 'invalid-input' };
+            try {
+                await editorMedia.setOwner(account);
+                const clips = advancedAudioMixClips(timeline); progress(.05);
+                return await editorMedia.mixAudio(project, { clips, sources, frames: framesIn(timeline), fps: timeline.fps },
+                    value => progress(value.value), signal);
+            } catch { return { ok: false, code: signal.aborted ? 'cancelled' : 'invalid-input' }; }
+        },
         release: async artifactId => { await editorMedia.release(project, artifactId); },
     };
 }

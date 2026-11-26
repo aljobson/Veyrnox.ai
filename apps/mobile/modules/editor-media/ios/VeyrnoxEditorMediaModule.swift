@@ -311,14 +311,32 @@ enum EditorCompositor {
     if let transition = visual["transition"] as? [String: Any], let shape = transition["shape"] as? [String: Any] {
       clipTransitionShape(shape, rect: CGRect(x: 0, y: 0, width: width, height: height), context: context)
     }
-    context.setFillColor(color(background["color"] as? String ?? "#000000").cgColor)
-    context.fill(CGRect(x: 0, y: 0, width: width, height: height))
+    let backgroundRect = CGRect(x: 0, y: 0, width: width, height: height)
+    if type == "gradient" {
+      let first = color(background["color"] as? String ?? "#000000").cgColor
+      let second = color(background["secondaryColor"] as? String ?? "#4B2BFF").cgColor
+      if let gradient = CGGradient(colorsSpace: CGColorSpace(name: CGColorSpace.sRGB), colors: [first, second] as CFArray, locations: [0, 1]) {
+        let radians = CGFloat(number(background["angle"]) ?? 135) * .pi / 180
+        let center = CGPoint(x: CGFloat(width) / 2, y: CGFloat(height) / 2)
+        let radius = hypot(CGFloat(width), CGFloat(height)) / 2
+        let vector = CGPoint(x: cos(radians) * radius, y: sin(radians) * radius)
+        context.drawLinearGradient(gradient, start: CGPoint(x: center.x - vector.x, y: center.y - vector.y),
+          end: CGPoint(x: center.x + vector.x, y: center.y + vector.y), options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
+      }
+    } else {
+      context.setFillColor(color(background["color"] as? String ?? "#000000").cgColor)
+      context.fill(backgroundRect)
+    }
     var picture: CGImage?
     if type == "blur" { picture = source }
     else if type == "image", let media = visual["backgroundMedia"] as? [String: Any], media["kind"] as? String == "graphic",
             let graphic = media["graphic"] as? [String: Any] { picture = try graphicImage(graphic) }
     else if type == "image", let mediaId = background["mediaId"] as? String, let uri = sources[mediaId],
             let url = try? EditorMediaPaths.shared.inputURL(uri, identity: identity) { picture = try? sourceImage(url, at: 0) }
+    else if type == "video", let mediaId = background["mediaId"] as? String, let uri = sources[mediaId],
+            let url = try? EditorMediaPaths.shared.inputURL(uri, identity: identity) {
+      picture = try? sourceImage(url, at: number(visual["sourceTimeSeconds"]) ?? 0)
+    }
     guard let picture else { return }
     let crop: CGRect
     if type == "blur", let value = visual["crop"] as? [String: Any] {
@@ -893,7 +911,7 @@ public final class VeyrnoxEditorCompositorModule: Module {
       promise.resolve(["ok": true, "platform": "ios", "minimumIos": "16.4", "protocolVersion": 2,
         "features": ["timeline-background", "image-source", "graphic-source", "video-source", "fit", "crop", "transform",
           "visual-layering", "blend", "mask", "transition", "clip-animation", "animation-reveal",
-          "clip-background-solid", "clip-background-blur", "clip-background-image", "basic-filter", "smart-picture",
+          "clip-background-solid", "clip-background-blur", "clip-background-image", "clip-background-gradient", "clip-background-video", "basic-filter", "smart-picture",
           "advanced-colour", "effect", "text-layer", "caption-words", "custom-font", "behind-subject",
           "semantic-mask", "semantic-mask-dynamic", "audio-mix"]])
     }

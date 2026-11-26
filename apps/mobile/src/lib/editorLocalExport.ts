@@ -12,7 +12,7 @@ import {
 export const CANONICAL_EDITOR_COMPOSITOR_CAPABILITIES = Object.freeze([
     'timeline-background', 'image-source', 'graphic-source', 'video-source', 'fit', 'crop', 'transform',
     'visual-layering', 'blend', 'mask', 'transition', 'clip-animation', 'animation-reveal',
-    'clip-background-solid', 'clip-background-blur', 'clip-background-image', 'basic-filter', 'smart-picture',
+    'clip-background-solid', 'clip-background-blur', 'clip-background-image', 'clip-background-gradient', 'clip-background-video', 'basic-filter', 'smart-picture',
     'advanced-colour', 'effect', 'text-layer', 'caption-words', 'custom-font', 'behind-subject',
     'semantic-mask', 'semantic-mask-dynamic', 'audio-mix',
 ] as const satisfies readonly EditorPreviewCapability[]);
@@ -63,6 +63,8 @@ export type EditorLocalExportDependencies = {
 
 export type EditorLocalExportRequest = {
     readonly timeline: Timeline;
+    /** Output cadence. Source-time is preserved when this differs from the project cadence. */
+    readonly fps?: 24 | 25 | 30 | 60;
     readonly width: number;
     readonly height: number;
     readonly videoBitRate: number;
@@ -74,11 +76,18 @@ export type EditorLocalExportRequest = {
     readonly onProgress?: (progress: EditorLocalExportProgress) => void;
 };
 
-const validOutput = (request: EditorLocalExportRequest, frames: number) => Number.isSafeInteger(request.width) && request.width > 0
+export const editorLocalExportFps = (request: Pick<EditorLocalExportRequest, 'timeline' | 'fps'>) => request.fps ?? request.timeline.fps;
+export const editorLocalExportFrameCount = (timeline: Timeline, fps: number) =>
+    Math.max(1, Math.ceil(framesIn(timeline) * fps / Math.max(1, timeline.fps)));
+export const editorLocalExportSourceFrame = (timeline: Timeline, outputFrame: number, outputFps: number) =>
+    Math.min(Math.max(0, framesIn(timeline) - 1), Math.floor(outputFrame * timeline.fps / outputFps));
+
+const validOutput = (request: EditorLocalExportRequest, frames: number, fps: number) => Number.isSafeInteger(request.width) && request.width > 0
     && request.width <= 1280 && Number.isSafeInteger(request.height) && request.height > 0 && request.height <= 1280
-    && request.width * request.height <= 1280 * 720 && Number.isSafeInteger(request.timeline.fps) && request.timeline.fps > 0
-    && request.timeline.fps <= 60 && frames > 0 && frames <= EDITOR_LOCAL_EXPORT_LIMITS.maximumFrames
-    && frames <= request.timeline.fps * EDITOR_LOCAL_EXPORT_LIMITS.maximumDurationSeconds;
+    && request.width * request.height <= 1280 * 720 && [24, 25, 30, 60].includes(fps)
+    && Number.isSafeInteger(request.timeline.fps) && request.timeline.fps > 0 && request.timeline.fps <= 60
+    && frames > 0 && frames <= EDITOR_LOCAL_EXPORT_LIMITS.maximumFrames
+    && frames <= fps * EDITOR_LOCAL_EXPORT_LIMITS.maximumDurationSeconds;
 
 function cancelled(signal: AbortSignal | undefined) {
     return signal?.aborted === true;
@@ -90,8 +99,8 @@ function cancelled(signal: AbortSignal | undefined) {
  * while this function owns ordering, bounded batching, cancellation and artifact lifetime.
  */
 export async function exportEditorMp4(request: EditorLocalExportRequest, dependencies: EditorLocalExportDependencies): Promise<EditorLocalExportResult> {
-    const frames = framesIn(request.timeline);
-    if (!validOutput(request, frames)) return { ok: false, code: 'invalid-timeline' };
+    const fps = editorLocalExportFps(request), frames = editorLocalExportFrameCount(request.timeline, fps);
+    if (!validOutput(request, frames, fps)) return { ok: false, code: 'invalid-timeline' };
     if (cancelled(request.signal)) return { ok: false, code: 'cancelled' };
     const controller = new AbortController();
     const abort = () => controller.abort();
@@ -104,7 +113,7 @@ export async function exportEditorMp4(request: EditorLocalExportRequest, depende
         if (!audio.ok) return audio.code === 'cancelled' ? { ok: false, code: 'cancelled' } : { ok: false, code: 'native-media', nativeCode: audio.code };
         audioArtifactId = audio.value.artifactId;
         if (controller.signal.aborted) return { ok: false, code: 'cancelled' };
-        const begun = await dependencies.begin({ width: request.width, height: request.height, fps: request.timeline.fps,
+        const begun = await dependencies.begin({ width: request.width, height: request.height, fps,
             videoBitRate: request.videoBitRate, audioBitRate: request.audioBitRate ?? 192_000, audioArtifactId,
             ...(request.codec ? { codec: request.codec } : {}),
             ...(request.preserveAlpha ? { alpha: true } : {}) });
@@ -115,12 +124,13 @@ export async function exportEditorMp4(request: EditorLocalExportRequest, depende
             let appendedBatch = false;
             try { for (let index = start; index < Math.min(frames, start + EDITOR_LOCAL_EXPORT_LIMITS.maximumBatchFrames); index += 1) {
                 if (controller.signal.aborted) return { ok: false, code: 'cancelled' };
-                const plan = editorPreviewPlan(request.timeline, index, CANONICAL_EDITOR_COMPOSITOR_CAPABILITIES,
+                const sourceFrame = editorLocalExportSourceFrame(request.timeline, index, fps);
+                const plan = editorPreviewPlan(request.timeline, sourceFrame, CANONICAL_EDITOR_COMPOSITOR_CAPABILITIES,
                     { transparentBackground: request.transparentBackground });
                 if (!plan.capabilities.exact) return { ok: false, code: 'unsupported-frame', frame: index,
                     capabilities: [...new Set(plan.capabilities.unsupported.map(value => value.capability))] };
                 let descriptor: FrameDescriptor;
-                try { descriptor = await dependencies.renderFrame({ plan, index, timestampUs: frameTimestampUs(index, request.timeline.fps), width: request.width, height: request.height }, controller.signal); }
+                try { descriptor = await dependencies.renderFrame({ plan, index, timestampUs: frameTimestampUs(index, fps), width: request.width, height: request.height }, controller.signal); }
                 catch { return controller.signal.aborted ? { ok: false, code: 'cancelled' } : { ok: false, code: 'write-failed', frame: index }; }
                 batch.push(descriptor);
                 emit('compositing', .15 + .65 * ((index + 1) / frames), index + 1);

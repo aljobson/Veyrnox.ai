@@ -66,7 +66,8 @@ export function AdjustPanel({ timeline, selection, selected, selectedMedia, sele
             label={t('editorAi.apply')} disabled={!customValue} onPress={() => { if (customValue) updateCanvas({ aspect_ratio: customValue }); }} /></> : null}
         <Text style={styles.fieldLabel}>{t('editor.rate')}</Text><View style={styles.choices}>{([24, 25, 30, 60] as const).map((value) => <Choice key={value} label={`${value}`}
             selected={canvas.frame_rate === value} onPress={() => updateCanvas({ frame_rate: value })} />)}</View>
-        <ColourField label={t('editor.canvascolour')} value={timeline.background} swatches={['#000000', '#ffffff', '#15211f', '#301c36', '#17233f']}
+        <ColourField label={t('editor.canvascolour')} value={timeline.background}
+            swatches={['#000000', '#FFFFFF', '#292A2D', '#9B9B9F', '#FF3B30', '#FF9500', '#FFD60A', '#34C759', '#00C7BE', '#0A84FF', '#5E5CE6']}
             onChange={background => applyTimeline({ ...timeline, background })} />
         <PanelHeading title={t('editor.tracks')} detail={t('editor.total', { value1: timeline.tracks.length })} />
         {timeline.tracks.map((track) => <View key={track.id} style={styles.trackControl}><View style={styles.rowCopy}><Text style={styles.rowTitle}>{editorTrackLabel(track)}</Text><Text

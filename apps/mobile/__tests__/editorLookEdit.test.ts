@@ -76,6 +76,19 @@ test('background type switches select first image, clear media and bulk refuses 
     same(look.backgroundAll(tl, background), tl.video.reduce((next, c) => updateSequenceClip(next, 'video', c.id, { background }), tl));
     tl.tracks[0].locked = true; expect(look.backgroundAll(tl, background)).toEqual({ refused: 'lockedAll' });
 });
+test('background type switches produce canonical gradient and video shapes', () => {
+    const tl = fixture(); tl.media.backgroundVideo = { id: 'backgroundVideo', kind: 'video', frames: 90, width: 50, height: 50, hasAudio: false, name: 'Backdrop' };
+    same(look.backgroundSet(tl, 'v1', { type: 'gradient' }), updateSequenceClip(tl, 'video', 'v1', { background: {
+        ...BACKGROUND_DEFAULTS, type: 'gradient', secondaryColor: '#4B2BFF', angle: 135,
+    } }));
+    same(look.backgroundSet(tl, 'v1', { type: 'video' }), updateSequenceClip(tl, 'video', 'v1', { background: {
+        ...BACKGROUND_DEFAULTS, type: 'video', mediaId: 'm',
+    } }));
+    const gradient = { ...BACKGROUND_DEFAULTS, type: 'gradient' as const, secondaryColor: '#34C759', angle: 135 };
+    tl.video[1].background = { ...gradient, angle: 90 };
+    const all = look.backgroundAll(tl, gradient);
+    expect('timeline' in all && all.timeline.video[1].background).toEqual(gradient);
+});
 test('lock, adjacency, invalid backgrounds and unknown diagnostics refuse without mutation', () => {
     const tl = fixture(), before = JSON.stringify(tl);
     expect(look.transitionSet(tl, 'v0', 'dissolve')).toEqual({ refused: 'notAdjacent' });

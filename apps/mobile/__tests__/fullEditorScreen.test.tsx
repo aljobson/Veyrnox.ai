@@ -1,4 +1,9 @@
 jest.mock('../src/lib/voiceoverRecorder', () => ({ VOICEOVER_AVAILABLE: false }));
+jest.mock('react-native-safe-area-context', () => {
+    const React = require('react');
+    const insets = { top: 0, bottom: 0, left: 0, right: 0 };
+    return { SafeAreaInsetsContext: React.createContext(insets), SafeAreaProvider: ({ children }: any) => children, useSafeAreaInsets: () => insets };
+});
 var mockSceneState: any;
 jest.mock('../src/components/editor/tools/useEditorSceneAnalysis', () => ({
     sceneAnalysisBlocker: () => null,
@@ -31,16 +36,16 @@ void [ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInp
 const projectId = '11111111-1111-1111-1111-111111111111';
 const document = { schema_version: 1 as const, project_id: projectId, brief: 'Opening scene', canvas: { aspect_ratio: '16:9', frame_rate: 30 } };
 let serverDocument: any = document;
-const mockRouter = { back: jest.fn(), push: jest.fn(), replace: jest.fn() };
+const mockRouter = { back: jest.fn(), push: jest.fn(), replace: jest.fn(), canGoBack: jest.fn(() => true) };
 const mockBeginSessionTask = () => ({ current: () => true });
 const mockRequest = jest.fn();
-const mockApi = { request: mockRequest };
+const mockApi = { request: mockRequest, getBalance: jest.fn().mockResolvedValue({ balance: 30 }) };
 const mockScreenRender = jest.fn();
 const mockStackOptions = jest.fn();
 
 jest.mock('../src/lib/appCache', () => ({ getCacheUser: () => 'owner', subscribeCacheUser: () => () => {} }));
 jest.mock('../src/lib/editorDrafts', () => ({ readDraft: jest.fn().mockResolvedValue(null), writeDraft: jest.fn().mockResolvedValue(true), removeDraft: jest.fn().mockResolvedValue(undefined) }));
-jest.mock('../src/lib/editorDeviceMedia', () => ({ editorDeviceMedia: { hydrate: jest.fn().mockResolvedValue({}), copy: jest.fn().mockResolvedValue(null), backup: jest.fn().mockResolvedValue(null) } }));
+jest.mock('../src/lib/editorDeviceMedia', () => ({ editorDeviceMedia: { hydrate: jest.fn().mockResolvedValue({}), files: jest.fn().mockResolvedValue({}), copy: jest.fn().mockResolvedValue(null), backup: jest.fn().mockResolvedValue(null) } }));
 jest.mock('../src/lib/editorPickedFileReady', () => ({ waitForEditorPickedFile: jest.fn().mockResolvedValue('ready') }));
 jest.mock('../src/lib/editorMediaDuration', () => ({ probeDuration: jest.fn().mockResolvedValue(4) }));
 jest.mock('expo-crypto', () => ({ randomUUID: () => 'native-save-key' }));
@@ -69,6 +74,7 @@ beforeEach(() => {
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
     jest.useFakeTimers();
     jest.clearAllMocks();
+    mockRouter.canGoBack.mockReturnValue(true);
     require('../src/lib/editorPickedFileReady').waitForEditorPickedFile.mockResolvedValue('ready');
     mockSceneState = { availability: 'available', status: 'idle', progress: 0, rows: [], error: undefined, detect: jest.fn(), cancel: jest.fn(), toggle: jest.fn(), clear: jest.fn() };
     mockClipState = { availability: 'available', status: 'idle', progress: 0, rows: [], error: undefined, hadAudio: true, resultKey: undefined,
@@ -154,10 +160,12 @@ test('renames the project from the editable simple header', async () => {
     expect(mockRequest).toHaveBeenCalledWith(`/api/v1/projects/${projectId}`, expect.objectContaining({ method: 'PATCH', body: JSON.stringify({ name: 'Morning routine', version: 1 }) }));
 });
 
-test('the five-tab dock opens AI, Cut, Sound, Text and Layers without hiding the dock', async () => {
+test('AI Edit opens the project Best Cut sheet while Cut, Sound, Text and Layers keep the dock visible', async () => {
     await renderSimple();
     await press('AI Edit');
-    for (const label of ['Smart Cut', 'Make a clip with AI', 'Voice or music with AI', 'Captions']) expect(labelled(label).length).toBeGreaterThan(0);
+    expect(mockRouter.push).not.toHaveBeenCalledWith('/smart-cut');
+    expect(labelled('Build a Smart Cut')).toHaveLength(1);
+    expect(labelled('Type a command')).toHaveLength(0);
     await press('Close');
     await press('Cut');
     for (const label of ['Add', 'Filters', 'Transitions', 'Polish']) expect(labelled(label).length).toBeGreaterThan(0);
@@ -174,6 +182,15 @@ test('the five-tab dock opens AI, Cut, Sound, Text and Layers without hiding the
     for (const label of ['Photo', 'Video', 'All layers']) expect(labelled(label)).toHaveLength(1);
     await press('Cut');
     expect(labelled('Add')).toHaveLength(1);
+});
+
+test('Back leaves a directly opened editor by returning to the Editor library', async () => {
+    await renderSimple();
+    mockRouter.canGoBack.mockReturnValue(false);
+    await press('Back');
+    await act(async () => Promise.resolve());
+    expect(mockRouter.back).not.toHaveBeenCalled();
+    expect(mockRouter.replace).toHaveBeenCalledWith('/editor');
 });
 
 test('chooses a project cover frame, title and colour and autosaves them', async () => {

@@ -13,12 +13,12 @@ function exactTimeline(frames = 17) {
 
 function harness(): EditorLocalExportDependencies & { rendered: number[]; batches: number[][]; released: string[]; cancelled: string[] } {
     const rendered: number[] = [], batches: number[][] = [], released: string[] = [], cancelled: string[] = [];
-    const session: EncodeSession = { sessionId: 'session', token: 'token', project: 'project', generation: 1,
-        width: 640, height: 360, fps: 30, nextIndex: 0, audioArtifactId: 'audio' };
+    const session = (request: { width: number; height: number; fps: number; audioArtifactId: string }): EncodeSession => ({ sessionId: 'session', token: 'token', project: 'project', generation: 1,
+        width: request.width, height: request.height, fps: request.fps, nextIndex: 0, audioArtifactId: request.audioArtifactId });
     return {
         rendered, batches, released, cancelled,
         prepareAudio: jest.fn(async () => ({ ok: true as const, value: { artifactId: 'audio' } })),
-        begin: jest.fn(async () => ({ ok: true as const, value: session })),
+        begin: jest.fn(async request => ({ ok: true as const, value: session(request) })),
         renderFrame: jest.fn(async value => {
             rendered.push(value.index);
             return { version: 1, uri: `file:///frame-${value.index}.rgba`, index: value.index,
@@ -41,7 +41,7 @@ test('native compositor advertises the complete canonical web semantic surface',
     expect(new Set(CANONICAL_EDITOR_COMPOSITOR_CAPABILITIES)).toEqual(new Set([
         'timeline-background', 'image-source', 'graphic-source', 'video-source', 'fit', 'crop', 'transform', 'visual-layering',
         'blend', 'mask', 'transition', 'clip-animation', 'animation-reveal', 'clip-background-solid', 'clip-background-blur',
-        'clip-background-image', 'basic-filter', 'smart-picture', 'advanced-colour', 'effect', 'text-layer', 'caption-words',
+        'clip-background-image', 'clip-background-gradient', 'clip-background-video', 'basic-filter', 'smart-picture', 'advanced-colour', 'effect', 'text-layer', 'caption-words',
         'custom-font', 'behind-subject', 'semantic-mask', 'semantic-mask-dynamic', 'audio-mix',
     ]));
 });
@@ -69,6 +69,16 @@ test('passes an explicit HEVC request to the native writer', async () => {
     const timeline = exactTimeline(2), run = harness();
     await exportEditorMp4({ timeline, width: 640, height: 360, videoBitRate: 6_000_000, codec: 'hevc' }, run);
     expect(run.begin).toHaveBeenCalledWith(expect.objectContaining({ codec: 'hevc' }));
+});
+
+test('resamples project frames to a selected export cadence without changing duration', async () => {
+    const timeline = exactTimeline(15), run = harness();
+    const result = await exportEditorMp4({ timeline, fps: 60, width: 640, height: 360, videoBitRate: 6_000_000 }, run);
+    expect(result).toMatchObject({ ok: true, artifact: { fps: 60, frames: 30, durationUs: 500_000 } });
+    expect(run.begin).toHaveBeenCalledWith(expect.objectContaining({ fps: 60 }));
+    expect(run.renderFrame).toHaveBeenCalledTimes(30);
+    expect(jest.mocked(run.renderFrame).mock.calls.map(([frame]) => frame.plan.frame)).toEqual(
+        Array.from({ length: 30 }, (_, index) => Math.floor(index / 2)));
 });
 
 test('cancellation aborts the live session and releases transient audio', async () => {

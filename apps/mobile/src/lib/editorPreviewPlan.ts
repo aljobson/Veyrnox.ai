@@ -32,7 +32,7 @@ type CanonicalLayers = { visuals: CanonicalVisual[]; texts: CanonicalText[]; bac
 export type EditorPreviewCapability =
     | 'timeline-background' | 'image-source' | 'graphic-source' | 'video-source' | 'missing-media' | 'unknown-media-source'
     | 'fit' | 'crop' | 'transform' | 'visual-layering' | 'behind-subject' | 'blend' | 'mask' | 'transition' | 'clip-animation' | 'animation-reveal'
-    | 'clip-background-solid' | 'clip-background-blur' | 'clip-background-image'
+    | 'clip-background-solid' | 'clip-background-blur' | 'clip-background-image' | 'clip-background-gradient' | 'clip-background-video'
     | 'basic-filter' | 'smart-picture' | 'advanced-colour' | 'effect'
     | 'text-layer' | 'caption-words' | 'custom-font' | 'semantic-mask' | 'semantic-mask-dynamic' | 'audio-mix';
 
@@ -219,12 +219,12 @@ export function editorPreviewPlan(
         if (!neutralColour(parameters.colour)) requirements.push(capabilityUse(supported, 'advanced-colour', 'visual', clip.id, clip.mediaId));
         if (clip.effect && clip.effect.type !== 'none' && clip.effect.intensity > 0) requirements.push(capabilityUse(supported, 'effect', 'visual', clip.id, clip.mediaId, clip.effect.type));
         if (clip.background?.type && clip.background.type !== 'none') {
-            const capability = `clip-background-${clip.background.type}` as 'clip-background-solid' | 'clip-background-blur' | 'clip-background-image';
+            const capability = `clip-background-${clip.background.type}` as 'clip-background-solid' | 'clip-background-blur' | 'clip-background-image' | 'clip-background-gradient' | 'clip-background-video';
             requirements.push(capabilityUse(supported, capability, 'visual', clip.id, clip.background.mediaId || clip.mediaId));
-            if (clip.background.type === 'image' && !timeline.media[clip.background.mediaId]) requirements.push(capabilityUse(supported, 'missing-media', 'visual', clip.id, clip.background.mediaId, 'clip-background'));
+            if ((clip.background.type === 'image' || clip.background.type === 'video') && !timeline.media[clip.background.mediaId]) requirements.push(capabilityUse(supported, 'missing-media', 'visual', clip.id, clip.background.mediaId, 'clip-background'));
         }
         return {
-            layerIndex, clip, media, backgroundMedia: clip.background?.type === 'image' ? timeline.media[clip.background.mediaId] ?? null : null,
+            layerIndex, clip, media, backgroundMedia: clip.background?.type === 'image' || clip.background?.type === 'video' ? timeline.media[clip.background.mediaId] ?? null : null,
             semanticMaskIdentity: clip.semanticMask?.dynamic ? editorSemanticMaskIdentity(clip) : null,
             semanticMaskSourceFrame: clip.semanticMask ? sourceFrame(clip, 0) : null,
             sourceIndex: sourceIndexes.get(clip.id) ?? visual.k, sourceTimeSeconds: visual.time, offset: visual.offset,

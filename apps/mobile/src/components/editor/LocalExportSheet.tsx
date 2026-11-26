@@ -2,10 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { Asset, requestPermissionsAsync } from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
-import { createNativeEditorLocalExportDependencies } from '../../lib/editorCompositorNative';
-import { exportEditorMp4, type EditorLocalExportProgress, type EditorLocalExportResult } from '../../lib/editorLocalExport';
+import { createNativeEditorAudioExportDependencies, createNativeEditorLocalExportDependencies } from '../../lib/editorCompositorNative';
+import { editorLocalExportFrameCount, editorLocalExportSourceFrame, exportEditorMp4, type EditorLocalExportProgress, type EditorLocalExportResult } from '../../lib/editorLocalExport';
+import { exportEditorWav, releaseWavArtifact, type EditorAudioExportResult } from '../../lib/editorAudioExport';
 import { editorMediaArtifacts } from '../../lib/editorMedia/artifacts';
-import { canvasPixelSize, framesIn, type Canvas, type Timeline } from '../../lib/nativeEditorModel';
+import { canvasPixelSize, canvasResolutionSize, framesIn, type Canvas, type Timeline } from '../../lib/nativeEditorModel';
 import { formatNumber, t } from '../../lib/i18n';
 import { rawText } from '../../lib/i18n/translate';
 import { touchTarget } from '../../lib/a11y';
@@ -21,6 +22,8 @@ import { ExportFootagePreview } from './ExportFootagePreview';
 type Props = { visible: boolean; api: Pick<ApiClient, 'request'>; account: string; projectId: string; revision: number; timeline: Timeline; canvas: Canvas;
     localMediaUris: Readonly<Record<string, string>>; onClose(): void; onCloud(): void };
 type Phase = 'idle' | 'exporting' | 'done' | 'error';
+type Output = 'video' | 'audio';
+type ExportArtifact = Extract<EditorLocalExportResult, { ok: true }>['artifact'] | Extract<EditorAudioExportResult, { ok: true }>['artifact'];
 type ExportError = EditorExportSourceFailureCode | 'invalid-timeline' | 'unsupported-frame' | 'native-media' | 'write-failed' | 'save-permission' | 'save-failed' | 'share-unavailable';
 export const localExportDimensions = (canvas: Canvas) => canvasPixelSize(canvas.aspect_ratio, canvas.aspect_ratio === '1:1' ? 960 : 1280,
     canvas.aspect_ratio === '1:1' ? 960 : 1280);
@@ -33,6 +36,12 @@ export const fittedLocalExportDimensions = (canvas: Canvas) => {
 };
 export type LocalExportQuality = 'compact' | 'standard' | 'high';
 export type LocalExportCodec = 'h264' | 'hevc';
+export type LocalExportResolution = '720p' | '1080p' | '4k';
+export type LocalExportFrameRate = 24 | 25 | 30 | 60;
+export const selectedLocalExportDimensions = (canvas: Canvas, resolution: LocalExportResolution) => {
+    const edge = resolution === '720p' ? 720 : resolution === '1080p' ? 1080 : 2160;
+    return canvasResolutionSize(canvas.aspect_ratio, edge) ?? fittedLocalExportDimensions(canvas);
+};
 export const LOCAL_EXPORT_QUALITY: Readonly<Record<LocalExportQuality, { videoBitRate: number; audioBitRate: number }>> = Object.freeze({
     compact: { videoBitRate: 3_000_000, audioBitRate: 128_000 },
     standard: { videoBitRate: 6_000_000, audioBitRate: 192_000 },
@@ -42,6 +51,7 @@ export const estimatedLocalExportBytes = (timeline: Timeline, quality: LocalExpo
     const seconds = framesIn(timeline) / Math.max(1, timeline.fps), preset = LOCAL_EXPORT_QUALITY[quality];
     return Math.ceil(seconds * (preset.videoBitRate + preset.audioBitRate) / 8);
 };
+export const estimatedLocalAudioBytes = (timeline: Timeline) => 44 + Math.ceil(framesIn(timeline) * 48000 / Math.max(1, timeline.fps)) * 4;
 export type LocalExportPhotoSaveResult = 'saved' | 'permission' | 'failed' | 'stale';
 export async function saveLocalExportToPhotos(uri: string, isCurrent: () => boolean, dependencies = {
     requestPermission: () => requestPermissionsAsync(true), create: (value: string) => Asset.create(value),
@@ -60,33 +70,44 @@ export function LocalExportSheet({ visible, api, account, projectId, revision, t
     const beginSessionTask = useSessionTask();
     const [phase, setPhase] = useState<Phase>('idle'), [error, setError] = useState<ExportError | null>(null);
     const [progress, setProgress] = useState<EditorLocalExportProgress | null>(null);
-    const [artifact, setArtifact] = useState<Extract<EditorLocalExportResult, { ok: true }>['artifact'] | null>(null);
+    const [artifact, setArtifact] = useState<ExportArtifact | null>(null), [output, setOutput] = useState<Output>('video');
     const [quality, setQuality] = useState<LocalExportQuality>('standard'), [codec, setCodec] = useState<LocalExportCodec>('h264');
+    const [resolution, setResolution] = useState<LocalExportResolution>('1080p');
+    const [frameRate, setFrameRate] = useState<LocalExportFrameRate>([24, 25, 30, 60].includes(timeline.fps) ? timeline.fps as LocalExportFrameRate : 30);
     const [autoSave, setAutoSave] = useState(true), [saved, setSaved] = useState(false), [saving, setSaving] = useState(false);
     const exportIdentity = `${projectId}:${revision}`;
     const controller = useRef<AbortController | null>(null), mounted = useRef(true), latestArtifact = useRef(artifact), lastIdentity = useRef(exportIdentity), saveToken = useRef(0); latestArtifact.current = artifact;
+    const releaseArtifact = (value: ExportArtifact) => value.kind === 'wav' ? Promise.resolve(releaseWavArtifact(value))
+        : editorMediaArtifacts.release(projectId, value.artifactId).then(() => undefined);
     useEffect(() => { mounted.current = true; return () => { mounted.current = false; controller.current?.abort(); const value = latestArtifact.current;
-        latestArtifact.current = null; if (value) void editorMediaArtifacts.release(projectId, value.artifactId); }; }, [projectId]);
+        latestArtifact.current = null; if (value) void (value.kind === 'wav' ? Promise.resolve(releaseWavArtifact(value)) : editorMediaArtifacts.release(projectId, value.artifactId)); }; }, [projectId]);
     useEffect(() => {
         if (lastIdentity.current === exportIdentity) return;
         lastIdentity.current = exportIdentity; controller.current?.abort(); controller.current = null;
         saveToken.current += 1;
-        const value = latestArtifact.current; latestArtifact.current = null; if (value) void editorMediaArtifacts.release(projectId, value.artifactId);
+        const value = latestArtifact.current; latestArtifact.current = null; if (value) void releaseArtifact(value);
         setArtifact(null); setError(null); setProgress(null); setSaved(false); setSaving(false); setPhase('idle');
     }, [exportIdentity, projectId]);
     const close = () => { if (phase !== 'exporting' && !saving) onClose(); };
     const start = async () => {
         if (controller.current) return;
+        if (output === 'video' && resolution === '4k') { onCloud(); return; }
         const frozen = JSON.parse(JSON.stringify(timeline)) as Timeline, abort = new AbortController(), task = beginSessionTask(); controller.current = abort;
-        if (artifact) await editorMediaArtifacts.release(projectId, artifact.artifactId).catch(() => undefined);
+        if (artifact) await releaseArtifact(artifact).catch(() => undefined);
         setArtifact(null); setError(null); setProgress(null); setSaved(false); setSaving(false); setPhase('exporting');
         const preset = LOCAL_EXPORT_QUALITY[quality];
-        let prepared: EditorExportSourceResult<EditorLocalExportResult>;
-        try { prepared = await withEditorExportSources({ api, task, account, projectId, timeline: frozen, localMediaUris, signal: abort.signal }, materialized =>
-            exportEditorMp4({ timeline: frozen, ...fittedLocalExportDimensions(canvas), videoBitRate: preset.videoBitRate, audioBitRate: preset.audioBitRate,
-                codec, signal: abort.signal, onProgress: value => { if (mounted.current && controller.current === abort && task.current()) setProgress(value); } },
-            createNativeEditorLocalExportDependencies(account, projectId, frozen,
-                { ...materialized, ...editorFontStore.exportSources(projectId, frozen.fonts ?? []) })));
+        let prepared: EditorExportSourceResult<EditorLocalExportResult | EditorAudioExportResult>;
+        try { prepared = await withEditorExportSources<EditorLocalExportResult | EditorAudioExportResult>({ api, task, account, projectId, timeline: frozen, localMediaUris, signal: abort.signal }, materialized => {
+            const sources = { ...materialized, ...editorFontStore.exportSources(projectId, frozen.fonts ?? []) };
+            return output === 'audio'
+                ? exportEditorWav({ timeline: frozen, signal: abort.signal, onProgress: next => {
+                    if (mounted.current && controller.current === abort && task.current()) setProgress({ stage: next < .8 ? 'preparing' : 'finishing', value: next,
+                        frame: Math.round(framesIn(frozen) * next), frames: framesIn(frozen) });
+                } }, createNativeEditorAudioExportDependencies(account, projectId, frozen, sources))
+                : exportEditorMp4({ timeline: frozen, fps: frameRate, ...selectedLocalExportDimensions(canvas, resolution), videoBitRate: preset.videoBitRate, audioBitRate: preset.audioBitRate,
+                    codec, signal: abort.signal, onProgress: value => { if (mounted.current && controller.current === abort && task.current()) setProgress(value); } },
+                createNativeEditorLocalExportDependencies(account, projectId, frozen, sources));
+        });
         } catch {
             const owns = controller.current === abort;
             if (owns) controller.current = null;
@@ -99,7 +120,7 @@ export function LocalExportSheet({ visible, api, account, projectId, revision, t
             if (owns) controller.current = null;
             if (mounted.current && owns) { const next = localExportInterruptedState(task.current(), abort.signal.aborted);
                 setError(next.error); setPhase(next.phase); setProgress(null); }
-            if (prepared.ok && prepared.value.ok) await editorMediaArtifacts.release(projectId, prepared.value.artifact.artifactId); return;
+            if (prepared.ok && prepared.value.ok) await releaseArtifact(prepared.value.artifact); return;
         }
         controller.current = null;
         if (!prepared.ok) {
@@ -110,7 +131,7 @@ export function LocalExportSheet({ visible, api, account, projectId, revision, t
         const result = prepared.value;
         if (result.ok) {
             latestArtifact.current = result.artifact; setArtifact(result.artifact); setPhase('done');
-            if (autoSave) {
+            if (autoSave && result.artifact.kind === 'mp4') {
                 const token = ++saveToken.current; setSaving(true);
                 const stillCurrent = () => mounted.current && task.current() && latestArtifact.current?.artifactId === result.artifact.artifactId;
                 const outcome = await saveLocalExportToPhotos(result.artifact.uri, stillCurrent);
@@ -125,7 +146,7 @@ export function LocalExportSheet({ visible, api, account, projectId, revision, t
         else { setError(result.code === 'invalid-timeline' ? 'invalid-timeline' : result.code === 'unsupported-frame' ? 'unsupported-frame'
             : result.code === 'native-media' ? 'native-media' : 'write-failed'); setPhase('error'); }
     };
-    const save = async () => { if (!artifact || saving) return; const target = artifact, token = ++saveToken.current; setSaving(true); setError(null);
+    const save = async () => { if (!artifact || artifact.kind !== 'mp4' || saving) return; const target = artifact, token = ++saveToken.current; setSaving(true); setError(null);
         const stillCurrent = () => mounted.current && latestArtifact.current?.artifactId === target.artifactId;
         const outcome = await saveLocalExportToPhotos(target.uri, stillCurrent);
         if (!mounted.current || saveToken.current !== token) return;
@@ -133,9 +154,9 @@ export function LocalExportSheet({ visible, api, account, projectId, revision, t
             else if (outcome === 'failed') setError('save-failed'); }
         setSaving(false); };
     const share = async () => { if (!artifact) return; try { if (!await Sharing.isAvailableAsync()) { setError('share-unavailable'); return; }
-        await Sharing.shareAsync(artifact.uri, { mimeType: 'video/mp4' }); } catch { setError('write-failed'); } };
+        await Sharing.shareAsync(artifact.uri, { mimeType: artifact.kind === 'wav' ? 'audio/wav' : 'video/mp4' }); } catch { setError('write-failed'); } };
     const value = Math.round((progress?.value ?? 0) * 100), messageKey = error ? `editorLocalExport.${error}` as Parameters<typeof t>[0] : null;
-    const announcedValue = Math.floor(value / 10) * 10, totalFrames = progress?.frames ?? framesIn(timeline);
+    const announcedValue = Math.floor(value / 10) * 10, totalFrames = progress?.frames ?? editorLocalExportFrameCount(timeline, frameRate);
     const announcement = messageKey ? t(messageKey) : phase === 'done' && artifact ? t('editorLocalExport.done', { size: formatNumber(artifact.size / 1_000_000, 1) })
         : phase === 'exporting' ? `${t(`editorLocalExport.${progress?.stage ?? 'preparing'}` as Parameters<typeof t>[0])}. ${t('editorLocalExport.progress', {
             percent: announcedValue, frame: Math.round(totalFrames * announcedValue / 100), total: totalFrames,
@@ -145,13 +166,20 @@ export function LocalExportSheet({ visible, api, account, projectId, revision, t
         <ScrollView style={styles.sheet} contentContainerStyle={[styles.content, { paddingBottom: Math.max(24, insets.bottom + 12), paddingLeft: Math.max(24, insets.left + 16),
             paddingRight: Math.max(24, insets.right + 16) }]}><Text accessibilityRole="header" style={styles.heading}>{t('editorLocalExport.title')}</Text>
         <Text style={styles.text}>{t('editorLocalExport.help')}</Text>
-        {phase === 'exporting' ? <ExportFootagePreview timeline={timeline} frame={progress?.frame ?? 0} api={api} localMediaUris={localMediaUris} /> : null}
+        {phase === 'exporting' && output === 'video' ? <ExportFootagePreview timeline={timeline} frame={editorLocalExportSourceFrame(timeline, progress?.frame ?? 0, frameRate)} api={api} localMediaUris={localMediaUris} /> : null}
         {phase === 'exporting' ? <><Text style={styles.text}>{t(`editorLocalExport.${progress?.stage ?? 'preparing'}` as Parameters<typeof t>[0])}</Text>
             <View accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: 100, now: value }} style={styles.track}><View style={[styles.fill, { width: `${value}%` }]} /></View>
-            <Text style={styles.text}>{t('editorLocalExport.progress', { percent: value, frame: progress?.frame ?? 0, total: progress?.frames ?? framesIn(timeline) })}</Text>
+            <Text style={styles.text}>{t('editorLocalExport.progress', { percent: value, frame: progress?.frame ?? 0, total: progress?.frames ?? editorLocalExportFrameCount(timeline, frameRate) })}</Text>
             <Button label={t('editorScenes.cancel')} onPress={() => controller.current?.abort()} /></> : null}
         {messageKey ? <Text style={styles.error}>{t(messageKey)}</Text> : null}
-        {phase === 'idle' || phase === 'error' ? <><Text style={styles.label}>{t('editorLocalExport.quality')}</Text>
+        {phase === 'idle' || phase === 'error' ? <><View style={styles.readyCard}><View style={styles.readyIcon}><Text style={styles.readyIconText}>{output === 'audio' ? '♫' : '▣'}</Text></View><View style={{ flex: 1 }}><Text style={styles.readyTitle}>Ready to export</Text><Text style={styles.readyMeta}>{output === 'audio' ? `WAV · 48 kHz · ~${formatNumber(estimatedLocalAudioBytes(timeline) / 1_000_000, 1)} MB` : `${selectedLocalExportDimensions(canvas, resolution).width}×${selectedLocalExportDimensions(canvas, resolution).height} · ${frameRate} FPS · ~${formatNumber(estimatedLocalExportBytes(timeline, quality) / 1_000_000, 1)} MB`}</Text></View></View>
+            <Text style={styles.label}>Output</Text><View accessibilityRole="radiogroup" accessibilityLabel="Output" style={styles.outputSegment}>{(['video', 'audio'] as const).map(value => <Pressable key={value} accessibilityRole="radio" accessibilityLabel={value === 'video' ? 'Video' : 'Audio Only'} accessibilityState={{ checked: output === value }} onPress={() => setOutput(value)} style={[styles.outputChoice, output === value && styles.outputSelected]}><Text style={output === value ? styles.outputSelectedText : styles.outputChoiceText}>{value === 'video' ? 'Video' : 'Audio Only'}</Text></Pressable>)}</View>
+            {output === 'video' ? <><Text style={styles.label}>Resolution</Text>
+            <View accessibilityRole="radiogroup" accessibilityLabel="Resolution" style={styles.row}>{(['720p', '1080p', '4k'] as const).map(value => <Pressable key={value} accessibilityRole="radio" accessibilityLabel={value === '4k' ? '4K' : value.toUpperCase()} accessibilityState={{ checked: resolution === value }} onPress={() => setResolution(value)} style={[styles.choice, resolution === value && styles.choiceSelected]}><Text style={styles.text}>{value === '4k' ? '4K' : value.toUpperCase()}</Text></Pressable>)}</View>
+            {resolution === '4k' ? <Text style={styles.help}>4K uses the cloud renderer. You can review any credit cost before confirming.</Text> : null}
+            <Text style={styles.label}>Frame Rate</Text>
+            <View accessibilityRole="radiogroup" accessibilityLabel="Frame Rate" style={styles.row}>{([24, 25, 30, 60] as const).map(value => <Pressable key={value} accessibilityRole="radio" accessibilityLabel={`${value} FPS`} accessibilityState={{ checked: frameRate === value }} onPress={() => setFrameRate(value)} style={[styles.choice, frameRate === value && styles.choiceSelected]}><Text style={styles.text}>{value}</Text></Pressable>)}</View>
+            <Text style={styles.label}>{t('editorLocalExport.quality')}</Text>
             <View accessibilityRole="radiogroup" accessibilityLabel={rawText(t('editorLocalExport.quality'))} style={styles.row}>{(['compact', 'standard', 'high'] as const).map(value => <Pressable key={value} accessibilityRole="radio"
                 accessibilityLabel={rawText(t(`editorLocalExport.quality.${value}` as Parameters<typeof t>[0]))} accessibilityState={{ checked: quality === value }} onPress={() => setQuality(value)} style={[styles.choice, quality === value && styles.choiceSelected]}>
                 <Text style={styles.text}>{t(`editorLocalExport.quality.${value}` as Parameters<typeof t>[0])}</Text></Pressable>)}</View>
@@ -163,10 +191,11 @@ export function LocalExportSheet({ visible, api, account, projectId, revision, t
             <Text style={styles.text}>{t(codec === 'hevc' ? 'editorLocalExport.codec.hevcHelp' : 'editorLocalExport.codec.h264Help')}</Text>
             <Text style={styles.text}>{t('editorLocalExport.estimate', { size: formatNumber(estimatedLocalExportBytes(timeline, quality) / 1_000_000, 1) })}</Text>
             <View style={styles.switchRow}><Text style={styles.text}>{t('editorLocalExport.autoSave')}</Text><Switch accessibilityLabel={rawText(t('editorLocalExport.autoSave'))}
-                value={autoSave} onValueChange={setAutoSave} /></View><Button label={t('editorLocalExport.start')} onPress={() => void start()} /></> : null}
+                value={autoSave} onValueChange={setAutoSave} /></View></> : <Text style={styles.help}>Exports the complete mixed soundtrack as a 48 kHz WAV file, ready to save or share.</Text>}
+            <Button label={output === 'video' && resolution === '4k' ? 'Continue to 4K Export' : output === 'audio' ? 'Export Audio' : t('editorLocalExport.start')} onPress={() => void start()} /></> : null}
         {phase === 'done' && artifact ? <><Text style={styles.text}>{t('editorLocalExport.done', { size: formatNumber(artifact.size / 1_000_000, 1) })}</Text>
-            {saving ? <Text style={styles.text}>{t('editorLocalExport.saving')}</Text> : saved ? <Text style={styles.text}>{t('editorLocalExport.saved')}</Text>
-                : <Button label={t('editorLocalExport.save')} onPress={() => void save()} />}
+            {artifact.kind === 'mp4' ? saving ? <Text style={styles.text}>{t('editorLocalExport.saving')}</Text> : saved ? <Text style={styles.text}>{t('editorLocalExport.saved')}</Text>
+                : <Button label={t('editorLocalExport.save')} onPress={() => void save()} /> : <Text style={styles.help}>Use Share to save the WAV to Files or send it to another audio app.</Text>}
             <Button label={t('editorServerExport.share')} disabled={saving} onPress={() => void share()} /></> : null}
         {phase !== 'exporting' && !saving ? <Button label={t('editorLocalExport.cloud')} onPress={onCloud} /> : null}<Button label={t('editorServerExport.close')} disabled={phase === 'exporting' || saving} onPress={close} />
         </ScrollView></View></Modal>;
@@ -176,6 +205,8 @@ function Button({ label, disabled = false, onPress }: { label: string; disabled?
 const styles = StyleSheet.create({ backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: '#0009' }, sheet: { maxHeight: '90%', backgroundColor: colors.background }, content: { padding: 24, gap: 12 },
     heading: { fontSize: 22, fontWeight: '700', color: colors.text }, label: { color: colors.text, fontSize: 14, fontWeight: '700' }, text: { color: colors.text, fontSize: 16 }, error: { color: colors.danger, fontSize: 16 },
     button: { justifyContent: 'center', paddingHorizontal: 12, marginVertical: 4, borderWidth: 1, borderColor: colors.muted, borderRadius: 8 }, disabled: { opacity: .45 }, pressed: { opacity: .7 },
+    readyCard: { minHeight: 82, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 18, backgroundColor: colors.accentSoft }, readyIcon: { width: 46, height: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: `${colors.accent}28` }, readyIconText: { color: colors.accent, fontSize: 24 }, readyTitle: { color: colors.text, fontSize: 17, fontWeight: '800' }, readyMeta: { marginTop: 3, color: colors.muted, fontSize: 13 },
+    outputSegment: { height: 44, flexDirection: 'row', padding: 3, borderRadius: 22, backgroundColor: colors.surface }, outputChoice: { flex: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 19 }, outputSelected: { backgroundColor: colors.text }, outputSelectedText: { color: colors.background, fontWeight: '800' }, outputChoiceText: { color: colors.text, fontWeight: '700' }, help: { color: colors.muted, fontSize: 14, lineHeight: 20 }, settingRow: { minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }, settingValue: { color: colors.accent, fontSize: 16, fontWeight: '800' },
     row: { flexDirection: 'row', gap: 8 }, choice: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.muted, borderRadius: 8 },
     choiceSelected: { borderColor: colors.accent, backgroundColor: `${colors.accent}22` }, switchRow: { minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
     track: { height: 6, backgroundColor: colors.muted, borderRadius: 3, overflow: 'hidden' }, fill: { height: 6, backgroundColor: colors.accent } });

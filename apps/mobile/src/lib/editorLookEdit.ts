@@ -87,15 +87,21 @@ export function cropSet(tl: Timeline, id: string, crop: Crop): LookResult {
 }
 export const cropReset = (tl: Timeline, id: string): LookResult => clipPatch(tl, id, {}, 0, ['crop']);
 export function backgroundSet(tl: Timeline, id: string, patch: Partial<Background>): LookResult {
-    const background = { ...BACKGROUND_DEFAULTS, ...selected(tl, id)?.background, ...patch } as Background;
-    if (patch.type !== undefined && patch.type !== (selected(tl, id)?.background?.type ?? BACKGROUND_DEFAULTS.type)) background.mediaId = patch.type === 'image'
-        ? Object.values(tl.media).find(m => m.kind === 'image' || m.kind === 'graphic')?.id ?? '' : '';
+    const current = selected(tl, id)?.background, type = patch.type ?? current?.type ?? BACKGROUND_DEFAULTS.type;
+    const base = { ...BACKGROUND_DEFAULTS, ...current, ...patch, type };
+    const mediaId = patch.type !== undefined && patch.type !== (current?.type ?? BACKGROUND_DEFAULTS.type)
+        ? patch.type === 'image' ? Object.values(tl.media).find(m => m.kind === 'image' || m.kind === 'graphic')?.id ?? ''
+            : patch.type === 'video' ? Object.values(tl.media).find(m => m.kind === 'video')?.id ?? '' : ''
+        : base.mediaId;
+    const background = (type === 'gradient' ? { type, color: base.color, blur: base.blur, mediaId: '', secondaryColor: base.secondaryColor ?? '#4B2BFF', angle: base.angle ?? 135 }
+        : { type, color: base.color, blur: base.blur, mediaId: type === 'image' || type === 'video' ? mediaId : '' }) as Background;
     return clipPatch(tl, id, { background });
 }
 export function backgroundAll(tl: Timeline, background: Background): LookResult {
     const video = tl.video.map(clip => {
-        const current = clip.background ?? BACKGROUND_DEFAULTS;
-        return current.type === background.type && current.color === background.color && current.blur === background.blur && current.mediaId === background.mediaId
+        const current = (clip.background ?? BACKGROUND_DEFAULTS) as Background;
+        return current.type === background.type && current.color === background.color && current.blur === background.blur && current.mediaId === background.mediaId &&
+            current.secondaryColor === background.secondaryColor && current.angle === background.angle
             ? clip : { ...clip, background: { ...background } };
     });
     if (video.every((clip, index) => clip === tl.video[index])) return { timeline: tl };

@@ -39,6 +39,14 @@ import { useEditorTrackActions } from './useEditorTrackActions';
 import { PlaybackPreview, PlaybackTimeline, PlaybackTransport } from './EditorPlayback';
 import { EditorSafeAreaOverlay } from './EditorSafeAreaOverlay';
 import { EditorCoverSheet, type EditorCover } from './EditorCoverSheet';
+import { EditorCanvasSheet } from './EditorCanvasSheet';
+import { EditorPolishSheet } from './EditorPolishSheet';
+import { EditorZoomSlider } from './EditorZoomSlider';
+import { EditorTrimSheet } from './EditorTrimSheet';
+import { EditorCleanVoiceSheet } from './EditorCleanVoiceSheet';
+import { EditorClipThumb } from './EditorClipThumb';
+import { EditorClipAudioSheet } from './EditorClipAudioSheet';
+import { EditorFiltersSheet } from './EditorFiltersSheet';
 import { SAFE_AREA_GUIDES, safeAreaPercentStyle, type SafeAreaGuideId } from '../../lib/editorSafeArea';
 import { fitPpf, formatTimecode as timecode, moveItems, trimItem, PPF_MIN, PPF_MAX } from '../../lib/editorTimeline';
 import { libraryMedia, LIBRARY_STOPPED } from '../../lib/editorLibraryLength';
@@ -52,6 +60,7 @@ import { EditorLoadState } from './EditorLoadState';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { SafeAreaInsetsContext } from 'react-native-safe-area-context';
 import { editorLayoutBudget } from '../../lib/editorLayoutBudget';
+import { editorTopInset } from '../../lib/editorSafeInsets';
 import { EDITOR_SERVER_EXPORT_ENABLED } from '../../lib/editorFlag';
 import type { Cut } from '../../lib/smartCutHandoff';
 import { requireOnline, OFFLINE_PAID_MESSAGE } from '../../lib/network';
@@ -102,6 +111,14 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         setVoiceoverMessage(t('editorVoiceover.added')); setVoiceoverAt(null); };
     const [exportVisible, setExportVisible] = useState(false);
     const [localExportVisible, setLocalExportVisible] = useState(false);
+    const [canvasVisible, setCanvasVisible] = useState(false);
+    const [polishVisible, setPolishVisible] = useState(false);
+    const [trimVisible, setTrimVisible] = useState(false);
+    const [cleanVoiceVisible, setCleanVoiceVisible] = useState(false);
+    const [clipAudioVisible, setClipAudioVisible] = useState<'volume' | 'fade' | null>(null);
+    const [filtersVisible, setFiltersVisible] = useState(false);
+    const [previewFullscreen, setPreviewFullscreen] = useState(false);
+    const [previewTurned, setPreviewTurned] = useState(false);
     const [coverRestoreFrame, setCoverRestoreFrame] = useState<number | null>(null);
     const [projectFileBusy, setProjectFileBusy] = useState(false);
     const fileWaitTicket = useRef(0);
@@ -129,7 +146,11 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     const [clipPreview, setClipPreview] = useState<{ id: string; endFrame: number } | null>(null);
     const [placement, setPlacement] = useState(0);
     const { speechQuote, setSpeechQuote, speechMode, setSpeechMode } = useSpeechCutAvailability(api, projectId);
-    const editFreshness = (): Freshness => ({ projectId, accountId: getCacheUser() ?? '', editRevision: getEditRevision() }); const guard = useEditorLeaveGuard(leaveEditor, router.back);
+    const editFreshness = (): Freshness => ({ projectId, accountId: getCacheUser() ?? '', editRevision: getEditRevision() });
+    const guard = useEditorLeaveGuard(leaveEditor, () => {
+        if (router.canGoBack()) router.back();
+        else router.replace('/editor');
+    });
     const [generate, setGenerate] = useState<{ visible: boolean; kind: Kind; frame: number; owner?: string; prompt?: string } | null>(null);
     const [stemChoice, setStemChoice] = useState<{ choice: LibraryChoice; stems: EditorStem[] } | null>(null);
     const isReady = () => currentDocument()?.project_id === projectId && sync.draftDecided && !sync.sheet && !sync.replacing && sync.live(), ready = isReady();
@@ -176,7 +197,8 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     const openGenerate = (kind: Kind, prompt = '') => setGenerate({ visible: true, kind, prompt, frame: clampFrame(frameStore.get()), owner: getCacheUser() });
     // Short phones: shrink the preview so the toolbars and tool rail are never pushed off screen.
     const { width: windowWidth, height: windowHeight, fontScale } = useWindowDimensions(); const insets = useContext(SafeAreaInsetsContext);
-    const budget = editorLayoutBudget({ windowWidth, windowHeight, fontScale, topInset: insets?.top ?? 0, bottomInset: insets?.bottom ?? 0,
+    const topInset = editorTopInset(Platform.OS, insets?.top, windowHeight);
+    const budget = editorLayoutBudget({ windowWidth, windowHeight, fontScale, topInset, bottomInset: insets?.bottom ?? 0,
         trackCount: document ? timelineOf(document.timeline).tracks.length : 1 });
     const previewHeight = advanced ? budget.previewHeight : Math.max(72, Math.min(178, Math.round(windowHeight * (panelOpen ? 0.1 : 0.14))));
     const timeline = timelineOf(document?.timeline);
@@ -317,14 +339,22 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         setPlaying(false); setClipPreview(null); setClipAnnouncement(plural('editorClips.applied', added.length)); clips.clear();
     };
     const trackActions = useEditorTrackActions(timeline, () => timelineOf(currentDocument()?.timeline ?? document.timeline), applyTimeline);
+    const toggleTrackMute = (trackId: string) => applyTimeline({ ...timeline, tracks: timeline.tracks.map(track => track.id === trackId ? { ...track, muted: !track.muted } : track) });
+    const clipThumb = (mediaId: string) => {
+        const media = timeline.media[mediaId];
+        if (!media) return null;
+        return mediaId.startsWith('j-') ? <JobThumb links={thumbLinks} jobId={mediaId.slice(2)} size={36} />
+            : <EditorClipThumb media={media} uri={localMediaUris[mediaId]} cacheKey={projectId} />;
+    };
     const placeVoiceover: VoiceoverProps['insert'] = media => {
         const result = insertMediaAt(timelineOf(currentDocument()?.timeline), media, voiceoverAt ?? 0);
         if ('error' in result) return result.error; const commit = commitTimeline(result.timeline);
         if (commit.status !== 'accepted') return commit;
         setSelection(result.selection); setSelections([result.selection]); return 'placed';
     };
-    const updateCanvas = (patch: Partial<Canvas>) => { const nextCanvas = { ...canvas, ...patch }; const nextTimeline = { ...timeline, aspect: nextCanvas.aspect_ratio };
-        markDocument({ ...document, schema_version: 3, canvas: nextCanvas, ...(nextTimeline ? { timeline: nextTimeline } : {}) }); };
+    const updateCanvas = (patch: Partial<Canvas>) => { const current = currentDocument() ?? document, liveCanvas = canvasOf(current.canvas), liveTimeline = timelineOf(current.timeline);
+        const nextCanvas = { ...liveCanvas, ...patch }, nextTimeline = { ...liveTimeline, aspect: nextCanvas.aspect_ratio };
+        markDocument({ ...current, schema_version: 3, canvas: nextCanvas, timeline: nextTimeline }); };
     const selectClip = (next: Selection) => { setSelection(next); setSelections((current) => { if (!multiSelect) return [next];
             return current.some((item) => item.track === next.track && item.id === next.id) ? current.filter((item) => item.track !== next.track || item.id !== next.id) : [...current, next];
         }); };
@@ -452,6 +482,12 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         } finally { token.end(); }
     };
     const openWorkflow = async (path: string) => { const saved = await save(); if (saved) router.push(path as never); };
+    const openSimpleEditorTool = (next: SimpleSheetName) => {
+        if (next !== 'ai') { setSheet(next); return; }
+        setPlaying(false);
+        setSheet(null);
+        bestCut.launch();
+    };
     const openCloudExport = async () => { const rawFonts = (timeline as unknown as { fonts?: unknown }).fonts, declaredFonts = validCustomFonts(timeline);
         if (rawFonts !== undefined && (!Array.isArray(rawFonts) || rawFonts.length !== declaredFonts.length)) { setProblem(t('editorEditGate.invalid')); return; }
         if (declaredFonts.length) { setProblem(t('editorFont.exportNote')); return; }
@@ -486,7 +522,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         { id: 'make-clip', icon: 'play', label: t('editorSimple.makeClip'), hint: t('editorSimple.makeClipHint'), onPress: () => { showPanel('generate'); openGenerate('video'); } },
         { id: 'make-audio', icon: 'audio', label: t('editorSimple.makeAudio'), hint: t('editorSimple.makeAudioHint'), onPress: () => { showPanel('generate'); openGenerate('audio'); } },
         { id: 'captions', icon: 'chatText', label: t('editor.captions'), hint: t('editorSimple.captionsHint'), onPress: () => showPanel('captions') }, ]; const moreRows: SheetRow[] = [
-        { id: 'canvas', icon: 'sliders', label: t('editor.shape'), hint: t('editor.projectSettings'), onPress: () => showPanel('canvas') },
+        { id: 'canvas', icon: 'sliders', label: t('editor.shape'), hint: t('editor.projectSettings'), onPress: () => { setPanelOpen(false); setCanvasVisible(true); } },
         { id: 'text', icon: 'textSize', label: t('editor.addText'), hint: t('editorSimple.textHint'), onPress: () => { addText(); setPanelOpen(true); } },
         { id: 'scenes', icon: 'filmReel', label: t('editor.scenes'), hint: t('editorScenes.private'), onPress: () => showPanel('scenes') },
         { id: 'clips', icon: 'film', label: t('editorClips.find'), hint: t('editorClips.private'), onPress: () => showPanel('clips') },
@@ -499,31 +535,34 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         { id: 'all-tools', icon: 'squares', label: t('editorSimple.allTools'), hint: t('editorSimple.allToolsHint'), onPress: () => setAdvanced(true) }, ];
     const cutRows: SheetRow[] = [
         { id: 'insert', icon: 'folderPlus', label: t('editorSimple.add'), hint: t('editorSimple.addTitle'), onPress: () => setSheet('add') },
-        { id: 'filters', icon: 'contrast', label: t('editor.filters'), onPress: () => showPanel('filters') },
+        { id: 'filters', icon: 'contrast', label: t('editor.filters'), onPress: () => { setPanelOpen(false); setFiltersVisible(true); } },
         { id: 'transitions', icon: 'arrowsHorizontal', label: t('editor.transitions'), onPress: () => showPanel('transitions') },
-        { id: 'polish', icon: 'magicWand', label: t('editorSimple.polish'), onPress: () => showPanel('adjust') },
+        { id: 'polish', icon: 'magicWand', label: t('editorSimple.polish'), onPress: () => { setPanelOpen(false); setPolishVisible(true); } },
     ];
     const selectedCutRows: SheetRow[] = [
         { id: 'split', icon: 'scissors', label: t('editor.split'), onPress: splitSelection },
-        { id: 'trim', icon: 'sliders', label: t('editorSimple.trim'), onPress: () => showPanel('adjust') },
-        { id: 'volume', icon: 'speaker', label: t('editor.volume'), disabled: selection?.track === 'text', onPress: () => showPanel('adjust') },
-        { id: 'fade', icon: 'contrast', label: t('editorSimple.fade'), disabled: selection?.track === 'text', onPress: () => showPanel('adjust') },
+        { id: 'trim', icon: 'sliders', label: t('editorSimple.trim'), onPress: () => { setPanelOpen(false); setTrimVisible(true); } },
+        { id: 'flip-x', icon: 'arrowsHorizontal', label: t('editorMotion.flipX'), disabled: selection?.track !== 'video',
+            onPress: () => motionActions.transform('flipX', !((selected as Clip | undefined)?.transform?.flipX ?? false)) },
+        { id: 'flip-y', icon: 'seekForward', label: t('editorMotion.flipY'), disabled: selection?.track !== 'video',
+            onPress: () => motionActions.transform('flipY', !((selected as Clip | undefined)?.transform?.flipY ?? false)) },
+        { id: 'volume', icon: 'speaker', label: t('editor.volume'), disabled: selection?.track === 'text', onPress: () => { setPanelOpen(false); setClipAudioVisible('volume'); } },
+        { id: 'fade', icon: 'contrast', label: t('editorSimple.fade'), disabled: selection?.track === 'text', onPress: () => { setPanelOpen(false); setClipAudioVisible('fade'); } },
         { id: 'clip-ai', icon: 'sparkle', label: t('editorSimple.aiEdit'), onPress: () => { setPlaying(false); setAiAnnouncement(null); setAiEditOpen(true); } },
         { id: 'clip-transitions', icon: 'arrowsHorizontal', label: t('editor.transitions'), onPress: () => showPanel('transitions') },
         { id: 'delete', icon: 'close', label: t('editor.delete'), onPress: removeSelection },
         { id: 'done', icon: 'check', label: t('editorSimple.done'), onPress: () => { setSelection(null); setSelections([]); setPanelOpen(false); } },
     ];
     const soundRows: SheetRow[] = [
+        { id: 'new-audio-track', icon: 'plus', label: 'New audio track', onPress: () => addTimelineTrack('audio') },
         { id: 'music', icon: 'audio', label: t('editorSimple.music'), hint: t('editorSimple.musicHint'), disabled: replacing, onPress: () => setLibraryKind('audio') },
         ...(VOICEOVER_AVAILABLE ? [{ id: 'voiceover', icon: 'microphone', label: t('editorVoiceover.open'), hint: t('editorSimple.voiceoverHint'), disabled: replacing,
             onPress: () => { setPlaying(false); setVoiceoverAt(clampFrame(frameStore.get())); setVoiceoverMessage(null); } }] : []),
         { id: 'clean-voice', icon: 'waveform', label: t('editorSimple.cleanVoice'), hint: selection && (selection.track === 'audio' || selectedMedia?.hasAudio)
-            ? t('editorSimple.cleanVoiceHint') : t('editorSimple.cleanVoiceSelect'), onPress: () => {
-                if (selection && (selection.track === 'audio' || selectedMedia?.hasAudio)) showPanel('adjust');
-                else showPanel('audio');
-            } },
+            ? t('editorSimple.cleanVoiceHint') : t('editorSimple.cleanVoiceSelect'), onPress: () => { setPanelOpen(false); setCleanVoiceVisible(true); } },
     ];
     const textRows: SheetRow[] = [
+        { id: 'new-text-layer', icon: 'plus', label: 'New text layer', onPress: () => { addText(); setPanelOpen(true); } },
         { id: 'edit-text', icon: 'penNib', label: t('editorSimple.editText'), onPress: () => showPanel('text') },
         { id: 'title', icon: 'textSize', label: t('editorSimple.title'), onPress: () => { addText(); setPanelOpen(true); } },
         { id: 'captions', icon: 'chatText', label: t('editor.captions'), onPress: () => showPanel('captions') },
@@ -548,10 +587,23 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         setLibraryKind, choosePhotos, chooseFiles, filesPending: fileImport.status === 'waiting', openAssetPacks, selections, selectClip, openVoiceover, openGenerate, addTimelineTrack,
         addText, updateSelectedText, addCaption, setFrame, addTimelineMarker, setPlaying, currentDocument, selectedMedia, selectedTrack,
         canMove, moveSelection, removeSelection, adjustStart, adjustLength, speedActions, document, markDocument, canvas, updateCanvas, updateTrack, };
-    return <View style={[styles.screen, { paddingLeft: insets?.left ?? 0, paddingRight: insets?.right ?? 0 }]}>
+    return <View style={[styles.screen, {
+        paddingTop: topInset,
+        paddingLeft: insets?.left ?? 0,
+        paddingRight: insets?.right ?? 0,
+    }]}>
         <StatusBar style="light" />
         <LocalExportSheet visible={localExportVisible} api={api} account={getCacheUser() ?? ''} projectId={projectId} revision={getEditRevision()} timeline={timeline} canvas={canvas} localMediaUris={localMediaUris}
             onClose={() => setLocalExportVisible(false)} onCloud={() => { setLocalExportVisible(false); void openCloudExport(); }} />
+        <EditorCanvasSheet visible={canvasVisible} canvas={canvas} timeline={timeline} onClose={() => setCanvasVisible(false)} onCanvas={updateCanvas} onTimeline={applyTimeline} />
+        <EditorPolishSheet visible={polishVisible} timeline={timeline} onClose={() => setPolishVisible(false)} onApply={applyTimeline} />
+        <EditorTrimSheet visible={trimVisible} timeline={timeline} selection={selection} playhead={frameStore.get()} onClose={() => setTrimVisible(false)} onApply={applyTimeline}
+            canMove={canMove} onMove={moveSelection} />
+        <EditorCleanVoiceSheet visible={cleanVoiceVisible} clip={selected && selection?.track !== 'text' ? selected as Clip : null}
+            available={!!selection && selection.track !== 'text' && (selection.track === 'audio' || !!selectedMedia?.hasAudio)} actions={audioActions} onClose={() => setCleanVoiceVisible(false)} />
+        <EditorClipAudioSheet visible={clipAudioVisible !== null} clip={selected && selection?.track !== 'text' ? selected as Clip : null} fps={timeline.fps}
+            focus={clipAudioVisible ?? 'volume'} onClose={() => setClipAudioVisible(null)} onPatch={patchSelected} />
+        <EditorFiltersSheet visible={filtersVisible} clip={selected && selection?.track === 'video' ? selected as Clip : null} onClose={() => setFiltersVisible(false)} onPatch={patchSelected} />
         {EDITOR_SERVER_EXPORT_ENABLED ? <ServerExportSheet api={api} router={router} now={Date.now} projectId={projectId} name={displayName} document={document} localMediaUris={localMediaUris} dirty={dirty} visible={exportVisible}
             onOpen={() => setExportVisible(true)} onClose={() => setExportVisible(false)} onFallback={() => { setExportVisible(false); setProblem(t('handoff.exportUnavailable')); }} /> : null}
         <Stack.Screen options={{ headerShown: false, gestureEnabled: !timelineTouch && !selection /* a selected clip is about to be dragged: swipe-back must not steal that drag; Done and the leave guard still exit */ }} />
@@ -568,6 +620,10 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
                 {advanced ? <StatusText variant="inherit" maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} accessibilityLiveRegion={Platform.OS === 'android' ? 'polite' : undefined} style={styles.status}>{saveStatus}</StatusText> : null}
             </Pressable>
             {advanced ? <Button label={t('editorSave.versions')} variant="tertiary" size="sm" containerStyle={{ marginVertical: -2 }} onPress={sync.openVersions} /> : null}
+            {!advanced ? <Pressable accessibilityRole="button" accessibilityLabel={dirty ? t('projects.save') : saveStatus} accessibilityLiveRegion={Platform.OS === 'android' ? 'polite' : undefined}
+                onPress={() => { void save(); }} style={({ pressed }) => [styles.simpleSaveButton, !dirty && !sync.saving && styles.simpleSaveIdle, pressed && styles.pressed]}>
+                <Text numberOfLines={1} maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.simpleSaveText}>{sync.saving ? t('editor.saving') : dirty ? t('projects.save') : t('editor.saved')}</Text>
+            </Pressable> : null}
             <Pressable accessibilityRole="button" accessibilityLabel={advanced ? t('editor.done') : t('editor.export')} onPress={advanced ? guard.done : openExport}
                 style={({ pressed }) => [styles.headerAction, !advanced && styles.simpleHeaderAction, pressed && styles.pressed]}>{advanced ? <Text maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.headerActionText}>{t('editor.done')}</Text> : <Icon name="arrowUp" size={28} tint={styles.headerActionText.color} />}</Pressable>
         </View>
@@ -631,12 +687,14 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
             </ScrollView> : null}
             {safeGuideFrame ? <Text maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.safeAreaHelp}>{t('editor.safeArea.help')}</Text> : null}
             <View testID="editor-preview-frame" style={[styles.previewFrame, advanced || panelOpen ? { height: previewHeight } : [styles.simpleFill, styles.simplePreviewFrame]]}>
-                <View style={[styles.canvas, { aspectRatio: safeGuideSize.width / safeGuideSize.height }]}>
+                <View style={[styles.canvas, { aspectRatio: previewTurned ? safeGuideSize.height / safeGuideSize.width : safeGuideSize.width / safeGuideSize.height }]}>
+                    <View style={previewTurned ? styles.previewTurned : styles.previewUpright}>
                     <PlaybackPreview frameStore={frameStore} timeline={timeline} api={api} playing={playing} localMediaUris={localMediaUris} fontReady={fontActions.has} staticPreview
                         nativeIdentity={{ account: getCacheUser() ?? '', project: projectId }}
                         compositionFrame={safeGuideFrame === null}
                         motionHandle={(advanced || panelOpen) && tool === 'motion' ? { selection, actions: motionActions } : undefined} />
                     <EditorSafeAreaOverlay id={safeAreaGuideId} width={safeGuideSize.width} height={safeGuideSize.height} />
+                    </View>
                 </View>
                 {!advanced && !panelOpen ? <View testID="editor-preview-quick-actions" style={styles.previewQuickActions}>
                     <Pressable accessibilityRole="button" accessibilityLabel={`${t('editor.rotation')} +90°`} accessibilityState={{ disabled: selection?.track !== 'video' || !selected }} hitSlop={4}
@@ -651,7 +709,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
             </View>
             {!advanced && !panelOpen ? <View style={styles.simplePreviewFooter}>
                 <Text maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.eyebrow}>{t('editor.pREVIEW')}</Text>
-                <Pressable accessibilityRole="button" accessibilityLabel={`${t('editor.shape')} · ${canvas.aspect_ratio}`} onPress={() => showPanel('canvas')}
+                <Pressable accessibilityRole="button" accessibilityLabel={`${t('editor.shape')} · ${canvas.aspect_ratio}`} onPress={() => setCanvasVisible(true)}
                     style={({ pressed }) => [styles.previewAspect, pressed && styles.pressed]}><Text maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.previewAspectText}>{String.fromCodePoint(9635)} {canvas.aspect_ratio}</Text></Pressable>
             </View> : null}
             <PlaybackTransport frameStore={frameStore} total={total} fps={timeline.fps} playing={playing} simple={!advanced} canUndo={history.canUndo} canRedo={history.canRedo}
@@ -665,24 +723,24 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
                     ? t('editor.tapacommandtoeditselection') : t('editor.tapacliptoselect')}</Text> : <View style={styles.simpleTimelineTools}>
                     <Pressable accessibilityRole="button" accessibilityLabel={t('editorCore.zoomOut')} accessibilityState={{ disabled: zoom <= PPF_MIN }} disabled={zoom <= PPF_MIN}
                         onPress={() => setZoom(value => Math.max(PPF_MIN, value / 2))} style={({ pressed }) => [styles.timelineQuickButton, zoom <= PPF_MIN && styles.disabled, pressed && styles.pressed]}><Text style={styles.timelineQuickIcon}>−</Text></Pressable>
-                    <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={styles.timelineZoomTrack}><View style={styles.timelineZoomProgress} /><View style={styles.timelineZoomThumb} /></View>
+                    <EditorZoomSlider value={zoom} min={PPF_MIN} max={PPF_MAX} onChange={setZoom} />
                     <Pressable accessibilityRole="button" accessibilityLabel={t('editorCore.zoomIn')} accessibilityState={{ disabled: zoom >= PPF_MAX }} disabled={zoom >= PPF_MAX}
                         onPress={() => setZoom(value => Math.min(PPF_MAX, value * 2))} style={({ pressed }) => [styles.timelineQuickButton, zoom >= PPF_MAX && styles.disabled, pressed && styles.pressed]}><Text style={styles.timelineQuickIcon}>+</Text></Pressable>
                 </View>}
             </View>
             {advanced ? <ScrollView testID="editor-timeline-scroll" nestedScrollEnabled scrollEnabled={!timelineTouch} style={{ maxHeight: budget.timelineScrollMax }}
                 showsVerticalScrollIndicator>
-                <PlaybackTimeline waveforms={timelineWaveforms} clipThumb={mediaId => mediaId.startsWith('j-') ? <JobThumb links={thumbLinks} jobId={mediaId.slice(2)} size={36} /> : null} onGestureActive={(active:
+                <PlaybackTimeline waveforms={timelineWaveforms} clipThumb={clipThumb} onGestureActive={(active:
                     boolean) => { setTimelineTouch(active); returns.gestureActive(active); }} timeline={timeline} selections={selections} ppf={zoom} total={total} frameStore={frameStore}
                     playing={playing} snap={snap} ripple={advanced ? ripple : 'lane'} analysisMarks={tool === 'scenes' ? sceneMarks : []}
                     clipRanges={tool === 'clips' ? clipRows.map(row => ({ id: row.id, startFrame: row.startFrame, endFrame: row.endFrame, rank: row.rank, selected: row.ticked })) : []}
-                    onTrackPress={trackActions.pressTrack} onViewport={setViewport} onSeek={value => { setPlaying(false);
+                    onTrackPress={trackActions.pressTrack} onToggleTrackMute={toggleTrackMute} onViewport={setViewport} onSeek={value => { setPlaying(false);
                     setFrame(value); }} onSelect={selectClip} onApply={applyTimeline} />
-            </ScrollView> : <PlaybackTimeline waveforms={timelineWaveforms} clipThumb={mediaId => mediaId.startsWith('j-') ? <JobThumb links={thumbLinks} jobId={mediaId.slice(2)} size={36} /> : null}
+            </ScrollView> : <PlaybackTimeline waveforms={timelineWaveforms} clipThumb={clipThumb}
                 onGestureActive={(active: boolean) => { setTimelineTouch(active); returns.gestureActive(active); }} timeline={timeline} selections={selections} ppf={zoom} total={total}
                 frameStore={frameStore} playing={playing} snap={snap} ripple={advanced ? ripple : 'lane'} analysisMarks={tool === 'scenes' ? sceneMarks : []}
                 clipRanges={tool === 'clips' ? clipRows.map(row => ({ id: row.id, startFrame: row.startFrame, endFrame: row.endFrame, rank: row.rank, selected: row.ticked })) : []}
-                onTrackPress={trackActions.pressTrack} onViewport={setViewport} onSeek={value => {
+                onTrackPress={trackActions.pressTrack} onToggleTrackMute={toggleTrackMute} onViewport={setViewport} onSeek={value => {
                 setPlaying(false); setFrame(value); }} onSelect={selectClip} onApply={applyTimeline} />}
         </View>
         {advanced || panelOpen ? <EditorToolSheet inline={advanced} wide={advanced && budget.wideShort} minHeight={budget.wideShort ? undefined : budget.panelMin}
@@ -716,11 +774,23 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         </ScrollView>
         </EditorToolSheet> : null}
         </View>
-        {advanced ? null : <SimpleEditorBar active={simpleDockTab} trayOpen={!!simpleTrayRows} onOpen={setSheet} />}
+        {advanced ? null : <SimpleEditorBar active={simpleDockTab} trayOpen={!!simpleTrayRows} onOpen={openSimpleEditorTool} />}
         {advanced || !simpleTrayRows ? null : <SimpleEditorTray rows={simpleTrayRows} />}
         {coverRestoreFrame !== null ? <EditorCoverSheet initial={document.cover ?? { frame: coverRestoreFrame, text: '', text_color: '#FFFFFF' }} frameStore={frameStore} total={total}
             timeline={timeline} aspectRatio={safeGuideSize.width / safeGuideSize.height} api={api} localMediaUris={localMediaUris} fontReady={fontActions.has}
             onFrame={value => { setPlaying(false); setFrame(value); }} onCancel={closeCover} onSave={saveCover} /> : null}
+        <Modal visible={previewFullscreen} animationType="fade" presentationStyle="fullScreen" onRequestClose={() => setPreviewFullscreen(false)}>
+            <View style={[styles.fullscreenPreview, { paddingTop: topInset, paddingBottom: insets?.bottom ?? 0 }]}>
+                <Pressable accessibilityRole="button" accessibilityLabel="Close fullscreen preview" onPress={() => setPreviewFullscreen(false)} style={styles.fullscreenClose}><Icon name="close" size={28} tint={styles.headerButtonIcon.color} /></Pressable>
+                <View style={[styles.fullscreenCanvas, { aspectRatio: safeGuideSize.width / safeGuideSize.height }]}>
+                    <PlaybackPreview frameStore={frameStore} timeline={timeline} api={api} playing={playing} localMediaUris={localMediaUris} fontReady={fontActions.has} staticPreview
+                        nativeIdentity={{ account: getCacheUser() ?? '', project: projectId }} compositionFrame={safeGuideFrame === null} />
+                    <EditorSafeAreaOverlay id={safeAreaGuideId} width={safeGuideSize.width} height={safeGuideSize.height} />
+                </View>
+                <PlaybackTransport frameStore={frameStore} total={total} fps={timeline.fps} playing={playing} simple canUndo={history.canUndo} canRedo={history.canRedo}
+                    onUndo={() => travel('undo')} onRedo={() => travel('redo')} onSeek={setFrame} onPlaying={setPlaying} />
+            </View>
+        </Modal>
         {bestCut.sheet}
         {speechMode && speechQuote ? <EditorSpeechCutSheet api={api} quote={speechQuote} mode={speechMode} snapshot={() => ({ timeline: timelineOf(currentDocument()?.timeline), freshness:
             editFreshness(), selection })}

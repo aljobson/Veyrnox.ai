@@ -6,8 +6,9 @@ import { notifyProjectsChanged } from '../src/lib/projectsChanged';
 jest.setTimeout(30000);
 const mockPush = jest.fn();
 let mockEditorEnabled = true;
+let mockParams: { batch?: string } = {};
 const mockReact = jest.requireActual<typeof import('react')>('react');
-jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useRouter: () => ({ push: mockPush }), useFocusEffect: (callback: () => void | (() => void)) => mockReact.useEffect(() => callback(), [callback]) }));
+jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useRouter: () => ({ push: mockPush }), useLocalSearchParams: () => mockParams, useFocusEffect: (callback: () => void | (() => void)) => mockReact.useEffect(() => callback(), [callback]) }));
 jest.mock('../src/lib/editorFlag', () => ({ __esModule: true, get EDITOR_ENABLED() { return mockEditorEnabled; } }));
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi }) }));
 jest.mock('../src/components/editor/BestCutEntry', () => {
@@ -15,6 +16,7 @@ jest.mock('../src/components/editor/BestCutEntry', () => {
     const { Text } = jest.requireActual<typeof import('react-native')>('react-native');
     return { BestCutEntry: () => React.createElement(Text, { testID: 'editor-home-best-cut' }, 'Best Cut entry') };
 });
+jest.mock('../src/components/projects/SmartCutBatchSheet', () => ({ SmartCutBatchSheet: ({ visible }: { visible: boolean }) => visible ? require('react').createElement('batch-sheet', { testID: 'batch-ai-edit-sheet' }) : null }));
 let projects: unknown[] = [];
 const requests: string[] = [];
 const mockApi = { request: async (path: string) => {
@@ -24,7 +26,7 @@ const mockApi = { request: async (path: string) => {
 } };
 const row = (id: string, name: string, extra: Record<string, unknown> = {}) => ({ id, workspace_id: 'w1', name, version: 1, created_at: '2026-11-15T17:38:00Z', updated_at: '2026-11-15T17:38:00Z', ...extra });
 let root: Root;
-beforeEach(() => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; root = createRoot(); requests.length = 0; mockPush.mockClear(); mockEditorEnabled = true; });
+beforeEach(() => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; root = createRoot(); requests.length = 0; mockPush.mockClear(); mockEditorEnabled = true; mockParams = {}; });
 afterEach(async () => { await act(async () => root.unmount()); });
 const text = () => root.container.queryAll(n => Array.isArray(n.children) && n.children.some(c => typeof c === 'string')).map(n => n.children.filter(c => typeof c === 'string').join(''));
 const listLoads = () => requests.filter(p => p.includes('?workspace_id=')).length;
@@ -42,6 +44,13 @@ test('rows show the latest saved version and sort by last saved', async () => {
     expect(lines.find(l => /^Version 2 /.test(l))).toBeTruthy();
     expect(lines.filter(l => /^Version 1 /.test(l)).length).toBe(1);
     expect(root.container.queryAll(node => node.props.testID === 'editor-home-best-cut')).toHaveLength(0);
+});
+
+test('Batch AI Edit route opens the clean batch sheet after projects load', async () => {
+    mockParams = { batch: '1' };
+    projects = [row('a', 'FIRST'), row('b', 'SECOND')];
+    await act(async () => root.render(<EditorHome />));
+    expect(root.container.queryAll(node => node.props.testID === 'batch-ai-edit-sheet')).toHaveLength(1);
 });
 
 test('a save that finishes after the focus fetch refreshes the list without clearing rows', async () => {
