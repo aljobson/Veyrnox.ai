@@ -5004,12 +5004,6 @@
     "ratio": 1.75
   },
   {
-    "id": "editorCover.frames",
-    "english": "Cover frame choices",
-    "translation": "Opciones de fotograma de portada",
-    "ratio": 1.68
-  },
-  {
     "id": "editorCover.scrub",
     "english": "Cover frame",
     "translation": "Fotograma de portada",

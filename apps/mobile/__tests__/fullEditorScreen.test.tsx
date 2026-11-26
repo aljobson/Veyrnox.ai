@@ -1,8 +1,10 @@
 jest.mock('../src/lib/voiceoverRecorder', () => ({ VOICEOVER_AVAILABLE: false }));
+var mockPickNativeColor = jest.fn().mockResolvedValue('#34C759');
+jest.mock('../src/lib/nativeColorPicker', () => ({ nativeColorPickerAvailable: () => true, pickNativeColor: (...args: unknown[]) => mockPickNativeColor(...args) }));
+var mockSafeInsets = { top: 0, bottom: 0, left: 0, right: 0 };
 jest.mock('react-native-safe-area-context', () => {
     const React = require('react');
-    const insets = { top: 0, bottom: 0, left: 0, right: 0 };
-    return { SafeAreaInsetsContext: React.createContext(insets), SafeAreaProvider: ({ children }: any) => children, useSafeAreaInsets: () => insets };
+    return { SafeAreaInsetsContext: React.createContext(mockSafeInsets), SafeAreaProvider: ({ children }: any) => children, useSafeAreaInsets: () => mockSafeInsets };
 });
 var mockSceneState: any;
 jest.mock('../src/components/editor/tools/useEditorSceneAnalysis', () => ({
@@ -26,7 +28,7 @@ jest.mock('../src/components/editor/editorFrameStore', () => {
     return { ...actual, createFrameStore: (...args: unknown[]) => (mockFrameStore = actual.createFrameStore(...args)) };
 });
 import { act } from 'react';
-import { AccessibilityInfo, ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { AccessibilityInfo, ActivityIndicator, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { createRoot, type Root } from 'test-renderer';
 import { FullEditorScreen } from '../src/components/editor/FullEditorScreen';
 import * as ImagePicker from 'expo-image-picker';
@@ -74,6 +76,8 @@ beforeEach(() => {
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
     jest.useFakeTimers();
     jest.clearAllMocks();
+    mockPickNativeColor.mockResolvedValue('#34C759');
+    mockSafeInsets = { top: 0, bottom: 0, left: 0, right: 0 };
     mockRouter.canGoBack.mockReturnValue(true);
     require('../src/lib/editorPickedFileReady').waitForEditorPickedFile.mockResolvedValue('ready');
     mockSceneState = { availability: 'available', status: 'idle', progress: 0, rows: [], error: undefined, detect: jest.fn(), cancel: jest.fn(), toggle: jest.fn(), clear: jest.fn() };
@@ -194,24 +198,52 @@ test('Back leaves a directly opened editor by returning to the Editor library', 
 });
 
 test('chooses a project cover frame, title and colour and autosaves them', async () => {
-    serverDocument = { ...document, schema_version: 3, timeline: { schemaVersion: 3, fps: 30, seq: 1, aspect: '16:9', background: '#000000',
+    serverDocument = { ...document, schema_version: 3, cover: { frame: 30, text: '', text_color: '#FFFFFF' }, timeline: { schemaVersion: 3, fps: 30, seq: 1, aspect: '16:9', background: '#000000',
         media: { media1: { id: 'media1', kind: 'video', name: 'Cover clip', frames: 120 } },
         video: [{ id: 'v1', mediaId: 'media1', start: 0, in: 0, len: 120, trackId: 'video-0' }], audio: [], text: [], tracks: [
             { id: 'video-0', kind: 'video', name: 'Video 1', locked: false, muted: false, hidden: false },
             { id: 'audio-0', kind: 'audio', name: 'Audio 1', locked: false, muted: false, hidden: false },
             { id: 'text-0', kind: 'text', name: 'Text 1', locked: false, muted: false, hidden: false }], markers: [] } };
-    await renderSimple();
-    await press('Choose cover');
-    expect(visible('Choose Cover')).toBe(true);
-    await press('Frame at 00:03');
-    const input = labelled('Cover text');
-    expect(input).toHaveLength(1);
-    await act(async () => input[0].props.onChangeText('Track session'));
-    await press('Colour #FFE66D');
-    await press('Save');
-    await act(async () => jest.advanceTimersByTimeAsync(900));
-    const body = JSON.parse(puts().at(-1)![1].body);
-    expect(body.document.cover).toEqual({ frame: 119, text: 'Track session', text_color: '#FFE66D' });
+    const spy = jest.spyOn(PanResponder, 'create');
+    try {
+        mockSafeInsets = { top: 47, bottom: 34, left: 0, right: 0 };
+        await renderSimple();
+        await press('Choose cover');
+        expect(visible('Choose Cover')).toBe(true);
+        const coverHeader = root.container.queryAll(node => node.props.testID === 'editor-cover-header')[0];
+        expect(StyleSheet.flatten(coverHeader.props.style)).toMatchObject({ minHeight: 111, paddingTop: 47 });
+        expect(labelled('Cancel')).toHaveLength(1);
+        expect(labelled('Save')).toHaveLength(1);
+        expect(mockFrameStore.get()).toBe(30);
+        expect(labelled('Frame at 00:03')).toHaveLength(0);
+        let scrubber = labelled('Cover frame')[0];
+        await act(async () => scrubber.props.onAccessibilityAction({ nativeEvent: { actionName: 'increment' } }));
+        expect(mockFrameStore.get()).toBe(60);
+        scrubber = labelled('Cover frame')[0];
+        await act(async () => scrubber.props.onAccessibilityAction({ nativeEvent: { actionName: 'decrement' } }));
+        expect(mockFrameStore.get()).toBe(30);
+        scrubber = labelled('Cover frame')[0];
+        await act(async () => scrubber.props.onLayout({ nativeEvent: { layout: { width: 100 } } }));
+        const gesture = spy.mock.calls.at(-1)![0] as any;
+        await act(async () => gesture.onPanResponderGrant({ nativeEvent: { locationX: 0 } }, { dx: 0, dy: 0 }));
+        await act(async () => { gesture.onPanResponderMove({}, { dx: 50, dy: 0 }); jest.advanceTimersByTime(17); });
+        expect(mockFrameStore.get()).toBe(60);
+        expect(labelled('Cover frame')[0].props.accessibilityValue.text).toBe('00:02');
+        await act(async () => { gesture.onPanResponderMove({}, { dx: 100, dy: 0 }); gesture.onPanResponderRelease(); });
+        expect(mockFrameStore.get()).toBe(119);
+        const input = labelled('Cover text');
+        expect(input).toHaveLength(1);
+        await act(async () => input[0].props.onChangeText('Track session'));
+        expect(labelled('Colour #AF52DE')).toHaveLength(1);
+        expect(labelled('Open Text Color picker')).toHaveLength(1);
+        await press('Colour #AF52DE');
+        const hex = labelled('Text Color hex colour');
+        await act(async () => hex[0].props.onChangeText('#12AB34'));
+        await press('Save');
+        await act(async () => jest.advanceTimersByTimeAsync(900));
+        const body = JSON.parse(puts().at(-1)![1].body);
+        expect(body.document.cover).toEqual({ frame: 119, text: 'Track session', text_color: '#12AB34' });
+    } finally { spy.mockRestore(); }
 });
 
 test('opens a native project workspace without loading a website', async () => {

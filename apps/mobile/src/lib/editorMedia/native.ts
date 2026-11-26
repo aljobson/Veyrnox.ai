@@ -15,6 +15,7 @@ export interface NativeEditorMediaModule {
     cancel(account: string, project: string, owner: string, token: string): void;
     cancelProject(account: string, project: string): Promise<void>;
     release(account: string, project: string, artifactId: string): Promise<void>;
+    pickColor?(initialHex: string): Promise<string | null>;
     addListener(event: 'progress', listener: (event: NativeProgressEvent) => void): { remove(): void };
 }
 export function optionalEditorMediaModule(): NativeEditorMediaModule | null {

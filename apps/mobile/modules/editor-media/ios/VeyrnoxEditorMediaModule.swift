@@ -9,6 +9,8 @@ import Translation
 import UIKit
 
 public final class VeyrnoxEditorMediaModule: Module {
+  private var colorPickerSession: EditorColorPickerSession?
+
   public func definition() -> ModuleDefinition {
     Name("VeyrnoxEditorMedia")
     Events("progress")
@@ -69,6 +71,32 @@ public final class VeyrnoxEditorMediaModule: Module {
     AsyncFunction("release") { (account: String, project: String, artifactId: String, promise: Promise) in
       EditorMediaWorker.shared.release(account, project, artifactId: artifactId, promise: promise)
     }
+    AsyncFunction("pickColor") { (initialHex: String, promise: Promise) in
+      DispatchQueue.main.async { [weak self] in
+        guard let self else { promise.resolve(nil); return }
+        self.presentColorPicker(initialHex, promise: promise)
+      }
+    }
+  }
+
+  private func presentColorPicker(_ initialHex: String, promise: Promise) {
+    if let existing = colorPickerSession {
+      guard existing.controller.presentingViewController == nil else { promise.resolve(nil); return }
+      colorPickerSession = nil
+    }
+    guard let presenter = Self.topViewController() else { promise.resolve(nil); return }
+    let session = EditorColorPickerSession(initialHex: initialHex, promise: promise) { [weak self] in self?.colorPickerSession = nil }
+    colorPickerSession = session
+    session.controller.presentationController?.delegate = session
+    presenter.present(session.controller, animated: true) { session.controller.presentationController?.delegate = session }
+  }
+
+  private static func topViewController() -> UIViewController? {
+    let scene = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+      .first { $0.activationState == .foregroundActive }
+    var controller = scene?.windows.first(where: \.isKeyWindow)?.rootViewController
+    while let presented = controller?.presentedViewController { controller = presented }
+    return controller
   }
 
   private func progress(_ account: String, _ project: String, _ owner: String, _ token: String)
@@ -77,6 +105,60 @@ public final class VeyrnoxEditorMediaModule: Module {
       self?.sendEvent("progress", ["account": account, "project": project, "owner": owner,
         "token": token, "stage": stage, "value": value])
     }
+  }
+}
+
+private final class EditorColorPickerSession: NSObject, UIColorPickerViewControllerDelegate, UIAdaptivePresentationControllerDelegate {
+  let controller = UIColorPickerViewController()
+  private let promise: Promise
+  private let finished: () -> Void
+  private var selected: UIColor
+  private var resolved = false
+
+  init(initialHex: String, promise: Promise, finished: @escaping () -> Void) {
+    self.promise = promise
+    self.finished = finished
+    selected = UIColor(editorHex: initialHex) ?? .white
+    super.init()
+    controller.selectedColor = selected
+    controller.supportsAlpha = false
+    controller.delegate = self
+  }
+
+  func colorPickerViewController(_ viewController: UIColorPickerViewController, didSelect color: UIColor, continuously: Bool) {
+    selected = color
+  }
+
+  func colorPickerViewControllerDidFinish(_ viewController: UIColorPickerViewController) {
+    selected = viewController.selectedColor
+    resolve()
+  }
+
+  func presentationControllerDidDismiss(_ presentationController: UIPresentationController) { resolve() }
+
+  private func resolve() {
+    guard !resolved else { return }
+    resolved = true
+    promise.resolve(selected.editorHex)
+    finished()
+  }
+}
+
+private extension UIColor {
+  convenience init?(editorHex: String) {
+    let value = editorHex.trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "#", with: "")
+    guard value.count == 6, let number = UInt64(value, radix: 16) else { return nil }
+    self.init(red: CGFloat((number >> 16) & 0xff) / 255, green: CGFloat((number >> 8) & 0xff) / 255,
+      blue: CGFloat(number & 0xff) / 255, alpha: 1)
+  }
+
+  var editorHex: String {
+    let srgb = CGColorSpace(name: CGColorSpace.sRGB)!
+    let converted = cgColor.converted(to: srgb, intent: .defaultIntent, options: nil).map(UIColor.init(cgColor:)) ?? self
+    var red: CGFloat = 0, green: CGFloat = 0, blue: CGFloat = 0, alpha: CGFloat = 0
+    guard converted.getRed(&red, green: &green, blue: &blue, alpha: &alpha) else { return "#FFFFFF" }
+    let byte = { (component: CGFloat) in Int((min(1, max(0, component)) * 255).rounded()) }
+    return String(format: "#%02X%02X%02X", byte(red), byte(green), byte(blue))
   }
 }
 
