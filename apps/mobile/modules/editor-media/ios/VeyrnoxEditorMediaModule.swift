@@ -84,19 +84,12 @@ public final class VeyrnoxEditorMediaModule: Module {
       guard existing.controller.presentingViewController == nil else { promise.resolve(nil); return }
       existing.cancel()
     }
-    guard let presenter = Self.topViewController() else { promise.resolve(nil); return }
+    guard let presenter = appContext?.utilities?.currentViewController() else { promise.resolve(nil); return }
     let session = EditorColorPickerSession(initialHex: initialHex, promise: promise) { [weak self] in self?.colorPickerSession = nil }
     colorPickerSession = session
+    session.controller.modalPresentationStyle = .pageSheet
     session.controller.presentationController?.delegate = session
     presenter.present(session.controller, animated: true) { session.controller.presentationController?.delegate = session }
-  }
-
-  private static func topViewController() -> UIViewController? {
-    let scene = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
-      .first { $0.activationState == .foregroundActive }
-    var controller = scene?.windows.first(where: \.isKeyWindow)?.rootViewController
-    while let presented = controller?.presentedViewController { controller = presented }
-    return controller
   }
 
   private func progress(_ account: String, _ project: String, _ owner: String, _ token: String)
