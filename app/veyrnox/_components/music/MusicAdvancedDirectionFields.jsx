@@ -15,7 +15,7 @@ const OPTIONS = {
 
 const LABELS = { voice: 'Voice', genre: 'Genre', mood: 'Mood', tempo: 'Tempo', structure: 'Song structure' };
 const TILES = ['voice', 'genre', 'mood', 'tempo'];
-const TONES = { voice: 'text-vx-danger', genre: 'text-vx-success', mood: 'text-vx-money', tempo: 'text-vx-warn' };
+const TONES = { voice: 'text-vx-danger', genre: 'text-vx-accent', mood: 'text-vx-money', tempo: 'text-vx-warn' };
 
 export function musicAdvancedDirectionText(value) {
   return Object.entries(LABELS)
