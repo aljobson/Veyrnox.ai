@@ -46,7 +46,7 @@ test('shared detectors distinguish source dependencies from generated or negated
 });
 test('audit classification, reasons, source hashes and non-token bytes are locked', () => {
   const report = audit();
-  assert.deepEqual(report.totals, {"like-for-like-safe":220,"bound":181,"blocked-needs-video":392,"unsupported":111});
+  assert.deepEqual(report.totals, {"like-for-like-safe":220,"bound":161,"blocked-needs-video":392,"unsupported":111});
   assert.deepEqual(report.unsupportedReasons, { 'multi-photo-needs-people-model': 96, 'unsupported-aspect': 7, 'prompt-limit': 66, 'reference-priority-over-prompt-limit': 67 });
   for (const p of PRESETS) {
     const c = report.contracts[p.id];
@@ -101,7 +101,7 @@ test('default feed/detail/Create routing, price, attribution and exact-count adm
 test('the generated contract covers all exact-source templates', () => {
   // The repository's English markup baseline exercises rendering separately.
   const { templates } = contractData(JSON.parse(readFileSync(new URL('../lib/templateFidelityContracts.json', import.meta.url))));
-  assert.equal(Object.keys(templates).length, 749 + 46 + 30 + 59 + 8 + 12);
+  assert.equal(Object.keys(templates).length, 749 + 46 + 30 + 59);
 });
 
 test('reviewed overlapping reason counts are pinned across all classes', () => {

@@ -117,5 +117,5 @@ test('actual web Create preparation accepts only exactly N filled slots for ever
       else await assert.rejects(run({ ...inputs }), { code: 'template_references_invalid' });
     }
   }
-  assert.equal(tested, 181, 'single-photo bound contracts after one Kling prompt no longer fits the reference-priority line, plus the 20 Veyrnox originals');
+  assert.equal(tested, 161, 'single-photo bound contracts after one Kling prompt no longer fits the reference-priority line; the 20 withdrawn Veyrnox originals are excluded');
 });
