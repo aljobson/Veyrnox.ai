@@ -526,7 +526,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     const simpleDockTab: SimpleDockTab = sheet === 'ai' ? 'ai' : sheet === 'cut' ? 'cut'
         : sheet === 'sound' ? 'audio' : sheet === 'text' ? 'text' : sheet === 'layers' ? 'media'
         : panelOpen && (tool === 'audio' || tool === 'text' || tool === 'media') ? tool : 'cut';
-    const simpleTrayRows = sheet === 'sound' ? soundRows : sheet === 'text' ? textRows : sheet === 'layers' ? layerRows
+    const simpleTrayRows = sheet === 'add' ? addRows : sheet === 'sound' ? soundRows : sheet === 'text' ? textRows : sheet === 'layers' ? layerRows
         : sheet === 'cut' || sheet === null ? cutRows : null;
     const openVoiceover = () => { setPlaying(false); setVoiceoverAt(clampFrame(frameStore.get())); setVoiceoverMessage(null); };
     const brandProps = { title: t('editor.brandkit'), body: t('editor.managelogosfontscoloursandapprovedassets'),
@@ -734,7 +734,6 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
                 const result = commitTimeline(next); if (result.status !== 'accepted') return result;
                 setAiAnnouncement(t('editorAi.applied')); return result; }}
             onClose={() => setAiEditOpen(false)} onUnavailable={() => { setAiEditOpen(false); setAiQuote(null); }} /> : null}
-        {sheet === 'add' && ready ? <SimpleEditorSheet title={t('editorSimple.addTitle')} rows={addRows} onClose={() => setSheet(null)} /> : null}
         {sheet === 'ai' ? <SimpleEditorSheet title={t('editorSimple.aiTitle')} rows={aiRows} describe onDescribe={(id, prompt) => {
             if (id === 'make-clip' || id === 'make-audio') { showPanel('generate'); openGenerate(id === 'make-clip' ? 'video' : 'audio', prompt); }
             else aiRows.find(row => row.id === id)?.onPress();
