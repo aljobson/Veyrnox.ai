@@ -82,7 +82,7 @@ public final class VeyrnoxEditorMediaModule: Module {
   private func presentColorPicker(_ initialHex: String, promise: Promise) {
     if let existing = colorPickerSession {
       guard existing.controller.presentingViewController == nil else { promise.resolve(nil); return }
-      colorPickerSession = nil
+      existing.cancel()
     }
     guard let presenter = Self.topViewController() else { promise.resolve(nil); return }
     let session = EditorColorPickerSession(initialHex: initialHex, promise: promise) { [weak self] in self?.colorPickerSession = nil }
@@ -135,6 +135,13 @@ private final class EditorColorPickerSession: NSObject, UIColorPickerViewControl
   }
 
   func presentationControllerDidDismiss(_ presentationController: UIPresentationController) { resolve() }
+
+  func cancel() {
+    guard !resolved else { return }
+    resolved = true
+    promise.resolve(nil)
+    finished()
+  }
 
   private func resolve() {
     guard !resolved else { return }

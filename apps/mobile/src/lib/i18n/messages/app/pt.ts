@@ -297,6 +297,7 @@ export default {
 
   "editorTools.secondsValue": "{value} s",
   "editorTools.colourHex": "Cor hexadecimal de {label}",
+  "editorTools.colourPicker": "Abrir seletor de {label}",
   "editorTools.colourSwatch": "Cor {hex}",
   "editorTools.colourError": "Use uma cor como #1a2b3c.",
   "editorTools.speed": "Velocidade",

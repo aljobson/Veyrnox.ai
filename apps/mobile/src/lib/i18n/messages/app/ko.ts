@@ -288,6 +288,7 @@ export default {
 
   "editorTools.secondsValue": "{value}초",
   "editorTools.colourHex": "{label} 16진수 색상",
+  "editorTools.colourPicker": "{label} 선택기 열기",
   "editorTools.colourSwatch": "색상 {hex}",
   "editorTools.colourError": "#1a2b3c와 같은 색상을 사용하세요.",
   "editorTools.speed": "속도",

@@ -308,6 +308,7 @@ export default {
 
   "editorTools.secondsValue": "{value} ثانية",
   "editorTools.colourHex": "لون {label} بالنظام الست عشري",
+  "editorTools.colourPicker": "فتح منتقي {label}",
   "editorTools.colourSwatch": "اللون {hex}",
   "editorTools.colourError": "استخدم لونًا مثل #1a2b3c.",
   "editorTools.speed": "السرعة",

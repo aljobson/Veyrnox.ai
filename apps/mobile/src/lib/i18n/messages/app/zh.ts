@@ -288,6 +288,7 @@ export default {
 
   "editorTools.secondsValue": "{value}秒",
   "editorTools.colourHex": "{label}十六进制颜色",
+  "editorTools.colourPicker": "打开{label}选择器",
   "editorTools.colourSwatch": "颜色 {hex}",
   "editorTools.colourError": "请使用类似 #1a2b3c 的颜色。",
   "editorTools.speed": "速度",

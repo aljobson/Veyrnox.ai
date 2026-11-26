@@ -300,6 +300,7 @@ export default {
 
   "editorTools.secondsValue": "{value} с",
   "editorTools.colourHex": "Шестнадцатеричный цвет: {label}",
+  "editorTools.colourPicker": "Открыть палитру: {label}",
   "editorTools.colourSwatch": "Цвет {hex}",
   "editorTools.colourError": "Используйте цвет вида #1a2b3c.",
   "editorTools.speed": "Скорость",

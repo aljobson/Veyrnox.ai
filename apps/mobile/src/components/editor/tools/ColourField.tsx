@@ -13,6 +13,7 @@ export function ColourField({ label, value, swatches, onChange, presentation = '
     const [pickerPending, setPickerPending] = useState(false);
     const mounted = useRef(true), currentValue = useRef(value);
     const scroll = useRef<ScrollViewInstance>(null);
+    const scrollOffset = useRef(0), viewportWidth = useRef(0);
     const palette = useMemo(() => {
         const seen = new Set<string>();
         return swatches.filter(hex => { const key = hex.toLowerCase(); if (seen.has(key)) return false; seen.add(key); return true; });
@@ -22,17 +23,29 @@ export function ColourField({ label, value, swatches, onChange, presentation = '
     useEffect(() => {
         if (presentation !== 'horizontal') return;
         const index = palette.findIndex(hex => hex.toLowerCase() === value.toLowerCase());
-        if (index >= 0) requestAnimationFrame(() => scroll.current?.scrollTo?.({ x: Math.max(0, index * 54 - 16), animated: false }));
+        if (index < 0) return;
+        requestAnimationFrame(() => {
+            const viewport = viewportWidth.current;
+            if (viewport <= 0) return;
+            const start = index * 54, end = start + 44;
+            const visibleStart = scrollOffset.current, visibleEnd = visibleStart + viewport;
+            if (start >= visibleStart && end <= visibleEnd) return;
+            const x = Math.max(0, start - 10);
+            scrollOffset.current = x;
+            scroll.current?.scrollTo?.({ x, animated: false });
+        });
     }, [palette, presentation, value]);
+    const enhancedPresentation = presentation === 'horizontal' || Boolean(onOpenPicker);
     const choices = palette.map(hex => <Pressable key={hex.toLowerCase()} accessibilityRole="button"
         accessibilityLabel={rawText(t('editorTools.colourSwatch', { hex }))} accessibilityState={{ selected: value.toLowerCase() === hex.toLowerCase() }}
         onPress={() => { setDraft(hex); setInvalid(false); if (hex.toLowerCase() !== value.toLowerCase()) onChange(hex); }}
         style={[touchTarget, styles.swatch, presentation === 'horizontal' && styles.swatchCircle,
-            { backgroundColor: hex }, value.toLowerCase() === hex.toLowerCase() ? styles.swatchSelected : styles.swatchIdle]} />);
+            { backgroundColor: hex }, value.toLowerCase() === hex.toLowerCase() ? styles.swatchSelected : styles.swatchIdle,
+            value.toLowerCase() === hex.toLowerCase() && presentation === 'horizontal' && styles.swatchSelectedHorizontal]} />);
     return <View style={styles.field}>
-        <View style={styles.labelRow}>
+        <View style={enhancedPresentation ? styles.labelRow : undefined}>
             <Text style={styles.label}>{label}</Text>
-            {onOpenPicker ? <Pressable accessibilityRole="button" accessibilityLabel={`Open ${label} picker`} disabled={pickerPending}
+            {onOpenPicker ? <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('editorTools.colourPicker', { label }))} disabled={pickerPending}
                 onPress={async () => {
                     const openedValue = currentValue.current; setPickerPending(true);
                     try {
@@ -43,7 +56,17 @@ export function ColourField({ label, value, swatches, onChange, presentation = '
                 <View pointerEvents="none" style={styles.colorWheel}><View style={styles.colorWheelCenter} /></View>
             </Pressable> : null}
         </View>
-        {presentation === 'horizontal' ? <ScrollView ref={scroll} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.swatchesHorizontal}>{choices}</ScrollView>
+        {presentation === 'horizontal' ? <ScrollView ref={scroll} horizontal showsHorizontalScrollIndicator={false}
+            onLayout={event => {
+                viewportWidth.current = event.nativeEvent.layout.width;
+                const index = palette.findIndex(hex => hex.toLowerCase() === value.toLowerCase());
+                if (index < 0) return;
+                const start = index * 54, end = start + 44;
+                if (start >= scrollOffset.current && end <= scrollOffset.current + viewportWidth.current) return;
+                const x = Math.max(0, start - 10); scrollOffset.current = x; scroll.current?.scrollTo?.({ x, animated: false });
+            }}
+            onScroll={event => { scrollOffset.current = event.nativeEvent.contentOffset.x; }} scrollEventThrottle={16}
+            contentContainerStyle={styles.swatchesHorizontal}>{choices}</ScrollView>
             : <View style={styles.swatches}>{choices}</View>}
         <TextInput accessibilityLabel={rawText(t('editorTools.colourHex', { label }))} value={draft} autoCapitalize="none" maxLength={7}
             onChangeText={hex => {
@@ -68,7 +91,8 @@ const styles = StyleSheet.create({
     swatch: { borderWidth: 2, borderRadius: ds.space.xs },
     swatchCircle: { width: 44, height: 44, minWidth: 44, minHeight: 44, borderRadius: 22 },
     swatchIdle: { borderColor: colors.border },
-    swatchSelected: { borderColor: colors.accent, borderWidth: 3 },
+    swatchSelected: { borderColor: colors.accent },
+    swatchSelectedHorizontal: { borderWidth: 3 },
     input: { ...type.body, color: colors.text, borderColor: colors.border, borderWidth: 1, borderRadius: ds.space.xs, padding: ds.space.sm },
     error: { ...type.body, color: colors.danger },
 });

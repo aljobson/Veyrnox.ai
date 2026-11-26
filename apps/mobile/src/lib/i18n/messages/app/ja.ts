@@ -288,6 +288,7 @@ export default {
 
   "editorTools.secondsValue": "{value}秒",
   "editorTools.colourHex": "{label}の16進カラー",
+  "editorTools.colourPicker": "{label}ピッカーを開く",
   "editorTools.colourSwatch": "色 {hex}",
   "editorTools.colourError": "#1a2b3cのような色を入力してください。",
   "editorTools.speed": "速度",

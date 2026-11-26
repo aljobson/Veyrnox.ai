@@ -293,6 +293,7 @@ export default {
 
   "editorTools.secondsValue": "{value} सेकंड",
   "editorTools.colourHex": "{label} का हेक्स रंग",
+  "editorTools.colourPicker": "{label} चयनकर्ता खोलें",
   "editorTools.colourSwatch": "रंग {hex}",
   "editorTools.colourError": "#1a2b3c जैसा रंग इस्तेमाल करें।",
   "editorTools.speed": "गति",
