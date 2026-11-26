@@ -158,8 +158,9 @@ jobs:
     runs-on: ubuntu-latest
     # Was 5, then 10. "Rebuild from scratch" now performs four full schema
     # replays plus the growing acceptance inventory. Two consecutive runs on
-    # 2026-11-26 were cancelled at 10 minutes without an assertion failure.
-    timeout-minutes: 20
+    # 2026-11-26 were cancelled at 10 minutes, and the next clean run was still
+    # replaying at 20 minutes; none reported an assertion failure.
+    timeout-minutes: 30
 
     services:
       postgres:
