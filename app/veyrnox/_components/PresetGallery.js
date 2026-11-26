@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { PresetCard } from './PresetCard';
 import { TemplateRoller } from './TemplateRoller';
 import { QUICK_PRESET_CATEGORIES } from '../_lib/tokens.js';
@@ -22,6 +22,7 @@ export function PresetGallery({ size = 'lg', columns = 'lg:columns-3', taste = n
   const [query, setQuery] = useState('');
   const [allCategoriesOpen, setAllCategoriesOpen] = useState(false);
   const [visibleCount, setVisibleCount] = useState(TEMPLATE_BATCH_SIZE);
+  const [crunPreviewCount, setCrunPreviewCount] = useState(null);
   const { models } = useCatalog();
   const loaded = useTemplateCards();
   const { templates: allCards, categories: everyCategory } = loaded.ready || !initial ? loaded : initial;
@@ -43,7 +44,14 @@ export function PresetGallery({ size = 'lg', columns = 'lg:columns-3', taste = n
   const ordered = rankByTaste(matches, taste, (p) => p.taste ?? '');
   // The roller offers a quick sample of the video-backed gallery below.
   const rollerPresets = ordered.filter((preset) => preset.clipKey).slice(0, 48);
-  const modelCount = new Set(matches.map((preset) => preset.model)).size;
+  useEffect(() => {
+    let live = true;
+    fetch('/api/template-catalog?summary=1')
+      .then(response => response.ok ? response.json() : null)
+      .then(body => { if (live && Number.isInteger(body?.total) && body.total >= 0) setCrunPreviewCount(body.total); })
+      .catch(() => {});
+    return () => { live = false; };
+  }, []);
   return (
     <>
       <label className="block max-w-xl">
@@ -82,10 +90,9 @@ export function PresetGallery({ size = 'lg', columns = 'lg:columns-3', taste = n
         ))}
       </div>
       <p className="mt-8 mb-6 text-[14px] text-vx-fg-muted" aria-live="polite">
-        {t('presets.count', {
-          templates: t(matches.length === 1 ? 'presets.templates.one' : 'presets.templates.other', { n: matches.length }),
-          models: t(modelCount === 1 ? 'presets.models.one' : 'presets.models.other', { n: modelCount }),
-        })}
+        {crunPreviewCount === null
+          ? t('presets.runnableCount', { count: matches.length.toLocaleString() })
+          : t('presets.countWithCrun', { ready: matches.length.toLocaleString(), previews: crunPreviewCount.toLocaleString() })}
       </p>
       <TemplateRoller presets={rollerPresets} catalog={models} className="mb-10" />
       <div id="preset-gallery-results" className={`columns-1 sm:columns-2 ${columns} gap-6 [&>a]:mb-10 [&>a]:break-inside-avoid`}>
