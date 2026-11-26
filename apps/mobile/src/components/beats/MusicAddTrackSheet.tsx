@@ -28,7 +28,7 @@ function TrackChoice({ testID, icon, title, disabled, onPress }: {
 }) {
     const s = useThemedStyles(sheets);
     return <Button testID={testID} variant="tertiary" disabled={disabled}
-        label={title} onPress={onPress} containerStyle={s.choiceHit} style={s.choice}><View style={s.label}><Icon name={icon} size={22} />
+        label={title} onPress={onPress} containerStyle={s.choiceHit} style={s.choice}><View style={s.label}><Icon name={icon} size={24} />
             <Text variant="footnote" numberOfLines={1} style={s.choiceLabel}>{title}</Text>
         </View></Button>;
 }
