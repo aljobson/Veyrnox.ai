@@ -7,6 +7,11 @@ export interface CrunTemplateSummary {
 
 export const CRUN_TEMPLATE_PROVIDERS = ['kling', 'seedance', 'vidu'] as const;
 export type CrunTemplateProvider = typeof CRUN_TEMPLATE_PROVIDERS[number];
+export const CRUN_TEMPLATE_PROVIDER_NAMES: Readonly<Record<CrunTemplateProvider, string>> = {
+    kling: 'Kling',
+    seedance: 'Seedance',
+    vidu: 'Vidu',
+};
 
 export interface CrunTemplatePreview {
     readonly id: string;

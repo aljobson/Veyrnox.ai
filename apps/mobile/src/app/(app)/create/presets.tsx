@@ -21,7 +21,7 @@ import { fetchPresets, searchPresets, themeTitle, type Preset } from '../../../l
 import { fetchPopularIds, templateChips, templatesFor, previewRatio, templatePageHref } from '../../../lib/templateFilters';
 import { rankPresets } from '../../../lib/creatorTaste';
 import { useVibeAnswers } from '../../../lib/useVibeAnswers';
-import { CRUN_TEMPLATE_PROVIDERS, fetchCrunTemplateCatalog, type CrunTemplateCatalog, type CrunTemplateProvider } from '../../../lib/crunTemplateSummary';
+import { CRUN_TEMPLATE_PROVIDERS, CRUN_TEMPLATE_PROVIDER_NAMES, fetchCrunTemplateCatalog, type CrunTemplateCatalog, type CrunTemplateProvider } from '../../../lib/crunTemplateSummary';
 
 type TemplateKind = 'video' | 'image' | 'audio' | 'crun';
 const KINDS: readonly TemplateKind[] = ['video', 'image', 'audio', 'crun'];
@@ -129,7 +129,7 @@ export default function Templates() {
         finally { if (crunProviderRef.current === selectedProvider) setCrunLoadingMore(false); }
     };
     const crunProviderTabs = <ScrollView horizontal contentContainerStyle={styles.chips} accessibilityRole="tablist" accessibilityLabel={t('crunTemplates.providerLabel')}>
-        {CRUN_TEMPLATE_PROVIDERS.map(item => <Chip key={item} selected={crunProvider === item} accessibilityRole="tab" accessibilityState={{ selected: crunProvider === item }} label={t(`crunTemplates.provider.${item}`)} onPress={() => { crunProviderRef.current = item; setCrunProvider(item); }} />)}
+        {CRUN_TEMPLATE_PROVIDERS.map(item => <Chip key={item} selected={crunProvider === item} accessibilityRole="tab" accessibilityState={{ selected: crunProvider === item }} label={CRUN_TEMPLATE_PROVIDER_NAMES[item]} onPress={() => { crunProviderRef.current = item; setCrunProvider(item); }} />)}
     </ScrollView>;
     return <View style={styles.screen}>
         <Stack.Screen options={{ title: t('presets.templates') }} />

@@ -1,6 +1,18 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "explore.templateTotalWithCrun": "{ready} 个可用 · {previews} 个 CRUN 预览",
+  "templates.kind.crun": "CRUN 预览",
+  "crunTemplates.providerLabel": "CRUN 提供商",
+  "crunTemplates.count": "已加载 {loaded}/{total} 个预览",
+  "crunTemplates.help": "浏览实时 CRUN 目录。在 Veyrnox 启用定价和生成功能前，这些内容仅供预览。",
+  "crunTemplates.previewOnly": "仅预览",
+  "crunTemplates.previewLabel": "{name} 的 CRUN 预览",
+  "crunTemplates.previewUnavailable": "预览不可用",
+  "crunTemplates.inputCount": "输入图片：{count} 张",
+  "crunTemplates.input": "输入：{input}",
+  "crunTemplates.providerCredits": "提供商点数：{credits}",
+  "crunTemplates.loadMore": "再加载 50 个",
   "music.queue.add": "添加到播放队列",
   "music.queue.title": "播放队列",
   "music.queue.position": "播放队列 · 第 {position}/{total} 项",

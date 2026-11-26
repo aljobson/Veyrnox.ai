@@ -1,6 +1,18 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "explore.templateTotalWithCrun": "{ready} तैयार · {previews} CRUN प्रीव्यू",
+  "templates.kind.crun": "CRUN प्रीव्यू",
+  "crunTemplates.providerLabel": "CRUN प्रदाता",
+  "crunTemplates.count": "{total} में से {loaded} प्रीव्यू लोड हुए",
+  "crunTemplates.help": "लाइव CRUN कैटलॉग ब्राउज़ करें। Veyrnox में कीमत और जनरेशन चालू होने तक ये केवल प्रीव्यू हैं।",
+  "crunTemplates.previewOnly": "केवल प्रीव्यू",
+  "crunTemplates.previewLabel": "{name} का CRUN प्रीव्यू",
+  "crunTemplates.previewUnavailable": "प्रीव्यू उपलब्ध नहीं है",
+  "crunTemplates.inputCount": "इनपुट इमेज: {count}",
+  "crunTemplates.input": "इनपुट: {input}",
+  "crunTemplates.providerCredits": "प्रदाता क्रेडिट: {credits}",
+  "crunTemplates.loadMore": "50 और लोड करें",
   "music.queue.add": "सुनने की कतार में जोड़ें",
   "music.queue.title": "सुनने की कतार",
   "music.queue.position": "सुनने की कतार · {total} में से {position}",
