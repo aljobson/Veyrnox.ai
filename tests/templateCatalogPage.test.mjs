@@ -9,9 +9,9 @@ const component = await readFile(new URL('../app/veyrnox/_components/TemplateCat
 const navigation = await readFile(new URL('../app/veyrnox/_lib/studioNavigation.js', import.meta.url), 'utf8');
 const page = await readFile(new URL('../app/veyrnox/app/templates/page.js', import.meta.url), 'utf8');
 
-test('the signed-in catalog is visible in navigation and covers all four requested engines', () => {
+test('the signed-in catalog is visible in navigation and covers all five requested engines', () => {
   assert.match(navigation, /key: 'templates', href: '\/app\/templates'/);
-  for (const provider of ['kling', 'seedance', 'veo', 'suno']) assert.match(component, new RegExp(`id: '${provider}'`));
+  for (const provider of ['kling', 'seedance', 'vidu', 'veo', 'suno']) assert.match(component, new RegExp(`id: '${provider}'`));
   assert.match(page, /TemplateCatalog/);
   assert.match(page, /seedance=\{\[\]\}/);
 });
@@ -29,7 +29,8 @@ test('Veo recipes are Veyrnox-owned runnable handoffs and SUNO exposes all 100 m
 test('every catalog family has an in-card preview surface', () => {
   assert.match(page, /video: card\.clip\?\.video/);
   assert.match(component, /<video src=\{item\.video\}/);
-  assert.match(component, /<video src=\{item\.previewUrl\}/);
+  assert.match(component, /<video src=\{item\.previewUrl\}.*autoPlay/);
+  assert.match(component, /item\.previewKind === 'image'/);
   assert.match(component, /conceptPreviewLabel/);
   assert.match(component, /listenPreview/);
 });
