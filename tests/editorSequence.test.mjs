@@ -23,6 +23,13 @@ test('locked tracks refuse split, trim, move, delete and duplicate without chang
         duplicateSequence(tl, { track: 'video', id: 'v1' })]) assert.match(result.error, /Unlock/);
     assert.equal(JSON.stringify(tl), snapshot);
 });
+test('duplicate appends after the whole sequence instead of covering the following clip', () => {
+    let tl = fixture();
+    tl = ok(addSequenceClip(tl, 'video', media.id, { start: 120, len: 90 }));
+    const next = ok(duplicateSequence(tl, { track: 'video', id: 'v1' }));
+    assert.equal(next.video.at(-1).start, 210);
+    assert.equal(next.video.at(-1).len, 120);
+});
 test('rate-aware splits and trims preserve source alignment; bounds are refused atomically', () => {
     let tl = ok(updateSequenceClip(fixture(), 'video', 'v1', { rate: 2, len: 60 }));
     tl = ok(splitSequenceClip(tl, 'video', 'v1', 15)); assert.equal(tl.video[1].in, 30); assert.equal(tl.video[1].start, 15);
