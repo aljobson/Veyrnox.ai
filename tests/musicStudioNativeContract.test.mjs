@@ -38,7 +38,7 @@ test('add track presents the five music sources as compact choices', () => {
   assert.match(addTrackSheet, /icon="folder"/);
   assert.match(addTrackSheet, /icon="arrowUp"/);
   assert.match(addTrackSheet, /icon="microphone"/);
-  assert.match(addTrackSheet, /icon="waveform"/);
+  assert.match(addTrackSheet, /icon="drum"/);
   assert.match(addTrackSheet, /icon="pianoKeys"/);
   assert.match(addTrackSheet, /onClose\(\);\s*action\(\);/);
 });
