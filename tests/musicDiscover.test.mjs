@@ -53,7 +53,7 @@ test('sample mix handoff clamps controls and adds an explicit production directi
 test('discover provides playable cards, filters, cover art and a transparent recipe handoff', async () => {
   const source = await readFile(discoverUrl, 'utf8');
   assert.match(source, /musicDiscover\.sample/);
-  assert.match(source, /schedulePreview/);
+  assert.match(source, /scheduleMusicSamplePreview/);
   assert.match(source, /Listen · 12 sec/);
   assert.match(source, /Mix &amp; tempo/);
   assert.match(source, /Listen to this mix/);
