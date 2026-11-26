@@ -133,6 +133,9 @@ describe('Crun Suno music foundation (0591)', { skip: !local && 'disposable loca
     const other = (await pool.query("SELECT public.music_create_quote($1,'different quote',NULL,'ace-step') r", [auth])).rows[0].r;
     const conflict = (await pool.query('SELECT public.music_submit_pair($1,$2,$3) r', [auth, other.quote_id, key])).rows[0].r;
     assert.equal(conflict.code, 'IDEMPOTENCY_CONFLICT');
+    // This test commits through independent pool connections. Remove its
+    // disposable READY queue row so later claim tests observe only their own job.
+    await pool.query('DELETE FROM public.crun_dispatch WHERE job_id=ANY($1::uuid[])', [left.rows[0].r.job_ids]);
   });
 
   it('lets one of two concurrent submits with different keys through when the user already has three active requests', { timeout: 15_000 }, async () => {
@@ -160,6 +163,9 @@ describe('Crun Suno music foundation (0591)', { skip: !local && 'disposable loca
     assert.equal(rejected.code, 'CONCURRENCY_LIMIT', JSON.stringify(results));
     assert.equal(Number((await pool.query(`SELECT count(*) n FROM public.music_generation_requests WHERE user_id=$1 AND status IN ('debited','running')`,
       [user])).rows[0].n), 4);
+    const accepted = results.find((r: any) => r.ok === true);
+    assert.ok(accepted);
+    await pool.query('DELETE FROM public.crun_dispatch WHERE job_id=ANY($1::uuid[])', [accepted.job_ids]);
   });
 
   it('enforces twenty CreateTask reservations in every rolling ten seconds', async () => {
@@ -452,9 +458,10 @@ describe('Crun Suno music foundation (0591)', { skip: !local && 'disposable loca
 
   it('refunds a circuit-held READY dispatch older than 20 minutes once, and keeps a young UNKNOWN unreconcilable as REJECTED', async () => {
     await isolated(async () => {
-      await client.query("UPDATE public.provider_spend_provider_policy SET admission_open=false WHERE provider='crun'");
       const { user } = await mkUser();
       const job = await debitFor(user);
+      const youngJob = await debitFor(user);
+      await client.query("UPDATE public.provider_spend_provider_policy SET admission_open=false WHERE provider='crun'");
       await client.query(`INSERT INTO public.crun_dispatch(job_id,endpoint,payload,created_at)
         VALUES($1,'crun:suno/music-generate',$2,clock_timestamp()-interval '21 minutes')`, [job, payload]);
       const held = (await one('SELECT public.claim_crun_dispatch($1) r', [job])).r;
@@ -468,8 +475,6 @@ describe('Crun Suno music foundation (0591)', { skip: !local && 'disposable loca
       assert.equal(await refunds(job), 1);
       await one('SELECT public.recover_crun_dispatch() r');
       assert.equal(await refunds(job), 1);
-
-      const youngJob = await debitFor(user);
       const token = randomUUID();
       await client.query(`INSERT INTO public.crun_dispatch(job_id,endpoint,payload,state,attempt_token,started_at,resolved_at,failure_code)
         VALUES($1,'crun:suno/music-generate',$2,'UNKNOWN',$3,clock_timestamp()-interval '3 minutes',clock_timestamp()-interval '5 minutes','provider_outcome_unknown')`,
