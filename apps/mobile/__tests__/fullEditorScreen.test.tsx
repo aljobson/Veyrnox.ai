@@ -233,7 +233,10 @@ test('chooses a project cover frame, title and colour and autosaves them', async
         expect(mockFrameStore.get()).toBe(119);
         const input = labelled('Cover text');
         expect(input).toHaveLength(1);
+        expect(root.container.queryAll(node => node.type === 'Text' && node.props.children === 'Cover text')).toHaveLength(0);
+        expect(labelled('Hide Cover Text')[0].props.accessibilityState).toEqual({ disabled: true });
         await act(async () => input[0].props.onChangeText('Track session'));
+        expect(labelled('Hide Cover Text')[0].props.accessibilityState).toEqual({ disabled: false });
         expect(labelled('Colour #AF52DE')).toHaveLength(1);
         expect(labelled('Open Text Color picker')).toHaveLength(1);
         await press('Colour #AF52DE');

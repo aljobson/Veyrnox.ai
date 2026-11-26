@@ -108,15 +108,15 @@ export function EditorCoverSheet({ initial, frameStore, total, timeline, aspectR
                 <CoverFrameScrubber value={frame} max={maxFrame} fps={timeline.fps} frameStore={frameStore} format={time} onCommit={chooseFrame} />
                 <Text style={styles.help}>{t('editorCover.help')}</Text>
                 <View style={styles.field}>
-                    <Text style={styles.label}>{t('editorCover.text')}</Text>
                     <TextInput accessibilityLabel={rawText(t('editorCover.text'))} value={text} onChangeText={setText} maxLength={120} placeholder={t('editorCover.textPlaceholder')}
                         placeholderTextColor={colors.muted} style={styles.input} returnKeyType="done" />
                 </View>
                 <ColourField label={t('editorCover.textColor')} value={textColor} swatches={COVER_SWATCHES} onChange={setTextColor}
                     presentation="horizontal" commitValidOnChange onOpenPicker={hasNativeColorPicker ? () => pickNativeColor(textColor) : undefined} />
-                {text ? <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('editorCover.hideText'))} onPress={() => setText('')} style={[touchTarget, styles.hideText]}>
+                <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('editorCover.hideText'))} accessibilityState={{ disabled: !text }}
+                    disabled={!text} onPress={() => setText('')} style={[touchTarget, styles.hideText, !text && styles.hideTextDisabled]}>
                     <Text style={styles.hideTextLabel}>{t('editorCover.hideText')}</Text>
-                </Pressable> : null}
+                </Pressable>
             </ScrollView>
         </KeyboardAvoidingView>
     </Modal>;
@@ -137,7 +137,8 @@ const styles = StyleSheet.create({
     scrubberStart: { position: 'absolute', left: -8, width: 4, height: 44, borderRadius: 2, backgroundColor: colors.accent },
     scrubberThumb: { position: 'absolute', width: 22, height: 22, marginLeft: -11, borderRadius: 11, backgroundColor: colors.accent },
     help: { color: colors.muted, fontSize: 13, lineHeight: 18, textAlign: 'center' },
-    field: { gap: 8 }, label: { color: colors.text, fontSize: 16, fontWeight: '800' },
+    field: { gap: 8 },
     input: { minHeight: 50, color: colors.text, fontSize: 16, paddingHorizontal: 14, borderRadius: 12, borderWidth: 1, borderColor: colors.borderStrong, backgroundColor: colors.surface },
-    hideText: { alignSelf: 'flex-start', justifyContent: 'center' }, hideTextLabel: { color: colors.accent, fontSize: 15, fontWeight: '800' },
+    hideText: { alignSelf: 'flex-start', justifyContent: 'center' }, hideTextDisabled: { opacity: .45 },
+    hideTextLabel: { color: colors.accent, fontSize: 15, fontWeight: '800' },
 });

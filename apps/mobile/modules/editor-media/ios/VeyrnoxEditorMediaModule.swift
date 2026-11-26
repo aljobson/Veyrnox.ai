@@ -109,7 +109,7 @@ public final class VeyrnoxEditorMediaModule: Module {
 }
 
 private final class EditorColorPickerSession: NSObject, UIColorPickerViewControllerDelegate, UIAdaptivePresentationControllerDelegate {
-  let controller = UIColorPickerViewController()
+  let controller = EditorColorPickerViewController()
   private let promise: Promise
   private let finished: () -> Void
   private var selected: UIColor
@@ -123,6 +123,7 @@ private final class EditorColorPickerSession: NSObject, UIColorPickerViewControl
     controller.selectedColor = selected
     controller.supportsAlpha = false
     controller.delegate = self
+    controller.onDisappear = { [weak self] in self?.cancel() }
   }
 
   func colorPickerViewController(_ viewController: UIColorPickerViewController, didSelect color: UIColor, continuously: Bool) {
@@ -148,6 +149,15 @@ private final class EditorColorPickerSession: NSObject, UIColorPickerViewControl
     resolved = true
     promise.resolve(selected.editorHex)
     finished()
+  }
+}
+
+private final class EditorColorPickerViewController: UIColorPickerViewController {
+  var onDisappear: (() -> Void)?
+
+  override func viewDidDisappear(_ animated: Bool) {
+    super.viewDidDisappear(animated)
+    onDisappear?()
   }
 }
 

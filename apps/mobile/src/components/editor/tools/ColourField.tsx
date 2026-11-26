@@ -71,11 +71,11 @@ export function ColourField({ label, value, swatches, onChange, presentation = '
         <TextInput accessibilityLabel={rawText(t('editorTools.colourHex', { label }))} value={draft} autoCapitalize="none" maxLength={7}
             onChangeText={hex => {
                 setDraft(hex);
-                if (commitValidOnChange && /^#[0-9a-fA-F]{6}$/.test(hex)) { setInvalid(false); if (hex.toLowerCase() !== value.toLowerCase()) onChange(hex); }
+                if (commitValidOnChange && /^#[0-9a-fA-F]{6}$/.test(hex)) { setInvalid(false); if (hex.toLowerCase() !== value.toLowerCase()) onChange(hex.toUpperCase()); }
             }} onEndEditing={event => {
                 const hex = event.nativeEvent.text;
                 const valid = /^#[0-9a-fA-F]{6}$/.test(hex); setInvalid(!valid);
-                if (valid && hex.toLowerCase() !== value.toLowerCase()) onChange(hex);
+                if (valid && hex.toLowerCase() !== value.toLowerCase()) onChange(commitValidOnChange ? hex.toUpperCase() : hex);
             }} style={[touchTarget, styles.input]} />
         {invalid ? <AnnouncedText variant="inherit" accessibilityRole="alert" accessibilityLiveRegion="polite" style={styles.error}>{t('editorTools.colourError')}</AnnouncedText> : null}
     </View>;

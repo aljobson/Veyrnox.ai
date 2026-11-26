@@ -65,7 +65,7 @@ test('horizontal colour palette deduplicates choices and commits a complete vali
     const selected = root.container.queryAll(n => n.props.accessibilityLabel === 'Colour #000000')[0];
     expect(selected.props.accessibilityState).toEqual({ selected: true });
     const input = root.container.queryAll(n => n.props.accessibilityLabel === 'Text Color hex colour')[0];
-    await act(async () => input.props.onChangeText('#12AB34'));
+    await act(async () => input.props.onChangeText('#12ab34'));
     expect(onChange).toHaveBeenLastCalledWith('#12AB34');
     onChange.mockClear();
     const finalSwatch = root.container.queryAll(n => n.props.accessibilityLabel === 'Colour #AF52DE')[0];
