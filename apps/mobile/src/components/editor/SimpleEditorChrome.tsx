@@ -1,9 +1,9 @@
 import { useReducedMotion } from '../ui/useReducedMotion';
-import { useContext, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { SafeAreaInsetsContext } from 'react-native-safe-area-context';
 import { mobileEditorAction } from '../../lib/editorIntentRouter';
 import { Icon, Text as UiText, TextField, Button as UiButton } from '../ui';
-import { Modal, Pressable, ScrollView, KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, KeyboardAvoidingView, Platform, StyleSheet, Text, View, type ScrollViewInstance } from 'react-native';
 import { touchTarget } from '../../lib/a11y';
 import { runAfterSheetCloses } from './runAfterSheetCloses';
 import { rawText } from '../../lib/i18n/translate';
@@ -88,8 +88,11 @@ export function SimpleEditorBar({ active, trayOpen = false, onOpen }: {
 // not a modal: editors can scrub the timeline and switch tools without dismissing anything.
 export function SimpleEditorTray({ rows }: { rows: readonly SheetRow[] }) {
     const bottom = useContext(SafeAreaInsetsContext)?.bottom ?? 0;
+    const scroll = useRef<ScrollViewInstance>(null);
+    const rowKey = rows.map(row => row.id).join('|');
+    useEffect(() => { scroll.current?.scrollTo({ x: 0, animated: false }); }, [rowKey]);
     return <View style={[styles.tray, { paddingBottom: Math.max(10, bottom + 4) }]}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.trayContent}>
+        <ScrollView ref={scroll} testID="simple-editor-tool-tray" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.trayContent}>
             {rows.map((row) => <Pressable key={row.id} accessibilityRole="button" accessibilityLabel={rawText(row.label)} accessibilityState={{ disabled: !!row.disabled }}
                 disabled={row.disabled} onPress={row.onPress} style={({ pressed }) => [styles.trayButton, row.disabled && styles.rowDisabled, pressed && styles.rowPressed]}>
                 <View style={styles.trayIcon}><EditorToolIcon name={row.icon} size={24} /></View>
@@ -112,16 +115,16 @@ const styles = StyleSheet.create({
     rowCopy: { flex: 1, minWidth: 0 },
     rowLabel: { color: colors.text, fontSize: 16, fontWeight: '700' },
     rowHint: { color: colors.muted, fontSize: 12, marginTop: 2 },
-    bar: { flexShrink: 0, flexDirection: 'row', gap: 3, paddingHorizontal: 8, paddingTop: 7, paddingBottom: 7, borderTopWidth: StyleSheet.hairlineWidth, borderColor: '#29292c', backgroundColor: '#171719' },
-    barButton: { flex: 1, minWidth: 0, minHeight: 58, alignItems: 'center', justifyContent: 'center', gap: 3, backgroundColor: 'transparent' },
+    bar: { flexShrink: 0, flexDirection: 'row', gap: 3, paddingHorizontal: 8, paddingTop: 5, paddingBottom: 5, borderTopWidth: StyleSheet.hairlineWidth, borderColor: '#29292c', backgroundColor: '#171719' },
+    barButton: { flex: 1, minWidth: 0, minHeight: 52, alignItems: 'center', justifyContent: 'center', gap: 2, backgroundColor: 'transparent' },
     barPrimary: { backgroundColor: 'transparent' },
     barLabel: { color: '#a0a0a7', fontSize: 12, fontWeight: '800' },
     activeInk: { color: colors.accent },
     mutedInk: { color: '#a0a0a7' },
     fallbackIcon: { color: '#f1f1f2', fontSize: 22, lineHeight: 26, fontWeight: '800', textAlign: 'center' },
     tray: { flexShrink: 0, borderTopWidth: StyleSheet.hairlineWidth, borderColor: '#2b2b2e', backgroundColor: '#1a1a1c' },
-    trayContent: { minWidth: '100%', paddingHorizontal: 8, paddingTop: 10, gap: 6 },
-    trayButton: { width: 82, minHeight: 58, alignItems: 'center', justifyContent: 'flex-start', gap: 4, paddingHorizontal: 4 },
+    trayContent: { minWidth: '100%', paddingHorizontal: 12, paddingTop: 8, gap: 6 },
+    trayButton: { width: 74, minHeight: 54, alignItems: 'center', justifyContent: 'flex-start', gap: 3, paddingHorizontal: 3 },
     trayIcon: { height: 26, alignItems: 'center', justifyContent: 'center' },
     trayLabel: { color: '#f1f1f2', fontSize: 12, lineHeight: 15, fontWeight: '600', textAlign: 'center' },
 });

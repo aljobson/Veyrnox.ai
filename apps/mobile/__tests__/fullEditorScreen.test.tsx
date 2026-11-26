@@ -118,6 +118,11 @@ test('opens in the simple view with the ByeCut-style five-tab dock and full tool
     expect(labelled('Export')).toHaveLength(1);
     expect(labelled('Canvas · 16:9')).toHaveLength(1);
     expect(root.container.queryAll((node) => node.props.testID === 'editor-tool-rail')).toHaveLength(0);
+    const preview = root.container.queryAll((node) => node.props.testID === 'editor-preview-frame')[0];
+    const previewStyle = StyleSheet.flatten(preview.props.style);
+    expect(previewStyle).toMatchObject({ flex: 1, minHeight: 172, borderRadius: 0 });
+    const quickActions = root.container.queryAll((node) => node.props.testID === 'editor-preview-quick-actions')[0];
+    expect(StyleSheet.flatten(quickActions.props.style)).toMatchObject({ top: '50%', transform: [{ translateY: -66 }] });
 });
 
 test('a new video edit keeps Library, phone and Files sources in the compact editor tray', async () => {
@@ -128,6 +133,14 @@ test('a new video edit keeps Library, phone and Files sources in the compact edi
     }
     expect(visible('Add to your video')).toBe(false);
     expect(labelled('Close')).toHaveLength(0);
+});
+
+test('choosing an insert source restores the concise Cut options behind the picker', async () => {
+    await renderStartAdd();
+    await press('Library video');
+    expect(labelled('Choose Library item')).toHaveLength(1);
+    for (const label of ['Add', 'Filters', 'Transitions', 'Polish']) expect(labelled(label)).toHaveLength(1);
+    expect(labelled('Library audio')).toHaveLength(0);
 });
 
 test('renames the project from the editable simple header', async () => {
@@ -347,6 +360,8 @@ test('simple view moves a selected clip later, disables it at the end, and Undo 
     await renderSimple();
     expect(labelled('Move left')).toHaveLength(0);
     await act(async () => root.container.queryAll(node => node.props.testID === 'clip-v1')[0].props.onAccessibilityTap());
+    expect(labelled('Move left')).toHaveLength(0);
+    await press('Trim');
     expect(labelled('Move left')[0].props.accessibilityState.disabled).toBe(true);
     await press('Move right');
     await act(async () => jest.advanceTimersByTimeAsync(900));
@@ -770,15 +785,19 @@ test('Add text at the end of the video puts the title inside the video and does 
 const tracks = [{ id: 'video-0', kind: 'video', name: 'Video 1', locked: false, muted: false, hidden: false }, { id: 'audio-0', kind: 'audio', name: 'Audio 1', locked: false, muted: false, hidden: false }, { id: 'text-0', kind: 'text', name: 'Text 1', locked: false, muted: false, hidden: false }];
 const cutTimeline = { schemaVersion: 3, fps: 30, seq: 2, aspect: '16:9', background: '#000000', media: { media1: { id: 'media1', kind: 'video', name: 'Scene one', frames: 60 }, song: { id: 'song', kind: 'audio', name: 'Song', frames: 60 } }, video: [{ id: 'v1', mediaId: 'media1', start: 0, in: 0, len: 60, trackId: 'video-0' }], audio: [{ id: 'a1', mediaId: 'song', start: 0, in: 0, len: 60, trackId: 'audio-0', volume: 1 }], text: [], tracks, markers: [] };
 
-test('the simple Cut screen has a Close gaps toggle (ripple), off by default', async () => {
+test('a selected clip uses the concise ByeCut contextual Cut controls in one row', async () => {
     serverDocument = { ...document, schema_version: 3, timeline: cutTimeline };
     await renderSimple();
     await act(async () => root.container.queryAll(node => node.props.testID === 'clip-v1')[0].props.onAccessibilityTap());
-    const toggle = () => root.container.queryAll(node => node.props.accessibilityLabel === 'Close gaps')[0];
-    expect(toggle()).toBeDefined();
-    expect(toggle().props.accessibilityState?.selected).toBe(false);
-    await press('Close gaps');
-    expect(toggle().props.accessibilityState?.selected).toBe(true);
+    for (const label of ['Split', 'Trim', 'Volume', 'Fade', 'AI Edit', 'Transitions', 'Delete', 'Done']) {
+        expect(labelled(label).length).toBeGreaterThan(0);
+    }
+    for (const label of ['Close gaps', 'Duplicate', 'Move left', 'Move right']) expect(labelled(label)).toHaveLength(0);
+    const tray = root.container.queryAll(node => node.props.testID === 'simple-editor-tool-tray')[0];
+    expect(tray.props.horizontal).toBe(true);
+    expect(root.container.queryAll(node => node.props.testID === 'simple-selection-actions')).toHaveLength(0);
+    await press('Done');
+    expect(labelled('Add')).toHaveLength(1);
 });
 
 test('a selected audio clip has a Volume button in the simple view that opens its volume control', async () => {
