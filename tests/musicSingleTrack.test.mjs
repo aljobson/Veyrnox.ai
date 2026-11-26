@@ -29,8 +29,8 @@ test('create surfaces use direct smart controls and one-track language', async (
   assert.doesNotMatch(web + server, /two versions|2 versions|two candidates/i);
 });
 
-test('0619 freezes one debit, candidate and dispatch while preserving replay safety', async () => {
-  const sql = await read('packages/db/schema/supabase/0619_music_single_track_and_suno_360.sql');
+test('0620 freezes one debit, candidate and dispatch while preserving replay safety', async () => {
+  const sql = await read('packages/db/schema/supabase/0620_music_single_track_and_suno_360.sql');
   assert.match(sql, /CHECK\(output_count IN \(1,2\)\)/);
   assert.match(sql, /NEW\.output_count:=1/);
   assert.match(sql, /NEW\.total_credits:=NEW\.unit_credits/);

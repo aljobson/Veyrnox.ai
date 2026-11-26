@@ -27,7 +27,7 @@ describe('music long-song pricing and ceiling (0563, 0567)', { skip: !DATABASE_U
       await client.query(sql);
     }
     // This suite deliberately reinstalls the historical 0563/0567 pair RPCs
-    // after the current schema. Suspend only the current 0619 quote normalizer
+    // after the current schema. Suspend only the current 0620 quote normalizer
     // inside this rolled-back fixture so the historical contract stays coherent.
     await client.query('ALTER TABLE public.music_generation_quotes DISABLE TRIGGER music_quote_aaa_single_generation');
     const updated = await client.query(`UPDATE public.model_catalog

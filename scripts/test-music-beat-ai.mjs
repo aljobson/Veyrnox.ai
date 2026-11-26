@@ -22,7 +22,7 @@ try {
   for (let replay = 0; replay < 2; replay++) for (const file of migrations) await query(await readFile(new URL(`../packages/db/schema/supabase/${file}`, import.meta.url), 'utf8'));
   // These replays intentionally reinstall the historical pair quote/submit
   // functions after the current schema. Keep that rolled-back fixture coherent
-  // by suspending only 0619's live one-track quote normalizer here.
+  // by suspending only 0620's live one-track quote normalizer here.
   await query('ALTER TABLE public.music_generation_quotes DISABLE TRIGGER music_quote_aaa_single_generation');
   const source = (await query("SELECT * FROM public.model_catalog WHERE id='ace-step-1.5'")).rows[0];
   const loop = (await query("SELECT * FROM public.model_catalog WHERE id='ace-step-loop'")).rows[0];
