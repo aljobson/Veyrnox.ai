@@ -14,8 +14,35 @@ test('normalizes the documented Kling template shape and drops unsafe media URLs
   assert.equal(catalog.total, 226);
   assert.deepEqual(catalog.templates[0], {
     id: 'critter_paste', name: 'Critter Paste', category: 'Pet', tag: 'NEW', coverUrl: null,
-    previewUrl: 'https://s15-kling.klingai.com/demo.mp4', providerCredits: 200.7,
+    previewUrl: 'https://s15-kling.klingai.com/demo.mp4', previewKind: 'video', providerCredits: 200.7,
     requirements: [{ label: 'Resolution', value: '1080p' }, { label: 'Recommended Image Types', value: 'Single animal' }],
+  });
+});
+
+test('normalizes Vidu templates, including image previews and bounded input instructions', () => {
+  const catalog = normalizeCrunTemplateCatalog('vidu', {
+    code: 200,
+    data: { total: 120, templates: [{
+      template: 'Vintage_Moment_of_Mom', name: 'Vintage Moment of Mom', category_name: 'Festival',
+      category_id: 11, resolution: ['1080p'], duration: [0], aspect_ratio: ['9:16'], output_type: 'unspecified',
+      cover: 'https://scene.cf.vidu.studio/cover.png', video: 'https://scene.cf.vidu.studio/preview.png',
+      credits: 9, person_count: 'Only one person', is_hot: true, is_new: false,
+      input_instruction: JSON.stringify({ image_count: 'Only one image', image_url: ['https://scene.cf.vidu.studio/example.png'], prompt_instruction: 'No prompt required' }),
+    }] },
+  }, 1, 50);
+  assert.equal(catalog.total, 120);
+  assert.deepEqual(catalog.templates[0], {
+    id: 'Vintage_Moment_of_Mom', name: 'Vintage Moment of Mom', category: 'Festival', tag: 'HOT',
+    coverUrl: 'https://scene.cf.vidu.studio/cover.png', previewUrl: 'https://scene.cf.vidu.studio/preview.png', previewKind: 'image',
+    providerCredits: 9, inputRequirement: 'Only one person', requirements: [
+      { label: 'Resolution', value: '1080p' },
+      { label: 'Duration', value: '0s' },
+      { label: 'Aspect ratio', value: '9:16' },
+      { label: 'Output type', value: 'unspecified' },
+      { label: 'image count', value: 'Only one image' },
+      { label: 'image url', value: 'https://scene.cf.vidu.studio/example.png' },
+      { label: 'prompt instruction', value: 'No prompt required' },
+    ],
   });
 });
 
@@ -54,6 +81,20 @@ test('catalog requests keep the API key server-side and forward only bounded que
   assert.match(request.url, /language=en/);
   assert.equal(request.options.headers['x-api-key'], 'secret-key');
   assert.doesNotMatch(JSON.stringify(result), /secret-key/);
+});
+
+test('Vidu catalog requests use the official endpoint without an unsupported language query', async () => {
+  let requestUrl = '';
+  const result = await readCrunTemplateCatalog({ provider: 'vidu', page: 1, pageSize: 50, language: 'en' }, {
+    apiKey: 'secret-key',
+    fetchImpl: async url => {
+      requestUrl = String(url);
+      return new Response(JSON.stringify({ code: 200, data: { total: 0, templates: [] } }), { status: 200 });
+    },
+  });
+  assert.equal(result.ok, true);
+  assert.match(requestUrl, /\/api\/v1\/client\/job\/vidu-templates/);
+  assert.doesNotMatch(requestUrl, /language=/);
 });
 
 test('catalog fails closed for an unknown provider, missing key or invalid pagination', async () => {

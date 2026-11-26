@@ -99,9 +99,9 @@ test('keyboard press and release, playback, background cleanup', async () => {
 });
 function LibraryHarness({ id }: { id: string }) {
     const edit = useBeatEdit(id);
-    return <><BeatInstrumentsSection doc={edit.doc!} apply={edit.apply} audio={() => mockAudio} onOpen={() => {}} /><Button label={t('beat.undo')} onPress={edit.undo} /></>;
+    return <><BeatInstrumentsSection doc={edit.doc!} apply={edit.apply} onOpen={() => {}} /><Button label={t('beat.undo')} onPress={edit.undo} /></>;
 }
-test('compact neutral instrument tiles audition and add with one undoable store edit', async () => {
+test('compact neutral instrument tiles add directly with one undoable store edit and no preview control', async () => {
     const doc = newBeat('Library'); await act(async () => root.render(<LibraryHarness id={doc.id} />));
     await press(t('beatPiano.library.add'));
     const vividFills = new Set(VIVID_HUES.map(hue => vividHue(hue, 'dark').fill));
@@ -110,8 +110,7 @@ test('compact neutral instrument tiles audition and add with one undoable store 
     expect(root.container.queryAll(node => vividFills.has(RN.StyleSheet.flatten(node.props.style)?.backgroundColor))).toHaveLength(0);
     expect(root.container.queryAll(node => node.props.source?.testUri?.endsWith('/drum.png')).length).toBeGreaterThan(0);
     expect(root.container.queryAll(node => node.props.source?.testUri?.endsWith('/guitar.png')).length).toBeGreaterThan(0);
-    await press(t('beatPiano.library.audition', { name: 'Grand piano' }));
-    expect(mockAudio.audition).toHaveBeenCalledWith({ engine: 'voice', id: 'piano', preset: 'grand' });
+    expect(nodes(t('beatPiano.library.audition', { name: 'Grand piano' }))).toHaveLength(0);
     await press(t('beatPiano.library.addNamed', { name: 'Grand piano' }));
     expect(midiRegions(getBeat(doc.id)!)).toHaveLength(1); expect(beatStore.saveState(doc.id)).toBe('saving');
     await press(t('beat.undo')); expect(midiRegions(getBeat(doc.id)!)).toHaveLength(0);
@@ -148,7 +147,7 @@ test('snap and strength expose radio semantics without relying on colour', async
 
 test('instrument library stays open and shows feedback when adding is refused', async () => {
     const doc = newBeat('Refused');
-    await act(async () => root.render(<BeatInstrumentsSection doc={doc} apply={() => false} audio={() => mockAudio} onOpen={() => {}} />));
+    await act(async () => root.render(<BeatInstrumentsSection doc={doc} apply={() => false} onOpen={() => {}} />));
     await press(t('beatPiano.library.add')); await press(t('beatPiano.library.addNamed', { name: 'Grand piano' }));
     expect(nodes(t('beatPiano.library.close')).length).toBeGreaterThan(0);
     expect(root.container.queryAll(n => n.children.includes(t('beat.refused', { reason: '' }))).length).toBeGreaterThan(0);

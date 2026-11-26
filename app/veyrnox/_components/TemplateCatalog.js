@@ -13,9 +13,13 @@ import {
 const PROVIDERS = [
   { id: 'kling', labelKey: 'app.templates.provider.kling', detailKey: 'app.templates.provider.klingDetail' },
   { id: 'seedance', labelKey: 'app.templates.provider.seedance', detailKey: 'app.templates.provider.seedanceDetail' },
+  { id: 'vidu', labelKey: 'app.templates.provider.vidu', detailKey: 'app.templates.provider.viduDetail' },
   { id: 'veo', labelKey: 'app.templates.provider.veo', detailKey: 'app.templates.provider.veoDetail' },
   { id: 'suno', labelKey: 'app.templates.provider.suno', detailKey: 'app.templates.provider.sunoDetail' },
 ];
+
+const CRUN_PROVIDERS = Object.freeze(['kling', 'seedance', 'vidu']);
+const EMPTY_TEMPLATES = Object.freeze([]);
 
 const DEFAULT_MUSIC_MIX = Object.freeze({ tempo: 1, drums: 100, bass: 100, melody: 100 });
 
@@ -47,18 +51,27 @@ function ReadyCard({ item, badge, t }) {
 }
 
 function ProviderCard({ item, provider, t }) {
+  const [previewing, setPreviewing] = useState(false);
+  const [previewFailed, setPreviewFailed] = useState(false);
   const input = item.inputCount ? t(item.inputCount === 1 ? 'app.templates.image.one' : 'app.templates.image.other', { count: item.inputCount }) : item.inputRequirement;
   const price = item.prices?.length ? item.prices.map(entry => `${entry.resolution} · ${entry.providerCredits}`).join(' / ')
     : item.providerCredits !== null && item.providerCredits !== undefined ? `${item.providerCredits}` : null;
+  const hasVideo = item.previewKind === 'video' && item.previewUrl;
+  const stillPreview = item.coverUrl || (item.previewKind === 'image' ? item.previewUrl : null);
   return (
     <li className="flex min-h-64 flex-col overflow-hidden rounded-2xl border border-vx-border bg-vx-panel">
       <div className="relative aspect-[4/3] overflow-hidden bg-vx-base">
-        {item.previewUrl ? (
-          <video src={item.previewUrl} poster={item.coverUrl || undefined} controls playsInline preload="none" aria-label={t('app.templates.previewLabel', { name: item.name })} className="h-full w-full object-cover">
+        {previewing && hasVideo && !previewFailed ? (
+          <video src={item.previewUrl} poster={item.coverUrl || undefined} controls autoPlay playsInline preload="metadata" onError={() => setPreviewFailed(true)} aria-label={t('app.templates.previewLabel', { name: item.name })} className="h-full w-full object-cover">
             {t('app.templates.videoFallback')}
           </video>
-        ) : item.coverUrl ? <img src={item.coverUrl} alt="" loading="lazy" className="h-full w-full object-cover" /> : (
+        ) : stillPreview ? <img src={stillPreview} alt="" loading="lazy" className="h-full w-full object-cover" /> : (
           <div role="img" aria-label={t('app.templates.previewUnavailable', { name: item.name })} className="flex h-full items-center justify-center bg-[radial-gradient(circle_at_top_left,var(--color-vx-accent),transparent_55%),linear-gradient(145deg,#0d1824,#152d3f)] px-6 text-center font-vx-mono text-xs font-bold uppercase tracking-[0.12em] text-white/75">{t('app.templates.previewUnavailableShort')}</div>
+        )}
+        {hasVideo && (!previewing || previewFailed) && (
+          <button type="button" onClick={() => { setPreviewFailed(false); setPreviewing(true); }} className="vx-press absolute inset-x-4 bottom-4 mx-auto inline-flex min-h-11 w-fit items-center rounded-full border border-white/25 bg-black/70 px-4 text-sm font-extrabold text-white backdrop-blur-sm">
+            <span aria-hidden="true" className="me-2">▶</span>{t(previewFailed ? 'app.templates.retryPreview' : 'app.templates.playPreview')}
+          </button>
         )}
         <span className="absolute start-3 top-3 rounded-full border border-white/20 bg-black/55 px-2.5 py-1 font-vx-mono text-[9px] font-bold uppercase tracking-[0.12em] text-white backdrop-blur-sm">{t('app.templates.effect', { provider })}</span>
       </div>
@@ -129,7 +142,7 @@ export function TemplateCatalog({ kling, seedance, veo, suno }) {
   const { t } = useI18n();
   const [provider, setProvider] = useState('kling');
   const [query, setQuery] = useState('');
-  const [remote, setRemote] = useState({ kling: null, seedance: null });
+  const [remote, setRemote] = useState({ kling: null, seedance: null, vidu: null });
   const [loading, setLoading] = useState(null);
   const [error, setError] = useState({});
   const [playingPreview, setPlayingPreview] = useState(null);
@@ -159,7 +172,7 @@ export function TemplateCatalog({ kling, seedance, veo, suno }) {
   }, [t]);
 
   useEffect(() => {
-    if (!['kling', 'seedance'].includes(provider) || remote[provider] || error[provider] || loading === provider || requested.current.has(provider)) return;
+    if (!CRUN_PROVIDERS.includes(provider) || remote[provider] || error[provider] || loading === provider || requested.current.has(provider)) return;
     requested.current.add(provider);
     queueMicrotask(() => { void loadRemote(provider, 1); });
   }, [provider, remote, error, loading, loadRemote]);
@@ -193,7 +206,7 @@ export function TemplateCatalog({ kling, seedance, veo, suno }) {
     }
   }, [playingPreview, stopSunoPreview, t]);
 
-  const local = provider === 'kling' ? kling : provider === 'seedance' ? seedance : provider === 'veo' ? veo : suno;
+  const local = provider === 'kling' ? kling : provider === 'seedance' ? seedance : provider === 'veo' ? veo : provider === 'suno' ? suno : EMPTY_TEMPLATES;
   const visibleLocal = useMemo(() => local.filter(item => includesQuery(item, needle)), [local, needle]);
   const visibleRemote = (remote[provider]?.templates || []).filter(item => includesQuery(item, needle));
 
@@ -225,7 +238,7 @@ export function TemplateCatalog({ kling, seedance, veo, suno }) {
         </label>
       </div>
 
-      {['kling', 'seedance'].includes(provider) && (
+      {CRUN_PROVIDERS.includes(provider) && (
         <>
           <div className="mb-4 mt-8 flex items-end justify-between gap-3">
             <div><h3 className="text-xl font-black">{t('app.templates.readyCount', { count: visibleLocal.length })}</h3><p className="mt-1 text-xs text-vx-fg-muted">{t('app.templates.readyHelp')}</p></div>
