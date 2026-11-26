@@ -4,7 +4,7 @@ import { useFocusEffect } from 'expo-router';
 import { useAuth } from '../../auth/AuthProvider';
 import { Button, Icon, Text, TextField, themedStyles, useThemedStyles } from '../ui';
 import { EmptyState } from '../EmptyState';
-import { VeyLoader } from '../VeyLoader';
+import { LoadingSkeleton } from '../LoadingSkeleton';
 import { t } from '../../lib/i18n';
 import { useAnnouncement } from '../../lib/useAnnouncement';
 import { ds } from '../../theme';
@@ -188,7 +188,7 @@ export function BeatSongLibrarySheet({ layout, disabled, placement, onCommit, on
             renderItem={({ item }) => <BeatSongLibraryRow item={item} destination={destination} selectionControl={layout === 'regular'}
                 disabled={disabled} selected={item.id === selectedId} preview={preview} adding={adding}
                 onSelect={() => setSelectedId(item.id)} onAudition={() => void audition(item)} onAdd={() => void add(item)} />}
-            ListEmptyComponent={loadState.kind === 'loading' ? <VeyLoader label={t('beat.library.loading')} showLabel />
+            ListEmptyComponent={loadState.kind === 'loading' ? <LoadingSkeleton label={t('beat.library.loading')} variant="list" />
                 : loadState.kind === 'error' ? undefined
                 : empty && !term ? <EmptyState title={t('beat.library.empty.title')} body={t('beat.library.empty.body')} />
                 : term ? <View style={s.empty}><Text variant="title3" accessibilityRole="header">{t('beat.library.searchEmpty', { query })}</Text>

@@ -38,7 +38,7 @@ import { EntryRow } from '../../../components/home/EntryRow';
 import { ExploreTemplateGrid } from '../../../components/home/ExploreTemplateGrid';
 import { SwapRow } from '../../../components/home/SwapRow';
 import { OddlingsBanner } from '../../../components/home/OddlingsBanner';
-import { VeyLoader } from '../../../components/VeyLoader';
+import { LoadingSkeleton } from '../../../components/LoadingSkeleton';
 
 // How many templates the home shows; the rest are on the Templates screen.
 // Templates shown at once on Home; Show more adds the next page (the gallery behind See all pages the same way).
@@ -271,7 +271,7 @@ export default function Explore() {
                         <Button variant="secondary" size="md" label={t('recovery.retry')} onPress={loadPresets} />
                     </View>
                 ) : presets === null ? (
-                    <VeyLoader />
+                    <LoadingSkeleton variant="grid" />
                 ) : (
                     <>
                         <SwapRow />{searchShown ? (
