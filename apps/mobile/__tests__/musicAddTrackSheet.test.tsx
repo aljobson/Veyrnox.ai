@@ -52,3 +52,12 @@ test('presents track choices as a clean icon grid without disclosure chevrons', 
     expect(icons.length).toBeGreaterThanOrEqual(5);
     expect(root.container.queryAll(node => node.props.accessibilityLabel === 'caretRight')).toHaveLength(0);
 });
+
+test('keeps the editor visible by presenting the submenu as a bottom sheet', async () => {
+    await act(async () => root.render(<MusicAddTrackSheet disabled={false} onLibrary={() => {}} onDevice={() => {}}
+        onRecord={() => {}} onDrums={() => {}} onInstrument={() => {}} onClose={() => {}} />));
+    const modal = root.container.queryAll(node => node.props.testID === 'music-add-track-sheet')[0];
+    expect(modal.props.transparent).toBe(true);
+    expect(modal.props.presentationStyle).toBe('overFullScreen');
+    expect(root.container.queryAll(node => node.props.testID === 'music-add-track-sheet-bottom-sheet')).toHaveLength(1);
+});
