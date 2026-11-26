@@ -12,6 +12,7 @@ import { publishedImageTemplates } from './imageTemplates.js';
 import { SOURCE_TEMPLATES } from './sourceTemplates.js';
 import { REFERENCE_TEMPLATES } from './referenceTemplates.js';
 import { EFFECT_CONCEPT_TEMPLATES } from './effectConceptTemplates.js';
+import { ORIGINAL_SEEDANCE_TEMPLATES } from './originalSeedanceTemplates.js';
 import { EFFECT_THEMES, effectThemeId, themedTemplates } from './effectThemes.js';
 import { SHOWCASE_CLIPS } from './showcase.js';
 import { isPublishableSourcePromptTemplate } from './sourcePromptAudit.js';
@@ -31,7 +32,7 @@ const DECLARED_WALL_CLIP_KEYS = [
   ...HIGGSFIELD_90_WALL_CLIP_KEYS,
 ];
 // Includes the 300 additional exact community pairs registered in sourceTemplates.js.
-const TEMPLATE_CANDIDATES = [...SOURCE_TEMPLATES, ...EFFECT_CONCEPT_TEMPLATES, ...REFERENCE_TEMPLATES];
+const TEMPLATE_CANDIDATES = [...SOURCE_TEMPLATES, ...EFFECT_CONCEPT_TEMPLATES, ...REFERENCE_TEMPLATES, ...ORIGINAL_SEEDANCE_TEMPLATES];
 export const REMOVED_PROMPT_GAP_TEMPLATE_IDS = Object.freeze(SOURCE_TEMPLATES
   .filter((template) => !isPublishableSourcePromptTemplate(template.id))
   .map((template) => template.id));
