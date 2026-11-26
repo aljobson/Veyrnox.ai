@@ -51,13 +51,16 @@ describe('where the empty states and prompt show', () => {
         expect(src('components', 'VeyCharacter.tsx')).toContain('accessibilityElementsHidden');
     });
 
-    test('each main tab shows Vey, not a grey spinner, on its first load', () => {
+    test('each main tab uses the shared quiet loader on its first load', () => {
         for (const tab of ['index', 'create', 'library', 'editor', 'publish']) {
             expect(app('(tabs)', `${tab}.tsx`)).toContain('<VeyLoader');
         }
         const loader = src('components', 'VeyLoader.tsx');
-        expect(loader).toContain('accessibilityRole="progressbar"');
-        expect(loader).toContain("t('common.loading')");
+        expect(loader).toContain('<LoadingState');
+        expect(loader).not.toContain('<VeyCharacter');
+        const state = src('components', 'LoadingState.tsx');
+        expect(state).toContain('accessibilityRole="progressbar"');
+        expect(state).toContain("t('common.loading')");
     });
 
     test('the empty state announces itself and its action has a name', () => {
