@@ -120,12 +120,14 @@ test('opens in the simple view with the ByeCut-style five-tab dock and full tool
     expect(root.container.queryAll((node) => node.props.testID === 'editor-tool-rail')).toHaveLength(0);
 });
 
-test('a new video edit opens the real workspace with Library, phone and Files sources ready', async () => {
+test('a new video edit keeps Library, phone and Files sources in the compact editor tray', async () => {
     await renderStartAdd();
     expect(root.container.queryAll(node => node.props.testID === 'editor-workspace')).toHaveLength(1);
     for (const label of ['Library video', 'Library image', 'Library audio', 'Photos & videos', 'Files']) {
         expect(labelled(label)).toHaveLength(1);
     }
+    expect(visible('Add to your video')).toBe(false);
+    expect(labelled('Close')).toHaveLength(0);
 });
 
 test('renames the project from the editable simple header', async () => {
@@ -148,7 +150,9 @@ test('the five-tab dock opens AI, Cut, Sound, Text and Layers without hiding the
     for (const label of ['Add', 'Filters', 'Transitions', 'Polish']) expect(labelled(label).length).toBeGreaterThan(0);
     await press('Add');
     for (const label of ['Library video', 'Library image', 'Library audio', 'Photos & videos', 'Files']) expect(labelled(label).length).toBeGreaterThan(0);
-    await press('Close');
+    expect(visible('Add to your video')).toBe(false);
+    expect(labelled('Close')).toHaveLength(0);
+    await press('Cut');
     await press('Sound');
     for (const label of ['Music', 'Clean Voice']) expect(labelled(label)).toHaveLength(1);
     await press('Text');
