@@ -52,7 +52,7 @@ const MOBILE_FEATURE_DEFINITIONS = [
     { id: 'film', titleKey: 'srch.s.film', href: '/film', icon: 'film', keywords: 'film studio shots script references assets prompts movie', availability: 'film-build', webRoutes: ['/app/film-studio'] },
     { id: 'mcp', titleKey: 'srch.s.mcp', href: '/mcp', icon: 'cpu', keywords: 'connector assistant oauth endpoint integrations', webRoutes: ['/mcp'] },
     { id: 'oddlings', titleKey: 'srch.s.oddlings', href: '/oddlings', icon: 'smiley', keywords: 'characters creator mascot animate', webRoutes: ['/app/oddlings', '/oddlings', '/oddlings/[id]'] },
-    { id: 'templates', titleKey: 'srch.s.templates', href: '/create/presets', icon: 'squares', keywords: 'presets gallery', webRoutes: ['/presets', '/presets/[id]'] },
+    { id: 'templates', titleKey: 'srch.s.templates', href: '/create/presets', icon: 'squares', keywords: 'presets gallery', webRoutes: ['/app/templates', '/presets', '/presets/[id]'] },
     { id: 'projects', titleKey: 'srch.s.projects', href: '/projects', icon: 'folder', keywords: 'projects edit saved', webRoutes: ['/app/projects', '/app/projects/[id]'] },
     { id: 'models', titleKey: 'srch.s.models', href: '/models', icon: 'cube', keywords: 'catalogue catalog list compare', webRoutes: ['/models', '/models/[id]', '/compare/[pair]'] },
     { id: 'guides', titleKey: 'helpGuides.all', href: '/guides', icon: 'help', keywords: 'guides tutorials learn', webRoutes: ['/guides', '/guides/[id]'] },
