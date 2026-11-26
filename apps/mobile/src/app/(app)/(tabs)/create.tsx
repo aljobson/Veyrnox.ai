@@ -8,7 +8,7 @@ import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ScrollView, View, useWindowDimensions } from 'react-native';
-import { VeyLoader } from '../../../components/VeyLoader';
+import { LoadingSkeleton } from '../../../components/LoadingSkeleton';
 import { fetchCatalogCached, type CatalogModel, type Kind } from '../../../lib/media';
 import { starterModel } from '../../../lib/createOptions';
 import { EXAMPLE, FirstGoalCard } from '../../../components/create/FirstGoalCard';
@@ -103,7 +103,7 @@ export default function Create() {
                     <Button label={t('recovery.retry')} onPress={loadCatalog} />
                 </View>
             ) : publicModels === null ? (
-                <VeyLoader />
+                <LoadingSkeleton variant="form" />
             ) : (
                 <ScrollView contentContainerStyle={styles.list}>
                     <View style={styles.intro}>
