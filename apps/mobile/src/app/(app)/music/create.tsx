@@ -9,6 +9,7 @@ import { MusicNotice } from '../../../components/music/MusicNotice';
 import { MusicAdvancedControls } from '../../../components/music/MusicAdvancedControls';
 import { MusicSunoControls } from '../../../components/music/MusicSunoControls';
 import { MusicInspirationCard } from '../../../components/music/MusicInspirationCard';
+import { EMPTY_MUSIC_SMART_DIRECTION, mergeSmartDirectionText, MusicSmartDirectionControls, type MusicSmartDirection } from '../../../components/music/MusicSmartDirectionControls';
 import { useMusicCreate } from '../../../lib/music/useMusicCreate';
 import { isSunoModel, modelCounterLimit, modelState, quoteBlockers } from '../../../lib/music/createForm';
 import { formatLocale, t } from '../../../lib/i18n';
@@ -31,6 +32,7 @@ export default function MusicCreate() {
         if (handoff) flow.edit(handoff);
     }, [flow, sample, challenge, state.status, state.input, state.rights, state.entitlements, pending]);
     const lock = useRef(false);
+    const [direction, setDirection] = useState<MusicSmartDirection>(EMPTY_MUSIC_SMART_DIRECTION);
     const [now, setNow] = useState(Date.now);
     useEffect(() => {
         if (!pending || pending.phase === 'AMBIGUOUS') return;
@@ -45,6 +47,20 @@ export default function MusicCreate() {
     const blockers = e && pending ? quoteBlockers({ input: pending.input, entitlements: e, rights: !pending.input.instrumental,
         activeCount: flow.tracker.activeCount(), quote: pending.quote, now, ambiguous }) : [];
     const error = state.error && t(`music.create.${messageKey(state.error)}`);
+    const updateDirection = (next: MusicSmartDirection) => {
+        setDirection(next);
+        const max = input.mode === 'simple' ? (model ? modelCounterLimit(model, 'prompt') ?? 500 : 500)
+            : Math.min(model && suno ? modelCounterLimit(model, 'styles') ?? e?.custom_drafts.styles_max ?? 500 : 500, e?.custom_drafts.styles_max ?? 500);
+        const textPatch = input.mode === 'simple'
+            ? { prompt: mergeSmartDirectionText(input.prompt, next, max) }
+            : { styles: mergeSmartDirectionText(input.styles, next, max) };
+        const voicePatch = next.voice === 'Instrumental' ? { instrumental: true, vocalGender: 'auto' as const }
+            : next.voice === 'Female vocal' ? { instrumental: false, vocalGender: 'female' as const }
+                : next.voice === 'Male vocal' ? { instrumental: false, vocalGender: 'male' as const }
+                    : { instrumental: model?.controls.instrumental === 'required', vocalGender: 'auto' as const };
+        edit({ ...textPatch, ...voicePatch });
+    };
+    const setInstrumentalDirection = (instrumental: boolean) => updateDirection({ ...direction, voice: instrumental ? 'Instrumental' : '' });
     return <SafeKeyboardFormScrollView style={s.screen} contentContainerStyle={s.content} gutter={ds.space.lg}>
         <Stack.Screen options={{ title: t('music.create.title') }} />
         {state.status === 'off' ? <MusicNotice message={t('music.off')} />
@@ -64,39 +80,54 @@ export default function MusicCreate() {
                                     time: new Date(e.daily_allowance.reset_at).toLocaleTimeString(formatLocale()),
                                 })}</Text> : null}
                             </View> : null}
-                        <SegmentedControl value={input.mode} options={(['simple', 'custom'] as const).map(value => ({ value, label: t(`music.create.${value}`) }))}
-                            onChange={mode => edit({ mode })} />
+                        <SegmentedControl value={input.mode} options={[
+                            { value: 'simple' as const, label: t('music.create.describe'), icon: 'textSize' as const },
+                            { value: 'custom' as const, label: t('music.create.lyrics'), icon: 'audio' as const },
+                        ]} onChange={mode => {
+                            const prompt = mergeSmartDirectionText(input.prompt, EMPTY_MUSIC_SMART_DIRECTION, 500);
+                            const styles = mergeSmartDirectionText(input.styles, EMPTY_MUSIC_SMART_DIRECTION, e.custom_drafts.styles_max);
+                            edit({ mode, prompt, styles });
+                            setDirection(EMPTY_MUSIC_SMART_DIRECTION);
+                        }} />
                         {suno ? <Text variant="bodyStrong">{t('music.create.suno.offer')}</Text> : null}
                         <View style={s.row}>{e.models.filter(m => m.generation_modes.includes(input.mode)).map(m => {
                             const status = modelState(m, e);
                             return <Button key={m.id} variant={input.model_id === m.id ? 'primary' : 'secondary'}
                                 label={status === 'locked_plan' ? t('music.create.paidModel', { model: m.name }) : m.name}
-                                disabled={status !== 'usable'} onPress={() => { if (status === 'usable') edit({ model_id: m.id }); }} />;
+                                disabled={status !== 'usable'} onPress={() => { if (status === 'usable') {
+                                    edit({ model_id: m.id, ...(m.controls.instrumental === 'required' ? { instrumental: true, vocalGender: 'auto' as const } : {}) });
+                                    if (m.controls.instrumental === 'required') setDirection(current => ({ ...current, voice: 'Instrumental' }));
+                                } }} />;
                         })}</View>
                         {input.mode === 'simple' ? <>
                             <TextField label={t('music.create.prompt')} value={input.prompt} multiline
                                 maxLength={suno && model ? modelCounterLimit(model, 'prompt') ?? undefined : 500} onChangeText={prompt => edit({ prompt })} />
                             {inspirationSources.length ? <MusicInspirationCard api={api} sources={inspirationSources}
                                 onApply={prompt => edit({ prompt: prompt.slice(0, model ? modelCounterLimit(model, 'prompt') ?? 500 : 500) })} /> : null}
+                            <MusicSmartDirectionControls value={direction} onChange={updateDirection}
+                                voiceLocked={model?.controls.instrumental === 'required'} />
                             {suno && model?.controls.instrumental ? <View style={s.row}>
                                 <Text>{t('music.create.instrumental')}</Text><Switch accessibilityLabel={t('music.create.instrumental')}
                                     disabled={model.controls.instrumental === 'required'} value={input.instrumental}
-                                    onValueChange={instrumental => edit({ instrumental })} />
+                                    onValueChange={setInstrumentalDirection} />
                             </View> : null}
                         </> : suno && model ? <>
                             <View style={s.row}>
                                 <Text>{t('music.create.instrumental')}</Text><Switch accessibilityLabel={t('music.create.instrumental')}
-                                    value={input.instrumental} onValueChange={instrumental => edit({ instrumental })} />
+                                    value={input.instrumental} onValueChange={setInstrumentalDirection} />
                             </View>
-                            <MusicSunoControls input={input} model={model} rights={state.rights} onChange={edit}
+                            <MusicSunoControls input={input} model={model} rights={state.rights} onChange={edit} showVocalGender={false}
                                 onRights={rights => edit({}, rights)} />
+                            <MusicSmartDirectionControls value={direction} onChange={updateDirection} />
                             {!input.instrumental && !input.lyrics.trim() ? <MusicNotice message={t('music.create.lyrics_required')} /> : null}
                             {!input.instrumental && !state.rights ? <MusicNotice message={t('music.create.rights_required')} /> : null}
                         </> : <>
                                 <MusicLyricsPanel value={input.lyrics} max={Math.min(3000, e.custom_drafts.lyrics_max)} onChange={lyrics => edit({ lyrics })} />
                                 <TextField label={t('music.create.styles')} value={input.styles} maxLength={Math.min(500, e.custom_drafts.styles_max)} onChangeText={styles => edit({ styles })} />
+                                <MusicSmartDirectionControls value={direction} onChange={updateDirection}
+                                    voiceLocked={model?.controls.instrumental === 'required'} />
                                 {model?.controls.instrumental === 'optional' && model.controls.lyrics ? <View style={s.row}>
-                                    <Text>{t('music.create.instrumental')}</Text><Switch accessibilityLabel={t('music.create.instrumental')} value={input.instrumental} onValueChange={instrumental => edit({ instrumental })} />
+                                    <Text>{t('music.create.instrumental')}</Text><Switch accessibilityLabel={t('music.create.instrumental')} value={input.instrumental} onValueChange={setInstrumentalDirection} />
                                 </View> : null}
                                 {!input.instrumental ? <Button variant="secondary" accessibilityRole="checkbox" accessibilityState={{ checked: state.rights }}
                                     label={t('music.create.rights')} onPress={() => edit({}, !state.rights)} /> : null}

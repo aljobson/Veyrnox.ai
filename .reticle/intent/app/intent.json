@@ -182,6 +182,53 @@
         "route": "/app/film-studio"
       },
       "updatedAt": 1792850668696
+    },
+    "inline:create-music-uses-smart-icon-controls-for-voice-432815ca": {
+      "binding": {
+        "kind": "allOf",
+        "predicates": [
+          {
+            "contains": "Turn one idea into one track.",
+            "kind": "text"
+          },
+          {
+            "contains": "Female vocal",
+            "kind": "text"
+          },
+          {
+            "contains": "Cinematic",
+            "kind": "text"
+          },
+          {
+            "contains": "Uplifting",
+            "kind": "text"
+          },
+          {
+            "contains": "108 BPM",
+            "kind": "text"
+          },
+          {
+            "contains": "Your track",
+            "kind": "text"
+          }
+        ]
+      },
+      "declaredAt": 1795705585149,
+      "id": "inline:create-music-uses-smart-icon-controls-for-voice-432815ca",
+      "provenBy": {
+        "at": 1795705586112,
+        "grade": "presence",
+        "runId": "drive-05e19b08c55fa9d7",
+        "verdictId": "reticle_assert:1795705586112"
+      },
+      "state": "proved",
+      "statement": "Create Music uses smart icon controls for voice, genre, mood and tempo and creates one track.",
+      "status": "proved",
+      "subject": "app",
+      "surface": {
+        "route": "/app/music/create"
+      },
+      "updatedAt": 1795705586234
     }
   },
   "subject": "app",

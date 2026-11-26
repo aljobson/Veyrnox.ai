@@ -49,9 +49,9 @@ function StyleField({ kind, value, max, applied, onChange }: {
     </View>;
 }
 
-export function MusicSunoControls({ input, model, rights, onChange, onRights }: {
+export function MusicSunoControls({ input, model, rights, onChange, onRights, showVocalGender = true }: {
     input: MusicInputSnapshot; model: MusicModel; rights: boolean;
-    onChange: (patch: Partial<MusicInputSnapshot>) => void; onRights: (value: boolean) => void;
+    onChange: (patch: Partial<MusicInputSnapshot>) => void; onRights: (value: boolean) => void; showVocalGender?: boolean;
 }) {
     const titleMax = modelCounterLimit(model, 'title')!;
     const lyricsMax = modelCounterLimit(model, 'lyrics')!;
@@ -75,7 +75,7 @@ export function MusicSunoControls({ input, model, rights, onChange, onRights }: 
             <SegmentedControl value={input.sunoModel} options={models.map(value => ({ value, label: value }))}
                 onChange={(sunoModel: MusicSunoModel) => onChange({ sunoModel })} />
         </View>
-        {!input.instrumental ? <View style={styles.field}>
+        {showVocalGender && !input.instrumental ? <View style={styles.field}>
             <Text variant="bodyStrong">{t('music.create.suno.vocalGender')}</Text>
             <SegmentedControl value={input.vocalGender} options={genders.map(value => ({ value, label: t(`music.create.suno.gender.${value}`) }))}
                 onChange={(vocalGender: MusicVocalGender) => onChange({ vocalGender })} />
