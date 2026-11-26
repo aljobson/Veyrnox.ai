@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { CREATIVE_FEATURE_DIRECTORY, CREATIVE_FEATURES, CREATIVE_FEATURE_SLUGS, creativeFeature, creativeFeatureExample, creativeFeatureExampleAssetPath, creativeFeatureOwner } from '../app/veyrnox/_lib/creativeFeatures.js';
+import { launchableRecipe, recipeById } from '../app/veyrnox/_lib/creationRecipes.js';
 
 const EXPECTED = [
   'ai-avatar-generator', 'talking-avatar', 'ai-human-generator', 'ai-influencer-generator',
@@ -64,17 +65,46 @@ test('the shared studio never asks for uploads on a guarded workflow', async () 
   assert.match(studio, /!feature\.blocked && <><section/);
   assert.match(studio, /!feature\.blocked && <section className=\{`\$\{card\} p-5`\}>/);
   assert.match(studio, /data-testid="source-upload-script"/);
+  assert.match(studio, /href=\{feature\.alternativeHref\}/);
+  assert.match(studio, /\{copy\.alternativeLabel\}/);
   assert.match(studio, /<p className="mt-2 text-sm font-black">\{copy\.title\}<\/p>/);
   assert.doesNotMatch(studio, />\{feature\.model\}<\/p>/);
 });
 
-test('retired voice cloning stays safeguarded and out of customer discovery', () => {
+test('unavailable workflows stay safeguarded and route customers to working alternatives', () => {
   const voice = creativeFeature('ai-voice-cloning');
   assert.equal(voice.model, undefined);
   assert.deepEqual(voice.media, ['audio']);
   assert.equal(voice.blocked, true);
   assert.match(voice.blockedReason, /does not offer tools that imitate a real person\'s voice/);
+  assert.equal(voice.alternativeHref, '/app/features/text-to-speech');
   assert.ok(!CREATIVE_FEATURE_DIRECTORY.includes(voice));
+
+  for (const slug of ['lip-sync', 'video-dubbing']) {
+    const feature = creativeFeature(slug);
+    assert.equal(feature.model, undefined);
+    assert.equal(feature.blocked, true);
+    assert.match(feature.blockedReason, /model has been retired/);
+    assert.equal(feature.alternativeHref, '/app/lip-sync');
+    assert.equal(feature.alternativeLabel, 'Open Lip Sync Studio');
+  }
+
+  const talkingObjects = creativeFeature('talking-objects');
+  assert.equal(talkingObjects.model, undefined);
+  assert.equal(talkingObjects.blocked, true);
+  assert.match(talkingObjects.blockedReason, /rejected object-only sources during paid production testing/);
+  assert.equal(talkingObjects.alternativeHref, '/app/features/product-video-generator');
+  assert.ok(!CREATIVE_FEATURE_DIRECTORY.includes(talkingObjects));
+});
+
+test('recipe discovery cannot launch workflows that failed production compatibility checks', () => {
+  for (const id of ['lip-sync', 'video-dubbing', 'talking-object']) {
+    const recipe = recipeById(id);
+    assert.equal(recipe.status, 'blocked');
+    assert.equal(recipe.href, null);
+    assert.ok(recipe.blockedReason);
+    assert.equal(launchableRecipe(recipe), false);
+  }
 });
 
 test('the app route and sidebar expose the workflow suite', async () => {
@@ -95,9 +125,10 @@ test('Creative tools owns guided outcomes once while Audio keeps its existing wo
   const create = await readFile(new URL('../app/veyrnox/app/create/page.js', import.meta.url), 'utf8');
   const audio = ['text-to-speech', 'lip-sync', 'ai-talking-photo-generator', 'singing-photo', 'video-dubbing'];
   assert.deepEqual(CREATIVE_FEATURES.filter((item) => creativeFeatureOwner(item) === 'audio').map((item) => item.slug), audio);
-  assert.equal(CREATIVE_FEATURE_DIRECTORY.length, CREATIVE_FEATURES.length - audio.length - 1);
+  assert.equal(CREATIVE_FEATURE_DIRECTORY.length, CREATIVE_FEATURES.length - audio.length - 2);
   assert.ok(CREATIVE_FEATURE_DIRECTORY.some((item) => item.slug === 'ai-avatar-generator'));
   assert.ok(!CREATIVE_FEATURE_DIRECTORY.some((item) => item.slug === 'ai-voice-cloning'));
+  assert.ok(!CREATIVE_FEATURE_DIRECTORY.some((item) => item.slug === 'talking-objects'));
   assert.doesNotMatch(create, /CreateStartFrom/);
 });
 
