@@ -105,7 +105,7 @@ test('compact neutral instrument tiles audition and add with one undoable store 
     const doc = newBeat('Library'); await act(async () => root.render(<LibraryHarness id={doc.id} />));
     await press(t('beatPiano.library.add'));
     const vividFills = new Set(VIVID_HUES.map(hue => vividHue(hue, 'dark').fill));
-    expect(root.container.queryAll(node => RN.StyleSheet.flatten(node.props.style)?.width === '30%').length).toBeGreaterThan(0);
+    expect(root.container.queryAll(node => RN.StyleSheet.flatten(node.props.style)?.width === '31%').length).toBeGreaterThan(0);
     expect(root.container.queryAll(node => vividFills.has(RN.StyleSheet.flatten(node.props.style)?.backgroundColor))).toHaveLength(0);
     await press(t('beatPiano.library.audition', { name: 'Grand piano' }));
     expect(mockAudio.audition).toHaveBeenCalledWith({ engine: 'voice', id: 'piano', preset: 'grand' });

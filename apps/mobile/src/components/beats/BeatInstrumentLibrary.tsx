@@ -38,7 +38,7 @@ export function BeatInstrumentLibrary({ apply, audio, onClose, onDismiss, refusa
                     <Text variant="caption" numberOfLines={2} style={s.presetName}>{p.label}</Text>
                 </Button>
                 <Button label={t('beatPiano.library.audition', { name: p.label })} accessibilityLabel={t('beatPiano.library.audition', { name: p.label })}
-                    icon="play" iconOnly size="sm" variant="tertiary" containerStyle={s.presetPreview} onPress={() => void audition(p.instrument)} />
+                    icon="play" iconOnly size="sm" variant="tertiary" containerStyle={s.presetPreview} style={s.previewButton} onPress={() => void audition(p.instrument)} />
             </View>)}</View>
         </View>)}
         {!groups.length && <Text>{t('beatPiano.library.empty')}</Text>}
