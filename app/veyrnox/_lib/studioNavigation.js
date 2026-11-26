@@ -44,7 +44,7 @@ export const STUDIO_DESTINATIONS = [
   { section: 'tools', key: 'oddlings', href: '/app/oddlings', labelKey: 'label.Oddlings', icon: 'character', nav: false },
   { section: 'tools', href: '/mcp', labelKey: 'label.MCP', icon: 'plug', menu: false, nav: false },
   { section: 'assets', key: 'projects', href: '/app/projects', labelKey: 'label.Projects', icon: 'folder', flag: 'projects', nav: false },
-  { section: 'assets', href: '/presets', labelKey: 'label.Templates', icon: 'template', menu: false, nav: false },
+  { section: 'assets', key: 'templates', href: '/app/templates', labelKey: 'label.Templates', icon: 'template' },
   { section: 'assets', href: '/models', labelKey: 'label.Models', icon: 'cube', menu: false, nav: false },
   { section: 'assets', href: '/guides', labelKey: 'label.Guides', icon: 'book', menu: false, nav: false },
 ].filter((destination) => FILM_STUDIO_ENABLED || destination.key !== 'film'); // ADR-0344

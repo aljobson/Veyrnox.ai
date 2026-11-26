@@ -1,0 +1,29 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import { VEO_TEMPLATE_RECIPES } from '../app/veyrnox/_lib/veoTemplateRecipes.js';
+import { MUSIC_DISCOVER_BEATS } from '../lib/musicDiscover.js';
+
+const component = await readFile(new URL('../app/veyrnox/_components/TemplateCatalog.js', import.meta.url), 'utf8');
+const navigation = await readFile(new URL('../app/veyrnox/_lib/studioNavigation.js', import.meta.url), 'utf8');
+const page = await readFile(new URL('../app/veyrnox/app/templates/page.js', import.meta.url), 'utf8');
+
+test('the signed-in catalog is visible in navigation and covers all four requested engines', () => {
+  assert.match(navigation, /key: 'templates', href: '\/app\/templates'/);
+  for (const provider of ['kling', 'seedance', 'veo', 'suno']) assert.match(component, new RegExp(`id: '${provider}'`));
+  assert.match(page, /TemplateCatalog/);
+  assert.match(page, /seedance=\{\[\]\}/);
+});
+
+test('Veo recipes are Veyrnox-owned runnable handoffs and SUNO exposes all 100 music starts', () => {
+  assert.ok(VEO_TEMPLATE_RECIPES.length >= 10);
+  assert.ok(VEO_TEMPLATE_RECIPES.every(item => item.model === 'veo-3.1-fast-kie' && item.prompt.length > 80));
+  assert.equal(MUSIC_DISCOVER_BEATS.length, 100);
+  assert.match(component, /writeStudioDraft\(window\.sessionStorage, item\)/);
+  assert.match(component, /\/app\/music\/create\?sample=/);
+});
+
+test('provider effects are catalog-only until pricing and paid proof exist', () => {
+  assert.match(component, /Generation stays disabled until each effect has Veyrnox pricing and a paid proof/);
+  assert.doesNotMatch(component, /CreateTask/);
+});
