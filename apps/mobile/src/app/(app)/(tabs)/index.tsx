@@ -1,18 +1,18 @@
 import { YourWinsCard } from '../../../components/wins/YourWinsCard';
 import { categoryLabel } from '../../../lib/presetCategoryLabel';
 import { CheckInEntry } from '../../../components/credits/CheckInEntry';
-import { Link, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { Link, useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { type ComponentRef, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { celebrateFinished } from '../../../lib/celebrate';
-import { ALL_CATEGORIES, ALL_TYPES, filterPresets, firstModelFor, pickUp, promptHref, recentCreations, type TypeFilter } from '../../../lib/explore';
+import { ALL_CATEGORIES, ALL_TYPES, filterPresets, pickUp, promptHref, recentCreations, type TypeFilter } from '../../../lib/explore';
 import { plural, t } from '../../../lib/i18n';
 import { templateCountLabel } from '../../../lib/templateCountLabel';
 import { rawText } from '../../../lib/i18n/translate';
 import { useAnnouncement } from '../../../lib/useAnnouncement';
-import { fetchCatalogCached, mediaApi, type CatalogModel, type Job, type Kind } from '../../../lib/media';
+import { fetchCatalogCached, mediaApi, type CatalogModel, type Job } from '../../../lib/media';
 import { LowBalanceNote } from '../../../components/LowBalanceNote';
 import { CREATOR_PROFILE_ENABLED } from '../../../lib/creatorProfile';
 import { runVibeSync, vibeOffered } from '../../../lib/creatorProfileStore';
@@ -28,7 +28,7 @@ import { fetchAudioTemplates, type AudioTemplate } from '../../../lib/audioTempl
 import { isDirectTemplate, listedTemplates, mixKinds } from '../../../lib/exploreTemplates';
 import { fetchPopularIds, templateChips, templatesFor, templatePageHref } from '../../../lib/templateFilters';
 import { colors, ds, LIST_END_PADDING } from '../../../theme';
-import { Button, Card, Text, TextField, Chip, themedStyles, useThemedStyles, useAppearance } from '../../../components/ui';
+import { Button, Text, TextField, Chip, themedStyles, useThemedStyles, useAppearance } from '../../../components/ui';
 
 import { recordHomeStart } from '../../../lib/firstGoalStore';
 import { hasRealAnswer, phoneStarts } from '../../../lib/firstProfile';
@@ -56,19 +56,6 @@ export default function Explore() {
     const { api, generation, beginSessionTask } = useAuth();
     const profile = useFirstProfile();
     const router = useRouter();
-    const { focusIdea } = useLocalSearchParams<{ focusIdea?: string }>();
-    const ideaField = useRef<ComponentRef<typeof TextInput>>(null);
-    const page = useRef<ComponentRef<typeof ScrollView>>(null);
-    const ideaY = useRef(0);
-    useFocusEffect(useCallback(() => {
-        if (focusIdea !== '1') return;
-        const timer = setTimeout(() => {
-            page.current?.scrollTo({ y: ideaY.current, animated: true });
-            ideaField.current?.focus();
-            router.setParams({ focusIdea: undefined });
-        }, 350);
-        return () => clearTimeout(timer);
-    }, [focusIdea, router]));
     // The start order is decided once and then kept, so a row never moves under a finger: by the first-run answers when
     // they arrive, or the default order if they take longer than START_ORDER_WAIT_MS.
     const [timedOut, setTimedOut] = useState(false);
@@ -81,10 +68,8 @@ export default function Explore() {
     const starts = timedOut
         ? { keys: phoneStarts(null, null), suggested: false }
         : profile.ready ? { keys: phoneStarts(profile.role, profile.goal), suggested: hasRealAnswer(profile) } : null;
-    const [prompt, setPrompt] = useState('');
     // null until the catalog arrives; only a confirmed (not stale saved) catalog, even an empty one, decides which templates are listed.
     const [catalog, setCatalog] = useState<CatalogModel[] | null>(null), [catalogConfirmed, setCatalogConfirmed] = useState(false);
-    const [note, setNote] = useState<string | null>(null);
     const [presets, setPresets] = useState<Preset[] | null>(null);
     const [popularIds, setPopularIds] = useState<string[]>([]);
     const [presetsFailed, setPresetsFailed] = useState(false);
@@ -194,13 +179,6 @@ export default function Explore() {
     const resume = useMemo(() => pickUp(jobs), [jobs]);
     const recent = useMemo(() => recentCreations(jobs, RECENT), [jobs]);
 
-    function make(kind: Kind) {
-        const model = firstModelFor(catalog ?? [], kind);
-        if (!model) return setNote(t('explore.noModel'));
-        setNote(null);
-        router.push(promptHref(model.id, prompt));
-    }
-
     function openPreset(p: Preset) {
         // Image and audio templates have no template page; like Create > Templates they open Create with their prompt.
         if (!isDirectTemplate(p.id)) { router.push(templatePageHref(p)); return; }
@@ -219,7 +197,6 @@ export default function Explore() {
         setCategory(ALL_CATEGORIES);
     }
 
-    const empty = prompt.trim().length === 0;
     const label = (j: Job) => j.label || t('edit.untitled');
     const cost = (j: Job) => (j.credits > 0 ? plural('library.cost', j.credits) : t('library.costFree'));
 
@@ -228,7 +205,7 @@ export default function Explore() {
     return (
         <>
             <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-            <ScrollView ref={page} automaticallyAdjustKeyboardInsets style={styles.scroll} contentContainerStyle={styles.screen} keyboardShouldPersistTaps="handled">
+            <ScrollView automaticallyAdjustKeyboardInsets style={styles.scroll} contentContainerStyle={styles.screen} keyboardShouldPersistTaps="handled">
                 <View style={styles.intro}>
                     <Text variant="title1" style={styles.pageTitle} accessibilityRole="header">
                         {t('explore.start.title')}
@@ -253,28 +230,6 @@ export default function Explore() {
                     })}
                     <StartOption href="/instruments" hue="rose" style={styles.startOption} icon="pianoKeys" title={t('instruments.title')} body={t('instruments.homeBody')} hint={t('instruments.homeHint')} divided />
                 </View>
-
-
-                <Card style={styles.composer} onLayout={event => { ideaY.current = event.nativeEvent.layout.y; }}>
-                    <Text variant="title3" style={styles.composerTitle}>
-                        {t('explore.ideaTitle')}
-                    </Text>
-                    <TextField
-                        ref={ideaField}
-                        accessibilityLabel={t('explore.ideaTitle')}
-                        placeholder={t('explore.promptPlaceholder')}
-                        placeholderTextColor={colors.muted}
-                        style={styles.prompt}
-                        multiline
-                        value={prompt}
-                        onChangeText={setPrompt}
-                    />
-                    <View style={styles.actions}>
-                        <Button variant="secondary" size="md" label={t('explore.makeVideo')} disabled={empty} onPress={() => make('video')} />
-                        <Button variant={empty ? 'secondary' : 'primary'} size="md" label={t('explore.makeImage')} disabled={empty} onPress={() => make('image')} />
-                    </View>
-                </Card>
-
                 <OddlingsBanner
                     href="/oddlings"
                     accessibilityLabel={t('explore.oddlings.title')}
@@ -286,12 +241,6 @@ export default function Explore() {
                 />
                 <CheckInEntry unclaimedOnly />
                 {balance !== null && isLowBalance(balance, cheapestCredits(presets?.filter((p) => p.available))) ? <LowBalanceNote balance={balance} /> : null}
-                {note ? (
-                    <Text style={styles.note} accessibilityLiveRegion="polite">
-                        {note}
-                    </Text>
-                ) : null}
-
                 <View style={styles.headerRow}>
                     <View style={styles.templateHeading}>
                         <Text variant="title2" style={styles.heading} accessibilityRole="header">
@@ -438,18 +387,6 @@ const sheets = themedStyles((p, ramp) => ({
     startGroup: { gap: ds.space.sm },
     unsettled: { opacity: 0 },
     startOption: { minHeight: 80 },
-    composer: { gap: ds.space.md },
-    composerTitle: { color: p.textPrimary },
-    prompt: {
-        ...ramp.body,
-        minHeight: 62,
-        textAlignVertical: 'top',
-        color: p.textPrimary,
-        paddingHorizontal: 0,
-        paddingTop: 2,
-    },
-    actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: ds.space.sm },
-    note: { color: p.textSecondary },
     headerRow: {
         flexDirection: 'row',
         alignItems: 'flex-end',
