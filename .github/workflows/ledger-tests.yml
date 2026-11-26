@@ -156,9 +156,10 @@ jobs:
     needs: changes
     if: needs.changes.outputs.relevant == 'true'
     runs-on: ubuntu-latest
-    # Was 5. "Rebuild from scratch" replays every migration and had grown past it: main's own runs were
-    # cancelled at the limit on 2026-11-03 with no test failing.
-    timeout-minutes: 10
+    # Was 5, then 10. "Rebuild from scratch" now performs four full schema
+    # replays plus the growing acceptance inventory. Two consecutive runs on
+    # 2026-11-26 were cancelled at 10 minutes without an assertion failure.
+    timeout-minutes: 20
 
     services:
       postgres:
