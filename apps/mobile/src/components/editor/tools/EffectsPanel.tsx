@@ -22,7 +22,7 @@ export function EffectsPanel(props: LookContentProps) {
         <CropSection {...props} /><ClipBackgroundSection {...props} />
         <View style={{ gap: ds.space.sm }}>
             <PanelHeading title={t('liveEdit.tool.retouch')} detail={t('liveEdit.privacy')} />
-            <Action label={t('liveEdit.tool.retouch')} disabled={disabled} onPress={() => router.push('/live-edit')} />
+            <Action label={t('liveEdit.tool.retouch')} disabled={disabled} onPress={() => router.push('/live-edit' as never)} />
         </View>
     </View>;
 }

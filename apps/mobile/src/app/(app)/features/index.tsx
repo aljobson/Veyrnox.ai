@@ -6,9 +6,7 @@ import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-n
 import { CREATIVE_FEATURE_GROUPS, CREATIVE_FEATURES, examplePlaysOn } from '../../../lib/creativeFeatures';
 import { compatibleCreativeFeatures, creativeReuseTargetHref, readCreativeReuse } from '../../../lib/creativeReuse';
 import { t } from '../../../lib/i18n';
-import { useMusicAvailable } from '../../../lib/music/useMusicAvailable';
-import { colors, fonts, VIVID_HUES } from '../../../theme';
-import { VividCard } from '../../../components/ui';
+import { colors, fonts } from '../../../theme';
 
 export default function CreativeFeatures() {
     const { sourceJobId, sourceKind } = useLocalSearchParams<{ sourceJobId?: string; sourceKind?: string }>();
@@ -23,16 +21,6 @@ export default function CreativeFeatures() {
                 <Text style={styles.title} accessibilityRole="header">{reuse ? t('features.reuse.title', { kind: t(`mediaKind.${reuse.kind}`) }) : t('features.maketheexactthingyouneed')}</Text>
                 <Text style={styles.lead}>{reuse ? t('features.reuse.lead') : t('features.chooseaworkflowVeyrnoxsetstheright')}</Text>
             </View>
-            {!reuse ? <View style={styles.group} testID="all-features-directory">
-                <View style={styles.groupHeading}>
-                    <Text style={styles.groupTitle} accessibilityRole="header">{t('menu.features')}</Text>
-                    <Text style={styles.count}>{t('features.tools', { value1: directory.length })}</Text>
-                </View>
-                <View style={styles.directoryGrid}>{directory.map((feature, index) => {
-                    const label = t(feature.titleKey as Parameters<typeof t>[0]);
-                    return <VividCard key={feature.id} hue={VIVID_HUES[index % VIVID_HUES.length]} icon={feature.icon ?? 'sparkle'} title={label} accessibilityLabel={rawText(label)} style={styles.directoryCard} onPress={() => router.push(feature.href as never)} />;
-                })}</View>
-            </View> : null}
             {CREATIVE_FEATURE_GROUPS.map((group) => {
                 const features = available.filter((item) => item.group === group);
                 if (!features.length) return null;
@@ -66,8 +54,6 @@ const styles = StyleSheet.create({
     lead: { color: colors.body, fontSize: 16, lineHeight: 24, maxWidth: 680 },
     group: { gap: 12 }, groupHeading: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', borderBottomWidth: 2, borderBottomColor: colors.text, paddingBottom: 8 },
     groupTitle: { color: colors.text, fontSize: 23, fontWeight: '900' }, count: { color: colors.muted, fontSize: 11, fontWeight: '700' },
-    directoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-    directoryCard: { width: '48%', minHeight: 150 },
     grid: { gap: 12 }, card: { width: '100%', overflow: 'hidden', borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
     mediaFrame: { width: '100%', height: 210, alignItems: 'center', justifyContent: 'center', backgroundColor: '#09090B' }, thumb: { width: '100%', height: '100%' },
     playBadge: { position: 'absolute', width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.72)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)' },
