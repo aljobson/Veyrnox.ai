@@ -36,13 +36,21 @@ const OPTIONS: Record<DirectionKey, readonly string[]> = {
 const smartText = (value: MusicSmartDirection) => (Object.keys(META) as DirectionKey[])
     .map(key => value[key] ? `${META[key].label}: ${value[key]}` : '').filter(Boolean).join('; ');
 
+export function canMergeSmartDirectionText(base: string, value: MusicSmartDirection, max: number): boolean {
+    const clean = base.replace(/\n?\[Smart direction: [^\]]*\]\s*$/u, '').trimEnd();
+    const summary = smartText(value);
+    if (!summary) return true;
+    const joined = `${clean}${clean ? '\n' : ''}[Smart direction: ${summary}]`;
+    return Array.from(joined).length <= max;
+}
+
 export function mergeSmartDirectionText(base: string, value: MusicSmartDirection, max: number): string {
     const clean = base.replace(/\n?\[Smart direction: [^\]]*\]\s*$/u, '').trimEnd();
     const summary = smartText(value);
-    if (!summary) return clean.slice(0, max);
+    if (!summary) return clean;
+    if (!canMergeSmartDirectionText(base, value, max)) return base;
     const suffix = `[Smart direction: ${summary}]`;
-    if (suffix.length >= max) return suffix.slice(0, max);
-    return [clean.slice(0, Math.max(0, max - suffix.length - 1)), suffix].filter(Boolean).join('\n');
+    return [clean, suffix].filter(Boolean).join('\n');
 }
 
 export function MusicSmartDirectionControls({ value, onChange, voiceLocked = false }: {

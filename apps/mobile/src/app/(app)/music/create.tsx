@@ -9,7 +9,7 @@ import { MusicNotice } from '../../../components/music/MusicNotice';
 import { MusicAdvancedControls } from '../../../components/music/MusicAdvancedControls';
 import { MusicSunoControls } from '../../../components/music/MusicSunoControls';
 import { MusicInspirationCard } from '../../../components/music/MusicInspirationCard';
-import { EMPTY_MUSIC_SMART_DIRECTION, mergeSmartDirectionText, MusicSmartDirectionControls, type MusicSmartDirection } from '../../../components/music/MusicSmartDirectionControls';
+import { canMergeSmartDirectionText, EMPTY_MUSIC_SMART_DIRECTION, mergeSmartDirectionText, MusicSmartDirectionControls, type MusicSmartDirection } from '../../../components/music/MusicSmartDirectionControls';
 import { useMusicCreate } from '../../../lib/music/useMusicCreate';
 import { isSunoModel, modelCounterLimit, modelState, quoteBlockers } from '../../../lib/music/createForm';
 import { formatLocale, t } from '../../../lib/i18n';
@@ -33,6 +33,7 @@ export default function MusicCreate() {
     }, [flow, sample, challenge, state.status, state.input, state.rights, state.entitlements, pending]);
     const lock = useRef(false);
     const [direction, setDirection] = useState<MusicSmartDirection>(EMPTY_MUSIC_SMART_DIRECTION);
+    const [directionError, setDirectionError] = useState('');
     const [now, setNow] = useState(Date.now);
     useEffect(() => {
         if (!pending || pending.phase === 'AMBIGUOUS') return;
@@ -48,16 +49,24 @@ export default function MusicCreate() {
         activeCount: flow.tracker.activeCount(), quote: pending.quote, now, ambiguous }) : [];
     const error = state.error && t(`music.create.${messageKey(state.error)}`);
     const updateDirection = (next: MusicSmartDirection) => {
-        setDirection(next);
         const max = input.mode === 'simple' ? (model ? modelCounterLimit(model, 'prompt') ?? 500 : 500)
             : Math.min(model && suno ? modelCounterLimit(model, 'styles') ?? e?.custom_drafts.styles_max ?? 500 : 500, e?.custom_drafts.styles_max ?? 500);
+        const sourceText = input.mode === 'simple' ? input.prompt : input.styles;
+        if (!canMergeSmartDirectionText(sourceText, next, max)) {
+            setDirectionError('Your music direction is full. Shorten it before adding another Smart Direction choice.');
+            return;
+        }
+        const voiceChanged = next.voice !== direction.voice;
+        setDirectionError('');
+        setDirection(next);
         const textPatch = input.mode === 'simple'
             ? { prompt: mergeSmartDirectionText(input.prompt, next, max) }
             : { styles: mergeSmartDirectionText(input.styles, next, max) };
-        const voicePatch = next.voice === 'Instrumental' ? { instrumental: true, vocalGender: 'auto' as const }
-            : next.voice === 'Female vocal' ? { instrumental: false, vocalGender: 'female' as const }
-                : next.voice === 'Male vocal' ? { instrumental: false, vocalGender: 'male' as const }
-                    : { instrumental: model?.controls.instrumental === 'required', vocalGender: 'auto' as const };
+        const voicePatch = !voiceChanged ? {}
+            : next.voice === 'Instrumental' ? { instrumental: true, vocalGender: 'auto' as const }
+                : next.voice === 'Female vocal' ? { instrumental: false, vocalGender: 'female' as const }
+                    : next.voice === 'Male vocal' ? { instrumental: false, vocalGender: 'male' as const }
+                        : { instrumental: model?.controls.instrumental === 'required', vocalGender: 'auto' as const };
         edit({ ...textPatch, ...voicePatch });
     };
     const setInstrumentalDirection = (instrumental: boolean) => updateDirection({ ...direction, voice: instrumental ? 'Instrumental' : '' });
@@ -133,6 +142,7 @@ export default function MusicCreate() {
                                     label={t('music.create.rights')} onPress={() => edit({}, !state.rights)} /> : null}
                                 {!input.instrumental && !state.rights ? <MusicNotice message={t('music.create.rights_required')} /> : null}
                             </>}
+                        {directionError ? <MusicNotice message={directionError} /> : null}
                         {!suno ? <>
                             <TextField label={t('music.create.songTitle')} value={input.title} maxLength={Math.min(80, e.custom_drafts.title_max)} onChangeText={title => edit({ title })} />
                             <Text>{t('music.create.duration', { seconds: input.duration })}</Text>

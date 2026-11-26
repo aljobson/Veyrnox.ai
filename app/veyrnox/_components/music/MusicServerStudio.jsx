@@ -32,7 +32,7 @@ import {
 } from './musicWriting';
 import { MusicCreationModeTabs } from './MusicCreationModeTabs';
 import {
-  buildMusicDirection, EMPTY_MUSIC_DIRECTION, mergeMusicStyleDirection, MusicAdvancedDirectionFields,
+  buildMusicDirection, canMergeMusicStyleDirection, EMPTY_MUSIC_DIRECTION, mergeMusicStyleDirection, MusicAdvancedDirectionFields,
 } from './MusicAdvancedDirectionFields';
 
 const MUSIC_GUIDE_KEY = 'veyrnox.music.create-guide.v1';
@@ -191,9 +191,12 @@ function SunoSimpleFields({ entitlements, model, modelId, setModelId, descriptio
   }
 
   function updateDirection(next) {
+    const voiceChanged = next.voice !== direction.voice;
     setDirection(next);
-    if (next.voice === 'Instrumental') setInstrumental(true);
-    else setInstrumental(Boolean(model?.instrumental_only));
+    if (voiceChanged) {
+      if (next.voice === 'Instrumental') setInstrumental(true);
+      else setInstrumental(Boolean(model?.instrumental_only));
+    }
     clearQuote();
   }
 
@@ -233,6 +236,7 @@ function SunoCustomDraftFields({ custom, entitlements, quote, busy, clearQuote, 
   const model = entitlements?.models?.find((item) => item.provider_contract === 'crun-suno-v1' && item.generation_modes?.includes('custom'));
   const [controls, setControls] = useState(SUNO_CONTROL_DEFAULTS);
   const [direction, setDirection] = useState(EMPTY_MUSIC_DIRECTION);
+  const [directionError, setDirectionError] = useState('');
 
   useEffect(() => {
     if (custom.loaded && model?.id && custom.draft.model_id !== model.id) custom.update('model_id', model.id);
@@ -245,10 +249,18 @@ function SunoCustomDraftFields({ custom, entitlements, quote, busy, clearQuote, 
   }
 
   function updateDirection(next) {
+    if (!canMergeMusicStyleDirection(custom.draft.styles, next, sunoLimit(model, 'styles'))) {
+      setDirectionError('Your saved style direction is full. Shorten it before adding another Smart Direction choice.');
+      return;
+    }
+    const voiceChanged = next.voice !== direction.voice;
+    setDirectionError('');
     setDirection(next);
     custom.update('styles', mergeMusicStyleDirection(custom.draft.styles, next, sunoLimit(model, 'styles')));
-    updateControl('instrumental', next.voice === 'Instrumental');
-    updateControl('vocalGender', next.voice === 'Female vocal' ? 'female' : next.voice === 'Male vocal' ? 'male' : 'auto');
+    if (voiceChanged) {
+      updateControl('instrumental', next.voice === 'Instrumental');
+      updateControl('vocalGender', next.voice === 'Female vocal' ? 'female' : next.voice === 'Male vocal' ? 'male' : 'auto');
+    }
     clearQuote();
   }
 
@@ -286,6 +298,7 @@ function SunoCustomDraftFields({ custom, entitlements, quote, busy, clearQuote, 
         <input type="checkbox" checked={controls.instrumental} onChange={(event) => updateDirection({ ...direction, voice: event.target.checked ? 'Instrumental' : '' })} className="h-5 w-5 accent-vx-accent" />
       </label>
       <MusicAdvancedDirectionFields value={direction} onChange={updateDirection} />
+      {directionError ? <p role="alert" className="text-sm text-vx-danger">{directionError}</p> : null}
       <MusicSunoControls model={model} draft={custom.draft} updateDraft={custom.update} controls={controls} updateControl={updateControl} showVocalGender={false} />
       <div aria-live="polite" className="rounded-xl border border-vx-border bg-vx-base p-3 text-sm text-vx-fg-muted">
         {custom.status === 'saving' ? t('app.music.suno.savingDraft') : custom.status === 'saved' ? t('app.music.suno.savedRevision', { count: custom.draft.revision }) : custom.status === 'conflict' ? t('app.music.suno.draftConflict') : custom.status === 'error' ? sunoError(t, custom.error) : t('app.music.suno.changesSave')}
@@ -312,6 +325,7 @@ function CustomDraftFields({ custom, entitlements, quote, busy, clearQuote, quot
   const [lyricistProfileId, setLyricistProfileId] = useState('');
   const [instrumental, setInstrumental] = useState(false);
   const [direction, setDirection] = useState(EMPTY_MUSIC_DIRECTION);
+  const [directionError, setDirectionError] = useState('');
   const [rightsConfirmed, setRightsConfirmed] = useState(false);
   const [generationError, setGenerationError] = useState('');
   const limits = entitlements?.custom_drafts || { lyrics_max: 3000, styles_max: 500, title_max: 80 };
@@ -443,10 +457,15 @@ function CustomDraftFields({ custom, entitlements, quote, busy, clearQuote, quot
   }
 
   function updateDirection(next) {
+    if (!canMergeMusicStyleDirection(custom.draft.styles, next, limits.styles_max)) {
+      setDirectionError('Your saved style direction is full. Shorten it before adding another Smart Direction choice.');
+      return;
+    }
+    const voiceChanged = next.voice !== direction.voice;
+    setDirectionError('');
     setDirection(next);
     custom.update('styles', mergeMusicStyleDirection(custom.draft.styles, next, limits.styles_max));
-    if (next.voice === 'Instrumental') setInstrumental(true);
-    else setInstrumental(false);
+    if (voiceChanged) setInstrumental(next.voice === 'Instrumental');
     clearQuote();
   }
 
@@ -491,6 +510,7 @@ function CustomDraftFields({ custom, entitlements, quote, busy, clearQuote, quot
         <span className="mt-1 block text-right font-vx-mono text-xs font-normal text-vx-fg-faint">{custom.draft.styles.length}/{limits.styles_max}</span>
       </label>
       <MusicAdvancedDirectionFields value={direction} onChange={updateDirection} />
+      {directionError ? <p role="alert" className="text-sm text-vx-danger">{directionError}</p> : null}
       <button type="button" onClick={() => custom.update('styles', augmentMusicStyle(custom.draft.styles, limits.styles_max))} className="min-h-10 rounded-full border border-vx-border px-4 text-sm font-bold hover:border-vx-border-boost">Expand style direction</button>
       <label className="block text-sm font-bold text-vx-fg-body">
         Working title <span className="font-normal text-vx-fg-muted">(optional)</span>
@@ -666,9 +686,12 @@ export function MusicServerStudio({ sourcesEnabled = false, sampleSeed = null, s
   }
 
   function updateDirection(next) {
+    const voiceChanged = next.voice !== direction.voice;
     setDirection(next);
-    if (next.voice === 'Instrumental') setInstrumental(true);
-    else setInstrumental(Boolean(model?.instrumental_only));
+    if (voiceChanged) {
+      if (next.voice === 'Instrumental') setInstrumental(true);
+      else setInstrumental(Boolean(model?.instrumental_only));
+    }
     clearQuote();
   }
 

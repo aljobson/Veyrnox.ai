@@ -39,10 +39,20 @@ export function buildMusicDirection(base, value, max = Infinity) {
   return boundedJoin(base, advanced, max, '\n\n');
 }
 
+export function canMergeMusicStyleDirection(base, value, max = Infinity) {
+  if (!Number.isFinite(max)) return true;
+  const clean = (base || '').replace(/\n?\[Smart direction: [^\]]*\]\s*$/u, '').trimEnd();
+  const advanced = musicAdvancedDirectionText(value);
+  if (!advanced) return true;
+  return Array.from(`${clean}${clean ? '\n' : ''}[Smart direction: ${advanced}]`).length <= max;
+}
+
 export function mergeMusicStyleDirection(base, value, max = Infinity) {
   const clean = (base || '').replace(/\n?\[Smart direction: [^\]]*\]\s*$/u, '').trimEnd();
   const advanced = musicAdvancedDirectionText(value);
-  return boundedJoin(clean, advanced ? `[Smart direction: ${advanced}]` : '', max, '\n');
+  if (!advanced) return clean;
+  if (!canMergeMusicStyleDirection(base, value, max)) return base || '';
+  return `${clean}${clean ? '\n' : ''}[Smart direction: ${advanced}]`;
 }
 
 export function MusicAdvancedDirectionFields({ value, onChange, voiceLocked = false }) {
