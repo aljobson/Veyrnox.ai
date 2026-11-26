@@ -17,7 +17,15 @@ export interface CreativeFeature {
     readonly scriptUpload?: boolean;
 }
 
-export type CreativeFeatureOwner = 'audio' | 'tools' | 'creative';
+export type CreativeFeatureOwner = 'audio' | 'creative';
+
+const AUDIO_FEATURES = new Set([
+    'text-to-speech',
+    'lip-sync',
+    'video-dubbing',
+    'ai-talking-photo-generator',
+    'singing-photo',
+]);
 
 const feature = (value: CreativeFeature): CreativeFeature =>
     Object.freeze({ ...value, example: Object.freeze({ ...value.example }) });
@@ -50,13 +58,11 @@ export const CREATIVE_FEATURE_GROUPS = Object.freeze([...new Set(CREATIVE_FEATUR
 export const creativeFeature = (slug: string | undefined): CreativeFeature | null =>
     CREATIVE_FEATURES.find((item) => item.slug === slug) ?? null;
 
-// One capability has one discovery owner. Audio owns prompt-only speech creation; Tools owns every workflow that
-// starts from a file the person already has. A future guided workflow with neither shape can remain discoverable in
-// the Creative Features directory. Direct feature links stay valid for saved links and contextual reuse actions.
+// One capability has one discovery owner. Audio owns the workflows already presented in its studios and performance
+// section. Creative Tools owns the remaining guided outcomes. The raw file-tools directory is model-oriented and is
+// not a substitute for outcome-led flows such as AI Avatar, Talking Animals or Product Avatar.
 export function creativeFeatureOwner(feature: CreativeFeature): CreativeFeatureOwner {
-    if (feature.slug === 'text-to-speech') return 'audio';
-    if (feature.media.length > 0) return 'tools';
-    return 'creative';
+    return AUDIO_FEATURES.has(feature.slug) ? 'audio' : 'creative';
 }
 
 export const CREATIVE_FEATURE_DIRECTORY = CREATIVE_FEATURES.filter((feature) => creativeFeatureOwner(feature) === 'creative');

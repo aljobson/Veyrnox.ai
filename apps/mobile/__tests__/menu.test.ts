@@ -18,7 +18,7 @@ describe('grouped menu', () => {
     test('matches the web sidebar: same groups, same order, Help at the foot', () => {
         expect(MENU_SECTIONS.map((s) => s.id)).toEqual(['tools', 'assets']);
         expect(MENU_SECTIONS.map((s) => [s.id, s.items.map((i) => i.key)])).toEqual([
-            ['tools', ['create', 'audio', 'smartCut', 'editor', 'publish', 'cinema']],
+            ['tools', ['create', 'features', 'audio', 'smartCut', 'editor', 'publish', 'cinema']],
             ['assets', ['library', 'brandKit', 'credits', 'chat']],
         ]);
         expect(MENU_FOOTER.map((i) => i.key)).toEqual(['help']);
@@ -26,14 +26,14 @@ describe('grouped menu', () => {
 
     test('each drawer item opens its mobile screen', () => {
         expect(Object.fromEntries(ALL_ITEMS.map((i) => [i.key, i.href]))).toEqual({
-            create: '/create', audio: '/audio', smartCut: '/smart-cut', editor: '/editor', publish: '/publish', cinema: '/cinema',
+            create: '/create', features: '/features', audio: '/audio', smartCut: '/smart-cut', editor: '/editor', publish: '/publish', cinema: '/cinema',
             library: '/library', brandKit: '/brand-kit', credits: '/credits', chat: '/chat', help: '/help',
         });
     });
 
     test('keeps the web key order inside each group', () => {
         // Web (studioNavigation.js) lists Audio between Create and Video editor, and so does the phone.
-        const web = { tools: ['create', 'audio', 'smartCut', 'editor', 'publish', 'cinema'], assets: ['library', 'brandKit', 'credits', 'chat'] };
+        const web = { tools: ['create', 'features', 'audio', 'smartCut', 'editor', 'publish', 'cinema'], assets: ['library', 'brandKit', 'credits', 'chat'] };
         for (const section of MENU_SECTIONS) {
             const keys = section.items.map((i) => i.key);
             expect(web[section.id as 'tools' | 'assets'].filter((k) => keys.includes(k))).toEqual(keys);
@@ -101,6 +101,7 @@ describe('the current screen in the menu', () => {
         expect(activeItemKey('/chat/abc-123')).toBe('chat');
         expect(activeItemKey('/credits')).toBe('credits');
         expect(activeItemKey('/create/agent')).toBe('create');
+        expect(activeItemKey('/features/ai-avatar-generator')).toBe('features');
         expect(activeItemKey('/editor/p-1')).toBe('editor');
         expect(activeItemKey('/publish/compose')).toBe('publish');
         expect(activeItemKey('/library/files')).toBe('library');
@@ -109,7 +110,7 @@ describe('the current screen in the menu', () => {
     });
 
     test('screens not in the drawer light nothing but stay routable', () => {
-        for (const href of ['/features', '/oddlings/x', '/projects', '/models', '/faceless-reel']) {
+        for (const href of ['/oddlings/x', '/projects', '/models', '/faceless-reel']) {
             expect(activeItemKey(href)).toBeNull();
         }
     });

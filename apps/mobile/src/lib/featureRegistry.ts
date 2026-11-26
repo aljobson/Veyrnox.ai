@@ -17,7 +17,7 @@ export interface MobileFeatureDefinition {
     readonly menu?: { readonly section: FeatureMenuSection; readonly order: number; readonly labelKey?: string; readonly hintKey?: string };
     readonly audio?: { readonly group: AudioFeatureGroup; readonly order: number };
     readonly entryPoint?: FeatureEntryPoint;
-    readonly discoveryOwner?: 'audio' | 'tools';
+    readonly discoveryOwner?: 'audio';
     readonly webRoutes?: readonly string[];
     readonly status?: FeatureStatus;
     readonly gapReason?: string;
@@ -34,15 +34,16 @@ export interface FeatureAvailabilityFlags {
 const MOBILE_FEATURE_DEFINITIONS = [
     { id: 'explore', titleKey: 'srch.s.explore', href: '/', icon: 'house', keywords: 'home templates start', webRoutes: ['/app'] },
     { id: 'create', titleKey: 'srch.s.create', href: '/create', icon: 'image', keywords: 'generate image video audio make', menu: { section: 'tools', order: 0, labelKey: 'menu.create' }, webRoutes: ['/app/create'] },
+    { id: 'features', titleKey: 'menu.features', href: '/features', icon: 'magicWand', keywords: 'AI avatar talking avatar human influencer voice clone characters commerce guided creative workflows', menu: { section: 'tools', order: 1, labelKey: 'menu.features' }, webRoutes: ['/app/features', '/app/features/[slug]'] },
     { id: 'tools', titleKey: 'srch.s.tools', href: '/create/tools', icon: 'wrench', keywords: 'upscale remove background edit photo video', webRoutes: ['/tools'] },
-    { id: 'audio', titleKey: 'menu.audio', href: '/audio', icon: 'headphones', keywords: 'music speech dialogue voice sound audio', menu: { section: 'tools', order: 1, labelKey: 'menu.audio' }, webRoutes: ['/app/audio'] },
-    { id: 'smartCut', titleKey: 'menu.smartCut', href: '/smart-cut', icon: 'sparkle', keywords: 'smart cut speech silence remove ums best cut', menu: { section: 'tools', order: 2, labelKey: 'menu.smartCut', hintKey: 'menu.smartCutHint' }, webRoutes: ['/app/library#smart-cut'] },
-    { id: 'editor', titleKey: 'editor.title', href: '/editor', icon: 'scissors', keywords: 'studio professional editor edit trim join captions clip timeline cut projects', menu: { section: 'tools', order: 3, labelKey: 'editor.title' }, webRoutes: ['/app/editor'] },
+    { id: 'audio', titleKey: 'menu.audio', href: '/audio', icon: 'headphones', keywords: 'music speech dialogue voice sound audio', menu: { section: 'tools', order: 2, labelKey: 'menu.audio' }, webRoutes: ['/app/audio'] },
+    { id: 'smartCut', titleKey: 'menu.smartCut', href: '/smart-cut', icon: 'sparkle', keywords: 'smart cut speech silence remove ums best cut', menu: { section: 'tools', order: 3, labelKey: 'menu.smartCut', hintKey: 'menu.smartCutHint' }, webRoutes: ['/app/library#smart-cut'] },
+    { id: 'editor', titleKey: 'editor.title', href: '/editor', icon: 'scissors', keywords: 'studio professional editor edit trim join captions clip timeline cut projects', menu: { section: 'tools', order: 4, labelKey: 'editor.title' }, webRoutes: ['/app/editor'] },
     { id: 'photoStudio', titleKey: 'liveEdit.title', href: '/live-edit', icon: 'magicWand', keywords: 'photo studio retouch makeup hair filters live edit', webRoutes: ['/app/photo-studio'] },
     { id: 'editorReview', titleKey: 'preview.title', href: '/editor', webRoutes: ['/app/editor/review'], status: 'gap', gapReason: 'Native saved-version review is not implemented; Studio is the safe fallback.' },
-    { id: 'publish', titleKey: 'srch.s.publish', href: '/publish', icon: 'send', keywords: 'post schedule social calendar', menu: { section: 'tools', order: 4, labelKey: 'menu.publish' }, webRoutes: ['/app/publish', '/publish'] },
+    { id: 'publish', titleKey: 'srch.s.publish', href: '/publish', icon: 'send', keywords: 'post schedule social calendar', menu: { section: 'tools', order: 5, labelKey: 'menu.publish' }, webRoutes: ['/app/publish', '/publish'] },
     { id: 'publishPlan', titleKey: 'plan.navTitle', href: '/publish', webRoutes: ['/app/publish/plan'], status: 'gap', gapReason: 'Native plan status and safe period-end cancellation are scheduled for Wave 2; Publish is the safe fallback.' },
-    { id: 'cinema', titleKey: 'srch.s.cinema', href: '/cinema', icon: 'slate', keywords: 'watch films vote community', menu: { section: 'tools', order: 5, labelKey: 'menu.cinema' }, webRoutes: ['/social-cinema', '/social-cinema/creator', '/social-cinema/pass', '/social-cinema/series/[slug]', '/social-cinema/title/[id]', '/social-cinema/watch/[id]'] },
+    { id: 'cinema', titleKey: 'srch.s.cinema', href: '/cinema', icon: 'slate', keywords: 'watch films vote community', menu: { section: 'tools', order: 6, labelKey: 'menu.cinema' }, webRoutes: ['/social-cinema', '/social-cinema/creator', '/social-cinema/pass', '/social-cinema/series/[slug]', '/social-cinema/title/[id]', '/social-cinema/watch/[id]'] },
     { id: 'library', titleKey: 'srch.s.library', href: '/library', icon: 'play', keywords: 'creations files downloads saved', menu: { section: 'assets', order: 0, labelKey: 'menu.library' }, webRoutes: ['/app/library'] },
     { id: 'brandKit', titleKey: 'srch.s.brand', href: '/brand-kit', icon: 'palette', keywords: 'brand colours colors fonts palette', menu: { section: 'assets', order: 1, labelKey: 'menu.brandKit' }, webRoutes: ['/app/brand-kit'] },
     { id: 'credits', titleKey: 'srch.s.credits', href: '/credits', icon: 'coins', keywords: 'balance buy top up packs', menu: { section: 'assets', order: 2, labelKey: 'menu.credits' }, webRoutes: ['/app/credits'] },
@@ -58,7 +59,6 @@ const MOBILE_FEATURE_DEFINITIONS = [
     { id: 'guides', titleKey: 'helpGuides.all', href: '/guides', icon: 'help', keywords: 'guides tutorials learn', webRoutes: ['/guides', '/guides/[id]'] },
     { id: 'skills', titleKey: 'chat.skills.title', href: '/chat/skills', icon: 'sparkle', keywords: 'studio skills assistant workflows', webRoutes: ['/app/skills'] },
     { id: 'agent', titleKey: 'videoAgent.title', href: '/create/agent', icon: 'brain', keywords: 'video agent assistant', webRoutes: ['/app/video-agent'] },
-    { id: 'features', titleKey: 'menu.features', href: '/features', icon: 'magicWand', keywords: 'guided creative workflows', discoveryOwner: 'tools', status: 'system', gapReason: 'Compatibility and contextual reuse route; ordinary discovery belongs to Tools.', webRoutes: ['/app/features', '/app/features/[slug]'] },
     { id: 'facelessReel', titleKey: 'facelessReel.chip', href: '/faceless-reel', icon: 'filmReel', keywords: 'faceless reel video', webRoutes: ['/app/faceless-reel'] },
     { id: 'vibe', titleKey: 'vibe.intro.title', href: '/vibe', icon: 'swatches', keywords: 'vibe taste preferences', webRoutes: ['/app/vibe'] },
 
@@ -72,10 +72,10 @@ const MOBILE_FEATURE_DEFINITIONS = [
     { id: 'musicPlaylists', titleKey: 'musicPlaylists.title', href: '/music/playlists', icon: 'playlist', keywords: 'music playlists', availability: 'music-live', webRoutes: ['/app/music/playlists'] },
     { id: 'musicAlbums', titleKey: 'musicAlbums.title', href: '/music/albums', icon: 'vinylRecord', keywords: 'music albums releases ep singles', availability: 'music-live', webRoutes: ['/app/music/albums', '/music/albums/[slug]'] },
     { id: 'musicWorkspaces', titleKey: 'music.title', href: '/music', icon: 'usersThree', availability: 'music-live', webRoutes: ['/app/music/workspaces'], status: 'gap', gapReason: 'Native collaborative Music workspaces are not implemented yet.' },
-    { id: 'lipSync', titleKey: 'audioHub.lipSync.title', href: '/features/lip-sync', icon: 'waveform', keywords: 'lip sync mouth voice', discoveryOwner: 'tools', audio: { group: 'performance', order: 0 }, webRoutes: ['/app/lip-sync'] },
-    { id: 'dubbing', titleKey: 'audioHub.dubbing.title', href: '/features/video-dubbing', icon: 'monitorPlay', keywords: 'video dubbing translate performance', discoveryOwner: 'tools', audio: { group: 'performance', order: 1 }, webRoutes: ['/app/performance'] },
-    { id: 'talkingPhoto', titleKey: 'audioHub.talkingPhoto.title', href: '/features/ai-talking-photo-generator', icon: 'userSound', keywords: 'talking photo portrait', discoveryOwner: 'tools', audio: { group: 'performance', order: 2 } },
-    { id: 'singingPhoto', titleKey: 'audioHub.singingPhoto.title', href: '/features/singing-photo', icon: 'pianoKeys', keywords: 'singing photo portrait', discoveryOwner: 'tools', audio: { group: 'performance', order: 3 } },
+    { id: 'lipSync', titleKey: 'audioHub.lipSync.title', href: '/features/lip-sync', icon: 'waveform', keywords: 'lip sync mouth voice', discoveryOwner: 'audio', audio: { group: 'performance', order: 0 }, webRoutes: ['/app/lip-sync'] },
+    { id: 'dubbing', titleKey: 'audioHub.dubbing.title', href: '/features/video-dubbing', icon: 'monitorPlay', keywords: 'video dubbing translate performance', discoveryOwner: 'audio', audio: { group: 'performance', order: 1 }, webRoutes: ['/app/performance'] },
+    { id: 'talkingPhoto', titleKey: 'audioHub.talkingPhoto.title', href: '/features/ai-talking-photo-generator', icon: 'userSound', keywords: 'talking photo portrait', discoveryOwner: 'audio', audio: { group: 'performance', order: 2 } },
+    { id: 'singingPhoto', titleKey: 'audioHub.singingPhoto.title', href: '/features/singing-photo', icon: 'pianoKeys', keywords: 'singing photo portrait', discoveryOwner: 'audio', audio: { group: 'performance', order: 3 } },
 
     { id: 'publishActivity', titleKey: 'activity.title', href: '/publish/activity', entryPoint: 'publish', webRoutes: ['/app/publish/activity'] },
     { id: 'publishAds', titleKey: 'ads.title', href: '/publish/ads', entryPoint: 'publish', webRoutes: ['/app/publish/ads'] },

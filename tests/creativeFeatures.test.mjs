@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { CREATIVE_FEATURES, CREATIVE_FEATURE_SLUGS, creativeFeature, creativeFeatureExample, creativeFeatureExampleAssetPath } from '../app/veyrnox/_lib/creativeFeatures.js';
+import { CREATIVE_FEATURE_DIRECTORY, CREATIVE_FEATURES, CREATIVE_FEATURE_SLUGS, creativeFeature, creativeFeatureExample, creativeFeatureExampleAssetPath, creativeFeatureOwner } from '../app/veyrnox/_lib/creativeFeatures.js';
 
 const EXPECTED = [
   'ai-avatar-generator', 'talking-avatar', 'ai-human-generator', 'ai-influencer-generator',
@@ -85,19 +85,17 @@ test('the app route and sidebar expose the workflow suite', async () => {
   assert.match(detail, /generateStaticParams/);
   assert.doesNotMatch(detail, /VoiceCloneStudio|MfaPanel/);
   assert.match(nav, /href: '\/app\/features'/);
-  assert.match(nav, /key: 'features', href: '\/app\/features'/);
+  assert.match(nav, /key: 'features', href: '\/app\/features', labelKey: 'app\.create\.creativeTools'/);
+  assert.doesNotMatch(nav, /key: 'features'[^\n]+nav: false/);
 });
 
-test('web Create exposes Creative tools in the same start-from flow as mobile', async () => {
-  const [create, entry] = await Promise.all([
-    readFile(new URL('../app/veyrnox/app/create/page.js', import.meta.url), 'utf8'),
-    readFile(new URL('../app/veyrnox/_components/CreateStartFrom.js', import.meta.url), 'utf8'),
-  ]);
-  assert.match(create, /<CreateStartFrom \/>/);
-  assert.match(entry, /data-testid="create-start-creative-tools"/);
-  assert.match(entry, /href="\/app\/features"/);
-  assert.match(entry, /app\.create\.startFrom/);
-  assert.match(entry, /app\.create\.creativeTools/);
+test('Creative tools owns guided outcomes once while Audio keeps its existing workflows', async () => {
+  const create = await readFile(new URL('../app/veyrnox/app/create/page.js', import.meta.url), 'utf8');
+  const audio = ['text-to-speech', 'lip-sync', 'ai-talking-photo-generator', 'singing-photo', 'video-dubbing'];
+  assert.deepEqual(CREATIVE_FEATURES.filter((item) => creativeFeatureOwner(item) === 'audio').map((item) => item.slug), audio);
+  assert.equal(CREATIVE_FEATURE_DIRECTORY.length, CREATIVE_FEATURES.length - audio.length);
+  assert.ok(CREATIVE_FEATURE_DIRECTORY.some((item) => item.slug === 'ai-avatar-generator'));
+  assert.doesNotMatch(create, /CreateStartFrom/);
 });
 
 test('studio example cards share one component and show only media we host', async () => {
