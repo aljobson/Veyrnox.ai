@@ -10,7 +10,8 @@ import { MENU_ICONS } from '../src/lib/menuIcons';
 import { MusicSongActions } from '../src/components/music/MusicSongActions';
 import type { MusicSongDetail } from '../src/lib/music/types';
 
-import { AUDIO_ICONS, AUDIO_PERFORMANCES, AUDIO_STUDIOS, audioTarget, fromCredits } from '../src/lib/audioHub';
+import { AUDIO_HUB_PERFORMANCES, AUDIO_ICONS, AUDIO_PERFORMANCES, AUDIO_STUDIOS, audioTarget, fromCredits } from '../src/lib/audioHub';
+import { TOOL_TASKS } from '../src/lib/toolDirectory';
 import type { CatalogModel } from '../src/lib/media';
 import { plural, t } from '../src/lib/i18n';
 
@@ -53,6 +54,15 @@ const performances = [
     ['lipSync', 'lip-sync'], ['dubbing', 'video-dubbing'],
     ['talkingPhoto', 'ai-talking-photo-generator'], ['singingPhoto', 'singing-photo'],
 ] as const;
+
+test('Audio does not repeat performance models already owned by Tools', () => {
+    const toolModels = new Set(TOOL_TASKS.flatMap((task) => task.ids));
+    expect(AUDIO_HUB_PERFORMANCES).toEqual([]);
+    for (const [id, slug] of performances) {
+        expect(toolModels.has(creativeFeature(slug)!.model)).toBe(true);
+        expect(AUDIO_HUB_PERFORMANCES).not.toContain(id);
+    }
+});
 
 test.each(performances)('%s opens the existing %s workflow with or without a catalog', (id, slug) => {
     expect(creativeFeature(slug)).not.toBeNull();
@@ -123,7 +133,9 @@ const source = (path: string) => readFileSync(resolve(__dirname, '..', path), 'u
 
 test('Audio exposes the native Music Editor as a first-class studio', () => {
     const audio = source('src/app/(app)/audio.tsx');
-    expect(audio).toContain("['yourMusic', 'musicEditor', ...AUDIO_STUDIOS]");
+    expect(audio).toContain("const studios: readonly AudioRowId[] = musicAvailable ? ['yourMusic', 'musicEditor', ...AUDIO_STUDIOS]");
+    expect(audio).toContain("ids: AUDIO_HUB_PERFORMANCES");
+    expect(audio).toContain(".filter((group) => group.ids.length > 0)");
     expect(audio).toContain("const musicEditor = mobileFeature('beats')");
     expect(audio).toContain('icon={musicEditor.icon}');
     expect(audio).toContain("subtitle={t('beat.home.emptyBody')}");
