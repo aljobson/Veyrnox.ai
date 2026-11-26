@@ -17,6 +17,7 @@ import { toPublicPresets } from '../lib/publicPresets.js';
 import { templateDetail } from '../lib/clientTemplates.js';
 import { videoTemplateTheme } from '../app/veyrnox/_lib/videoTemplateThemes.js';
 import { LONG_PROMPT_GALLERY_TEMPLATE_IDS } from '../app/veyrnox/_lib/videoTemplateGallery.js';
+import { TEMPLATE_REFERENCE_PRIORITY } from '../lib/templateReferencePriority.js';
 
 const OFFER = 'seedance-2.0-photo-kie';
 const offer = MODELS.find(model => model.id === OFFER);
@@ -58,12 +59,12 @@ test('originals never claim a community source record', () => {
   }
 });
 
-test('an unedited web run sends the bound prompt and passes the server contract', () => {
+test('an unedited web run adds the shared reference priority and passes the server contract', () => {
   const model = { ...offer, media: fallbackCapabilitiesFor(OFFER).media };
   for (const source of ORIGINAL_SEEDANCE_TEMPLATES) {
     const preset = templateById(source.id), contract = templateContract(source.id);
     const inputs = templateInputs(preset, model, { prompt: preset.prompt, aspect: '9:16', aspectOptions: ['9:16'], durationSeconds: 5, withPhoto: true });
-    assert.equal(inputs.prompt, preset.prompt, 'no extra line is added to the exact prompt');
+    assert.equal(inputs.prompt, `${TEMPLATE_REFERENCE_PRIORITY}\n\n${preset.prompt}`, 'the shared guard is added once before the exact prompt');
     const body = { template_id: source.id, model_id: OFFER, references: reference, inputs: { ...inputs, prompt: contract.prompt } };
     assert.equal(checkTemplateRequest(body).ok, true, source.id);
     assert.equal(checkTemplateRequest({ ...body, inputs: { ...body.inputs, prompt: `${contract.prompt} edited` } }).error, 'template_mismatch');

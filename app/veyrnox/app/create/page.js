@@ -101,6 +101,7 @@ import { SwapSceneEntry } from '../../_components/SwapSceneEntry';
 import { SpeechSongNudge } from '../../_components/SpeechSongNudge';
 import { swapSceneModel, applySwapScene } from '../../_lib/swapSceneForm';
 import { internalModelId } from '../../../../lib/publicModelIds.js';
+import { withTemplateReferencePriority } from '../../../../lib/templateReferencePriority.js';
 // Auto Short stays hidden until launch unless this browser opts in
 // (CLAUDE.md "Delivery": new user paths behind localStorage.veyrnox_*).
 const AUTO_SHORT_FLAG = 'veyrnox_auto_short';
@@ -696,6 +697,9 @@ function CreateStudio() {
     let text = (templateData && prompt === templateData.prompt) || prompt === recoveredPrompt ? prompt : prompt.trim();
     if (model?.kind === 'image' && characterOn) text = buildCharacterPrompt(text, character);
     if (takesCamera && cinemaOn) text = buildCinemaPrompt(text, cinema);
+    if (templateData && model?.kind === 'video' && model.media?.image && templateImageCount > 0) {
+      text = withTemplateReferencePriority(text, true, model.promptMax || GENERATION_PROMPT_MAX) ?? text;
+    }
     return text;
   }
 
@@ -1226,7 +1230,7 @@ function CreateStudio() {
             </div>
             <div data-assistant-target="create.models" data-selected-kind={model?.kind} className="scroll-mt-24">
               {linkedTemplate && (
-                <p data-testid="create-template-model-lock" role="note" className="mb-3 rounded-lg border border-vx-danger/35 bg-vx-danger/[0.06] px-3 py-2 text-xs font-semibold leading-5 text-vx-danger">
+                <p id="create-template-model-lock" data-testid="create-template-model-lock" role="note" className="mb-3 rounded-lg border border-vx-border bg-vx-panel px-3 py-2 text-xs font-medium leading-5 text-vx-fg-muted">
                   {t('app.create.templateModelSwitch')}
                 </p>
               )}
@@ -1236,12 +1240,13 @@ function CreateStudio() {
                   id="studio-model"
                   value={modelId}
                   onChange={(event) => chooseModel(event.target.value)}
+                  aria-describedby={linkedTemplate ? 'create-template-model-lock' : undefined}
                   className="min-h-11 w-full rounded-xl border border-vx-field bg-vx-base px-3 py-2.5 text-sm font-bold text-vx-fg focus:border-vx-accent focus:outline-hidden"
                 >
                   {visibleModels.map((item) => {
                     const issue = modelSwapIssue(item);
                     return <option key={item.id} value={item.id} disabled={Boolean(issue)}>
-                      {item.name} · {item.gated ? t("app.editor.workspace.preview") : freeLeftFor(freeMap, item.id) > 0 ? t("app.create.freeToday") : creditLabel(item.credits)}{issue ? ` — ${modelSwapIssueText(issue)}` : ''}
+                      {item.name} · {item.gated ? t("app.editor.workspace.preview") : freeLeftFor(freeMap, item.id) > 0 ? t("app.create.freeToday") : creditLabel(item.credits)}
                     </option>;
                   })}
                 </select>
@@ -1252,7 +1257,7 @@ function CreateStudio() {
                   </p>
                 )}
               </div>
-              <div role="group" aria-label={t("pricing.col.model")} className="hidden flex-col gap-1.5 lg:flex">
+              <div role="group" aria-label={t("pricing.col.model")} aria-describedby={linkedTemplate ? 'create-template-model-lock' : undefined} className="hidden flex-col gap-1.5 lg:flex">
                 {visibleModels.map((m) => {
                   const issue = modelSwapIssue(m);
                   return <button
@@ -1272,7 +1277,6 @@ function CreateStudio() {
                     <span className="flex items-center gap-2 min-w-0">
                       <span className="min-w-0 text-left">
                         <span className="block truncate text-sm font-bold">{m.name}</span>
-                        {issue && <span className="mt-0.5 block text-[10px] font-bold leading-4 text-vx-danger">{modelSwapIssueText(issue)}</span>}
                       </span>
                       {m.gated && (
                         <span className="font-vx-mono text-[10px] tracking-[0.1em] text-vx-money shrink-0">{t("app.create.premium")}</span>

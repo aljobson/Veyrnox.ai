@@ -18,15 +18,19 @@ import { templateContract } from '../lib/templateContract.js';
 const report = hiddenTemplateReport();
 test('hidden and Seedance-origin inventory counts come from the current modules', () => {
   assert.deepEqual(report.totals, {
-    addressable: 1926 + 8 + 12, listed: 61, hidden: 1865 + 8 + 12,
-    hiddenClasses: { 'blocked-needs-video': 367, unsupported: 110, 'like-for-like-safe': 215, bound: 131 + 8 + 12, none: 1042 },
-    hiddenRouteFits: { o1_clip: 473, none_unsupported: 89, seedance_long_photo: 48 + 8 + 12, text_only_other_model: 112, kling_i2v_photo: 101, none_no_contract: 1042 },
-    hiddenKinds: { video_swap: 300, none: 1392 + 8 + 12, motion: 67, swap: 106 },
+    addressable: 1946, listed: 61, hidden: 1885,
+    hiddenClasses: { 'blocked-needs-video': 367, unsupported: 111, 'like-for-like-safe': 215, bound: 150, none: 1042 },
+    hiddenRouteFits: { o1_clip: 473, none_unsupported: 90, seedance_long_photo: 68, text_only_other_model: 112, kling_i2v_photo: 100, none_no_contract: 1042 },
+    hiddenKinds: { video_swap: 300, none: 1412, motion: 67, swap: 106 },
     seedanceOrigins: { Syntx: 121, Higgsfield: 79 }, seedanceStates: { withdrawn_or_absent: 6, hidden: 194 },
-    seedanceHiddenRouteFits: { none_unsupported: 32, seedance_long_photo: 23, o1_clip: 53, text_only_other_model: 84, kling_i2v_photo: 2 }, boundOverBudget: 53, seedanceLabels: 238,
+    seedanceHiddenRouteFits: { none_unsupported: 32, seedance_long_photo: 23, o1_clip: 53, text_only_other_model: 84, kling_i2v_photo: 2 }, boundOverBudget: 52, seedanceLabels: 238,
   });
   assert.equal(report.becomesRunnableAfterClipApproval.length, 473);
-  assert.equal(report.overBudget.find(r => r.id === 'community-supercar-midnight-refuel').length, 2454);
+  assert.equal(report.overBudget.some(r => r.id === 'community-supercar-midnight-refuel'), false);
+  const withdrawn = templateContract('community-supercar-midnight-refuel');
+  assert.equal(withdrawn.sourcePrompt.length, 2460);
+  assert.equal(withdrawn.class, 'unsupported');
+  assert.ok(withdrawn.reasons.includes('reference-priority-over-prompt-limit'));
 });
 test('hidden clip list matches importer candidates; plain photo fit follows allowed models and references', async () => {
   const hidden = new Set(report.hidden.map(r => r.id));
