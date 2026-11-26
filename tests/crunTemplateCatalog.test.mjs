@@ -26,7 +26,7 @@ test('normalizes Vidu templates, including image previews and bounded input inst
       template: 'Vintage_Moment_of_Mom', name: 'Vintage Moment of Mom', category_name: 'Festival',
       category_id: 11, resolution: ['1080p'], duration: [0], aspect_ratio: ['9:16'], output_type: 'unspecified',
       cover: 'https://scene.cf.vidu.studio/cover.png', video: 'https://scene.cf.vidu.studio/preview.png',
-      credits: 9, person_count: 'Only one person', is_hot: true, is_new: false,
+      credits: 28.799999999999997, person_count: 'Only one person', is_hot: true, is_new: false,
       input_instruction: JSON.stringify({ image_count: 'Only one image', image_url: ['https://scene.cf.vidu.studio/example.png'], prompt_instruction: 'No prompt required' }),
     }] },
   }, 1, 50);
@@ -34,9 +34,8 @@ test('normalizes Vidu templates, including image previews and bounded input inst
   assert.deepEqual(catalog.templates[0], {
     id: 'Vintage_Moment_of_Mom', name: 'Vintage Moment of Mom', category: 'Festival', tag: 'HOT',
     coverUrl: 'https://scene.cf.vidu.studio/cover.png', previewUrl: 'https://scene.cf.vidu.studio/preview.png', previewKind: 'image',
-    providerCredits: 9, inputRequirement: 'Only one person', requirements: [
+    providerCredits: 28.8, inputRequirement: 'Only one person', requirements: [
       { label: 'Resolution', value: '1080p' },
-      { label: 'Duration', value: '0s' },
       { label: 'Aspect ratio', value: '9:16' },
       { label: 'Output type', value: 'unspecified' },
       { label: 'image count', value: 'Only one image' },
