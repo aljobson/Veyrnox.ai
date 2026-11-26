@@ -31,6 +31,8 @@ test('every catalog family has an in-card preview surface', () => {
   assert.match(component, /<video src=\{item\.video\}/);
   assert.match(component, /<video src=\{item\.previewUrl\}.*autoPlay/);
   assert.match(component, /item\.previewKind === 'image'/);
+  assert.match(component, /<video src=\{item\.previewUrl\}.*referrerPolicy="no-referrer"/);
+  assert.match(component, /stillPreview \? <img.*referrerPolicy="no-referrer"/);
   assert.match(component, /conceptPreviewLabel/);
   assert.match(component, /listenPreview/);
 });

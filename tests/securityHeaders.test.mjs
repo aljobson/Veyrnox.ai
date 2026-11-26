@@ -13,6 +13,7 @@ const YOUTUBE_IMAGE_HOST = 'https://i.ytimg.com';
 const SOUNDCLOUD_PLAYER_HOST = 'https://w.soundcloud.com';
 const SOUNDCLOUD_IMAGE_HOST = 'https://i1.sndcdn.com';
 const LIPSYNC_REFERENCE_MEDIA_HOST = 'https://cdn.lipsync.video';
+const VIDU_TEMPLATE_MEDIA_HOST = 'https://scene.cf.vidu.studio';
 const MIN_HSTS_AGE = 63072000;
 
 async function headerMap() {
@@ -78,8 +79,9 @@ test('img-src admits only owned storage and the documented artwork/reference hos
     const csp = (await headerMap()).get('content-security-policy');
     const imageSrc = directives(csp).get('img-src');
     assert.ok(imageSrc.some((source) => source === YOUTUBE_IMAGE_HOST));
-    assert.deepEqual(imageSrc.filter((source) => source.startsWith('http') && !source.includes('r2.cloudflarestorage.com')), [YOUTUBE_IMAGE_HOST, SOUNDCLOUD_IMAGE_HOST, LIPSYNC_REFERENCE_MEDIA_HOST]);
+    assert.deepEqual(imageSrc.filter((source) => source.startsWith('http') && !source.includes('r2.cloudflarestorage.com')), [YOUTUBE_IMAGE_HOST, SOUNDCLOUD_IMAGE_HOST, LIPSYNC_REFERENCE_MEDIA_HOST, VIDU_TEMPLATE_MEDIA_HOST]);
     assert.ok(directives(csp).get('media-src').some((source) => source === LIPSYNC_REFERENCE_MEDIA_HOST));
+    assert.ok(directives(csp).get('media-src').some((source) => source === VIDU_TEMPLATE_MEDIA_HOST));
 });
 
 test('connect-src permits only our backends and the exact Stream upload hosts (ADR-0052)', async () => {
