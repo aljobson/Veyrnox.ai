@@ -274,7 +274,7 @@ export async function createRemixQuote(api: ApiClient, songId: string, input: Mu
 }
 
 export async function startRemix(api: ApiClient, songId: string, quoteId: string, key: string): Promise<GenerationActionStart> {
-    const v = await api.request<unknown>(`${BASE}/songs/${encodeURIComponent(songId)}`, post({
+    const v = await api.request<unknown>(`${BASE}/songs/${encodeURIComponent(songId)}?phase=confirm`, post({
         phase: 'confirm', quote_id: quoteId, idempotency_key: key,
     }));
     const result = parseGenerationActionStart(v);

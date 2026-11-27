@@ -43,7 +43,7 @@ export function MusicRemixBody({ id, kind }: { id: string; kind: RemixActionKind
     const quote = pending?.quote as MusicRemixQuote | undefined;
     const status = state.poll?.value?.state ?? state.result?.state;
     const statusKey = status && ['queued', 'running', 'succeeded', 'partial', 'failed', 'refunded'].includes(status) ? status : 'running';
-    const rangeError = state.error === 'sample_range_invalid' || state.error === 'source_duration_invalid' ? state.error : null;
+    const rangeError = state.error === 'sample_range_invalid' ? state.error : null;
     const candidates = state.poll?.value?.candidates
         ?? state.result?.candidates.map(candidate => ({ ...candidate, song_id: null, version_id: null, audio_url: null, error_code: null }));
     const others = useMemo(() => songs.filter(song => song.id !== id && typeof song.version_id === 'string'), [songs, id]);

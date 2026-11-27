@@ -49,7 +49,7 @@ export function remixAction(kind: RemixActionKind, songId: string): ActionSpec<M
         balanceOnReplay: 'omit',
         resultBalanceOnly: true,
         beforeConfirm: () => ensureOnline(async () => {
-            await guardedBeforeSend(`/api/v1/music/songs/${encodeURIComponent(songId)}`, 'POST');
+            await guardedBeforeSend(`/api/v1/music/songs/${encodeURIComponent(songId)}?phase=confirm`, 'POST');
             return defaultProbe();
         }),
         quote: (api, input) => createRemixQuote(api, input.song_id, requestFor(kind, input), kind),
