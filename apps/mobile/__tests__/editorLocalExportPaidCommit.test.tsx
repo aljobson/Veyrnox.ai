@@ -1,5 +1,6 @@
 var mockExportMp4 = jest.fn();
 var mockRelease = jest.fn().mockResolvedValue(undefined);
+var mockCreateAsset = jest.fn().mockResolvedValue({});
 
 jest.mock('../src/lib/editorLocalExport', () => {
     const actual = jest.requireActual('../src/lib/editorLocalExport');
@@ -16,7 +17,7 @@ jest.mock('../src/lib/editorFontFiles', () => ({ editorFontStore: { exportSource
 jest.mock('../src/auth/sessionTask', () => ({ useSessionTask: () => () => ({ current: () => true }) }));
 jest.mock('../src/components/editor/ExportFootagePreview', () => ({ ExportFootagePreview: () => null }));
 jest.mock('expo-sharing', () => ({ isAvailableAsync: jest.fn().mockResolvedValue(true), shareAsync: jest.fn().mockResolvedValue(undefined) }));
-jest.mock('expo-media-library', () => ({ Asset: { create: jest.fn() }, requestPermissionsAsync: jest.fn().mockResolvedValue({ granted: true }) }));
+jest.mock('expo-media-library', () => ({ Asset: { create: (...args: unknown[]) => mockCreateAsset(...args) }, requestPermissionsAsync: jest.fn().mockResolvedValue({ granted: true }) }));
 
 import { act } from 'react';
 import { createRoot, type Root } from 'test-renderer';
@@ -66,17 +67,22 @@ test('an unresolved paid commit retains the render without exposing Save or Shar
     expect(labelled('Try again')).toHaveLength(1);
 });
 
-test('payment verification retries the retained render without rendering again', async () => {
-    const onCommit = jest.fn().mockResolvedValueOnce(null).mockResolvedValueOnce(7);
-    await act(async () => root.render(<LocalExportSheet visible api={{ request: jest.fn() } as never} account="owner" projectId={projectId} revision={7}
-        timeline={timeline} canvas={canvas} localMediaUris={{}} onClose={jest.fn()} onCloud={jest.fn()} onPrepare={jest.fn().mockResolvedValue(5)}
-        onCommit={onCommit} />));
+test('same-content revision changes retain the render and retry completes automatic Photos save', async () => {
+    const onCommit = jest.fn().mockResolvedValueOnce(null).mockResolvedValueOnce(8);
+    const props = { visible: true, api: { request: jest.fn() } as never, account: 'owner', projectId, timeline, canvas, localMediaUris: {},
+        onClose: jest.fn(), onCloud: jest.fn(), onPrepare: jest.fn().mockResolvedValue(5), onCommit };
+    await act(async () => root.render(<LocalExportSheet {...props} revision={7} />));
     await press('Export on this device');
+    expect(mockCreateAsset).not.toHaveBeenCalled();
+    await act(async () => root.render(<LocalExportSheet {...props} revision={8} />));
+    expect(labelled('Try again')).toHaveLength(1);
+    expect(mockRelease).not.toHaveBeenCalled();
     await press('Try again');
     expect(onCommit).toHaveBeenNthCalledWith(1, 5);
     expect(onCommit).toHaveBeenNthCalledWith(2, 5);
     expect(mockExportMp4).toHaveBeenCalledTimes(1);
     expect(mockRelease).not.toHaveBeenCalled();
+    expect(mockCreateAsset).toHaveBeenCalledWith(artifact.uri);
     expect(labelled('Share export')).toHaveLength(1);
 });
 

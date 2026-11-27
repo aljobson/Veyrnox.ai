@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { Asset, requestPermissionsAsync } from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
@@ -77,19 +77,42 @@ export function LocalExportSheet({ visible, api, account, projectId, revision, t
     const [autoSave, setAutoSave] = useState(true), [saved, setSaved] = useState(false), [saving, setSaving] = useState(false), [confirming, setConfirming] = useState(false);
     const [pendingCredits, setPendingCredits] = useState<number | null>(null);
     const exportIdentity = `${projectId}:${revision}`;
-    const controller = useRef<AbortController | null>(null), mounted = useRef(true), latestArtifact = useRef(artifact), lastIdentity = useRef(exportIdentity), saveToken = useRef(0); latestArtifact.current = artifact;
+    const contentIdentity = useMemo(() => JSON.stringify([timeline, canvas]), [timeline, canvas]);
+    const controller = useRef<AbortController | null>(null), mounted = useRef(true), latestArtifact = useRef(artifact), lastIdentity = useRef(exportIdentity),
+        lastContentIdentity = useRef(contentIdentity), saveToken = useRef(0); latestArtifact.current = artifact;
     const releaseArtifact = (value: ExportArtifact) => value.kind === 'wav' ? Promise.resolve(releaseWavArtifact(value))
         : editorMediaArtifacts.release(projectId, value.artifactId).then(() => undefined);
     useEffect(() => { mounted.current = true; return () => { mounted.current = false; controller.current?.abort(); const value = latestArtifact.current;
         latestArtifact.current = null; if (value) void (value.kind === 'wav' ? Promise.resolve(releaseWavArtifact(value)) : editorMediaArtifacts.release(projectId, value.artifactId)); }; }, [projectId]);
     useEffect(() => {
-        if (lastIdentity.current === exportIdentity) return;
-        lastIdentity.current = exportIdentity; controller.current?.abort(); controller.current = null;
+        const identityChanged = lastIdentity.current !== exportIdentity, contentChanged = lastContentIdentity.current !== contentIdentity;
+        if (!identityChanged && !contentChanged) return;
+        const sameProject = lastIdentity.current.startsWith(`${projectId}:`);
+        lastIdentity.current = exportIdentity; lastContentIdentity.current = contentIdentity;
+        if (sameProject && !contentChanged && pendingCredits !== null && latestArtifact.current) return;
+        controller.current?.abort(); controller.current = null;
         saveToken.current += 1;
         const value = latestArtifact.current; latestArtifact.current = null; if (value) void releaseArtifact(value);
         setArtifact(null); setError(null); setProgress(null); setSaved(false); setSaving(false); setPendingCredits(null); setPhase('idle');
-    }, [exportIdentity, projectId]);
+    }, [contentIdentity, exportIdentity, pendingCredits, projectId]);
     const close = () => { if (phase !== 'exporting' && phase !== 'verifying' && !saving && !confirming) onClose(); };
+    const completeCommittedArtifact = async (target: ExportArtifact, committedRevision: number, sessionCurrent: () => boolean = () => true) => {
+        lastIdentity.current = `${projectId}:${committedRevision}`;
+        lastContentIdentity.current = contentIdentity;
+        latestArtifact.current = target; setArtifact(target); setPendingCredits(null); setPhase('done');
+        if (!autoSave || target.kind !== 'mp4') return;
+        const token = ++saveToken.current; setSaving(true);
+        const stillCurrent = () => mounted.current && sessionCurrent() && latestArtifact.current?.artifactId === target.artifactId;
+        const outcome = await saveLocalExportToPhotos(target.uri, stillCurrent);
+        if (!mounted.current || saveToken.current !== token) return;
+        if (stillCurrent()) {
+            if (outcome === 'saved') setSaved(true);
+            else if (outcome === 'permission') setError('save-permission');
+            else if (outcome === 'failed') setError('save-failed');
+        }
+        else if (!sessionCurrent()) { setError('stale'); setPhase('error'); }
+        setSaving(false);
+    };
     const start = async () => {
         if (controller.current || confirming) return;
         if (output === 'video' && resolution === '4k') { onCloud(); return; }
@@ -149,21 +172,9 @@ export function LocalExportSheet({ visible, api, account, projectId, revision, t
                 latestArtifact.current = result.artifact; setArtifact(result.artifact); setPendingCredits(expectedCredits);
                 setError('credit-failed'); setPhase('error'); setProgress(null); return;
             }
-            // The paid commit advances the server revision. Adopt that identity before
-            // React delivers the new prop so the freshly rendered artifact is not
-            // mistaken for output from a stale edit and released by the identity effect.
-            lastIdentity.current = `${projectId}:${committedRevision}`;
-            latestArtifact.current = result.artifact; setArtifact(result.artifact); setPendingCredits(null); setPhase('done');
-            if (autoSave && result.artifact.kind === 'mp4') {
-                const token = ++saveToken.current; setSaving(true);
-                const stillCurrent = () => mounted.current && task.current() && latestArtifact.current?.artifactId === result.artifact.artifactId;
-                const outcome = await saveLocalExportToPhotos(result.artifact.uri, stillCurrent);
-                if (!mounted.current || saveToken.current !== token) return;
-                if (stillCurrent()) { if (outcome === 'saved') setSaved(true); else if (outcome === 'permission') setError('save-permission');
-                    else if (outcome === 'failed') setError('save-failed'); }
-                else if (!task.current()) { setError('stale'); setPhase('error'); }
-                setSaving(false);
-            }
+            // Adopt the paid identity before React delivers the new prop so the
+            // freshly rendered artifact is not mistaken for stale output.
+            await completeCommittedArtifact(result.artifact, committedRevision, task.current);
         }
         else if (result.code === 'cancelled') { setPhase('idle'); setProgress(null); }
         else { setError(result.code === 'invalid-timeline' ? 'invalid-timeline' : result.code === 'unsupported-frame' ? 'unsupported-frame'
@@ -177,8 +188,7 @@ export function LocalExportSheet({ visible, api, account, projectId, revision, t
         if (!mounted.current || latestArtifact.current?.artifactId !== retained.artifactId) return;
         setConfirming(false);
         if (committedRevision === null) { setError('credit-failed'); setPhase('error'); return; }
-        lastIdentity.current = `${projectId}:${committedRevision}`;
-        setPendingCredits(null); setPhase('done');
+        await completeCommittedArtifact(retained, committedRevision);
     };
     const save = async () => { if (!artifact || artifact.kind !== 'mp4' || saving) return; const target = artifact, token = ++saveToken.current; setSaving(true); setError(null);
         const stillCurrent = () => mounted.current && latestArtifact.current?.artifactId === target.artifactId;
