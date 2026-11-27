@@ -62,7 +62,7 @@ Not shippable yet: 31 must-have features are not done.
 - [must] sharing: Publish song to profile, partial  (Owner can policy-check and publish the current immutable version to a reversible public track and creator listing behind the disabled publication gate; database/R2 rollout acceptance remains)
 - [must] stems: Stem credit confirmation, partial  (Owner must attest source rights and review the exact 13-credit quote plus an explicit warning that an absent or unclear part may be silent or limited while still spending credits; live database/provider acceptance remains gated)
 - [must] uploads: Attach owned audio to a prompt, partial  (Verified current private song audio now reaches the staged Cover audio-to-audio contract through a server-signed URL; the provider row and rollout gate remain inactive pending live acceptance)
-- [must] uploads: Upload audio up to plan limit, partial  (Private MP3/WAV upload uses a direct signed PUT server-side byte/type inspection immutable rights evidence and measured 8-minute free or 30-minute paid caps; 20 MB storage cap and rollout gate remain)
+- [must] uploads: Upload audio up to plan limit, partial  (Web and native iOS expose the same private MP3/WAV flow with an exact 20 MiB boundary, direct signed PUT, server-side byte/type/duration inspection, immutable rights evidence, and measured 8-minute free or 30-minute paid caps; rollout, migrated-environment acceptance, and physical-iPhone proof remain)
 - [should] creation: Attach Suno songs or playlists as references, no  (Replace with owned clean-room assets and collections)
 - [should] creation: Attach multiple references in one prompt, no  (Cost may rise with many visual inputs)
 - [should] creation: Eight-minute song generations, no  (All current v6 variants)

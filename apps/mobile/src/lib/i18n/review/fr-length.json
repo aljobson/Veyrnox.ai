@@ -7740,6 +7740,12 @@
     "ratio": 1.62
   },
   {
+    "id": "musicSources.title",
+    "english": "Owned audio",
+    "translation": "Audio dont vous détenez les droits",
+    "ratio": 3.09
+  },
+  {
     "id": "musicLyricist.retry",
     "english": "Retry",
     "translation": "Réessayer",

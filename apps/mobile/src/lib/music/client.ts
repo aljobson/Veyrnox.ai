@@ -15,11 +15,11 @@ import type { MusicActionQuote, StemStart, StemRequest, StemArchive, CropInput, 
 import { isMusicActionQuote, isStemStart, isStemRequest, isStemArchive, isCropResult } from './validateActions';
 import { ApiError, type ApiClient } from '../api';
 import { isRecord } from '../responseShapes';
-import { isMusicDraft, isMusicGenerationView, isMusicEntitlements, isMusicGeneration, isMusicInspirationResult, isMusicQuote, isMusicSongRow, isMusicSongDetail, isPlayableMusicHook, isMusicLifecycle, isMusicReuseContext } from './validate';
+import { isMusicDraft, isMusicGenerationView, isMusicEntitlements, isMusicGeneration, isMusicInspirationResult, isMusicQuote, isMusicSongRow, isMusicSongDetail, isPlayableMusicHook, isMusicLifecycle, isMusicReuseContext, isMusicOwnedSource } from './validate';
 import { isMusicDailyChallenge } from './dailyChallenge';
 import type {
     MusicDraft, MusicDraftInput, MusicGenerationView, MusicCustomQuoteInput, MusicEntitlements, MusicGeneration, MusicInspirationResult, MusicLibraryTab, MusicLibraryTabData, MusicQuote,
-    MusicRow, MusicSongRow, MusicLifecycle, MusicSimpleQuoteInput, MusicSong, MusicSongsQuery, MusicProviderContract, MusicReuseContext, MusicReuseInput, MusicInspirationSource,
+    MusicRow, MusicSongRow, MusicLifecycle, MusicSimpleQuoteInput, MusicSong, MusicSongsQuery, MusicProviderContract, MusicReuseContext, MusicReuseInput, MusicInspirationSource, MusicOwnedSource, MusicSourceReservation,
 } from './types';
 
 // Typed client over /api/v1/music/*. Request and response shapes come from the route handlers
@@ -30,7 +30,7 @@ const bad = (status = 200): ApiError => new ApiError(status, 'bad_response');
 const rows = (value: unknown): readonly MusicRow[] | null => Array.isArray(value) && value.every(isRecord) ? value : null;
 const post = (body: unknown): RequestInit => ({ method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
 const DEFAULT_MUSIC_FEATURES: MusicEntitlements['features'] = Object.freeze({
-    albums: false, inspiration: false, studioChat: false, dailyChallenge: false, persistentQueue: false,
+    albums: false, inspiration: false, studioChat: false, dailyChallenge: false, persistentQueue: false, sources: false,
 });
 const DISABLED_DAILY_ALLOWANCE = Object.freeze({ enabled: false });
 const INSPIRATION_SOURCES = new Set(['audio', 'image', 'video_frames']);
@@ -50,6 +50,8 @@ export async function getEntitlements(api: ApiClient): Promise<MusicEntitlements
         ? DEFAULT_MUSIC_FEATURES : isRecord(response) ? response.features : undefined;
     const safeFeatures = isRecord(projectedFeatures) ? {
         ...projectedFeatures,
+        // Mobile can deploy before the server projection. Missing is off; a malformed present value still fails validation.
+        sources: projectedFeatures.sources === undefined ? false : projectedFeatures.sources,
         // A server may know the umbrella flag but not yet project the source contract.
         // Hide the native entry point until at least one safe picker is available.
         inspiration: projectedFeatures.inspiration === true && safeSources.length > 0,
@@ -64,6 +66,79 @@ export async function getEntitlements(api: ApiClient): Promise<MusicEntitlements
     } : response;
     if (!isMusicEntitlements(value)) throw bad();
     return value;
+}
+
+export const MUSIC_SOURCE_MAX_BYTES = 20 * 1024 * 1024;
+export type MusicOwnedSourceFile = Readonly<{ uri: string; name: string; size: number; mimeType: 'audio/mpeg' | 'audio/wav' }>;
+export type PutOwnedMusicSource = (reservation: Exclude<MusicSourceReservation, { source: MusicOwnedSource }>, file: MusicOwnedSourceFile,
+    onProgress: (fraction: number) => void, signal: AbortSignal) => Promise<number>;
+
+export function normalizeMusicSourceFile(file: Readonly<{ uri?: string; name?: string | null; size?: number; mimeType?: string | null }>): MusicOwnedSourceFile | null {
+    const mimeType = file.mimeType === 'audio/x-wav' || file.mimeType === 'audio/wave' ? 'audio/wav' : file.mimeType;
+    const name = file.name?.trim();
+    if (!file.uri || !name || name.length > 180 || /[\u0000-\u001f]/.test(name)
+        || !Number.isSafeInteger(file.size) || Number(file.size) < 1 || Number(file.size) > MUSIC_SOURCE_MAX_BYTES) return null;
+    if (mimeType !== 'audio/mpeg' && mimeType !== 'audio/wav') return null;
+    return { uri: file.uri, name, size: Number(file.size), mimeType };
+}
+
+const projectMusicOwnedSource = (source: MusicOwnedSource): MusicOwnedSource => ({
+    id: source.id, filename: source.filename, mime_type: source.mime_type, size_bytes: source.size_bytes,
+    duration_seconds: source.duration_seconds, status: source.status, created_at: source.created_at,
+    rights_statement_version: source.rights_statement_version, preview_url: source.preview_url,
+    preview_expires_in: source.preview_expires_in,
+});
+
+export async function listMusicSources(api: ApiClient): Promise<readonly MusicOwnedSource[]> {
+    const value = await api.request<unknown>(`${BASE}/sources`);
+    const sources = isRecord(value) ? value.sources : null;
+    if (!Array.isArray(sources) || !sources.every(isMusicOwnedSource)) throw bad();
+    return sources.map(source => projectMusicOwnedSource(source));
+}
+
+export async function reserveMusicSource(api: ApiClient, file: MusicOwnedSourceFile, idempotencyKey: string, signal?: AbortSignal): Promise<MusicSourceReservation> {
+    const value = await api.request<unknown>(`${BASE}/sources`, { ...post({ action: 'reserve', content_type: file.mimeType,
+        filename: file.name, idempotency_key: idempotencyKey, rights_confirmed: true, size_bytes: file.size }), ...(signal ? { signal } : {}) });
+    if (isRecord(value) && isMusicOwnedSource(value.source) && value.idempotent === true) return { source: projectMusicOwnedSource(value.source), idempotent: true };
+    if (!isRecord(value) || typeof value.id !== 'string' || typeof value.upload_url !== 'string' || !/^https:\/\//.test(value.upload_url)
+        || (value.content_type !== 'audio/mpeg' && value.content_type !== 'audio/wav') || typeof value.idempotent !== 'boolean'
+        || (value.headers !== undefined && (!isRecord(value.headers) || !Object.values(value.headers).every(v => typeof v === 'string')))) throw bad();
+    return { id: value.id, upload_url: value.upload_url, content_type: value.content_type,
+        headers: (value.headers ?? {}) as Record<string, string>, idempotent: value.idempotent };
+}
+
+export async function completeMusicSource(api: ApiClient, id: string, signal?: AbortSignal): Promise<MusicOwnedSource> {
+    const value = await api.request<unknown>(`${BASE}/sources`, { ...post({ action: 'complete', id }), ...(signal ? { signal } : {}) });
+    if (!isRecord(value) || !isMusicOwnedSource(value.source)) throw bad();
+    return projectMusicOwnedSource(value.source);
+}
+
+export async function removeMusicSource(api: ApiClient, id: string): Promise<void> {
+    const value = await api.request<unknown>(`${BASE}/sources`, { ...post({ id }), method: 'DELETE' });
+    if (!isRecord(value) || value.ok !== true) throw bad();
+}
+
+const putOwnedMusicSource: PutOwnedMusicSource = async (reservation, file, onProgress, signal) => {
+    // Stream from the picked cache file instead of materialising up to 20 MiB as a JS Blob.
+    const { File, UploadTask, UploadType } = require('expo-file-system') as typeof import('expo-file-system');
+    let task: InstanceType<typeof UploadTask> | undefined;
+    try {
+        task = new UploadTask(new File(file.uri), reservation.upload_url, { httpMethod: 'PUT', uploadType: UploadType.BINARY_CONTENT,
+            headers: { ...reservation.headers, 'Content-Type': reservation.content_type }, signal, sessionType: 'background',
+            onProgress: ({ bytesSent, totalBytes }) => { if (totalBytes > 0) onProgress(bytesSent / totalBytes); } });
+        return (await task.uploadAsync()).status;
+    } finally { task?.release(); }
+};
+
+export async function uploadMusicSource(api: ApiClient, file: MusicOwnedSourceFile, idempotencyKey: string,
+    onProgress: (fraction: number) => void, signal: AbortSignal, put: PutOwnedMusicSource = putOwnedMusicSource): Promise<MusicOwnedSource> {
+    const reservation = await reserveMusicSource(api, file, idempotencyKey, signal);
+    if ('source' in reservation) return reservation.source;
+    const status = await put(reservation, file, onProgress, signal);
+    if ((status < 200 || status >= 300) && !(reservation.idempotent && status === 412)) {
+        throw new ApiError(status, status === 403 ? 'upload_url_expired' : 'storage_upload_failed');
+    }
+    return completeMusicSource(api, reservation.id, signal);
 }
 
 export async function analyzeMusicInspiration(api: ApiClient, kind: MusicInspirationSource, key: string, idempotencyKey: string, signal?: AbortSignal): Promise<MusicInspirationResult> {

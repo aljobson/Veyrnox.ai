@@ -168,6 +168,7 @@ import area_musicPublication from './en/musicPublication';
 import area_musicRemix from './en/musicRemix';
 import area_musicRender from './en/musicRender';
 import area_musicSectionActions from './en/musicSectionActions';
+import area_musicSources from './en/musicSources';
 import area_musicTargetStems from './en/musicTargetStems';
 import area_musicTrackAdd from './en/musicTrackAdd';
 import area_nativeEditorModel from './en/nativeEditorModel';
@@ -433,6 +434,7 @@ const catalog = {
     ...area_musicRemix,
     ...area_musicRender,
     ...area_musicSectionActions,
+    ...area_musicSources,
     ...area_musicTargetStems,
     ...area_musicTrackAdd,
     ...area_nativeEditorModel,
