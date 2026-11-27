@@ -38,7 +38,7 @@ Device runs use `e2e.config.ts`, iPhone 17 Pro, one worker, no retries, and reta
 - Full lint baseline: 7 errors and 308 warnings remain in unchanged files. CI currently does not run lint. All files changed by this QA pass lint cleanly.
 - Android App Links remain disabled until real SHA-256 signing fingerprints are configured. Those values must not be invented.
 - Universal/App Link association lists do not yet cover every nested Editor, Creative Tool, Cinema, Publish, OAuth, and review path supported by the in-app mapper.
-- AI Lip Sync and Talking Objects currently present still examples for video-output workflows. Six other tool examples are WebM; their detail renderer does not provide a poster/fallback for iOS playback failure.
+- AI Lip Sync currently presents a still example for a video-output workflow. Six other tool examples are WebM; their detail renderer does not provide a poster/fallback for iOS playback failure.
 
 ## Relight and Video Upscale (QA rows 4.T6, 4.T12)
 

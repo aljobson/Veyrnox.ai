@@ -7,20 +7,20 @@ import { Icon, Text } from './ui';
 import { useAppearance } from './ui/AppearanceContext';
 
 // The new-account gift, shown above the sign-in options so the reason to sign up is on screen before the buttons.
-export function SignupOffer() {
+export function SignupOffer({ compact = false }: { compact?: boolean }) {
     const { scheme } = useAppearance();
     const tone = vividHue('purple', scheme);
     const copy = signupOfferCopy(hardPaywallEnabled() ? HARD_PAYWALL_STARTER_CREDITS : null);
     return (
-        <View accessible accessibilityRole="summary" style={[styles.card, { backgroundColor: tone.fill, borderColor: tone.edge }]}>
-            <View style={[styles.coin, { backgroundColor: tone.iconSurface }]}>
-                <Icon name="coins" size={24} tint={tone.foreground} />
+        <View accessible accessibilityRole="summary" style={[styles.card, compact && styles.compactCard, { backgroundColor: tone.fill, borderColor: tone.edge }]}>
+            <View style={[styles.coin, compact && styles.compactCoin, { backgroundColor: tone.iconSurface }]}>
+                <Icon name="coins" size={compact ? 20 : 24} tint={tone.foreground} />
             </View>
             <View style={styles.copy}>
-                <Text variant="title3" style={{ color: tone.foreground }}>{plural('signIn.offer.title', copy.count)}</Text>
-                <Text variant="footnote" style={{ color: tone.foregroundMuted }}>
+                <Text variant={compact ? 'bodyStrong' : 'title3'} style={{ color: tone.foreground }}>{plural('signIn.offer.title', copy.count)}</Text>
+                {!compact ? <Text variant="footnote" style={{ color: tone.foregroundMuted }}>
                     {t(copy.body, copy.params)}
-                </Text>
+                </Text> : null}
             </View>
         </View>
     );
@@ -35,6 +35,7 @@ const styles = StyleSheet.create({
         borderRadius: ds.radius.lg,
         borderWidth: 1,
     },
+    compactCard: { padding: ds.space.md },
     coin: {
         width: 48,
         height: 48,
@@ -42,5 +43,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
+    compactCoin: { width: 40, height: 40 },
     copy: { flex: 1, gap: ds.space.xs },
 });

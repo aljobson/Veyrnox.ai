@@ -1,6 +1,6 @@
 const KEY = 'veyrnox.performance-draft.v1';
 
-export const PERFORMANCE_DRAFT_WORKFLOWS = ['video-lip-sync', 'talking-photo', 'baby-podcast', 'singing-photo', 'talking-cartoon', 'talking-animal', 'talking-object'];
+export const PERFORMANCE_DRAFT_WORKFLOWS = ['video-lip-sync', 'talking-photo', 'baby-podcast', 'singing-photo', 'talking-cartoon', 'talking-animal'];
 export const PERFORMANCE_DRAFT_SPEECH = ['script', 'upload', 'record'];
 export const MAX_PERFORMANCE_DRAFT_SCRIPT = 360;
 

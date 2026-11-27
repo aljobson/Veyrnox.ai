@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeCrunTemplateCatalog, readCrunTemplateCatalog } from '../lib/crunTemplateCatalog.js';
+import { normalizeCrunTemplateCatalog, readCrunTemplateCatalog, readCrunTemplateSummary } from '../lib/crunTemplateCatalog.js';
 
 test('normalizes the documented Kling template shape and drops unsafe media URLs', () => {
   const catalog = normalizeCrunTemplateCatalog('kling', {
@@ -13,6 +13,7 @@ test('normalizes the documented Kling template shape and drops unsafe media URLs
   }, 1, 50);
   assert.equal(catalog.total, 226);
   assert.deepEqual(catalog.templates[0], {
+    catalogId: 'kling:1:1:critter_paste', providerTemplateId: 'critter_paste',
     id: 'critter_paste', name: 'Critter Paste', category: 'Pet', tag: 'NEW', coverUrl: null,
     previewUrl: 'https://s15-kling.klingai.com/demo.mp4', previewKind: 'video', providerCredits: 200.7,
     requirements: [{ label: 'Resolution', value: '1080p' }, { label: 'Recommended Image Types', value: 'Single animal' }],
@@ -26,17 +27,17 @@ test('normalizes Vidu templates, including image previews and bounded input inst
       template: 'Vintage_Moment_of_Mom', name: 'Vintage Moment of Mom', category_name: 'Festival',
       category_id: 11, resolution: ['1080p'], duration: [0], aspect_ratio: ['9:16'], output_type: 'unspecified',
       cover: 'https://scene.cf.vidu.studio/cover.png', video: 'https://scene.cf.vidu.studio/preview.png',
-      credits: 9, person_count: 'Only one person', is_hot: true, is_new: false,
+      credits: 28.799999999999997, person_count: 'Only one person', is_hot: true, is_new: false,
       input_instruction: JSON.stringify({ image_count: 'Only one image', image_url: ['https://scene.cf.vidu.studio/example.png'], prompt_instruction: 'No prompt required' }),
     }] },
   }, 1, 50);
   assert.equal(catalog.total, 120);
   assert.deepEqual(catalog.templates[0], {
+    catalogId: 'vidu:1:1:Vintage_Moment_of_Mom', providerTemplateId: 'Vintage_Moment_of_Mom',
     id: 'Vintage_Moment_of_Mom', name: 'Vintage Moment of Mom', category: 'Festival', tag: 'HOT',
     coverUrl: 'https://scene.cf.vidu.studio/cover.png', previewUrl: 'https://scene.cf.vidu.studio/preview.png', previewKind: 'image',
-    providerCredits: 9, inputRequirement: 'Only one person', requirements: [
+    providerCredits: 28.8, inputRequirement: 'Only one person', requirements: [
       { label: 'Resolution', value: '1080p' },
-      { label: 'Duration', value: '0s' },
       { label: 'Aspect ratio', value: '9:16' },
       { label: 'Output type', value: 'unspecified' },
       { label: 'image count', value: 'Only one image' },
@@ -101,4 +102,16 @@ test('catalog fails closed for an unknown provider, missing key or invalid pagin
   assert.deepEqual(await readCrunTemplateCatalog({ provider: 'veo' }, { apiKey: 'x' }), { ok: false, error: 'provider_invalid', status: 400 });
   assert.deepEqual(await readCrunTemplateCatalog({ provider: 'kling' }, { apiKey: '' }), { ok: false, error: 'not_configured', status: 503 });
   assert.deepEqual(await readCrunTemplateCatalog({ provider: 'kling', page: 0 }, { apiKey: 'x' }), { ok: false, error: 'query_invalid', status: 400 });
+});
+
+test('summary totals every CRUN template provider without returning template payloads', async () => {
+  const totals = { kling: 226, seedance: 341, vidu: 521 };
+  const result = await readCrunTemplateSummary({
+    apiKey: 'secret-key',
+    fetchImpl: async url => {
+      const provider = String(url).includes('kling-templates') ? 'kling' : String(url).includes('bytedance-templates') ? 'seedance' : 'vidu';
+      return new Response(JSON.stringify({ code: 200, data: { total: totals[provider], templates: [] } }), { status: 200 });
+    },
+  });
+  assert.deepEqual(result, { ok: true, summary: { total: 1088, providers: totals } });
 });

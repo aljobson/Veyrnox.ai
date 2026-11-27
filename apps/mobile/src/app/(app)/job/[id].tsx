@@ -319,8 +319,8 @@ export default function JobScreen() {
                 </View>
             )) : (
                 <View style={styles.center}>
-                    {waiting || pollEnded || state === 'failed' || hasFinishedWithoutFile ? (
-                        <VeyCharacter width={96} interactive mood={cancelledCredits !== null || lookup === 'missing' ? 'idle' : state === 'failed' ? 'worried' : 'working'} />
+                    {cancelledCredits !== null || lookup === 'missing' || state === 'failed' ? (
+                        <VeyCharacter width={96} interactive mood={cancelledCredits !== null || lookup === 'missing' ? 'idle' : 'worried'} />
                     ) : null}
                     <Text accessibilityLiveRegion="polite" variant="body" tone="danger" style={state === 'failed' ? styles.error : styles.status}>{cancelledCredits !== null
                         ? cancelledCredits > 0 ? plural('jobCancel.cancelled', cancelledCredits) : t('jobCancel.cancelledFree')

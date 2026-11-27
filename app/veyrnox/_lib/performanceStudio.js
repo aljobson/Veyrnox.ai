@@ -66,19 +66,6 @@ export const PERFORMANCE_WORKFLOWS = [
     status: 'available',
   },
   {
-    id: 'talking-object',
-    label: 'Talking object',
-    eyebrow: 'OBJECT + SPEECH',
-    description: 'Animate one original object character with a script or recording.',
-    modelId: 'kling-avatar-v2',
-    sourceKind: 'image',
-    maxSeconds: 10,
-    scriptLimit: 600,
-    speechSources: ['script', 'upload', 'record'],
-    defaultSpeechSource: 'script',
-    status: 'available',
-  },
-  {
     id: 'video-lip-sync',
     label: 'Video lip sync',
     eyebrow: 'VIDEO + SPEECH',
@@ -276,8 +263,6 @@ export function sourceHint(workflow) {
       ? 'PNG, JPEG or WebP, one fully synthetic baby character with a clear unobstructed mouth, up to 20 MB'
     : selected.id === 'talking-animal'
       ? 'PNG, JPEG or WebP, one animal with a clear front-facing head, up to 20 MB'
-    : selected.id === 'talking-object'
-      ? 'PNG, JPEG or WebP, one original object character with a clear designed face and mouth, up to 20 MB'
     : selected.id === 'talking-cartoon'
       ? 'PNG, JPEG or WebP, one original or licensed character with a clear face, up to 20 MB'
     : selected.id === 'singing-photo'

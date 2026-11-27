@@ -1,4 +1,3 @@
-import { passkeyGate } from '../lib/passkeys';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -69,13 +68,19 @@ export default function SignIn() {
                     <Text variant="display">{personalised ? t('onboarding.signIn.title') : t('signIn.title')}</Text>
                     <Text tone="secondary">{personalised ? t('onboarding.signIn.body') : t('signIn.subtitle')}</Text>
                 </View>
-                {!compact ? <SignupOffer /> : null}
+                {!compact ? (
+                    <Link href="/preview" asChild>
+                        <Button variant="secondary" label={t('preview.browse')} accessibilityRole="link" accessibilityHint={t('preview.browseHint')} />
+                    </Link>
+                ) : null}
+                {!compact ? <SignupOffer compact /> : null}
                 <ConsentRow agreed={agreed} onChange={setAgreed} />
                 {!compact && agreed ? (
                     <Text variant="footnote" tone="tertiary">
                         {t('signIn.ready')}
                     </Text>
                 ) : null}
+                <Button variant="tertiary" icon="key" label={t('passkey.signIn')} disabled={blocked} onPress={() => router.push('/passkey')} />
                 <AuthProviderButton
                     provider="apple"
                     consent={agreed}
@@ -92,12 +97,6 @@ export default function SignIn() {
                         if (!blocked) router.push('/email');
                     }}
                 />
-                {passkeyGate() ? <Button variant="tertiary" icon="key" label={t('passkey.signIn')} disabled={blocked} onPress={() => router.push('/passkey')} /> : null}
-                {!compact ? (
-                    <Link href="/preview" asChild>
-                        <Button variant="tertiary" label={t('preview.browse')} accessibilityRole="link" accessibilityHint={t('preview.browseHint')} />
-                    </Link>
-                ) : null}
                 {!compact && DEV_MOCK ? (
                     <Button
                         variant="tertiary"

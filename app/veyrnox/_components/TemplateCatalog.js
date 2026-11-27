@@ -142,6 +142,7 @@ export function TemplateCatalog({ kling, seedance, veo, suno }) {
   const { t } = useI18n();
   const [provider, setProvider] = useState('kling');
   const [query, setQuery] = useState('');
+  const [crunPreviewCount, setCrunPreviewCount] = useState(null);
   const [remote, setRemote] = useState({ kling: null, seedance: null, vidu: null });
   const [loading, setLoading] = useState(null);
   const [error, setError] = useState({});
@@ -152,6 +153,17 @@ export function TemplateCatalog({ kling, seedance, veo, suno }) {
   const stopPreviewRef = useRef(null);
   const needle = query.trim().toLocaleLowerCase();
 
+  useEffect(() => {
+    let live = true;
+    fetch('/api/template-catalog?summary=1')
+      .then(response => response.ok ? response.json() : null)
+      .then(body => {
+        if (live && Number.isInteger(body?.total) && body.total >= 0) setCrunPreviewCount(body.total);
+      })
+      .catch(() => {});
+    return () => { live = false; };
+  }, []);
+
   const loadRemote = useCallback(async (kind, page = 1) => {
     setLoading(kind);
     setError(current => ({ ...current, [kind]: '' }));
@@ -161,7 +173,7 @@ export function TemplateCatalog({ kling, seedance, veo, suno }) {
       if (!response.ok) throw new Error(body.error || 'catalog_unavailable');
       setRemote(current => {
         const previous = page === 1 ? [] : current[kind]?.templates || [];
-        const byId = new Map([...previous, ...(body.templates || [])].map(item => [item.id, item]));
+        const byId = new Map([...previous, ...(body.templates || [])].map(item => [item.catalogId || item.id, item]));
         return { ...current, [kind]: { ...body, templates: [...byId.values()] } };
       });
     } catch {
@@ -218,6 +230,11 @@ export function TemplateCatalog({ kling, seedance, veo, suno }) {
   const info = PROVIDERS.find(item => item.id === provider);
   return (
     <section className="mt-10" data-testid="template-catalog">
+      {crunPreviewCount !== null && (
+        <p className="mb-5 font-vx-mono text-xs font-bold uppercase tracking-[0.12em] text-vx-fg-muted" data-testid="crun-template-count">
+          {t('app.templates.crunSummary', { count: crunPreviewCount.toLocaleString() })}
+        </p>
+      )}
       <nav aria-label={t('app.templates.providerLabel')} className="flex flex-wrap gap-2" role="tablist">
         {PROVIDERS.map(item => (
           <button key={item.id} type="button" role="tab" aria-selected={provider === item.id} onClick={() => { stopSunoPreview(); setProvider(item.id); setQuery(''); }}
@@ -252,7 +269,7 @@ export function TemplateCatalog({ kling, seedance, veo, suno }) {
           </div>
           {error[provider] && <div role="status" className="mb-4 rounded-xl border border-vx-money/40 bg-vx-money/5 px-4 py-3 text-sm text-vx-fg-body">{error[provider]} <button type="button" className="ms-2 min-h-11 font-bold text-vx-accent underline" onClick={() => loadRemote(provider, 1)}>{t('app.templates.retry')}</button></div>}
           {!remote[provider] && loading === provider ? <p role="status" className="rounded-2xl border border-dashed border-vx-border p-8 text-center text-sm text-vx-fg-muted">{t('app.templates.loadingIndex', { provider: t(info.labelKey) })}</p>
-            : visibleRemote.length ? <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{visibleRemote.map(item => <ProviderCard key={item.id} item={item} provider={t(info.labelKey)} t={t} />)}</ul>
+            : visibleRemote.length ? <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{visibleRemote.map(item => <ProviderCard key={item.catalogId || item.id} item={item} provider={t(info.labelKey)} t={t} />)}</ul>
               : remote[provider] && <Empty query={query} t={t} />}
           {remote[provider] && remote[provider].templates.length < remote[provider].total && (
             <button type="button" disabled={loading === provider} onClick={() => loadRemote(provider, remote[provider].page + 1)} className="vx-press mt-6 min-h-11 rounded-full border border-vx-border px-6 text-sm font-bold hover:border-vx-accent disabled:opacity-50">

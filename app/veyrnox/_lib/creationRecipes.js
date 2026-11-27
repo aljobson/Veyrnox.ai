@@ -87,10 +87,11 @@ export const CREATION_RECIPES = Object.freeze([
     rights: ['minor', 'guardian-consent'], riskLevel: 'prohibited', blockedReason: 'Veyrnox.ai has not adopted the safeguards required for minor-centred generation.',
   },
   {
-    id: 'lip-sync', family: 'performance', title: 'Video lip sync', status: 'live', icon: 'performance',
-    description: 'Replace speech in a short video while keeping the original performance.',
-    outputKind: 'video', href: '/app/lip-sync?recipe=lip-sync&workflow=video-lip-sync', sourceSlots: ['Source video', 'Speech'],
+    id: 'lip-sync', family: 'performance', title: 'Video lip sync', status: 'blocked', icon: 'blocked',
+    description: 'Video lip sync is unavailable because its production model has been retired.',
+    outputKind: 'video', href: null, sourceSlots: ['Source video', 'Speech'],
     steps: sharedSpeechSteps, rights: ['likeness', 'performance', 'audio'], riskLevel: 'guarded',
+    blockedReason: 'The retired video lip-sync model cannot accept new production jobs.',
   },
   {
     id: 'talking-photo', family: 'performance', title: 'Talking photo', status: 'live', icon: 'performance',
@@ -113,11 +114,12 @@ export const CREATION_RECIPES = Object.freeze([
     rights: ['likeness', 'script', 'voice'], riskLevel: 'guarded',
   },
   {
-    id: 'video-dubbing', family: 'performance', title: 'Video dubbing', status: 'live', icon: 'localize',
-    description: 'Turn a reviewed translation or owned dubbed track into a lip-synced locale version.',
-    outputKind: 'video', href: '/app/video-dubbing?recipe=video-dubbing', sourceSlots: ['Source video', 'Reviewed translation or dubbed audio'],
+    id: 'video-dubbing', family: 'performance', title: 'Video dubbing', status: 'blocked', icon: 'blocked',
+    description: 'Video dubbing is unavailable because its production lip-sync model has been retired.',
+    outputKind: 'video', href: null, sourceSlots: ['Source video', 'Reviewed translation or dubbed audio'],
     steps: ['Choose a short source video', 'Add an approved translation or dubbed track', 'Choose a target-language stock voice', 'Review the two-job quote and render'],
     rights: ['video', 'voice', 'translation'], riskLevel: 'high',
+    blockedReason: 'The retired video lip-sync model cannot accept new dubbing jobs.',
   },
   {
     id: 'faceless-reel', family: 'performance', title: 'Faceless reel', status: 'live', icon: 'performance',
@@ -144,13 +146,6 @@ export const CREATION_RECIPES = Object.freeze([
     outputKind: 'video', href: '/app/baby-podcast?recipe=minor-podcast', sourceSlots: ['Synthetic baby character', 'Adult-provided or stock speech'],
     steps: ['Verify the character is fully synthetic', 'Add a short podcast script or cleared adult audio', 'Choose a stock voice and delivery', 'Review the safety statement and render'],
     rights: ['synthetic-character', 'audio', 'adult-consent'], riskLevel: 'high',
-  },
-  {
-    id: 'talking-object', family: 'characters', title: 'Talking object', status: 'live', icon: 'characters',
-    description: 'Animate an original product, food, toy, package or everyday-object character with a clear designed face.',
-    outputKind: 'video', href: '/app/talking-objects?recipe=talking-object', sourceSlots: ['Original object character', 'Speech'],
-    steps: ['Choose an original object character', 'Add text, owned audio, or a recording', 'Review the experimental 10-second contract', 'Render and reuse the result'],
-    rights: ['object-design', 'audio', 'brand-claims'], riskLevel: 'guarded',
   },
   {
     id: 'ad-remix', family: 'product', title: 'Ad remix', status: 'live', icon: 'product',

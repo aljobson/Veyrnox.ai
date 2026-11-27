@@ -1,7 +1,7 @@
 import { rawText } from '../../../lib/i18n/translate';
 import { directionalStyle } from '../../../lib/rtl';
 import { Button, Card, Text, themedStyles, useThemedStyles, useAppearance } from '../../../components/ui';
-import { VeyLoader } from '../../../components/VeyLoader';
+import { LoadingSkeleton } from '../../../components/LoadingSkeleton';
 import { Image } from 'expo-image';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -142,7 +142,7 @@ export default function EditorHome() {
                                 <Text style={styles.error}>{problem}</Text>
                                 <Text variant="bodyStrong" style={styles.retry}>{t('editor.home.retry')}</Text>
                             </Button>
-                        ) : EDITOR_ENABLED && projects === null ? <View style={styles.loading}><VeyLoader label={t('editor.home.loading')} showLabel /></View> : null}
+                        ) : EDITOR_ENABLED && projects === null ? <View style={styles.loading}><LoadingSkeleton label={t('editor.home.loading')} variant="list" /></View> : null}
                     </View>
                 }
                 ListEmptyComponent={EDITOR_ENABLED && projects !== null && !problem ? (

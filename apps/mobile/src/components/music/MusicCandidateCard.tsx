@@ -3,6 +3,7 @@ import { View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Button, Card, Text } from '../ui';
 import { VeyLoader } from '../VeyLoader';
+import { GenerationProgress } from '../GenerationProgress';
 import { plural, t } from '../../lib/i18n';
 import { MUSIC_ASSET_PATH } from '../../lib/music/validate';
 import type { MusicCandidateView } from '../../lib/music/types';
@@ -29,7 +30,9 @@ export function MusicCandidateCard({ candidate, onPlay, openSongLabel, requireVa
         <Text>{state === 'refunded' && candidate.credits !== undefined
             ? t(candidate.credits > 0 ? 'music.create.refundedPaid' : 'music.create.refundedFree')
             : t(`music.create.${state}`)}</Text>
-        {!terminal ? <VeyLoader label={t('music.create.running')} /> : null}
+        {!terminal ? candidate.job_id
+            ? <GenerationProgress jobId={candidate.job_id} kind="audio" compact />
+            : <VeyLoader label={t('music.create.running')} width={28} /> : null}
         {candidate.state === 'ready' ? <View>
             {input ? <Button label={t('music.playNamed', { title: candidate.label })} onPress={() => onPlay(input)} />
                 : <Text>{t('music.create.unplayable')}</Text>}
