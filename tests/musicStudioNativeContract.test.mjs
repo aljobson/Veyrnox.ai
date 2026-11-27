@@ -2,7 +2,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
-import { MUSIC_STUDIO_ACTION_TYPES } from '../lib/musicStudioActions.mjs';
 import {
   MUSIC_STUDIO_ASSISTANT_NATIVE_TRANSLATIONS,
   MUSIC_STUDIO_ASSISTANT_PLURAL_CATEGORIES,
@@ -14,6 +13,7 @@ const aiPanel = readFileSync(new URL('../apps/mobile/src/components/beats/ai/Bea
 const addTrackSheet = readFileSync(new URL('../apps/mobile/src/components/beats/MusicAddTrackSheet.tsx', import.meta.url), 'utf8');
 const instrumentTray = readFileSync(new URL('../apps/mobile/src/components/beats/MusicInstrumentTray.tsx', import.meta.url), 'utf8');
 const magic = readFileSync(new URL('../apps/mobile/src/lib/beatAi/magicGate.ts', import.meta.url), 'utf8');
+const catalogs = readFileSync(new URL('../apps/mobile/src/lib/i18n/catalogs.ts', import.meta.url), 'utf8');
 
 test('native Music Editor opens AI editing from a compact icon surface and keeps Magic Bar hard off', () => {
   assert.match(screen, /bottomTool === 'ai' \? <BeatAiPanel doc=\{doc\} apply=\{apply\} disabled=\{aiLocked\} visible/);
@@ -39,6 +39,13 @@ test('native AI editing is generation, project and visit fenced and fails closed
   assert.match(aiPanel, /\.catch\(\(\) => \{ if \(live\) setSession\(null\); \}\)/);
   assert.match(aiPanel, /new AbortController\(\)/);
   assert.match(aiPanel, /session\.controller\.abort\(\)/);
+});
+
+test('native English catalog merges Studio action copy instead of exposing keys', () => {
+  assert.equal(MUSIC_STUDIO_ASSISTANT_TRANSLATIONS.en['studioAssistant.title'], 'Studio actions');
+  assert.equal(MUSIC_STUDIO_ASSISTANT_NATIVE_TRANSLATIONS.en['studioAssistant.title'], 'Studio actions');
+  assert.match(catalogs, /en: \{ \.\.\.en, \.\.\.MUSIC_STUDIO_ASSISTANT_NATIVE_TRANSLATIONS\.en, \.\.\.musicVoicesByLocale\.en, \.\.\.musicSourcesByLocale\.en \}/);
+  assert.match(catalogs, /CATALOGS: Catalogs = \{ en: merged\.en! \}/);
 });
 
 test('add track presents compact inline sources, keeps library separate and keeps drums inside instruments', () => {

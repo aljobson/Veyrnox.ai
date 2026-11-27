@@ -8,6 +8,7 @@ import { EmptyState } from '../../../components/EmptyState';
 import { LoadingSkeleton } from '../../../components/LoadingSkeleton';
 import { MusicNotice } from '../../../components/music/MusicNotice';
 import { MusicPlayer } from '../../../components/music/MusicPlayer';
+import { MusicOwnedSourcesCard } from '../../../components/music/MusicOwnedSourcesCard';
 import { listSongs, getEntitlements, getLibraryTab } from '../../../lib/music/client';
 import { probeMusic, type MusicProbe } from '../../../lib/music/probe';
 import { hookPlayback } from '../../../lib/music/player';
@@ -30,6 +31,7 @@ export default function MusicLibrary() {
     const [droppedHooks, setDroppedHooks] = useState(0);
     const [albumsOn, setAlbumsOn] = useState(false);
     const [voicesOn, setVoicesOn] = useState(false);
+    const [sourcesOn, setSourcesOn] = useState(false);
     const [hook, setHook] = useState<MusicHook | null>(null);
     const epoch = useRef(0);
     const load = useCallback(async () => {
@@ -52,6 +54,7 @@ export default function MusicLibrary() {
         else if (hookResult.state === 'off') setDroppedHooks(0);
         setAlbumsOn(entitlementResult.state === 'on' && entitlementResult.data.features.albums);
         setVoicesOn(entitlementResult.state === 'on' && entitlementResult.data.features.voices);
+        setSourcesOn(entitlementResult.state === 'on' && entitlementResult.data.features.sources);
         setResults({ songs, history, hooks }); setSearchRejected(rejected);
         if (rejected || songs.state === 'off') setSearchOn(false);
         else if (songs.state === 'on') setSearchOn(true);
@@ -81,6 +84,7 @@ export default function MusicLibrary() {
             {voicesOn ? <ListRow icon="microphone" title={t('musicVoices.title')} accessibilityLabel={t('musicVoices.title')} onPress={() => router.push('/music/voices' as never)} /> : null}
             <ListRow icon="usersThree" title={t('musicPublic.explore')} accessibilityLabel={t('musicPublic.explore')} onPress={() => router.push('/music/explore' as never)} />
             <ListRow icon="compass" title={t('musicDiscover.title')} accessibilityLabel={t('musicDiscover.title')} onPress={() => router.push('/music/discover' as never)} />
+            {sourcesOn ? <MusicOwnedSourcesCard api={api} /> : null}
         </> : null}
         {off ? <EmptyState title={t('music.off')} body={t('music.offBody')} actionLabel={t('music.back')} href="/audio" /> : <>
             <SegmentedControl value={currentTab} onChange={value => { setTab(value); setHook(null); }}

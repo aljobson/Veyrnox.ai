@@ -8,7 +8,7 @@ export const entitlements: MusicEntitlements = { available: true, mode: 'simple'
             exclude_styles: true, tempo_key_meter: true, lyrics: true, styles: true, instrumental: 'optional' },
             credits_per_candidate: 10, total_credits: 20, instrumental_only: false, requires_paid_plan: true, available: true }],
     custom_drafts: { available: true, autosave: true, generation_supported: true, lyrics_max: 3000, styles_max: 500, title_max: 80 },
-        features: { albums: false, inspiration: false, studioChat: false, dailyChallenge: false, persistentQueue: false, voices: false },
+    features: { albums: false, inspiration: false, studioChat: false, dailyChallenge: false, persistentQueue: false, voices: false, sources: false },
     inspiration_sources: [],
     daily_allowance: { enabled: false },
     policy: { version: 'music-v1', pre_debit: true } };
