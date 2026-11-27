@@ -49,10 +49,13 @@ export function passkeyErrorKey(err: unknown): PasskeyErrorKey {
     return 'pk.err.failed';
 }
 
-// Expo replaces these direct environment reads at build time. Neither platform ships enabled.
+// Expo replaces these direct environment reads at build time. iOS passkeys
+// are part of the signed-in security surface, so a missing build variable must
+// not make the way back into the account disappear after sign-out. Keep an
+// explicit false as a release kill switch; Android remains opt-in.
 export function passkeyGate(): boolean {
     const enabled = Platform.OS === 'ios'
-        ? process.env.EXPO_PUBLIC_PASSKEYS_IOS_ENABLED === 'true'
+        ? process.env.EXPO_PUBLIC_PASSKEYS_IOS_ENABLED !== 'false'
         : Platform.OS === 'android' && process.env.EXPO_PUBLIC_PASSKEYS_ANDROID_ENABLED === 'true';
     return enabled && nativePasskeysSupported();
 }

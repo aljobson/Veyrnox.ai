@@ -58,6 +58,7 @@ const creation = { challenge_id: 'challenge-id', options: { challenge: 'challeng
 const originalOS = Platform.OS;
 const originalIosFlag = process.env.EXPO_PUBLIC_PASSKEYS_IOS_ENABLED;
 const originalAndroidFlag = process.env.EXPO_PUBLIC_PASSKEYS_ANDROID_ENABLED;
+const iosGateCases: [string | undefined, boolean][] = [[undefined, true], ['', true], ['false', false], ['TRUE', true], ['1', true]];
 
 afterAll(() => {
     Object.defineProperty(Platform, 'OS', { configurable: true, value: originalOS });
@@ -87,11 +88,12 @@ describe('native passkey contract', () => {
     test('drops non-string optional binary fields', () => {
         expect(toGoTrueCredential({ ...registration, authenticatorAttachment: 1, response: { clientDataJSON: 'client', signature: 23 } })).toEqual({ ...registration, authenticatorAttachment: undefined, response: { clientDataJSON: 'client' } });
     });
-    test.each([undefined, '', 'false', 'TRUE', '1'])('gate defaults off for %s', (flag) => {
+    test.each(iosGateCases)('iOS gate with %s resolves to %s', (flag, expected) => {
         if (flag === undefined) delete process.env.EXPO_PUBLIC_PASSKEYS_IOS_ENABLED;
         else process.env.EXPO_PUBLIC_PASSKEYS_IOS_ENABLED = flag;
-        expect(passkeyGate()).toBe(false);
-        expect(native.isSupported).not.toHaveBeenCalled();
+        expect(passkeyGate()).toBe(expected);
+        if (expected) expect(native.isSupported).toHaveBeenCalled();
+        else expect(native.isSupported).not.toHaveBeenCalled();
     });
     test('platform flags are independent; support alone never enables Android or web', () => {
         expect(passkeyGate()).toBe(true);
