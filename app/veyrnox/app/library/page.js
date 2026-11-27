@@ -15,6 +15,7 @@ import { readJobHistory, pushJobHistory } from '../../_lib/jobHistory';
 import { EditSheet } from '../../_components/EditSheet';
 import { SmartCutEntry } from '../../_components/SmartCutEntry';
 import { useCatalog } from '../../_lib/useCatalog';
+import { useOwnerProofCatalog } from '../../_lib/useOwnerProofModels.js';
 import { mergeHydrated, shouldPoll } from '../../_lib/jobWindow';
 import { STATE_TABS, KIND_TABS, VIEWS, VIEW_KEY, filterRows, readView } from '../../_lib/libraryFilter';
 import { readFavourites, toggleFavourite, reconcileFavourites } from '../../_lib/favourites';
@@ -49,7 +50,8 @@ const isAudio = (r) => !!r.asset_url && !!r.mime_type?.startsWith('audio/');
 export default function Library() {
   const { t, locale } = useI18n();
   const number = value => locale === 'en' ? String(value) : value.toLocaleString(localeTag(locale));
-  const { models } = useCatalog();
+  const { models: publicModels } = useCatalog();
+  const models = useOwnerProofCatalog(publicModels);
   const [tab, setTab] = useState('all');
   const [shape, setShape] = useState('all');
   const [kind, setKind] = useState('all');

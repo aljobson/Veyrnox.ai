@@ -12,8 +12,6 @@
 // /api/templates, /api/presets and the sitemap; their direct links still resolve (templateById reads ALL_TEMPLATES).
 // tests/videoTemplateCap.test.mjs pins the cap and the rule.
 
-import { ORIGINAL_SEEDANCE_TEMPLATE_IDS } from './originalSeedanceTemplates.js';
-
 export const VIDEO_TEMPLATE_CAP = 150;
 
 // Hidden 2026-11-18 (owner): 76 swap recipes ("Replace X in the video with <<<image_1>>>") were listed here, but the server refuses
@@ -85,6 +83,4 @@ export const LONG_PROMPT_GALLERY_TEMPLATE_IDS = Object.freeze([
   'reflection-in-the-mirror', 'dandelion-ball', 'game-character-rig',
   'seedance-roof-jump', 'window-explode', 'seedance-bunny-taxi', 'the-crown',
   'dragon-lord', 'studio-ballerina-turns', 'noir-film', 'seedance-quick-change-2',
-  // Written by Veyrnox and paid-tested (owner, 2026-11-21).
-  ...ORIGINAL_SEEDANCE_TEMPLATE_IDS,
 ]);

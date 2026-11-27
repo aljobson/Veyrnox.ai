@@ -1,7 +1,7 @@
 import { cutSequenceRange } from './editorCaptions.mjs';
 import { backgroundMediaIds } from './editorBackground.mjs';
 import { validateSequence } from './editorSequenceValidation.mjs';
-import { trackFor, moveSequence } from './editorSequence.mjs';
+import { trackFor, moveSequence, insertSequenceGap } from './editorSequence.mjs';
 const clips = tl => ['video', 'audio', 'text'].flatMap(track => tl[track].map(clip => ({ track, ...clip })));
 const checked = tl => { const error = validateSequence(tl); return error ? { error } : tl; };
 const locked = (tl, items) => items.some(c => trackFor(tl, c)?.locked);
@@ -27,16 +27,20 @@ export function copySelection(tl, selection) {
     const items = selectionMembers(tl, selection);
     return { items, fonts:(tl.fonts||[]).filter(f=>items.some(c=>c.style?.font===f.family)), media: Object.fromEntries(items.filter(c => c.mediaId).flatMap(c => [c.mediaId,...backgroundMediaIds(c)].map(id => [id,tl.media[id]]))) };
 }
-export function pasteSelection(tl, clipboard, frame) {
+export function pasteSelection(tl, clipboard, frame, rippleAll = false) {
     if (!clipboard?.items?.length) return { error: 'Copy clips first.' };
     if (locked(tl, clipboard.items)) return { error: 'Unlock the destination tracks first.' };
-    const earliest = Math.min(...clipboard.items.map(c => c.start)), groups = new Map();
-    let seq = tl.seq;
-    const next = { ...tl,...(clipboard.fonts?.length?{fonts:[...(tl.fonts||[]),...clipboard.fonts.filter(f=>!tl.fonts?.some(old=>old.family===f.family))]}:{}), media: { ...tl.media, ...clipboard.media }, video: [...tl.video], audio: [...tl.audio], text: [...tl.text] };
+    const at = Math.max(0, Math.round(frame)), earliest = Math.min(...clipboard.items.map(c => c.start));
+    const span = Math.max(...clipboard.items.map(c => c.start + c.len)) - earliest;
+    const base = rippleAll ? insertSequenceGap(tl, at, span) : tl;
+    if (base.error) return base;
+    const groups = new Map();
+    let seq = base.seq;
+    const next = { ...base,...(clipboard.fonts?.length?{fonts:[...(base.fonts||[]),...clipboard.fonts.filter(f=>!base.fonts?.some(old=>old.family===f.family))]}:{}), media: { ...base.media, ...clipboard.media }, video: [...base.video], audio: [...base.audio], text: [...base.text] };
     for (const item of clipboard.items) {
         const { track, groupId, ...clip } = item;
         if (groupId && !groups.has(groupId)) groups.set(groupId, `g${++seq}`);
-        next[track].push({ ...clip, id: `${track[0]}${++seq}`, start: Math.round(frame) + clip.start - earliest, ...(groupId ? { groupId: groups.get(groupId) } : {}) });
+        next[track].push({ ...clip, id: `${track[0]}${++seq}`, start: at + clip.start - earliest, ...(groupId ? { groupId: groups.get(groupId) } : {}) });
     }
     return checked({ ...next, seq });
 }

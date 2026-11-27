@@ -20,6 +20,10 @@ try {
   assert.deepEqual([priced.credits_5s, priced.active], [5, true], '0554 prices ace-step-loop at 5 and switches it on');
   await query("UPDATE public.model_catalog l SET active=false, credits_5s=s.credits_5s FROM public.model_catalog s WHERE l.id='ace-step-loop' AND s.id='ace-step-1.5'");
   for (let replay = 0; replay < 2; replay++) for (const file of migrations) await query(await readFile(new URL(`../packages/db/schema/supabase/${file}`, import.meta.url), 'utf8'));
+  // These replays intentionally reinstall the historical pair quote/submit
+  // functions after the current schema. Keep that rolled-back fixture coherent
+  // by suspending only 0620's live one-track quote normalizer here.
+  await query('ALTER TABLE public.music_generation_quotes DISABLE TRIGGER music_quote_aaa_single_generation');
   const source = (await query("SELECT * FROM public.model_catalog WHERE id='ace-step-1.5'")).rows[0];
   const loop = (await query("SELECT * FROM public.model_catalog WHERE id='ace-step-loop'")).rows[0];
   assert.equal(loop.active, false);
@@ -35,7 +39,9 @@ try {
   const quote = model => value('SELECT public.music_create_quote($1::text,$2::text,$3::text,$4::text,$5::integer,$6::integer,$7::text,$8::integer,$9::integer,$10::text,$11::text)',
     [auth, 'Instrumental keys', 'Part', model, null, null, null, 10, 120, 'C Major', '4']);
   assert.equal((await quote('ace-step-loop')).code, 'MODEL_UNAVAILABLE');
-  await query("UPDATE public.model_catalog SET active=true WHERE id='ace-step-loop'");
+  // 0611 unlists ACE-Step 1.5 in production. This disposable rolled-back proof opts both
+  // historical quote fixtures back in after confirming the loop starts unavailable.
+  await query("UPDATE public.model_catalog SET active=true WHERE id IN ('ace-step-loop','ace-step-1.5')");
   for (const model of ['ace-step-loop','ace-step-1.5']) {
     await query('SAVEPOINT generation');
     const q = await quote(model); assert.equal(q.ok,true,JSON.stringify(q)); assert.equal(q.total_credits,source.credits_5s*2);

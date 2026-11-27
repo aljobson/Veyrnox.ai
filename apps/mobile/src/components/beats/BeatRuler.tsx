@@ -42,7 +42,7 @@ function CycleHandle({ edge, props, preview }: { edge: 'start' | 'end'; props: P
         accessibilityLabel={t(edge === 'start' ? 'beat.cycle.startHandle' : 'beat.cycle.endHandle')} accessibilityValue={{ text: position(props.cycle[edge]) }}
         accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
         onAccessibilityAction={event => props.apply(d => setCycle(d, { ...d.cycle, [edge]: d.cycle[edge] + (event.nativeEvent.actionName === 'increment' ? props.snap : -props.snap) }), t('beat.cycle.changed'))}
-        style={s.handle} /></View>;
+        style={s.handle}><View style={s.handleDot} /></View></View>;
 }
 export function BeatRuler(props: Props) {
     const s = useThemedStyles(sheets);
@@ -56,20 +56,21 @@ export function BeatRuler(props: Props) {
             onPress={event => props.setLocator(clampLocator(snapTick(xToTick(event.nativeEvent.locationX, props.zoom), props.snap), props.end))}>
             {Array.from({ length: props.bars }, (_, index) => <Text key={index} pointerEvents="none" accessible={false} style={{ position: 'absolute', left: index * props.zoom }} variant="caption">{index + 1}</Text>)}
         </Pressable>
-        <View pointerEvents="box-none" style={{ height: 88, left: tickToX(band.start, props.zoom), width: Math.max(44, tickToX(band.end - band.start, props.zoom)) }}>
+        <View pointerEvents="box-none" style={{ height: 16, left: tickToX(band.start, props.zoom), width: Math.max(44, tickToX(band.end - band.start, props.zoom)) }}>
             <View testID="cycle-band" pointerEvents="none" style={[s.band, { width: tickToX(band.end - band.start, props.zoom) }, band.on && s.on, preview && s.preview]} />
             {!props.disabled && <><CycleHandle edge="start" props={props} preview={setPreview} /><CycleHandle edge="end" props={props} preview={setPreview} /></>}
         </View>
     </View>;
 }
-export const RULER_HEIGHT = 132;
+export const RULER_HEIGHT = 44;
 const sheets = themedStyles(p => ({
     controls: { flexDirection: 'row', flexWrap: 'wrap', gap: ds.space.sm },
-    ruler: { height: RULER_HEIGHT, borderBottomWidth: 1, borderColor: p.borderSubtle },
-    numbers: { height: 44 },
-    band: { position: 'absolute', height: 88, borderWidth: 1, borderColor: p.borderSubtle, backgroundColor: p.surface },
+    ruler: { height: RULER_HEIGHT, borderBottomWidth: 1, borderColor: p.borderStrong, backgroundColor: p.bgElevated1 },
+    numbers: { height: 27, paddingTop: ds.space.xs },
+    band: { position: 'absolute', height: 12, borderWidth: 1, borderColor: p.borderSubtle, backgroundColor: p.surface, opacity: 0.65 },
     on: { borderColor: p.accent },
     preview: { opacity: 0.7 },
     handleHit: { position: 'absolute', width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-    handle: { width: 24, height: 24, backgroundColor: p.accent, borderRadius: ds.radius.xs },
+    handle: { width: 24, height: 24, alignItems: 'center', justifyContent: 'center' },
+    handleDot: { width: 10, height: 10, backgroundColor: p.accent, borderRadius: ds.radius.pill },
 }));

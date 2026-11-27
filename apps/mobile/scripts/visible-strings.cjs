@@ -1,5 +1,13 @@
 // Deliberately inspect syntax, including ternaries/templates, instead of grepping source lines.
-const ts = require('typescript-legacy');
+let ts;
+try {
+    ts = require('typescript-legacy');
+} catch (error) {
+    if (error?.code !== 'MODULE_NOT_FOUND' || !String(error.message).includes('typescript-legacy')) throw error;
+    // Consolidated mobile worktrees may reuse the root-pinned 6.0.3 package
+    // without installing the byte-identical npm alias a second time.
+    ts = require('typescript');
+}
 const props = new Set(['alt', 'accessibilityLabel', 'accessibilityHint', 'placeholder', 'label', 'title', 'subtitle', 'detail', 'description', 'hint', 'body', 'action', 'emptyText', 'errorMessage', 'confirmLabel', 'cancelLabel']);
 // Product/brand names and established font names retain their spelling in every language.
 // T and CC are the existing editor's text/captions glyphs.

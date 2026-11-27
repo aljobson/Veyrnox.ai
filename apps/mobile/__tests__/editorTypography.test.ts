@@ -29,6 +29,7 @@ test('all editor component font sizes keep the meaningful-label floor with one d
         for (const match of source.matchAll(/fontSize:\s*([^,}\n]+)/g)) {
             const value = match[1].trim();
             if (value === 'EDITOR_DECORATIVE_RULER_FONT_SIZE') continue;
+            if (value === 'undefined') continue; // Explicitly removes an inherited font size before a computed accessible size is applied.
             if (!/^\d+(?:\.\d+)?$/.test(value)) {
                 unsupportedFontSizes.push(`${relative}:${value}`);
                 continue;

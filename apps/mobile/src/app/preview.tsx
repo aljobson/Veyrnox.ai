@@ -11,7 +11,8 @@ import { fetchTitlesPage, posterUrl, type CinemaTitle } from '../lib/cinema';
 import { t } from '../lib/i18n';
 import { fetchPresets, presetPrice, type Preset } from '../lib/presets';
 import { colors } from '../theme';
-import { VeyLoader } from '../components/VeyLoader';
+import { LoadingSkeleton } from '../components/LoadingSkeleton';
+import { captureEvent } from '../lib/analytics/events';
 
 type Tab = 'templates' | 'cinema';
 
@@ -27,6 +28,8 @@ export default function Preview() {
     const [failed, setFailed] = useState(false);
 
     useEffect(() => {
+        if (status !== 'signedOut') return;
+        captureEvent('guest_browse_viewed');
         let alive = true;
         fetchPresets()
             .then((p) => alive && setPresets(p))
@@ -37,16 +40,16 @@ export default function Preview() {
         return () => {
             alive = false;
         };
-    }, []);
+    }, [status]);
 
     if (status === 'signedIn') return <Redirect href="/" />;
 
-    const signIn = () => router.push('/sign-in');
+    const signIn = () => router.push({ pathname: '/sign-in', params: { from: 'preview' } });
     const loading = tab === 'templates' ? presets === null : titles === null;
     return (
         <View style={[styles.screen, { paddingTop: insets.top, paddingLeft: insets.left, paddingRight: insets.right }]}>
             <View style={styles.bar}>
-                <Pressable accessibilityRole="button" accessibilityLabel={t('preview.back')} style={[styles.back, touchTarget]} onPress={() => (router.canGoBack() ? router.back() : router.replace('/sign-in'))}>
+                <Pressable accessibilityRole="button" accessibilityLabel={t('preview.back')} style={[styles.back, touchTarget]} onPress={() => (router.canGoBack() ? router.back() : router.replace('/onboarding'))}>
                     <Icon name="arrowLeft" size={24} tint={styles.backText.color} />
                 </Pressable>
                 <Text variant="inherit" style={styles.barTitle} accessibilityRole="header">{t('preview.title')}</Text>
@@ -67,7 +70,7 @@ export default function Preview() {
             </View>
             <ScrollView contentContainerStyle={styles.body}>
                 <Text variant="inherit" style={styles.heading} accessibilityRole="header">{t(tab === 'templates' ? 'preview.templates.heading' : 'preview.cinema.heading')}</Text>
-                {loading && !failed ? <VeyLoader label={t('common.loading')} showLabel /> : null}
+                {loading && !failed ? <LoadingSkeleton label={t('common.loading')} variant="grid" /> : null}
                 {failed && loading ? <Text variant="inherit" style={styles.note}>{t('preview.error')}</Text> : null}
                 {tab === 'templates'
                     ? (presets ?? []).slice(0, 30).map((p) => (

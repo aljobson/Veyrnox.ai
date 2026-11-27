@@ -23,6 +23,23 @@ test('quote and 501 availability; exact discriminated source, quoted price, owne
     expect(JSON.parse(init.body)).toEqual({ source: { type: 'job', jobId: args().jobId }, duration: 12, expectedCredits: 7, idempotencyKey: 'speech-key' });
     expect(await fetchSpeechQuote(api(request))).toBeNull();
 });
+test('Best Cut quote exposes the ten-minute ceiling and one-minute billing block', async () => {
+    const request = jest.fn().mockResolvedValue({ credits: 3, max_seconds: 600, billing_block_seconds: 60, languages: ['en'], source_types: ['job', 'upload'] });
+    await expect(fetchSpeechQuote(api(request), undefined, true)).resolves.toMatchObject({ credits: 3, max_seconds: 600, billing_block_seconds: 60 });
+    expect(request.mock.calls[0][0]).toBe(`${SPEECH_PATH}/quote?capability=best-cut`);
+});
+test('a new app hides Best Cut gracefully while an older server still returns the one-minute quote', async () => {
+    const request = jest.fn().mockResolvedValue({ credits: 3, max_seconds: 60, languages: ['en'] });
+    await expect(fetchSpeechQuote(api(request), undefined, true)).resolves.toBeNull();
+});
+test('explicit transcription language is sent while automatic keeps the legacy payload', async () => {
+    const request = jest.fn().mockResolvedValue({ id: 'job', status: 'queued' });
+    await startSpeech(api(request), { ...args(), language: 'es' });
+    expect(JSON.parse(request.mock.calls[0][1].body)).toMatchObject({ language: 'es' });
+    request.mockClear();
+    await startSpeech(api(request), { ...args(), language: 'auto' });
+    expect(JSON.parse(request.mock.calls[0][1].body)).not.toHaveProperty('language');
+});
 test('offline never POSTs or recovers; consent and paywall gate only paid POST', async () => {
     markOffline(); const request = jest.fn(); const error = await startSpeech(api(request), args()).catch(e => e); expect(speechMessage(error)).toBe(OFFLINE_PAID_MESSAGE); expect(request).not.toHaveBeenCalled();
     expect(isPaidAction(SPEECH_PATH, 'POST')).toBe(true); expect(sendsContent(SPEECH_PATH, 'POST')).toBe(true);
@@ -60,11 +77,39 @@ test('keys are stable per account/source/duration; refund forget and account cha
     forgetSpeechKey('owner', 'source'); expect(speechKeyFor('owner', 'source', 12, make)).toBe('two');
     mockOwner = 'other'; mockListeners.forEach(fn => fn()); expect(speechKeyFor('owner', 'source', 12, make)).toBe('three');
 });
+test('speech keys are isolated by requested language', () => {
+    const make = jest.fn().mockReturnValueOnce('auto-key').mockReturnValueOnce('es-key').mockReturnValueOnce('en-key');
+    expect(speechKeyFor('owner', 'source', 12, make)).toBe('auto-key');
+    expect(speechKeyFor('owner', 'source', 12, make, 'es')).toBe('es-key');
+    expect(speechKeyFor('owner', 'source', 12, make, 'en')).toBe('en-key');
+    expect(speechKeyFor('owner', 'source', 12, make, 'es')).toBe('es-key');
+});
 test('backoff publishes progress and stops at three minutes without leaking timers', async () => {
     jest.useFakeTimers(); const request = jest.fn().mockResolvedValue({ id: 'job', status: 'queued', progress: 'transcribing' }), progress = jest.fn();
     const pending = pollSpeech(api(request), 'key', 'owner', new AbortController().signal, progress);
     const check = expect(pending).rejects.toMatchObject({ code: 'poll_timeout' }); await jest.advanceTimersByTimeAsync(180000); await check;
     expect(progress).toHaveBeenCalledWith('transcribing'); expect(request.mock.calls.length).toBeGreaterThan(10); expect(request.mock.calls.length).toBeLessThan(30); expect(jest.getTimerCount()).toBe(0);
+});
+test('polling automatically retries transient reads with the same key and never repeats the paid POST', async () => {
+    jest.useFakeTimers();
+    const analysis = { version: 1, assetId: args().jobId, duration: 12, provider: 'fal-scribe-v2', transcript: 'hello', language: 'en', timingQuality: 'word', chunks: [{ start: 1, end: 2, text: 'hello' }] };
+    const request = jest.fn()
+        .mockRejectedValueOnce(new ApiError(0, 'network'))
+        .mockRejectedValueOnce(new ApiError(503, 'gateway_error'))
+        .mockResolvedValueOnce({ id: 'job', status: 'completed', analysis });
+    const progress = jest.fn();
+    const pending = pollSpeech(api(request), 'same-key', 'owner', new AbortController().signal, progress);
+    await jest.advanceTimersByTimeAsync(3000);
+    await expect(pending).resolves.toMatchObject({ status: 'completed', analysis });
+    expect(progress).toHaveBeenCalledTimes(2);
+    expect(progress).toHaveBeenNthCalledWith(1, 'retrying');
+    expect(progress).toHaveBeenNthCalledWith(2, 'retrying');
+    expect(request.mock.calls.map(call => [call[0], call[1]?.method || 'GET'])).toEqual([
+        [`${SPEECH_PATH}/by-key/same-key`, 'GET'],
+        [`${SPEECH_PATH}/by-key/same-key`, 'GET'],
+        [`${SPEECH_PATH}/by-key/same-key`, 'GET'],
+    ]);
+    expect(jest.getTimerCount()).toBe(0);
 });
 test.each(['unmount', 'account'])('%s aborts an in-flight read and clears timers', async reason => {
     jest.useFakeTimers(); const request = jest.fn((_path: string, _init: RequestInit) => new Promise(() => {})), controller = new AbortController();

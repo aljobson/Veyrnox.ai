@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { PanResponder, StyleSheet, View } from 'react-native';
-import { colors } from '../../theme';
+import { studioColors as colors } from '../../theme';
 import { t, rawText, formatNumber } from '../../lib/i18n';
 import { evaluatedAt } from '../../lib/editorMotionEdit';
 import { activeEditorMedia } from '../../lib/editorPreview';

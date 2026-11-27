@@ -5,7 +5,7 @@ import { CREATIVE_FEATURE_EXAMPLES } from '../app/veyrnox/_lib/creativeFeatures.
 
 const ORIGINAL_STILLS = [
   'ai-avatar-generator', 'text-to-speech', 'ai-voice-cloning',
-  'talking-objects', 'product-image-generator',
+  'product-image-generator',
 ];
 
 // Shrinking exception list: remove each slug when its original media lands.

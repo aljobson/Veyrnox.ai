@@ -80,6 +80,22 @@ export function splitSequenceClip(tl, kind, id, frame) {
          };
     return checked({ ...tl, seq, [kind]: tl[kind].flatMap(c => c.id === id ? [first, second] : [c]) });
 }
+/** Insert one global timeline gap, splitting layers at the playhead and keeping every later layer aligned. */
+export function insertSequenceGap(tl, frame, length) {
+    if (!Number.isInteger(frame) || frame < 0 || frame > SEQUENCE_MAX || !Number.isInteger(length) || length < 1) return error('Choose a valid timeline gap.');
+    const affected = ['video', 'audio', 'text'].flatMap(kind => tl[kind].map(item => ({ kind, item }))).filter(({ item }) => item.start + item.len > frame);
+    if (affected.some(({ item }) => trackFor(tl, item)?.locked)) return error('Unlock the affected tracks before inserting this gap.');
+    if (affected.some(({ item }) => item.start + item.len + length > SEQUENCE_MAX)
+        || (tl.markers || []).some(marker => marker.frame >= frame && marker.frame + length > SEQUENCE_MAX)) return error('The inserted gap would exceed the 10-minute project.');
+    let next = tl;
+    for (const { kind, item } of affected.filter(({ item }) => item.start < frame)) {
+        next = splitSequenceClip(next, kind, item.id, frame);
+        if (next.error) return next;
+    }
+    const shifted = { ...next, markers: (next.markers || []).map(marker => marker.frame >= frame ? { ...marker, frame: marker.frame + length } : marker) };
+    for (const kind of ['video', 'audio', 'text']) shifted[kind] = next[kind].map(item => item.start >= frame ? { ...item, start: item.start + length } : item);
+    return checked(shifted);
+}
 /**
  * Splits one clip of the multitrack sequence at several timeline frames as one edit (ADR-0105 scene detection). Cuts are applied last to
  * first, so the original id keeps the first part. All or nothing: a locked track, a frame outside the clip or a project that would pass

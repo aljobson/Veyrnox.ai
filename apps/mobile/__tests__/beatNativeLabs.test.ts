@@ -3,7 +3,7 @@ import { APP_CATALOGS } from '../src/lib/i18n';
 import { BEAT_SOUNDS, BEAT_SHORTCUTS, BEAT_TEMPLATES, BEAT_TIP_STEPS, addAudioRegion, beatTipsSeenKey, createBeatFromTemplate, filterSounds, soundAsset, soundDuration, soundTicks, validateSound } from '../src/lib/beatNative/labs';
 import { PHONE_CAPABILITIES, SHORTCUT_CAPABILITY, touchKey } from '../src/lib/beatNative/controls';
 import { phoneTipSteps, nextTip, tipTargetsForView, tipAt, tipAfter, tipsSeen, markTipsSeen, secureTipKey, PHONE_TIP_TARGETS } from '../src/lib/beatNative/coachMarks';
-import { createTemplateBeat } from '../src/lib/beatNative/templates';
+import { createMusicEdit, createTemplateBeat } from '../src/lib/beatNative/templates';
 import { soundTake, createSoundPreview } from '../src/lib/beatNative/soundPreview';
 import { renderTakeSamples, SYNTH_RATE } from '../src/lib/instrumentShared';
 import { createBeatStore } from '../src/lib/beatNative/store';
@@ -11,14 +11,23 @@ import { validateBeat, tryOp, MAX_TRACKS } from '../src/lib/beatNative/doc';
 import { createHistory, record, undo } from '../src/lib/beatNative/history';
 import { memoryFiles, fixedDoc, USER, deferred } from './beatNativeFixtures';
 
-test.each(BEAT_TEMPLATES)('$id produces the exact shared template, validates, and is durable before return', async ({ id: template }) => {
+test.each(BEAT_TEMPLATES)('$id opens the shared template in the arrangement and is durable before return', async ({ id: template }) => {
     const files = memoryFiles(), store = createBeatStore(files);
     const result = await createTemplateBeat(store, template, 'Starter');
-    expect(result).toEqual(createBeatFromTemplate({ template, id: result.id, title: result.title, now: result.createdAt }));
+    expect(result).toEqual({ ...createBeatFromTemplate({ template, id: result.id, title: result.title, now: result.createdAt }), updatedAt: result.updatedAt, view: 'song' });
     expect(validateBeat(result).ok).toBe(true);
     expect(files.data.size).toBe(1);
     const saved = store.getBeat(result.id)!;
     expect({ ...saved, updatedAt: result.updatedAt }).toEqual(result); // N2 advances its save timestamp.
+    expect(store.saveState(result.id)).toBe('saved');
+});
+test('a new music edit starts with one empty audio lane and no drum pattern track', async () => {
+    const store = createBeatStore(memoryFiles());
+    const result = await createMusicEdit(store, 'Music edit 1');
+    expect(result.view).toBe('song');
+    expect(result.tracks).toEqual([expect.objectContaining({ name: 'Audio 1', kind: 'audio', regions: [] })]);
+    expect(result.tracks.some(track => !track.kind || track.kind === 'drums')).toBe(false);
+    expect(validateBeat(result).ok).toBe(true);
     expect(store.saveState(result.id)).toBe('saved');
 });
 test('creation awaits the write and cleans up a failed write, even if cleanup also fails', async () => {

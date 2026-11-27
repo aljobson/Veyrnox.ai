@@ -1,5 +1,5 @@
 import { ApiError } from '../src/lib/api';
-import { isPushToken, jobRouteFromPush, registerDevice, removeDevice, watchPushToken, type DeviceInput } from '../src/lib/push';
+import { editorExportRouteFromPush, isPushToken, jobRouteFromPush, registerDevice, removeDevice, smartCutRouteFromPush, watchPushToken, type DeviceInput } from '../src/lib/push';
 
 const JOB = '123e4567-e89b-42d3-a456-426614174000';
 const device = (over: Partial<DeviceInput> = {}): DeviceInput => ({
@@ -60,6 +60,24 @@ describe('jobRouteFromPush', () => {
     test('opens nothing for anything else', () => {
         for (const bad of [null, undefined, 'x', {}, { type: 'chat', job_id: JOB }, { type: 'job' }, { type: 'job', job_id: '../admin' }, { type: 'job', job_id: 5 }]) {
             expect(jobRouteFromPush(bad)).toBeNull();
+        }
+    });
+});
+
+describe('smartCutRouteFromPush', () => {
+    test('opens only the private Smart Cut route for the generic local progress card', () => {
+        expect(smartCutRouteFromPush({ type: 'smart-cut' })).toBe('/smart-cut');
+        for (const bad of [null, undefined, 'smart-cut', {}, { type: 'job' }, { type: 'smart-cut-ready' }]) {
+            expect(smartCutRouteFromPush(bad)).toBeNull();
+        }
+    });
+});
+
+describe('editorExportRouteFromPush', () => {
+    test('opens only the private Projects list for a generic export progress card', () => {
+        expect(editorExportRouteFromPush({ type: 'editor-export' })).toBe('/projects');
+        for (const bad of [null, undefined, 'editor-export', {}, { type: 'job' }, { type: 'editor-export-ready' }]) {
+            expect(editorExportRouteFromPush(bad)).toBeNull();
         }
     });
 });

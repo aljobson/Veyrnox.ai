@@ -83,7 +83,7 @@ test('SQL and code allowlists agree for all inventory patterns; telemetry has no
  const names=(await readdir(new URL('../packages/db/schema/supabase/',import.meta.url))).filter(n=>/^\d{4}_.*\.sql$/.test(n)&&n>'0455').sort();
  const base=replacement.match(/SELECT p_path = ANY \(ARRAY\[([^\]]+)\]::text\[\]\)/)[1].split(',').map(p=>p.slice(1,-1));
  const added=[];const removed=new Set();
- for(const name of names){const sqlText=await readFile(new URL('../packages/db/schema/supabase/'+name,import.meta.url),'utf8');const m=sqlText.match(/SELECT (p_path (?:= '[^']+'|IN \([^)]+\)))\s+OR public\.telemetry_path_allowed_pre_\d{4}\(p_path\)/);if(m)added.push(...[...m[1].matchAll(/'([^']+)'/g)].map(x=>x[1]));
+ for(const name of names){const sqlText=await readFile(new URL('../packages/db/schema/supabase/'+name,import.meta.url),'utf8');const m=sqlText.match(/SELECT (p_path (?:= '[^']+'|IN \([^)]+\)))\s+OR public\.telemetry_path_allowed_pre_\d{4}\(p_path\)/);if(m){const routes=[...m[1].matchAll(/'([^']+)'/g)].map(x=>x[1]);added.push(...routes);for(const route of routes)removed.delete(route);}
   // A route that moved is dropped by the same wrapper: `... AND p_path NOT IN (...)` (0507).
   const gone=sqlText.match(/telemetry_path_allowed_pre_\d{4}\(p_path\)\s+AND p_path NOT IN \(([^)]+)\)/);
   if(gone)for(const x of gone[1].matchAll(/'([^']+)'/g))removed.add(x[1]);}

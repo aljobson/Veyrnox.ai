@@ -25,6 +25,12 @@
       "subject": "app"
     },
     {
+      "id": "inline:create-music-uses-smart-icon-controls-for-voice-432815ca",
+      "statement": "Create Music uses smart icon controls for voice, genre, mood and tempo…",
+      "status": "proved",
+      "subject": "app"
+    },
+    {
       "id": "inline:generate-similar-carries-the-selected-template-f-636338c5",
       "statement": "Generate similar carries the selected template from its detail page int…",
       "status": "proved",

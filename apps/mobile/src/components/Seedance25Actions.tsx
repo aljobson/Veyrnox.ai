@@ -1,3 +1,4 @@
+import { useOwnerProofCatalog } from '../lib/useOwnerProofModels';
 import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -12,7 +13,8 @@ import { createSeedance25Session, seedance25Models, type ClipQuote } from '../..
 import { ds } from '../theme';
 
 export function Seedance25EditorActions({ uri, assetId }: { uri?: string; assetId?: string }) {
-    const [models, setModels] = useState<CatalogModel[]>([]);
+    const [publicModels, setModels] = useState<CatalogModel[]>([]);
+    const models = useOwnerProofCatalog(publicModels, true);
     useEffect(() => { let live = true; void fetchAllCatalog().then(rows => { if (live) setModels(rows); }, () => {}); return () => { live = false; }; }, []);
     return <Seedance25Actions models={models} uri={uri} assetId={assetId} />;
 }

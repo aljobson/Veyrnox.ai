@@ -129,6 +129,7 @@ export function createEditorMediaClient(provided: NativeEditorMediaModule | null
                 armIdleTimer(entry);
                 return { ok: true, value: { sessionId: raw.sessionId, token: entry.token, project, generation: entry.generation, width: request.width,
                     height: request.height, fps: request.fps, nextIndex: 0, ...(request.audioArtifactId ? { audioArtifactId: request.audioArtifactId } : {}),
+                    ...(request.codec ? { codec: request.codec } : {}),
                     ...(request.alpha ? { alpha: true } : {}) } };
             } catch (error) { const wasLive = live(entry); removeEntry(entry); return wasLive ? safeError(error) : { ok: false, code: 'cancelled' }; }
         },
@@ -151,7 +152,8 @@ export function createEditorMediaClient(provided: NativeEditorMediaModule | null
                 if (!live(item)) { await releaseLateArtifact(item, raw); return { ok: false, code: 'cancelled' }; } const error = parseError(raw); if (error) return error;
                 const value = parseMp4Artifact(raw), expectedAudio = session.audioArtifactId !== undefined;
                 return value && expectedAudio === (value.audioCodec === 'mp4a')
-                    && value.videoCodec === (session.alpha ? 'hvc1-alpha' : 'avc1') ? { ok: true, value } : { ok: false, code: 'write-failed' };
+                    && value.videoCodec === (session.alpha ? 'hvc1-alpha' : session.codec === 'hevc' ? 'hvc1' : 'avc1')
+                    ? { ok: true, value } : { ok: false, code: 'write-failed' };
             } catch (error) { return live(item) ? safeError(error) : { ok: false, code: 'cancelled' }; }
             finally { removeEntry(item); }
         },

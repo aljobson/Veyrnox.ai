@@ -2,31 +2,44 @@ import { compressContractData, contractData } from '../lib/expandTemplateContrac
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { audit, packContracts } from '../scripts/audit-template-fidelity.mjs';
+import { audit, hash, packContracts } from '../scripts/audit-template-fidelity.mjs';
 import { swapNeedsSourceVideo } from '../lib/templateSwapGuard.js';
 import { templateInputs } from '../app/veyrnox/_lib/templateGenerate.js';
 import { templateSourceUnsupported } from '../app/veyrnox/_lib/templateSourceBlock.js';
+import { TEMPLATE_REFERENCE_PRIORITY } from '../lib/templateReferencePriority.js';
 const report = audit();
 const contracts = Object.values(report.contracts);
 test('fidelity classification totals and generated contract bytes are pinned', () => {
   // Baseline classifications plus the independently audited 46-video split (syntx100Templates.test.mjs).
-  assert.deepEqual(report.totals, {"like-for-like-safe":232 - 12,"bound":70 + 3 + 30 + 59 - 49 + 49 + 8 + 12,"blocked-needs-video":355 + 37,"unsupported":92 + 6 + 61 - 49}); /* 49 one-photo recipes over the Kling cap bind to the long-prompt kie Seedance offer (ADR-0309 amendment 3) */
+  assert.deepEqual(report.totals, {"like-for-like-safe":220,"bound":161,"blocked-needs-video":392,"unsupported":111});
   const stored = JSON.parse(readFileSync(new URL('../lib/templateFidelityContracts.json', import.meta.url)));
   const packed = packContracts(report.contracts);
   assert.equal(JSON.stringify(compressContractData(packed)) + '\n', readFileSync(new URL('../lib/templateFidelityContracts.json', import.meta.url), 'utf8'), 'regeneration must be byte-identical; inspect class changes before accepting drift');
   // The prompts and rows are compressed on disk (Worker size budget); compare what they inflate to, not the compressed bytes.
   assert.deepEqual({ contractVersion: stored.contractVersion, prompts: contractData(stored).prompts, templates: contractData(stored).templates }, packed);
 });
-test('all admitted exact templates preserve source bytes with and without a photo', () => {
+test('all admitted photo templates preserve source bytes behind the shared reference-priority line', () => {
   for (const c of contracts) {
     const p = { id: c.id, sourcePrompt: c.sourcePrompt, prompt: c.sourcePrompt, sourcePromptOrigin: 'community-source-exact' };
     for (const withPhoto of [false, true]) {
-      const inputs = templateInputs(p, { id: c.modelId, kind: 'video' }, { prompt: c.sourcePrompt, withPhoto, aspectOptions: [], durationSeconds: c.duration });
-      assert.equal(inputs.prompt, c.sourcePrompt, c.id);
-      assert.equal(c.promptHash, c.class === 'bound' ? c.boundHash : c.sourceHash);
-      assert.equal(c.photoPromptHash, c.class === 'bound' ? c.boundHash : c.sourceHash);
-      assert.equal(c.identityLine, false);
+      const model = { id: c.modelId, kind: 'video', promptMax: 30_000, media: c.identityLine ? { image: { required: true } } : {} };
+      const inputs = templateInputs(p, model, { prompt: c.sourcePrompt, withPhoto, aspectOptions: [], durationSeconds: c.duration });
+      assert.equal(inputs.prompt, withPhoto && c.identityLine ? `${TEMPLATE_REFERENCE_PRIORITY}\n\n${c.sourcePrompt}` : c.sourcePrompt, c.id);
+      assert.equal(c.promptHash, hash(c.prompt));
+      assert.equal(c.photoPromptHash, hash(c.photoPrompt));
+      if (c.identityLine) assert.ok(c.prompt.startsWith(`${TEMPLATE_REFERENCE_PRIORITY}\n\n`), c.id);
     }
+  }
+});
+
+test('every audited photo-driven contract uses reference priority and text-only contracts do not', () => {
+  for (const c of contracts) {
+    const photoDriven = c.requiredReferences.imageMax > 0;
+    if ((c.class === 'bound' || c.class === 'like-for-like-safe') && photoDriven) {
+      assert.equal(c.identityLine, true, c.id);
+      assert.ok(c.prompt.startsWith(`${TEMPLATE_REFERENCE_PRIORITY}\n\n`), c.id);
+    }
+    if (!photoDriven) assert.equal(c.identityLine, false, c.id);
   }
 });
 
@@ -56,7 +69,7 @@ test('server stores only informative safe-contract metadata', async () => {
 test('unsupported templates remain admitted without audited identity', async () => {
   const { fidelityTemplateId } = await import('../lib/templateFidelityRuntime.js');
   const unbound = contracts.filter(c => c.class === 'unsupported');
-  assert.equal(unbound.length, 98 + 61 - 49, 'multi-photo recipes (96) and Kling-unsupported framings keep the legacy route; 49 long one-photo recipes bind to kie Seedance (ADR-0309 amendment 3)');
+  assert.equal(unbound.length, 111, 'contracts that cannot fit the shared reference priority remain unaudited');
   for (const c of unbound) {
     assert.equal(fidelityTemplateId(c, c.sourcePrompt, c.modelId), undefined);
     assert.equal(fidelityTemplateId(c, c.sourcePrompt, 'different-model'), undefined);
@@ -74,12 +87,12 @@ test('public projection adds a negative prompt only when one is supplied', async
   for (const row of rows) assert.ok(row.negativePrompt === undefined || row.negativePrompt.length > 0);
 });
 
-test('owner exact-only transport never changes an unedited exact source prompt; an edited prompt keeps the existing photo guidance', () => {
+test('every photo-driven template receives the same reference-priority instruction', () => {
   const preset = { id: 'custom-recipe', prompt: 'Original scene', sourcePrompt: 'Original scene', sourcePromptOrigin: 'community-source-exact' };
-  const model = { id: 'kling-3.0-i2v', kind: 'video' };
-  assert.equal(templateInputs(preset, model, { prompt: preset.sourcePrompt, aspectOptions: [], withPhoto: true }).prompt, preset.sourcePrompt);
+  const model = { id: 'kling-3.0-i2v', kind: 'video', promptMax: 2500, media: { image: { required: true } } };
+  assert.equal(templateInputs(preset, model, { prompt: preset.sourcePrompt, aspectOptions: [], withPhoto: true }).prompt, `${TEMPLATE_REFERENCE_PRIORITY}\n\n${preset.sourcePrompt}`);
   const edited = templateInputs(preset, model, { prompt: 'Edited scene', aspectOptions: [], withPhoto: true }).prompt;
-  assert.ok(edited.startsWith('Edited scene') && edited.includes('The person in the attached photo'));
+  assert.equal(edited, `${TEMPLATE_REFERENCE_PRIORITY}\n\nEdited scene`);
 });
 
 test('Create blocks an edited video-dependent template before starting a request', async () => {
@@ -101,7 +114,7 @@ test('Create blocks an edited video-dependent template before starting a request
     ts.default.forEachChild(node, visit);
   };
   visit(ast);
-  const context = { draftRecovery: {}, attachConverting: false, sourcesConverting: false, inFlight: { current: false }, sending: false, generating: false, model: {}, templateData: { id: c.id }, templateBlocked: blocked, balance: 100, payable: 0, catalogStatus: 'live', sourceBlocked: false };
+  const context = { draftRecovery: {}, attachConverting: false, sourcesConverting: false, inFlight: { current: false }, sending: false, generating: false, model: {}, templateData: { id: c.id }, templateBlocked: blocked, balance: 100, payable: 0, catalogStatus: 'live', unsupportedSource: false, sourceBlocked: false };
   await new Function('context', `with (context) { return (${submit}); }`)(context)();
   assert.equal(context.inFlight.current, false);
 });

@@ -18,6 +18,7 @@ import { ds } from '../../theme';
 import { creditsFor, hasRetiredGenerationPackages, isPaidSubscriptionProduct, WEB_PARITY_PACK_CREDITS } from '../../lib/billing';
 import { PurchaseState } from '../../components/credits/PurchaseState';
 import { useOptionalSafeAreaInsets } from '../../lib/safeArea';
+import { captureEvent } from '../../lib/analytics/events';
 
 const PURCHASE_CANCELLED_ERROR = '1';
 const PAYMENT_PENDING_ERROR = '20';
@@ -38,6 +39,7 @@ export default function Paywall() {
     const restoreActive = useRef<ExternalPurchaseOperation | null>(null);
     const untrackedRestore = useRef(false);
     const closing = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+    useEffect(() => { if (offeringId) captureEvent('paywall_viewed', { mode: 'screen' }); }, [offeringId]);
     // A cold deep link has no history: fall back to the credits screen so there is always a way out.
     const close = useCallback(() => { if (router.canGoBack()) router.back(); else router.replace('/credits'); }, [router]);
     useEffect(() => () => {

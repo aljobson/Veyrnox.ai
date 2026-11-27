@@ -28,7 +28,7 @@ describe('Music daily allowance (0601)', { skip: !local && 'disposable localhost
     pool = new pg.Pool({ connectionString: url, max: 4 });
     await pool.query('CREATE TABLE IF NOT EXISTS auth.mfa_factors(user_id uuid,factor_type text,status text)');
     await pool.query(`UPDATE public.model_catalog SET provider='crun',provider_endpoint='crun:suno/music-generate',
-      credits_5s=4,provider_cost_per_unit=0.0536,updated_at=statement_timestamp() WHERE id='ace-step'`);
+      credits_5s=4,provider_cost_per_unit=0.0536,active=true,updated_at=statement_timestamp() WHERE id='ace-step'`);
     await pool.query("UPDATE public.provider_spend_provider_policy SET admission_open=true WHERE provider='crun'");
   });
   beforeEach(async () => {
@@ -41,12 +41,12 @@ describe('Music daily allowance (0601)', { skip: !local && 'disposable localhost
     }
   });
 
-  it('supersedes re-quotes and admits a zero-balance-safe pair atomically', async () => {
+  it('supersedes re-quotes and admits a zero-balance-safe track atomically', async () => {
     const owner = await user();
     const oldQuote = await quote(owner.auth, 'first direction');
     const current = await quote(owner.auth, 'corrected direction');
-    assert.equal(current.daily_free_candidates, 2);
-    assert.equal(current.list_credits, 8);
+    assert.equal(current.daily_free_candidates, 1);
+    assert.equal(current.list_credits, 4);
     assert.equal(current.total_credits, 0);
     assert.equal(current.affordable, true);
     assert.equal(current.balance_after, current.balance);
@@ -58,12 +58,12 @@ describe('Music daily allowance (0601)', { skip: !local && 'disposable localhost
       [owner.auth, current.quote_id, madeKey])).r;
     assert.equal(made.ok, true);
     assert.equal(made.charged_credits, 0);
-    assert.equal(made.daily_free_candidates, 2);
+    assert.equal(made.daily_free_candidates, 1);
     assert.equal(Number((await one(`SELECT count(*) n FROM public.jobs j
       JOIN public.music_generation_candidates c ON c.job_id=j.id
-      WHERE c.generation_request_id=$1 AND j.credits=0 AND j.free_allowance`, [made.request_id])).n), 2);
+      WHERE c.generation_request_id=$1 AND j.credits=0 AND j.free_allowance`, [made.request_id])).n), 1);
     assert.equal(Number((await one(`SELECT count(*) n FROM public.music_daily_allowance_claims
-      WHERE quote_id=$1 AND state='TAKEN'`, [current.quote_id])).n), 2);
+      WHERE quote_id=$1 AND state='TAKEN'`, [current.quote_id])).n), 1);
     await pool.query("UPDATE public.music_daily_allowance_reservations SET state='SUPERSEDED',consumed_at=NULL,superseded_at=now() WHERE quote_id=$1", [current.quote_id]);
     const orphaned = (await pool.query('SELECT * FROM public.reconcile_free_allowance()')).rows;
     assert.equal(orphaned.some((row: any) => row.kind === 'music_orphan_claim'
@@ -80,10 +80,10 @@ describe('Music daily allowance (0601)', { skip: !local && 'disposable localhost
     const again = (await one('SELECT public.music_submit_pair($1,$2,$3) r', [owner.auth, replayQuote.quote_id, requestKey])).r;
     assert.equal(first.ok, true); assert.equal(again.idempotent, true);
     assert.equal(Number((await one('SELECT count(*) n FROM public.music_generation_requests WHERE user_id=$1 AND idempotency_key=$2', [owner.id, requestKey])).n), 1);
-    assert.equal(Number((await one('SELECT count(*) n FROM public.jobs WHERE user_id=$1 AND idempotency_key IN($2,$3)', [owner.id, `${requestKey}.1`, `${requestKey}.2`])).n), 2);
+    assert.equal(Number((await one('SELECT count(*) n FROM public.jobs WHERE user_id=$1 AND idempotency_key IN($2,$3)', [owner.id, `${requestKey}.1`, `${requestKey}.2`])).n), 1);
   });
 
-  it('charges only the unreserved candidate and returns a failed slot exactly once', async () => {
+  it('returns a failed one-track allowance slot exactly once', async () => {
     const owner = await user();
     const used = Number((await one(`SELECT coalesce(sum(candidates),0) n FROM (
       SELECT 1 candidates FROM public.music_daily_allowance_claims WHERE day=(now() AT TIME ZONE 'UTC')::date AND state='TAKEN'
@@ -94,15 +94,15 @@ describe('Music daily allowance (0601)', { skip: !local && 'disposable localhost
       FROM public.credit_balances WHERE user_id=$1`, [owner.id])).balance);
     const priced = await quote(owner.auth, 'mixed direction');
     assert.equal(priced.daily_free_candidates, 1);
-    assert.equal(priced.total_credits, 4);
-    assert.equal(priced.balance_after, before - 4);
+    assert.equal(priced.total_credits, 0);
+    assert.equal(priced.balance_after, before);
     const made = (await one('SELECT public.music_submit_pair($1,$2,$3) r',
       [owner.auth, priced.quote_id, `daily.mix.${randomUUID()}`])).r;
     assert.equal(made.ok, true);
     const rows = (await pool.query(`SELECT j.id,j.free_allowance,j.credits FROM public.jobs j
       JOIN public.music_generation_candidates c ON c.job_id=j.id WHERE c.generation_request_id=$1 ORDER BY c.ordinal`,
     [made.request_id])).rows;
-    assert.deepEqual(rows.map((row: any) => [row.free_allowance, Number(row.credits)]), [[true, 0], [false, 4]]);
+    assert.deepEqual(rows.map((row: any) => [row.free_allowance, Number(row.credits)]), [[true, 0]]);
     await pool.query("UPDATE public.crun_dispatch SET state='CLOSED' WHERE job_id=$1", [rows[0].id]);
     await pool.query("UPDATE public.jobs SET state='FAILED',updated_at=now()-interval '1 second' WHERE id=$1", [rows[0].id]);
     const unreconciled = (await pool.query('SELECT * FROM public.reconcile_free_allowance()')).rows;
@@ -133,7 +133,7 @@ describe('Music daily allowance (0601)', { skip: !local && 'disposable localhost
     const expired = await quote(owner.auth, 'expiring direction');
     await pool.query("UPDATE public.music_daily_allowance_reservations SET expires_at=now()-interval '1 second' WHERE quote_id=$1", [expired.quote_id]);
     const replacement = await quote(owner.auth, 'replacement after expiry');
-    assert.equal(replacement.daily_free_candidates, 2);
+    assert.equal(replacement.daily_free_candidates, 1);
     const before = Number((await one('SELECT count(*) n FROM public.music_generation_requests WHERE user_id=$1', [owner.id])).n);
     await pool.query('UPDATE public.music_daily_allowance_policy SET enabled=false WHERE singleton');
     const stale = (await one('SELECT public.music_submit_pair($1,$2,$3) r', [owner.auth, replacement.quote_id, `daily.policy.${randomUUID()}`])).r;
@@ -161,7 +161,7 @@ describe('Music daily allowance (0601)', { skip: !local && 'disposable localhost
     assert.equal((await one('SELECT public.cancel_user_job($1,$2) r', [owner.auth, job])).r.replayed, true);
   });
 
-  it('cancels a mixed pair exactly once and projects free-versus-paid refund truth', async () => {
+  it('cancels a free track exactly once and projects its allowance refund truth', async () => {
     const owner = await user();
     const used = Number((await one(`SELECT coalesce(sum(candidates),0) n FROM (
       SELECT 1 candidates FROM public.music_daily_allowance_claims WHERE day=(now() AT TIME ZONE 'UTC')::date AND state='TAKEN'
@@ -171,32 +171,32 @@ describe('Music daily allowance (0601)', { skip: !local && 'disposable localhost
     const balanceBefore = Number((await one(`SELECT balance-CASE WHEN subscription_expires_at>now() THEN 0 ELSE subscription_balance END balance
       FROM public.credit_balances WHERE user_id=$1`, [owner.id])).balance);
     const priced = await quote(owner.auth, 'mixed cancellation projection');
-    assert.equal(priced.daily_free_candidates, 1); assert.equal(priced.total_credits, 4);
+    assert.equal(priced.daily_free_candidates, 1); assert.equal(priced.total_credits, 0);
     const made = (await one('SELECT public.music_submit_pair($1,$2,$3) r',
       [owner.auth, priced.quote_id, `daily.cancel.mixed.${randomUUID()}`])).r;
     const jobs = (await pool.query(`SELECT j.id,j.free_allowance,j.credits FROM public.jobs j
       JOIN public.music_generation_candidates c ON c.job_id=j.id
       WHERE c.generation_request_id=$1 ORDER BY c.ordinal`, [made.request_id])).rows;
-    assert.deepEqual(jobs.map((row: any) => [row.free_allowance, Number(row.credits)]), [[true, 0], [false, 4]]);
+    assert.deepEqual(jobs.map((row: any) => [row.free_allowance, Number(row.credits)]), [[true, 0]]);
     const originalClaimDay = (await one('SELECT day FROM public.music_daily_allowance_claims WHERE job_id=$1', [jobs[0].id])).day;
     const first = await Promise.all(jobs.map((job: any) => one('SELECT public.cancel_user_job($1,$2) r', [owner.auth, job.id])));
-    assert.deepEqual(first.map((row: any) => [row.r.ok, row.r.replayed, Number(row.r.credits)]), [[true, false, 0], [true, false, 4]]);
+    assert.deepEqual(first.map((row: any) => [row.r.ok, row.r.replayed, Number(row.r.credits)]), [[true, false, 0]]);
     const replay = await Promise.all(jobs.map((job: any) => one('SELECT public.cancel_user_job($1,$2) r', [owner.auth, job.id])));
-    assert.deepEqual(replay.map((row: any) => [row.r.ok, row.r.replayed]), [[true, true], [true, true]]);
+    assert.deepEqual(replay.map((row: any) => [row.r.ok, row.r.replayed]), [[true, true]]);
     const returnedClaim = await one('SELECT state,day FROM public.music_daily_allowance_claims WHERE job_id=$1', [jobs[0].id]);
     assert.equal(returnedClaim.state, 'RETURNED'); assert.deepEqual(returnedClaim.day, originalClaimDay);
     assert.equal(Number((await one(`SELECT count(*) n FROM public.ledger_entries
-      WHERE job_id=ANY($1::uuid[]) AND delta>0 AND reason='refund:user_cancelled'`, [jobs.map((job: any) => job.id)])).n), 1);
+      WHERE job_id=ANY($1::uuid[]) AND delta>0 AND reason='refund:user_cancelled'`, [jobs.map((job: any) => job.id)])).n), 0);
     assert.equal(Number((await one(`SELECT balance-CASE WHEN subscription_expires_at>now() THEN 0 ELSE subscription_balance END balance
       FROM public.credit_balances WHERE user_id=$1`, [owner.id])).balance), balanceBefore);
     const projected = (await one('SELECT public.music_get_generation($1,$2) r', [owner.auth, made.request_id])).r;
     assert.equal(projected.ok, true);
     assert.equal(projected.generation.state, 'refunded');
     assert.deepEqual(projected.generation.candidates.map((candidate: any) => [candidate.state, candidate.error_code, Number(candidate.credits)]),
-      [['refunded', 'user_cancelled', 0], ['refunded', 'user_cancelled', 4]]);
+      [['refunded', 'user_cancelled', 0]]);
   });
 
-  it('fails closed for eligibility, provider pause and insufficient mixed balance', async () => {
+  it('fails closed for eligibility, provider pause and insufficient paid-track balance', async () => {
     const frozen = await user();
     await pool.query('UPDATE public.users SET frozen_at=now() WHERE id=$1', [frozen.id]);
     const frozenQuote = await quote(frozen.auth, 'frozen direction');
@@ -206,15 +206,12 @@ describe('Music daily allowance (0601)', { skip: !local && 'disposable localhost
     await pool.query("UPDATE public.provider_spend_provider_policy SET admission_open=false WHERE provider='crun'");
     assert.equal((await one('SELECT public.music_submit_pair($1,$2,$3) r', [owner.auth, pausedQuote.quote_id, `daily.pause.${randomUUID()}`])).r.code, 'MUSIC_UNAVAILABLE');
     await pool.query("UPDATE public.provider_spend_provider_policy SET admission_open=true WHERE provider='crun'");
-    const used = Number((await one(`SELECT coalesce(sum(candidates),0) n FROM (
-      SELECT 1 candidates FROM public.music_daily_allowance_claims
-        WHERE day=(now() AT TIME ZONE 'UTC')::date AND state='TAKEN' AND user_id IS DISTINCT FROM $1
-      UNION ALL SELECT candidates FROM public.music_daily_allowance_reservations
-        WHERE day=(now() AT TIME ZONE 'UTC')::date AND state='LIVE' AND expires_at>now() AND user_id<>$1) x`, [owner.id])).n);
-    await pool.query('UPDATE public.music_daily_allowance_policy SET global_candidates_per_day=$1 WHERE singleton', [used + 1]);
-    const mixed = await quote(owner.auth, 'unaffordable mixed direction');
+    await pool.query('UPDATE public.music_daily_allowance_policy SET enabled=false WHERE singleton');
+    const paid = await quote(owner.auth, 'unaffordable paid direction');
+    assert.equal(paid.daily_free_candidates, 0);
+    assert.equal(paid.total_credits, 4);
     await pool.query('UPDATE public.credit_balances SET balance=0,free_balance=0,subscription_balance=0 WHERE user_id=$1', [owner.id]);
-    assert.equal((await one('SELECT public.music_submit_pair($1,$2,$3) r', [owner.auth, mixed.quote_id, `daily.broke.${randomUUID()}`])).r.code, 'INSUFFICIENT_BALANCE');
+    assert.equal((await one('SELECT public.music_submit_pair($1,$2,$3) r', [owner.auth, paid.quote_id, `daily.broke.${randomUUID()}`])).r.code, 'INSUFFICIENT_BALANCE');
   });
 
   it('exports policy, reservations and claims then anonymizes claims without releasing budget', async () => {
@@ -230,7 +227,7 @@ describe('Music daily allowance (0601)', { skip: !local && 'disposable localhost
     await pool.query('UPDATE public.jobs SET state=\'REFUNDED\' WHERE id=ANY($1::uuid[])', [made.job_ids]);
     await pool.query('UPDATE public.users SET deleted_at=now() WHERE id=$1', [owner.id]);
     assert.equal(Number((await one('SELECT count(*) n FROM public.music_daily_allowance_reservations WHERE user_id=$1', [owner.id])).n), 0);
-    assert.equal(Number((await one('SELECT count(*) n FROM public.music_daily_allowance_claims WHERE quote_id=$1 AND user_id IS NULL', [priced.quote_id])).n), 2);
+    assert.equal(Number((await one('SELECT count(*) n FROM public.music_daily_allowance_claims WHERE quote_id=$1 AND user_id IS NULL', [priced.quote_id])).n), 1);
     assert.equal(Number((await one("SELECT count(*) n FROM public.music_daily_allowance_claims WHERE state='TAKEN'")).n), before);
   });
 

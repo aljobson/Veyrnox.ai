@@ -36,7 +36,7 @@ test('the total drives the price, the balance guard and the button', () => {
 
 test('each source is uploaded once, before any request, and reused by all', async () => {
     assert.ok(submit.length > 0 && sendOne.length > 0, 'submit and its sendInOrder found');
-    assert.equal((submit.match(/mediaGenerationSources\(model, sources, uploadSource\)/g) || []).length, 1);
+    assert.equal((submit.match(/mediaGenerationSources\(model, sources, uploadSource, \{ strict: strictOwnerProofSources \}\)/g) || []).length, 1);
     assert.ok(submit.indexOf('mediaGenerationSources(') < submit.indexOf('await sendInOrder('));
     assert.equal(sendOne.includes('uploadSource('), false);
 
@@ -167,7 +167,7 @@ for (const modelId of ['flux-2-pro-1k-kie', 'flux-2-pro']) test(`actual web conf
     const context = {
         draftRecovery: {}, attachConverting: false, sourcesConverting: false, inFlight: { current: false },
         sending: false, generating: false, model: { id: modelId, name: 'Image', kind: 'image' }, modelId,
-        balance: 100, cost: 0, payable: 0, catalogStatus: 'live', sourceBlocked: false, animationMismatch: false, needsReattach: false, overLimit: false,
+        balance: 100, cost: 0, payable: 0, catalogStatus: 'live', sourceBlocked: false, unsupportedSource: false, strictOwnerProofSources: false, animationMismatch: false, needsReattach: false, overLimit: false,
         missingSource: false, missingConsent: false, missingPrompt: false, promptTooLong: false, missingVoice: false,
         invalidAudioDuration: false, setError: value => { error = value; }, setSending: () => {},
         getJourney: () => ({}), duration: '5s', isShort: false, aspectOptions: [], aspect: '1:1',
@@ -239,7 +239,7 @@ async function retryHandlerHarness(count, replies) {
     const context = {
         ...helpers, draftRecovery: {}, attachConverting: false, sourcesConverting: false, inFlight: { current: false },
         sending: false, generating: false, model: { id: 'image', name: 'Image', kind: 'image' }, modelId: 'image',
-        balance: 100, catalogStatus: 'live', sourceBlocked: false, animationMismatch: false, needsReattach: false, overLimit: false,
+        balance: 100, catalogStatus: 'live', sourceBlocked: false, unsupportedSource: false, strictOwnerProofSources: false, animationMismatch: false, needsReattach: false, overLimit: false,
         missingSource: false, missingConsent: false, missingPrompt: false, promptTooLong: false, missingVoice: false,
         invalidAudioDuration: false, setError: value => { context.error = value; }, setSending: () => {},
         getJourney: () => ({}), duration: '5s', isShort: false, aspectOptions: [], aspect: '1:1',

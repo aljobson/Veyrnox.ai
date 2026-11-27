@@ -5,6 +5,7 @@ import { swapTemplatePromptKept, swapTemplateHref } from '../../_lib/createSwapT
 import { imageTemplateNeedsPhoto, imageTemplateModelAvailable } from '../../_lib/imageTemplateModels.js';
 import { templatePhotoHints, templatePhotosUnavailable, templateContract, templateBoundPrompt, fidelityBlocked, fidelityTemplateId, templatePhotoError } from '../../../../lib/templateClientContract';
 import { generationSourceState, sourceList, publicSlotMax, editSlotSource, moveSlotSource, sourcesForModel } from '../../../../lib/generationSourceSlots.mjs';
+import { ownerProofExposure, hasOwnerProofExposure } from '../../../../lib/ownerProofOverlay.mjs';
 import LegalLink from '../../../../components/LegalLink';
 import { helperCopy } from '../../../../lib/i18n/helperCopy.mjs';
 import { tOr, pluralKey } from '../../../../lib/i18n/translate.mjs';
@@ -36,6 +37,7 @@ import { StudioJobGrid } from '../../_components/StudioJobGrid';
 import { useStudioJobs } from '../../_lib/useStudioJobs';
 import { IMAGE_COUNTS, takesImageCount, imageCount, inputsForIndex, batchNote, sendInOrder, submitErrorCode, createBatch, allocationSnapshot } from '../../_lib/imageBatch';
 import { useCatalog } from '../../_lib/useCatalog';
+import { useOwnerProofCatalog } from '../../_lib/useOwnerProofModels.js';
 import { useOnlineStatus } from '../../_lib/useOnlineStatus';
 import { useFreeAllowance } from '../../_lib/useFreeAllowance';
 import { freeLeftFor } from '../../_lib/freeAllowance';
@@ -94,10 +96,12 @@ import { SourceFitNotice } from '../../_components/SourceFitNotice';
 import { TemplatePromptReady } from '../../_components/TemplatePromptReady';
 import { generationSlotKind, generationMimeTypes } from '../../../../lib/generationSourceSlots.mjs';
 import { GENERATION_PROMPT_MAX } from '../../../../lib/generationPromptLimits.js';
+import { templateModelSwapIssue } from '../../_lib/createModelChange.js';
 import { SwapSceneEntry } from '../../_components/SwapSceneEntry';
 import { SpeechSongNudge } from '../../_components/SpeechSongNudge';
 import { swapSceneModel, applySwapScene } from '../../_lib/swapSceneForm';
 import { internalModelId } from '../../../../lib/publicModelIds.js';
+import { withTemplateReferencePriority } from '../../../../lib/templateReferencePriority.js';
 // Auto Short stays hidden until launch unless this browser opts in
 // (CLAUDE.md "Delivery": new user paths behind localStorage.veyrnox_*).
 const AUTO_SHORT_FLAG = 'veyrnox_auto_short';
@@ -114,7 +118,7 @@ function readFlag(name) {
   try { return window.localStorage.getItem(name) === '1'; } catch { return false; }
 }
 
-const LOCAL_ERRORS = {source_reattach_required: {"code": "source_reattach_required"}, source_count_exceeded: {"code": "source_count_exceeded"},poll_unreachable: {"code": "poll_unreachable"}, model_gated: {"code": "model_gated"}, source_required: {"code": "source_required"}, consent_required: {"code": "consent_required"}, inputs_invalid_prompt: {"code": "inputs_invalid:prompt"}, inputs_invalid_voice_description: {"code": "inputs_invalid:voice_description"}, inputs_invalid_duration: {"code": "inputs_invalid:duration"}};
+const LOCAL_ERRORS = {source_type_unsupported: {"code": "source_type_unsupported"}, source_reattach_required: {"code": "source_reattach_required"}, source_count_exceeded: {"code": "source_count_exceeded"},poll_unreachable: {"code": "poll_unreachable"}, model_gated: {"code": "model_gated"}, source_required: {"code": "source_required"}, consent_required: {"code": "consent_required"}, inputs_invalid_prompt: {"code": "inputs_invalid:prompt"}, inputs_invalid_voice_description: {"code": "inputs_invalid:voice_description"}, inputs_invalid_duration: {"code": "inputs_invalid:duration"}};
 
 function errorFor(e) {
   return e instanceof GatewayError || ['source_reattach_required', 'source_count_exceeded'].includes(e?.code) ? { code: e.code, retryAfter: e.retryAfter, expectedCredits: e.body?.expected_credits } : { code: 'internal' };
@@ -138,7 +142,8 @@ function CreateStudio() {
   const number = value => locale === 'en' ? value : Number(value).toLocaleString(localeTag(locale));
   const creditLabel = value => t(pluralKey(t, locale, 'app.create.credits', value), { count: number(value) });
   const generationCostLabel = value => value === 0 ? t('publish.plan.colFree') : t('app.create.cost',{count:number(value)});
-  const { models: catalogModels, live: catalogLive, loading: catalogLoading } = useCatalog();
+  const { models: publicModels, live: catalogLive, loading: catalogLoading } = useCatalog();
+  const catalogModels = useOwnerProofCatalog(publicModels);
   const freeMap = useFreeAllowance(); // ADR-0069: free jobs left today per model; empty while the feature is off
   const autoShortOn = useSyncExternalStore(never, autoShortFlag, off);
   // The server can show starter text before React attaches. Prevent edits to that
@@ -353,6 +358,7 @@ function CreateStudio() {
 
   const selectedModel = models.find((m) => m.id === (swap.scene?.swapOffer || modelId));
   const model = selectedModel || null;
+
   // The controls describe the next draft, not the already submitted job.
   // Keep the result attached to its own model even while the user browses.
   const resultModel = job ? catalogModels.find((m) => m.id === job.model_id) : null;
@@ -370,10 +376,19 @@ function CreateStudio() {
   const hasJobs = jobs.length > 0;
   const catalogStatus = catalogLoading ? 'loading' : catalogLive ? 'live' : 'unavailable';
   const activeTemplate = templateSelectionMatches(presetParam, templateData, modelId) ? templateData : null;
-  // Changing the model keeps the chosen template on screen; it just stops being sent (the gateway takes a template only on its own model).
+  // A linked template stays on the model whose reference was reviewed. Switching
+  // providers is a fresh custom run because a successful result can still miss the preview.
   const keptTemplate = !activeTemplate && presetParam && templateData?.id === presetParam ? templateData : null;
   const keptTemplateModel = keptTemplate ? models.find((m) => m.id === templateModelId(keptTemplate)) : null;
   const prompt = promptText(typed, model); // a starter shot until then, on picture and clip models only (see promptBox)
+  const linkedTemplate = activeTemplate || keptTemplate;
+  const linkedTemplateModel = linkedTemplate ? models.find((item) => item.id === templateModelId(linkedTemplate)) : null;
+  const modelSwapIssue = (candidate) => templateModelSwapIssue({ template: linkedTemplate, templateModel: linkedTemplateModel, targetModel: candidate, prompt });
+  const modelSwapIssueText = (issue) => issue?.code === 'prompt-too-long'
+    ? t('public.TemplateRecipe.promptTooLong', { count: issue.count, max: issue.max })
+    : issue?.code === 'audio-purpose'
+      ? t('app.create.templateAudioModelSwitch')
+      : issue?.code === 'template-model' ? t('app.create.templateModelSwitch') : '';
   // An exact template prompt that points at a source video or audio we cannot supply cannot reproduce its preview (templateSourceBlock).
   const sourceTemplateId = (activeTemplate || keptTemplate)?.id;
   const sourceContract = useMemo(() => swapId ? null : templateContract(activeTemplate || keptTemplate), [swapId, activeTemplate, keptTemplate]);
@@ -416,6 +431,12 @@ function CreateStudio() {
     image: { ...model.media.image, maxFiles: Math.min(model.media.image.maxFiles ?? 1, photoContract.slotCount || 1) },
     ...Object.fromEntries(Object.entries(model.media).filter(([slot]) => slot !== 'image' && sourceList(sources[slot]).length)),
   } : imagePhotoRequired && model?.media?.image ? { ...model.media, image: { ...model.media.image, required: true, maxFiles: 1 } } : model?.media || {};
+  const [proofExposure, setProofExposure] = useState(null);
+  const exposed = ownerProofExposure(proofExposure, modelId, accountEpoch, !!model?.ownerProofImage, sourceList(sources.image).length > 0);
+  // Capture the rendered capability before committing a form that can submit.
+  if (exposed !== proofExposure) setProofExposure(exposed);
+  const strictOwnerProofSources = hasOwnerProofExposure(exposed, modelId, accountEpoch);
+  const unsupportedSource = strictOwnerProofSources && !model?.media?.image;
   const sourceFit = useSourceFit(media, sources);
   // A private template (ADR-0351 amendment 23) has a placeholder where its prompt was; Edit prompt reads the whole template for the signed-in caller.
   const hydrateTemplate = useCallback((full) => {
@@ -516,39 +537,49 @@ function CreateStudio() {
   }
 
   const [templatesOpen, setTemplatesOpen] = useState(false);
+  const [templatePicking, setTemplatePicking] = useState(false);
+  const [templatePickError, setTemplatePickError] = useState('');
   // Picking a template here does what arriving on ?preset=<id> does: its model,
   // prompt and settings load, and the user's own files stay where the new model
   // has a slot for them. The template is a reference only; nothing is charged.
   async function applyTemplate(card) {
-    setTemplatesOpen(false);
-    // A live swap template runs on the swap screen, which sends the template's own clip.
-    if (await fetchSwapAvailability(card.id)) { router.push(swapTemplateHref(card.id)); return; }
-    const preset = await fetchTemplate(card.id); // the picker lists cards; the prompt comes with the whole template
-    if (!preset) return;
-    attachSeq.current += 1; // a paperclip conversion still running must not undo this choice
-    setAttachConverting(false);
-    setAttachNotice('');
-    const nextId = templateModelId(preset);
-    const nextModel = models.find((m) => m.id === nextId);
-    const draft = draftForTemplate(preset, nextId);
-    if (!nextModel || !draft) return;
-    setTemplateData(preset);
-    setPresetParam(preset.id);
-    setGoal(nextModel.kind || 'all');
-    setTier(null);
-    chooseModel(nextId);
-    setPrompt(draft.prompt);
-    if (draft.durationSeconds) setDuration(`${draft.durationSeconds}s`);
-    setNegative(draft.negativePrompt);
-    if (draft.aspect) {
-      if (nextId === modelId) { const nearest = nearestOption(draft.aspect, aspectOptions); if (nearest) setAspect(nearest); }
-      else incomingAspect.current = draft.aspect;
+    if (templatePicking) return;
+    setTemplatePicking(true);
+    setTemplatePickError('');
+    try {
+      // A live swap template runs on the swap screen, which sends the template's own clip.
+      if (await fetchSwapAvailability(card.id)) { setTemplatesOpen(false); router.push(swapTemplateHref(card.id)); return; }
+      const preset = await fetchTemplate(card.id); // the picker lists cards; the prompt comes with the whole template
+      const nextId = preset && templateModelId(preset);
+      const nextModel = models.find((m) => m.id === nextId);
+      const draft = preset && draftForTemplate(preset, nextId);
+      if (!preset || !nextModel || !draft) { setTemplatePickError(t('presets.swap.unavailable')); return; }
+      attachSeq.current += 1; // a paperclip conversion still running must not undo this choice
+      setAttachConverting(false);
+      setAttachNotice('');
+      setTemplateData(preset);
+      setPresetParam(preset.id);
+      setGoal(nextModel.kind || 'all');
+      setTier(null);
+      chooseModel(nextId);
+      setPrompt(draft.prompt);
+      if (draft.durationSeconds) setDuration(`${draft.durationSeconds}s`);
+      setNegative(draft.negativePrompt);
+      if (draft.aspect) {
+        if (nextId === modelId) { const nearest = nearestOption(draft.aspect, aspectOptions); if (nearest) setAspect(nearest); }
+        else incomingAspect.current = draft.aspect;
+      }
+      setSources((previous) => {
+        const { sources: kept, dropped } = sourcesForModel(previous, nextModel.media);
+        for (const item of dropped) if (item?.file) URL.revokeObjectURL(item.previewUrl);
+        return kept;
+      });
+      setTemplatesOpen(false);
+    } catch {
+      setTemplatePickError(t('presets.swap.unavailable'));
+    } finally {
+      setTemplatePicking(false);
     }
-    setSources((previous) => {
-      const { sources: kept, dropped } = sourcesForModel(previous, nextModel.media);
-      for (const item of dropped) if (item?.file) URL.revokeObjectURL(item.previewUrl);
-      return kept;
-    });
   }
   // The always-visible paperclip: the files' types pick the slots on the open model, which never changes
   // (files it has no slot for are refused); with no model open the files choose one.
@@ -666,6 +697,9 @@ function CreateStudio() {
     let text = (templateData && prompt === templateData.prompt) || prompt === recoveredPrompt ? prompt : prompt.trim();
     if (model?.kind === 'image' && characterOn) text = buildCharacterPrompt(text, character);
     if (takesCamera && cinemaOn) text = buildCinemaPrompt(text, cinema);
+    if (templateData && model?.kind === 'video' && model.media?.image && templateImageCount > 0) {
+      text = withTemplateReferencePriority(text, true, model.promptMax || GENERATION_PROMPT_MAX) ?? text;
+    }
     return text;
   }
 
@@ -709,6 +743,7 @@ function CreateStudio() {
   async function onSubmit() {
     if (draftRecovery.restoring || draftRecovery.blocked || attachConverting || sourcesConverting) return;
     if (inFlight.current || sending || generating || !model || balance == null || payable > balance) return;
+    if (unsupportedSource) { setError(LOCAL_ERRORS.source_type_unsupported); return; }
     if (catalogStatus !== 'live' || sourceBlocked) return;
     if (templateData && templateBlocked) return;
     inFlight.current = true;
@@ -752,7 +787,7 @@ function CreateStudio() {
       if (!run.inputs && templateData) run.templateId = await prepareTemplateRun(inputs);
       // Only the slots this model takes; a leftover upload from another model stays local.
       // Each file is uploaded once and its key reused by every request.
-      run.sources ??= await mediaGenerationSources(model, sources, uploadSource);
+      run.sources ??= await mediaGenerationSources(model, sources, uploadSource, { strict: strictOwnerProofSources });
       run.inputs ??= inputs;
       const { references, source_keys, source_assets } = run.sources;
       const anySource = source_keys.length + source_assets.length > 0;
@@ -1049,7 +1084,7 @@ function CreateStudio() {
           <SourceFitNotice fit={sourceFit} />
           {switchOffer && <button type="button" onClick={switchForFiles} className="mt-2 rounded-full border border-vx-border px-3 py-1.5 text-xs text-vx-fg hover:border-vx-accent">{t('app.create.attach.switchTo', { name: switchOffer.model.name })}</button>}
           {addFilesOpen && !photosUnavailable && <AddFilesDialog capacity={attachCapacity(model)} onAdd={attachFiles} onClose={() => setAddFilesOpen(false)} />}
-          {templatesOpen && <TemplatePicker models={models} goal={goal} selectedKind={model?.kind} onPick={applyTemplate} onClose={() => setTemplatesOpen(false)} />}
+          {templatesOpen && <TemplatePicker models={models} goal={goal} selectedKind={model?.kind} onPick={applyTemplate} busy={templatePicking} error={templatePickError} onClose={() => { setTemplatePickError(''); setTemplatesOpen(false); }} />}
           {['swap-recast', 'swap-quick'].includes(modelId) && <p role="note" data-testid="swap-consent-notice" className="mt-2 text-xs text-vx-fg-muted">{t('app.create.swapConsentNotice')}</p>}
           {modelId === SEEDANCE_REFERENCE_MODEL_ID && <p role="note" data-testid="reference-likeness-notice" className="mt-2 text-xs text-vx-fg-muted">{t('app.create.referenceLikenessNotice')}</p>}
           {(activeTemplate || keptTemplate)?.kind === 'image' && templateImageRequired && !boundCount && <div className="mt-3"><TemplatePhotoExample kind="scene" /></div>}
@@ -1095,6 +1130,7 @@ function CreateStudio() {
             </div>
           )}
           {imagePhotoRequired && !imagePhotoUnavailable && templateImageCount !== 1 && <p role="status" className="mt-3 text-sm text-vx-fg-muted">{t('presets.use.photoRequired')}</p>}
+          {unsupportedSource && <p role="alert" className="mt-3 text-sm text-vx-danger">{t('app.create.error.source_type_unsupported')} <button type="button" onClick={() => pickSource('image', null)}>{t('app.create.sources.image.remove')}</button></p>}
           {(sourceBlocked || templateBlocked) && <p role="note" data-source-unsupported className="mt-3 rounded-xl border border-vx-border bg-vx-panel px-3 py-2 text-xs text-vx-fg-body">{swapPromptKept ? <>{t('presets.swap.createBlocked')} <Link className="font-bold text-vx-accent underline" href={swapTemplateHref((activeTemplate || keptTemplate).id)}>{t('presets.swap.createBlockedOpen')}</Link></> : t(imagePhotoUnavailable ? 'presets.fidelity.blocked' : photosUnavailable ? 'presets.fidelity.photosUnavailable' : 'public.TemplateRecipe.sourceVideoUnsupported')}</p>}
           <p id="vx-generate-why" aria-live="polite" className={hintText ? 'mt-3 text-xs text-vx-fg-muted' : 'sr-only'}>{hintText}</p>
           <ParticleButton
@@ -1102,7 +1138,7 @@ function CreateStudio() {
             aria-describedby={hintText ? 'vx-generate-why' : undefined}
             onClick={hasJobs && !activeBatch ? cancel : onSubmit}
             className="scroll-mt-24 mt-4 w-full flex items-center justify-between bg-vx-accent text-vx-accent-ink rounded-full px-6 py-3.5 font-extrabold hover:bg-vx-accent-hover disabled:opacity-40 disabled:cursor-not-allowed"
-            disabled={draftRecovery.restoring || draftRecovery.blocked || sending || attachConverting || sourcesConverting || (!hasJobs && (catalogStatus !== 'live' || sourceBlocked || templateBlocked || !model || model.gated || animationMismatch || missingPrompt || promptTooLong || missingVoice || invalidAudioDuration || balance == null || payable > balance || missingSource || sourceFit.blocked || missingConsent)) || (!!activeBatch && (balance == null || payable > balance)) || !!activeBatch?.confirm}
+            disabled={draftRecovery.restoring || draftRecovery.blocked || sending || attachConverting || sourcesConverting || (!hasJobs && (catalogStatus !== 'live' || sourceBlocked || templateBlocked || !model || model.gated || animationMismatch || missingPrompt || promptTooLong || missingVoice || invalidAudioDuration || balance == null || payable > balance || missingSource || sourceFit.blocked || missingConsent)) || (!!activeBatch && (balance == null || payable > balance)) || (unsupportedSource && (!hasJobs || !!activeBatch)) || !!activeBatch?.confirm}
             aria-label={sending ? undefined : hasJobs && !activeBatch ? t("app.create.newNoCharge") : model?.gated ? undefined : n > 1 ? t(pluralKey(t,locale,cost===0?'app.create.generateImagesFree':'app.create.generateImagesPaid',n),{count:number(n),credits:creditLabel(cost)}) : t(cost===0?'app.create.generateFree':'app.create.generatePaid',{credits:creditLabel(cost)})}
           >
             <span>{sending ? t("app.publish.inbox.sending") : hasJobs && !activeBatch ? t("app.create.newGeneration") : model?.gated ? t("app.create.premiumGated") : n > 1 ? t('app.create.generateCount',{count:number(n)}) : t("label.Generate")}</span>
@@ -1114,7 +1150,7 @@ function CreateStudio() {
           <p className="mt-3 text-center text-[11px] leading-relaxed text-vx-fg-muted">
             {rich(t('app.create.commercial'),{terms:<LegalLink element="Link" href="/legal/terms" className="text-vx-accent underline underline-offset-2">{t('home.publish.terms')}</LegalLink>})}
           </p>
-          {activeBatch?.confirm && <button type="button" disabled={sending || generating || balance == null || payable > balance} onClick={onSubmit} className="vx-press mt-3 min-h-11 w-full rounded-lg border border-vx-border p-3 hover:border-vx-accent disabled:opacity-50">{t('app.create.confirmPrice', { credits: creditLabel(cost) })}</button>}
+          {activeBatch?.confirm && <button type="button" disabled={unsupportedSource || sending || generating || balance == null || payable > balance} onClick={onSubmit} className="vx-press mt-3 min-h-11 w-full rounded-lg border border-vx-border p-3 hover:border-vx-accent disabled:opacity-50">{t('app.create.confirmPrice', { credits: creditLabel(cost) })}</button>}
           {activeBatch && <button type="button" disabled={sending} onClick={cancel} className="mt-2 min-h-11 w-full p-2">{t('app.create.startNewBatch')}</button>}
           {balance != null && payable > balance && !model?.gated && (
             <div className="mt-4 rounded-xl border border-vx-money/40 bg-vx-money/[0.06] p-4 text-sm text-vx-fg-body">
@@ -1193,19 +1229,26 @@ function CreateStudio() {
               ))}
             </div>
             <div data-assistant-target="create.models" data-selected-kind={model?.kind} className="scroll-mt-24">
+              {linkedTemplate && (
+                <p id="create-template-model-lock" data-testid="create-template-model-lock" role="note" className="mb-3 rounded-lg border border-vx-border bg-vx-panel px-3 py-2 text-xs font-medium leading-5 text-vx-fg-muted">
+                  {t('app.create.templateModelSwitch')}
+                </p>
+              )}
               <div className="lg:hidden">
                 <label htmlFor="studio-model" className="sr-only">{t("app.create.generationModel")}</label>
                 <select
                   id="studio-model"
                   value={modelId}
                   onChange={(event) => chooseModel(event.target.value)}
+                  aria-describedby={linkedTemplate ? 'create-template-model-lock' : undefined}
                   className="min-h-11 w-full rounded-xl border border-vx-field bg-vx-base px-3 py-2.5 text-sm font-bold text-vx-fg focus:border-vx-accent focus:outline-hidden"
                 >
-                  {visibleModels.map((item) => (
-                    <option key={item.id} value={item.id}>
+                  {visibleModels.map((item) => {
+                    const issue = modelSwapIssue(item);
+                    return <option key={item.id} value={item.id} disabled={Boolean(issue)}>
                       {item.name} · {item.gated ? t("app.editor.workspace.preview") : freeLeftFor(freeMap, item.id) > 0 ? t("app.create.freeToday") : creditLabel(item.credits)}
-                    </option>
-                  ))}
+                    </option>;
+                  })}
                 </select>
                 {model && (
                   <p className="mt-2 flex items-center justify-between gap-3 text-xs text-vx-fg-muted">
@@ -1214,22 +1257,27 @@ function CreateStudio() {
                   </p>
                 )}
               </div>
-              <div role="group" aria-label={t("pricing.col.model")} className="hidden flex-col gap-1.5 lg:flex">
-                {visibleModels.map((m) => (
-                  <button
+              <div role="group" aria-label={t("pricing.col.model")} aria-describedby={linkedTemplate ? 'create-template-model-lock' : undefined} className="hidden flex-col gap-1.5 lg:flex">
+                {visibleModels.map((m) => {
+                  const issue = modelSwapIssue(m);
+                  return <button
                     key={m.id}
                     data-model-kind={m.kind}
                     data-requires-image={m.media?.image?.required ? 'true' : undefined}
                     onClick={() => chooseModel(m.id)}
+                    disabled={Boolean(issue)}
+                    title={modelSwapIssueText(issue)}
                     aria-pressed={modelId === m.id}
-                    className={`vx-press flex items-center justify-between rounded-lg px-3 py-2.5 border pointer-coarse:min-h-11 ${
+                    className={`vx-press flex items-center justify-between rounded-lg px-3 py-2.5 border pointer-coarse:min-h-11 disabled:cursor-not-allowed disabled:opacity-50 ${
                       modelId === m.id
                         ? 'border-vx-accent bg-vx-accent/[0.07]'
                         : 'border-transparent hover:bg-vx-fg/[0.04]'
                     }`}
                   >
                     <span className="flex items-center gap-2 min-w-0">
-                      <span className="text-sm font-bold truncate">{m.name}</span>
+                      <span className="min-w-0 text-left">
+                        <span className="block truncate text-sm font-bold">{m.name}</span>
+                      </span>
                       {m.gated && (
                         <span className="font-vx-mono text-[10px] tracking-[0.1em] text-vx-money shrink-0">{t("app.create.premium")}</span>
                       )}
@@ -1238,8 +1286,8 @@ function CreateStudio() {
                     {freeLeftFor(freeMap, m.id) > 0
                       ? <span className="font-vx-mono text-[12px] font-bold text-vx-accent shrink-0">{t(pluralKey(t,locale,'app.create.freeRemaining',freeLeftFor(freeMap,m.id)),{count:number(freeLeftFor(freeMap,m.id))})}</span>
                       : <span className="font-vx-mono text-[12px] font-bold text-vx-money vx-num shrink-0">{number(m.credits)} cr</span>}
-                  </button>
-                ))}
+                  </button>;
+                })}
               </div>
             </div>
           </div>}

@@ -3,7 +3,7 @@ import { tenantRequest } from '../../../../../../packages/db/tenant-client.js';
 import { protectedRoute } from '../../../../../../packages/security/route.js';
 import { ApiError } from '../../../../../../packages/security/errors.js';
 import { exactKeys, idempotencyKey, readJson, uuid } from '../../../../../../packages/security/input.js';
-import { emptyProjectDocument, validProjectDocument } from '../../../../../../lib/projectDocument.js';
+import { emptyProjectDocument, validProjectDocument, withTimeline } from '../../../../../../lib/projectDocument.js';
 import { validOddlingsProjectDocument } from '../../../../../../lib/projectOddlingsDocument.js';
 
 export async function GET(request, { params }) {
@@ -35,8 +35,12 @@ export async function PUT(request, { params }) {
       throw new ApiError(404, 'NOT_FOUND', 'Multitrack saving is not available here yet.');
     if (!restore && (body.document?.timeline?.folders!==undefined || body.document?.timeline?.fonts!==undefined) && !editorFeatureEnabled('EDITOR_ORGANIZATION_ENABLED'))
       throw new ApiError(404, 'NOT_FOUND', 'Folder and custom font saving is not available here yet.');
+    // Older and native clients do not have to calculate product metrics. The server derives the same
+    // validated summary before persistence, while oddlings and restores retain their own contracts.
+    const document = !restore && !oddlings && [2, 3].includes(body.document?.schema_version)
+      ? withTimeline(body.document, body.document.timeline) : body.document;
     const result = await tenantRequest(request, context, 'rpc/save_project_document', { method: 'POST', body: {
-      p_project_id: id, p_expected_revision: body.expected_revision, p_document: restore ? null : body.document,
+      p_project_id: id, p_expected_revision: body.expected_revision, p_document: restore ? null : document,
       p_idempotency_key: idempotencyKey(request), p_restore_revision: restore ? body.restore_revision : null,
     }, limitAware: true });
     return Response.json(result);

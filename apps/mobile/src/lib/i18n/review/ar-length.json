@@ -36,6 +36,12 @@
     "ratio": 1.67
   },
   {
+    "id": "beatLabs.makeBeat",
+    "english": "Edit with AI",
+    "translation": "تحرير بالذكاء الاصطناعي",
+    "ratio": 1.92
+  },
+  {
     "id": "beatLabs.touch.help",
     "english": "Tap Controls.",
     "translation": "اضغط على عناصر التحكم.",
@@ -1962,6 +1968,12 @@
     "ratio": 2.17
   },
   {
+    "id": "music.create.smart.genre",
+    "english": "Genre",
+    "translation": "النوع الموسيقي",
+    "ratio": 2.8
+  },
+  {
     "id": "music.create.advanced.key",
     "english": "Key",
     "translation": "المقام",
@@ -2562,10 +2574,70 @@
     "ratio": 1.86
   },
   {
+    "id": "editorLocalExport.codec",
+    "english": "Video codec",
+    "translation": "برنامج ترميز الفيديو",
+    "ratio": 1.82
+  },
+  {
     "id": "editorPersonMask.category",
     "english": "Keep",
     "translation": "الإبقاء على",
     "ratio": 2.75
+  },
+  {
+    "id": "editor.safeArea.off",
+    "english": "Off",
+    "translation": "إيقاف",
+    "ratio": 1.67
+  },
+  {
+    "id": "app.smartCut.feedback.sending",
+    "english": "Sending…",
+    "translation": "جارٍ الإرسال…",
+    "ratio": 1.63
+  },
+  {
+    "id": "projectCloud.title",
+    "english": "Cloud sync",
+    "translation": "المزامنة السحابية",
+    "ratio": 1.7
+  },
+  {
+    "id": "editorCaptionTools.stylePicker",
+    "english": "Caption preset",
+    "translation": "إعداد مسبق للتسميات التوضيحية",
+    "ratio": 2.07
+  },
+  {
+    "id": "projects.smartCutBatch.fail",
+    "english": "Needs retry",
+    "translation": "يحتاج إلى إعادة المحاولة",
+    "ratio": 2.18
+  },
+  {
+    "id": "projects.smartCutBatch.retry",
+    "english": "Retry",
+    "translation": "إعادة المحاولة",
+    "ratio": 2.8
+  },
+  {
+    "id": "projects.smartCutBatch.state.pending",
+    "english": "Pending",
+    "translation": "قيد الانتظار",
+    "ratio": 1.71
+  },
+  {
+    "id": "projects.smartCutBatch.state.failed",
+    "english": "Needs retry",
+    "translation": "يحتاج إلى إعادة المحاولة",
+    "ratio": 2.18
+  },
+  {
+    "id": "email.codeCta",
+    "english": "Email me a 6-digit code",
+    "translation": "إرسال رمز من 6 أرقام بالبريد الإلكتروني",
+    "ratio": 1.7
   },
   {
     "id": "musicAlbums.addTrack",

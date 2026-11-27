@@ -62,8 +62,10 @@ export function addInstrumentTrack(doc: BeatDoc, instrument: Instrument): BeatDo
     const region = withRegion.tracks[withRegion.tracks.length - 1].regions[0];
     return region.length === length ? withRegion : resizeRegion(withRegion, region.id, length);
 }
+const INSTRUMENT_GROUP_PRIORITY: Readonly<Record<string, number>> = { drums: 0, piano: 1, guitar: 2, bass: 3, synth: 4 };
 export const INSTRUMENT_GROUPS = [
-    ...Object.entries(PRESETS).map(([id, presets]) => ({ id, presets: presets.map(p => ({ label: p.label, instrument: { engine: 'voice', id, preset: p.id } as Instrument })) })),
+    ...Object.entries(PRESETS).sort(([a], [b]) => (INSTRUMENT_GROUP_PRIORITY[a] ?? 99) - (INSTRUMENT_GROUP_PRIORITY[b] ?? 99))
+        .map(([id, presets]) => ({ id, presets: presets.map(p => ({ label: p.label, instrument: { engine: 'voice', id, preset: p.id } as Instrument })) })),
     { id: 'wavetable', presets: Object.entries(WAVETABLE_PRESETS).map(([preset, p]) => ({ label: p.label, instrument: { engine: 'wavetable', id: 'wavetable', preset } as Instrument })) },
 ];
 export const filterInstruments = (query: string) => INSTRUMENT_GROUPS.map(group => ({ ...group, presets: group.presets.filter(p => `${group.id} ${p.label}`.toLowerCase().includes(query.trim().toLowerCase())) })).filter(g => g.presets.length);

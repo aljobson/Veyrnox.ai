@@ -1,7 +1,7 @@
 import { song, version, hook } from './fixtures/music';
 import { ApiError, type ApiClient } from '../src/lib/api';
 import {
-    createQuote, getEntitlements, getLibraryTab, getSong, isMusicOff, listSongs, probeMusic, recordListen,
+    analyzeMusicInspiration, createQuote, getEntitlements, getLibraryTab, getSong, isMusicOff, listSongs, probeMusic, recordListen,
     setSongLifecycle, startGeneration,
 } from '../src/lib/music';
 // @ts-ignore server parsers, used to prove the phone sends bodies the routes accept
@@ -27,6 +27,7 @@ const entitlements = {
     models: [model],
     custom_drafts: { available: true, autosave: true, generation_supported: false, lyrics_max: 3000, styles_max: 500, title_max: 80 },
     features: { albums: false, inspiration: false, studioChat: false, dailyChallenge: false, persistentQueue: false },
+    inspiration_sources: [],
     policy: { version: 'music-prompt-v1', pre_debit: true },
 };
 
@@ -41,6 +42,26 @@ describe('entitlements', () => {
         request.mockResolvedValue(legacyEntitlements);
         expect((await getEntitlements(api)).features).toEqual({
             albums: false, inspiration: false, studioChat: false, dailyChallenge: false, persistentQueue: false,
+        });
+    });
+    test('shows inspiration only for a valid, unique server source contract', async () => {
+        request.mockResolvedValueOnce({ ...entitlements,
+            features: { ...entitlements.features, inspiration: true }, inspiration_sources: ['audio'] });
+        await expect(getEntitlements(api)).resolves.toMatchObject({
+            features: { inspiration: true }, inspiration_sources: ['audio'],
+        });
+
+        for (const inspiration_sources of [undefined, ['audio', 'audio'], ['raw_video']]) {
+            request.mockResolvedValueOnce({ ...entitlements,
+                features: { ...entitlements.features, inspiration: true }, inspiration_sources });
+            await expect(getEntitlements(api)).resolves.toMatchObject({
+                features: { inspiration: false }, inspiration_sources: [],
+            });
+        }
+
+        request.mockResolvedValueOnce({ ...entitlements, inspiration_sources: ['audio'] });
+        await expect(getEntitlements(api)).resolves.toMatchObject({
+            features: { inspiration: false }, inspiration_sources: [],
         });
     });
     test('keeps a known daily challenge but drops only malformed or disabled challenge fields', async () => {
@@ -62,6 +83,7 @@ describe('entitlements', () => {
         null, {}, { ...entitlements, models: 'x' }, { ...entitlements, balance: '40' }, { ...entitlements, custom_drafts: null },
         without(entitlements, 'policy'),
         { ...entitlements, features: { ...entitlements.features, albums: 'yes' } },
+        { ...entitlements, features: null },
         { ...entitlements, policy: { version: 'v' } },
         { ...entitlements, custom_drafts: without(entitlements.custom_drafts, 'lyrics_max') },
         { ...entitlements, models: [without(model, 'controls')] },
@@ -73,6 +95,21 @@ describe('entitlements', () => {
     ])('rejects malformed %j', async (v) => {
         request.mockResolvedValue(v);
         await expect(getEntitlements(api)).rejects.toMatchObject({ code: 'bad_response' });
+    });
+});
+
+describe('audio inspiration', () => {
+    const result = { analysis_id: UUID, brief: 'Warm pulse', tags: ['warm'], receipt: 'a.b',
+        expires_at: '2026-11-24T12:00:00Z', idempotent: false };
+    test('posts the exact rights-bound contract and validates the result', async () => {
+        request.mockResolvedValue(result);
+        await expect(analyzeMusicInspiration(api, 'audio', 'uploads/key.mp3', KEY)).resolves.toEqual(result);
+        expect(request.mock.calls[0][0]).toBe('/api/v1/music/inspiration');
+        expect(sentBody()).toEqual({ kind: 'audio', key: 'uploads/key.mp3', rights_confirmed: true, idempotency_key: KEY });
+    });
+    test.each([{ ...result, brief: '' }, { ...result, tags: ['x', 'x'] }, { ...result, idempotent: 'no' }])('rejects malformed %j', async value => {
+        request.mockResolvedValue(value);
+        await expect(analyzeMusicInspiration(api, 'image', 'uploads/key.jpg', KEY)).rejects.toMatchObject({ code: 'bad_response' });
     });
 });
 

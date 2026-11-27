@@ -101,7 +101,7 @@ function formHarness(mode) {
     async reviewQuote(request, startedAt) {
       if (startedAt !== undefined && !gate.unchanged(startedAt)) return;
       requests.push(request);
-      server.quote = { mode, credits_per_candidate: 13, total_credits: 26, affordable: true, expires_at: new Date().toISOString() };
+      server.quote = { mode, credits_per_candidate: 13, total_credits: 13, affordable: true, expires_at: new Date().toISOString() };
     },
   };
   const custom = { loaded: true, status: 'saved', draft: { model_id: 'ace-step-1.5', styles: 'Warm piano', lyrics: 'Original words', title: 'Draft', revision: 1 }, saveNow: async () => custom.draft };
@@ -115,6 +115,11 @@ function formHarness(mode) {
     '../../../lib/authClient': { getStoredUserId: () => null },
     './musicLyricHandoff': { readMusicLyricHandoff: () => null },
     './musicSunoForm': sunoForm,
+    './MusicAdvancedDirectionFields': {
+      EMPTY_MUSIC_DIRECTION: { voice: '', genre: '', mood: '', tempo: '', structure: '' },
+      buildMusicDirection: () => '', mergeMusicStyleDirection: value => value,
+      MusicAdvancedDirectionFields: () => null,
+    },
     '../../../../components/I18nProvider': { useI18n: () => ({ t: (key, vars) => vars?.count ?? key, locale: 'en' }) },
   }, '\nexport { CustomDraftFields };');
   return {
@@ -146,7 +151,7 @@ for (const mode of ['simple', 'custom']) {
     const ui = formHarness(mode);
     let tree = ui.render();
     if (mode === 'simple') {
-      all(tree).find(e => e.type === 'select').props.onChange({ target: { value: 'ace-step-1.5' } });
+      all(tree).find(e => e.type === 'button' && text(e) === 'ace-step-1.5').props.onClick();
       tree = ui.render();
     }
     if (mode === 'custom') {
@@ -157,7 +162,7 @@ for (const mode of ['simple', 'custom']) {
     tree = ui.render();
     await ui.review(tree);
     assert.equal(ui.requests.at(-1).duration_seconds, 180);
-    assert.match(text(ui.render()), /2 versions × 13 credits26 credits/); // The API quote is the only price shown.
+    assert.match(text(ui.render()), /1 track13 credits/); // The API quote is the only price shown.
     const pending = ui.gate.start(), clearsBefore = ui.clears;
     ui.refresh(60); tree = ui.render();
     assert.equal(ui.slider(tree).props.value, 60);
@@ -167,7 +172,7 @@ for (const mode of ['simple', 'custom']) {
     assert.equal(ui.clears, clearsBefore + 1);
     assert.equal(ui.gate.isCurrent(pending), false);
     tree = ui.render();
-    assert.doesNotMatch(text(tree), /2 versions × 13 credits/);
+    assert.doesNotMatch(text(tree), /1 track13 credits/);
     await ui.review(tree);
     assert.equal(ui.requests.at(-1).duration_seconds, 60);
     const quote = ui.server.quote;
@@ -186,7 +191,7 @@ for (const mode of ['simple', 'custom']) {
     ui.refresh(180); tree = ui.render();
     ui.slider(tree).props.onChange({ target: { value: '180', type: 'range' } });
     tree = ui.render();
-    if (mode === 'simple') all(tree).find(e => e.type === 'select').props.onChange({ target: { value: 'ace-step' } });
+    if (mode === 'simple') all(tree).find(e => e.type === 'button' && text(e) === 'ace-step').props.onClick();
     else ui.custom.draft = { ...ui.custom.draft, model_id: 'ace-step' };
     tree = ui.render();
     assert.equal(ui.slider(tree).props.value, 60);

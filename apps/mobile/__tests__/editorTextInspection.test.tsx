@@ -60,7 +60,7 @@ test.each([
     expect(captionStyle.bottom).toBeUndefined();
     expect(captionStyle.maxWidth).not.toBe('84%');
     expect(StyleSheet.flatten(caption.parent!.props.style)).toMatchObject({
-        position: 'absolute', bottom: 17, width: '84%', alignItems,
+        position: 'absolute', left: '8%', top: '85%', width: '84%', alignItems,
     });
 });
 
@@ -71,7 +71,7 @@ test('left-aligned overlay keeps a fixed LTR wrapper in an RTL app', async () =>
         await act(async () => root.render(<EditorTextOverlay item={item} />));
         const caption = root.container.queryAll(n => n.children.includes(item.text) && !!n.props.style)[0];
         expect(StyleSheet.flatten(caption.parent!.props.style)).toMatchObject({
-            direction: 'ltr', alignItems: 'flex-start',
+            direction: 'ltr', left: '8%', top: '85%', alignItems: 'flex-start',
         });
         expect(StyleSheet.flatten(caption.props.style).writingDirection).toBeUndefined();
     } finally {
@@ -145,6 +145,6 @@ test.each(['style', 'typography', 'applyAnimation', 'resetAnimation'] as const)(
 
 test('playback retains the original unrelated media and empty-state lines', () => {
     const source = readFileSync(join(__dirname, '../src/components/editor/EditorPlayback.tsx'), 'utf8').split('\n');
-    expect(source.map(line => line.trim())).toContain('{active ? <EditorMediaPreview api={api} clip={active.clip} media={active.media} frameStore={frameStore} fps={timeline.fps} playing={playing} localUri={localMediaUris[active.media.id]} /> : null}');
-    expect(source.map(line => line.trim())).toContain("{!active && !caption ? <><NativeText style={styles.previewMark}>{t('editor.v')}</NativeText><NativeText style={styles.previewLabel}>{timeline.video.length ? t('editor.movetheplayheadontoavisualclip') : t('editor.previewEmpty')}</NativeText></> : null}");
+    expect(source.join('\n')).toContain('active.map(({ clip, media }) => <EditorMediaPreview key={clip.id}');
+    expect(source.map(line => line.trim())).toContain("{!active.length && !caption ? <><NativeText style={styles.previewMark}>{t('editor.v')}</NativeText><NativeText style={styles.previewLabel}>{timeline.video.length ? t('editor.movetheplayheadontoavisualclip') : t('editor.previewEmpty')}</NativeText></> : null}");
 });

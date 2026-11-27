@@ -13,11 +13,11 @@ import type { MusicActionQuote, StemStart, StemRequest, StemArchive, CropInput, 
 import { isMusicActionQuote, isStemStart, isStemRequest, isStemArchive, isCropResult } from './validateActions';
 import { ApiError, type ApiClient } from '../api';
 import { isRecord } from '../responseShapes';
-import { isMusicDraft, isMusicGenerationView, isMusicEntitlements, isMusicGeneration, isMusicQuote, isMusicSongRow, isMusicSongDetail, isPlayableMusicHook, isMusicLifecycle, isMusicReuseContext } from './validate';
+import { isMusicDraft, isMusicGenerationView, isMusicEntitlements, isMusicGeneration, isMusicInspirationResult, isMusicQuote, isMusicSongRow, isMusicSongDetail, isPlayableMusicHook, isMusicLifecycle, isMusicReuseContext } from './validate';
 import { isMusicDailyChallenge } from './dailyChallenge';
 import type {
-    MusicDraft, MusicDraftInput, MusicGenerationView, MusicCustomQuoteInput, MusicEntitlements, MusicGeneration, MusicLibraryTab, MusicLibraryTabData, MusicQuote,
-    MusicRow, MusicSongRow, MusicLifecycle, MusicSimpleQuoteInput, MusicSong, MusicSongsQuery, MusicProviderContract, MusicReuseContext, MusicReuseInput,
+    MusicDraft, MusicDraftInput, MusicGenerationView, MusicCustomQuoteInput, MusicEntitlements, MusicGeneration, MusicInspirationResult, MusicLibraryTab, MusicLibraryTabData, MusicQuote,
+    MusicRow, MusicSongRow, MusicLifecycle, MusicSimpleQuoteInput, MusicSong, MusicSongsQuery, MusicProviderContract, MusicReuseContext, MusicReuseInput, MusicInspirationSource,
 } from './types';
 
 // Typed client over /api/v1/music/*. Request and response shapes come from the route handlers
@@ -31,6 +31,7 @@ const DEFAULT_MUSIC_FEATURES: MusicEntitlements['features'] = Object.freeze({
     albums: false, inspiration: false, studioChat: false, dailyChallenge: false, persistentQueue: false,
 });
 const DISABLED_DAILY_ALLOWANCE = Object.freeze({ enabled: false });
+const INSPIRATION_SOURCES = new Set(['audio', 'image', 'video_frames']);
 
 export async function getEntitlements(api: ApiClient): Promise<MusicEntitlements> {
     const response = await api.request<unknown>(`${BASE}/entitlements`);
@@ -39,13 +40,34 @@ export async function getEntitlements(api: ApiClient): Promise<MusicEntitlements
     const safeChallenge = isRecord(response) && isRecord(response.features)
         && response.features.dailyChallenge === true && isMusicDailyChallenge(response.daily_challenge)
         ? response.daily_challenge : undefined;
+    const safeSources = isRecord(response) && Array.isArray(response.inspiration_sources)
+        && response.inspiration_sources.every(source => typeof source === 'string' && INSPIRATION_SOURCES.has(source))
+        && new Set(response.inspiration_sources).size === response.inspiration_sources.length
+        ? response.inspiration_sources : [];
+    const projectedFeatures = isRecord(response) && response.features === undefined
+        ? DEFAULT_MUSIC_FEATURES : isRecord(response) ? response.features : undefined;
+    const safeFeatures = isRecord(projectedFeatures) ? {
+        ...projectedFeatures,
+        // A server may know the umbrella flag but not yet project the source contract.
+        // Hide the native entry point until at least one safe picker is available.
+        inspiration: projectedFeatures.inspiration === true && safeSources.length > 0,
+    } : projectedFeatures;
+    const inspirationEnabled = isRecord(safeFeatures) && safeFeatures.inspiration === true;
     const value = isRecord(response) ? {
         ...response,
-        ...(response.features === undefined ? { features: DEFAULT_MUSIC_FEATURES } : {}),
+        features: safeFeatures,
+        inspiration_sources: inspirationEnabled ? safeSources : [],
         ...(response.daily_allowance === undefined ? { daily_allowance: DISABLED_DAILY_ALLOWANCE } : {}),
         ...(response.daily_challenge === undefined ? {} : { daily_challenge: safeChallenge }),
     } : response;
     if (!isMusicEntitlements(value)) throw bad();
+    return value;
+}
+
+export async function analyzeMusicInspiration(api: ApiClient, kind: MusicInspirationSource, key: string, idempotencyKey: string, signal?: AbortSignal): Promise<MusicInspirationResult> {
+    const value = await api.request<unknown>(`${BASE}/inspiration`, { ...post({ kind, key,
+        rights_confirmed: true, idempotency_key: idempotencyKey }), signal }, { timeoutMs: 75_000 });
+    if (!isMusicInspirationResult(value)) throw bad();
     return value;
 }
 

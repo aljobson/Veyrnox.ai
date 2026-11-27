@@ -1,19 +1,19 @@
 import { useMemo } from 'react';
 import { Image, View, StyleSheet } from 'react-native';
 import type { FeatureIcon } from '../../lib/featureIcons';
-import { ds, featureHue } from '../../theme';
+import { ds, vividFromFeatureHue, vividHue } from '../../theme';
 import { useAppearance } from './AppearanceContext';
 import { Icon } from './Icon';
 
-// A rounded tile holding one icon in its feature colour, on a soft wash of the same colour.
+// A rounded tile holding one white icon on the same vivid palette used by navigation cards.
 export function IconBadge({ icon, hue, art, size = 'md' }: FeatureIcon & { readonly size?: 'sm' | 'md' | 'lg' | 'xl' }) {
     const { scheme } = useAppearance();
-    const colour = featureHue(hue, scheme);
-    const tile = useMemo(() => ({ backgroundColor: colour.wash, borderColor: colour.edge }), [colour.wash, colour.edge]);
+    const colour = vividHue(vividFromFeatureHue(hue), scheme);
+    const tile = useMemo(() => ({ backgroundColor: colour.fill, borderColor: colour.edge }), [colour.fill, colour.edge]);
     return (
         <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[styles.tile, styles[size], tile]}>
             {art ? <Image testID="icon-art" source={art} style={artSizes[size]} />
-                : <Icon name={icon} size={size === 'sm' ? 20 : size === 'md' ? 24 : 28} tint={colour.ink} />}
+                : <Icon name={icon} size={size === 'sm' ? 20 : size === 'md' ? 24 : 28} tint={colour.foreground} />}
         </View>
     );
 }

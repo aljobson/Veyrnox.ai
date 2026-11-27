@@ -89,7 +89,7 @@ test('Music estimate uses the authoritative draft contract, widest duration boun
     }
     if (url.pathname.endsWith('/music_create_custom_quote')) return Response.json({
       ok: true, quote_id: uuid(11), mode: 'custom', model_id: 'ace-step-1.5', provider_contract: 'crun-suno-v1',
-      unit_credits: 4, total_credits: 8, charged_credits: 8, balance: 20, balance_after: 12,
+      unit_credits: 4, total_credits: 4, charged_credits: 4, balance: 20, balance_after: 16,
       affordable: true, expires_at: '2099-01-01T00:10:00Z',
     });
     assert.fail(`unexpected request ${url.pathname}`);
@@ -99,12 +99,12 @@ test('Music estimate uses the authoritative draft contract, widest duration boun
   assert.equal(draft.structuredContent.draft.id, uuid(10));
   assert.match(draft.structuredContent.instruction, /estimate_music_generation/);
 
-  for (const duration_seconds of [1, 135]) {
+  for (const duration_seconds of [1, 360]) {
     const result = await call('estimate_music_generation', {
       provider_contract: 'crun-suno-v1', draft_id: uuid(10), draft_revision: 4,
       instrumental: true, rights_confirmed: false, duration_seconds,
     });
-    assert.equal(result.structuredContent.total_credits, 8);
+    assert.equal(result.structuredContent.total_credits, 4);
     assert.equal(result.structuredContent.rights_confirmed, false);
   }
   const vocal = await call('estimate_music_generation', {
@@ -114,7 +114,7 @@ test('Music estimate uses the authoritative draft contract, widest duration boun
   assert.equal(vocal.structuredContent.rights_confirmed, true);
   assert.match(vocal.content[0].text, /user's explicit lyric-rights confirmation/i);
   const quoteBodies = requests.filter(({ path }) => path.endsWith('/music_create_custom_quote')).map(({ body }) => body);
-  assert.deepEqual(quoteBodies.map((body) => body.p_duration_seconds), [1, 135, 60]);
+  assert.deepEqual(quoteBodies.map((body) => body.p_duration_seconds), [1, 360, 60]);
   assert.ok(quoteBodies.every((body) => !Object.hasOwn(body, 'p_daily_allowance_capable')));
   assert.ok(requests.every(({ path }) => !path.includes('daily_allowance')));
 });
@@ -166,21 +166,21 @@ test('Music generation requires explicit approval and exact frozen credits befor
     const url = new URL(String(input)); paths.push(url.pathname);
     if (url.pathname === '/rest/v1/users') return Response.json([{ id: uuid(20) }]);
     if (url.pathname === '/rest/v1/music_generation_quotes') return Response.json([{
-      model_id: 'ace-step-1.5', consumed_at: null, provider_contract: 'crun-suno-v1', charged_credits: 8,
+      model_id: 'ace-step-1.5', consumed_at: null, provider_contract: 'crun-suno-v1', charged_credits: 4,
     }]);
     if (url.pathname.endsWith('/music_submit_pair')) {
       const body = JSON.parse(init.body);
       assert.equal(body.p_auth_id, AUTH_ID, 'the internal route uses only the trusted MCP identity');
-      return Response.json({ ok: true, request_id: uuid(21), state: 'debited', job_ids: [uuid(22), uuid(23)], balance_after: 12, provider_contract: 'crun-suno-v1' });
+      return Response.json({ ok: true, request_id: uuid(21), state: 'debited', job_ids: [uuid(22)], balance_after: 16, provider_contract: 'crun-suno-v1' });
     }
     assert.fail(`unexpected request ${url.pathname}`);
   });
 
-  const base = { provider_contract: 'crun-suno-v1', quote_id: uuid(24), confirmed_credits: 8, idempotency_key: 'music-mcp-approval-1' };
+  const base = { provider_contract: 'crun-suno-v1', quote_id: uuid(24), confirmed_credits: 4, idempotency_key: 'music-mcp-approval-1' };
   for (const refusedArgs of [
     base,
     { ...base, user_approved: false },
-    { quote_id: uuid(24), confirmed_credits: 8, user_approved: true, idempotency_key: 'music-mcp-approval-1' },
+    { quote_id: uuid(24), confirmed_credits: 4, user_approved: true, idempotency_key: 'music-mcp-approval-1' },
     { provider_contract: 'crun-suno-v1', quote_id: uuid(24), user_approved: true, idempotency_key: 'music-mcp-approval-1' },
     { ...base, user_approved: true, idempotency_key: 'x'.repeat(121) },
   ]) {
@@ -188,7 +188,7 @@ test('Music generation requires explicit approval and exact frozen credits befor
   }
   assert.equal(paths.length, 0, 'schema-level approval refusal cannot read or charge');
 
-  const wrong = await call('generate_music', { ...base, confirmed_credits: 7, user_approved: true });
+  const wrong = await call('generate_music', { ...base, confirmed_credits: 3, user_approved: true });
   assert.deepEqual([wrong.isError, wrong.structuredContent.error], [true, 'credit_confirmation_mismatch']);
   assert.deepEqual(paths, ['/rest/v1/users', '/rest/v1/music_generation_quotes']);
   paths.length = 0;

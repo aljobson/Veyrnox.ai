@@ -39,6 +39,13 @@ test('document belongs to the route, has only allowed keys and uses UTF-8 bytes'
     expect(parse({ type: 'ready', projectId: 'other' })).toBeNull();
     expect(message({ ...document, extra: true })).toBeNull();
     expect(message({ ...document, schema_version: 4 })).toBeNull();
+    expect(message({ ...document, cover: { frame: 30, text: 'Cover', text_color: '#FFFFFF' } })).not.toBeNull();
+    for (const cover of [
+        { frame: -1, text: 'Cover', text_color: '#FFFFFF' },
+        { frame: 30, text: 'Cover', text_color: 'white' },
+        { frame: 30, text: 'x'.repeat(121), text_color: '#FFFFFF' },
+        { frame: 30, text: 'Cover', text_color: '#FFFFFF', extra: true },
+    ]) expect(message({ ...document, cover })).toBeNull();
     const large = { ...document, timeline: { text: 'é'.repeat(16000) } };
     large.timeline.text += 'x'.repeat(32769 - utf8Bytes(JSON.stringify(large)));
     expect(JSON.stringify(large).length).toBeLessThan(32768);

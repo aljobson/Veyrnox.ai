@@ -1,10 +1,10 @@
 import { act } from 'react';
 import * as RN from 'react-native';
 import { createRoot, type Root } from 'test-renderer';
-import { Button, AppearanceContext, PriceText } from '../src/components/ui';
+import { Button, AppearanceContext, PriceText, VividCard } from '../src/components/ui';
 import { BrandKitEditor } from '../src/components/brand/BrandKitEditor';
 import { styles, Action } from '../src/components/account/shared';
-import { colors, DEFAULT_APPEARANCE, paletteForScheme, tokensForScheme } from '../src/theme';
+import { colors, DEFAULT_APPEARANCE, paletteForScheme, tokensForScheme, vividHue } from '../src/theme';
 import { touchTarget } from '../src/lib/a11y';
 import { t } from '../src/lib/i18n';
 
@@ -69,4 +69,16 @@ test.each(['light', 'dark', 'oled'] as const)('only price fragments use warning 
     const sentence = root.container.queryAll(n => n.children.includes('Stay for '))[0];
     expect(RN.StyleSheet.flatten(sentence.props.style).color).toBe(p.textSecondary);
     expect(RN.StyleSheet.flatten(sentence.props.style).fontVariant).toBeUndefined();
+});
+
+test('compact vivid cards retain the shared palette and dense account-row layout', async () => {
+    const settings = { ...DEFAULT_APPEARANCE, theme: 'dark' as const };
+    const tone = vividHue('purple', 'dark');
+    await act(async () => root.render(<AppearanceContext.Provider value={settings}>
+        <VividCard hue="purple" icon="user" title="Security" layout="compact" showChevron onPress={() => {}} />
+    </AppearanceContext.Provider>));
+    const card = root.container.queryAll(n => n.props.accessibilityRole === 'button' && n.props.accessibilityLabel === 'Security')[0];
+    expect(RN.StyleSheet.flatten(card.props.style)).toMatchObject({ backgroundColor: tone.fill, minHeight: 64, flexDirection: 'row' });
+    const label = root.container.queryAll(n => n.children.includes('Security'))[0];
+    expect(RN.StyleSheet.flatten(label.props.style).color).toBe(tone.foreground);
 });

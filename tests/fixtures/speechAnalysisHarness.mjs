@@ -16,7 +16,7 @@ export function fixture(options = {}) {
     const receipts = new Map();
     const env = { SPEECH_CUT_ENABLED: 'true', FAL_KEY: 'f'.repeat(40), PUBLIC_HOST: 'https://worker.test', ...options.env };
     const asset = { ok: true, sha256: fingerprint, r2_key: 'private-object', mime_type: 'video/mp4', size_bytes: 500, ...options.asset };
-    const view = () => ({ ok: true, id: JOB, status: job?.status || 'queued', progress: job?.state === 'SUBMITTED' ? 'transcribing' : 'queued', analysis: job?.analysis, refunded: job?.state === 'REFUNDED' });
+    const view = () => ({ ok: true, id: JOB, status: job?.status || 'queued', progress: job?.state === 'SUBMITTED' ? 'transcribing' : 'queued', analysis: job?.analysis, refunded: job?.state === 'REFUNDED', requested_language: job?.requested_language || 'auto' });
     const rpc = async (name, args) => {
         calls.push({ name, args });
         if (options.rpc?.[name]) return options.rpc[name](args);
@@ -26,12 +26,12 @@ export function fixture(options = {}) {
         if (name === 'speech_analysis_by_key') return args.p_auth_id === AUTH && receipts.has(args.p_key)
             ? { ...view(), ...receipts.get(args.p_key), digest, found: true } : { ok: true, found: false };
         if (name === 'speech_analysis_get') return args.p_auth_id === AUTH && args.p_id === JOB && job && !options.removed ? view() : { ok: false, code: 'NOT_FOUND' };
-        if (name === 'speech_analysis_request') {
+        if (name === 'speech_analysis_request' || name === 'speech_analysis_request_v3') {
             if (args.p_expected_credits !== 2) return { ok: false, code: 'PRICE_CHANGED', credits: 2 };
             if (Math.abs(args.p_duration - 12) > .25) return { ok: false, code: 'DURATION_MISMATCH' };
             const kind = job ? job.status === 'completed' ? 'reused_cache' : 'joined_in_flight' : 'new';
-            if (!job) { debit++; job = { state: 'DEBITED', status: 'queued', inputs: { kind: 'speech_analysis' } }; }
-            receipts.set(args.p_key, { kind }); return { ...view(), fresh: kind === 'new', kind };
+            if (!job) { debit++; job = { state: 'DEBITED', status: 'queued', inputs: { kind: 'speech_analysis' }, requested_language: args.p_requested_language || 'auto' }; }
+            receipts.set(args.p_key, { kind, requested_language: args.p_requested_language || 'auto' }); return { ...view(), fresh: kind === 'new', kind };
         }
         if (name === 'job_submitted') {
             job.state = 'SUBMITTED'; job.provider = args.p_provider_job_id;

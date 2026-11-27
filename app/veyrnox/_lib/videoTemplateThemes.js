@@ -36,9 +36,6 @@ export const VIDEO_TEMPLATE_THEMES = Object.freeze([
       'community-london-gentleman-walk',
       // ADR-0309 amendment 3: listed only while the seedanceLongTemplates runtime key is on.
       'studio-ballerina-turns',
-      // Written by Veyrnox and paid-tested (owner, 2026-11-21).
-      'original-rooftop-sunset-groove', 'original-disco-floor-spin', 'original-street-popping-solo', 'original-salsa-plaza-steps',
-      'original-neon-club-footwork', 'original-beach-barefoot-dance', 'original-studio-mirror-routine', 'original-rain-puddle-tap',
     ],
   },
   {
@@ -57,7 +54,6 @@ export const VIDEO_TEMPLATE_THEMES = Object.freeze([
   {
     id: 'COMEDY',
     templateIds: [
-      'original-zero-gravity-cafe',
       // Tested swap templates (ADR-0351 amendment 20).
       'community-arctic-water-pour', 'community-bottle-topple-kick', 'community-currency-phone-call',
       'community-sour-drink-reaction', 'community-natural-face-swap', 'community-neon-selfie-swap',
@@ -80,7 +76,6 @@ export const VIDEO_TEMPLATE_THEMES = Object.freeze([
   {
     id: 'MAGIC',
     templateIds: [
-      'original-desert-mirage-walk', 'original-ice-palace-entrance', 'original-lantern-river-night', 'original-blossom-whirlwind', 'original-aurora-glacier',
       'community-dragon-rider-encounter', 'community-dragon-awakening', 'dragon-lord', 'curious-garden-journey', 'dandelion-ball',
       'the-crown', 'the-spirit', 'sea-snakes', 'born-from-sand',
     ],
@@ -91,7 +86,6 @@ export const VIDEO_TEMPLATE_THEMES = Object.freeze([
   {
     id: 'FILM',
     templateIds: [
-      'original-neon-rain-rooftop', 'original-thunder-cliff-stand',
       // Tested swap templates (ADR-0351 amendment 20).
       'community-alleyway-identity-swap', 'community-ballroom-tuxedo-shift', 'community-black-dress-walk',
       'community-burgundy-stride', 'community-ceiling-fan-transition', 'community-golden-gown-walk',
@@ -104,10 +98,6 @@ export const VIDEO_TEMPLATE_THEMES = Object.freeze([
   {
     id: 'ANIMALS',
     templateIds: ['animal-pov-to-the-club', 'community-pet-affection-reveal', 'community-synchronized-pet-portrait'],
-  },
-  {
-    id: 'ANIMATED',
-    templateIds: ['original-storybook-3d-hero', 'original-hand-drawn-meadow', 'original-anime-sky-run', 'original-pixel-quest'],
   },
 ]);
 

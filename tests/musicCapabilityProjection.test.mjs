@@ -3,6 +3,7 @@ import { register } from 'node:module';
 import test from 'node:test';
 import { MUSIC_MOBILE_ROLLOUT_FLAGS } from '../lib/musicRuntime.js';
 import { musicDailyChallengeAt } from '../lib/musicDailyChallenge.js';
+import { musicInspirationSources } from '../lib/musicInspiration.js';
 
 const data = source => `data:text/javascript,${encodeURIComponent(source)}`;
 register(data(`export async function resolve(specifier, context, nextResolve) {
@@ -35,7 +36,42 @@ test('authenticated music entitlements project every default-off mobile rollout 
   const body = await response.json();
   assert.deepEqual(Object.keys(body.features), [...MUSIC_MOBILE_ROLLOUT_FLAGS]);
   assert.deepEqual(Object.values(body.features), MUSIC_MOBILE_ROLLOUT_FLAGS.map(() => false));
+  assert.deepEqual(body.inspiration_sources, []);
   assert.equal(body.daily_challenge, undefined);
+});
+
+test('inspiration capabilities expose audio only when its private contract is configured', () => {
+  const base = {
+    MUSIC_INSPIRATION_ENABLED: 'true',
+    MUSIC_INSPIRATION_MODEL: 'google/gemini-test',
+    MUSIC_INSPIRATION_API_KEY: 'test-only',
+    MUSIC_INSPIRATION_SCHEMA_ENABLED: 'true',
+    MUSIC_INSPIRATION_RECEIPT_SECRET: 'a'.repeat(32),
+    UPLOAD_INTEGRITY_ENABLED: 'true',
+    MUSIC_RUNTIME_FLAGS: JSON.stringify({ schema: true, inspiration: true }),
+  };
+  assert.deepEqual(musicInspirationSources({}), []);
+  assert.deepEqual(musicInspirationSources(base), ['audio']);
+  for (const key of ['MUSIC_INSPIRATION_ENABLED', 'MUSIC_INSPIRATION_API_KEY',
+    'MUSIC_INSPIRATION_SCHEMA_ENABLED', 'MUSIC_INSPIRATION_RECEIPT_SECRET', 'UPLOAD_INTEGRITY_ENABLED', 'MUSIC_RUNTIME_FLAGS']) {
+    assert.deepEqual(musicInspirationSources({ ...base, [key]: undefined }), [], `${key} fails closed`);
+  }
+  const image = { ...base, MUSIC_INSPIRATION_MODEL: undefined, MUSIC_INSPIRATION_IMAGE_ENABLED: 'true',
+    MUSIC_INSPIRATION_IMAGE_MODEL: 'google/gemini-vision-test' };
+  assert.deepEqual(musicInspirationSources(image), ['image'], 'image does not depend on the audio model');
+  assert.deepEqual(musicInspirationSources({ ...base, MUSIC_INSPIRATION_IMAGE_ENABLED: 'true',
+    MUSIC_INSPIRATION_IMAGE_MODEL: 'google/gemini-vision-test' }), ['audio', 'image']);
+  assert.deepEqual(musicInspirationSources({ ...image, MUSIC_INSPIRATION_IMAGE_ENABLED: undefined }), []);
+  assert.deepEqual(musicInspirationSources({ ...image, MUSIC_INSPIRATION_IMAGE_MODEL: undefined }), []);
+  assert.deepEqual(musicInspirationSources({
+    ...base,
+    UPLOAD_HASH_MATCH_REQUIRED: 'true',
+    UPLOAD_HASH_MATCH_PROVIDER: 'not-enrolled',
+    CONTENT_SCAN_ENABLED: 'true',
+    OPENAI_API_KEY: 'test-only',
+  }), [], 'all pickers stay hidden when required upload admission has no registered provider');
+  assert.deepEqual(musicInspirationSources({ ...base, CONTENT_SCAN_ENABLED: 'true', OPENAI_API_KEY: 'test-only' }), ['audio'],
+    'image/video kinds are never inferred from an audio contract');
 });
 
 test('enabled daily challenge is carried by the existing no-store entitlement contract', async () => {

@@ -116,24 +116,29 @@ test('Kling O1 uses the existing flag: one picture off, two on, never three', ()
   }
 });
 
-test('resolved MP4 sources retain dimensions and separately proven visual duration', async () => {
-  const bytes = lipSyncMp4({ video: 5, sampleCount: 150 });
+test('resolved MP4 sources retain dimensions and separately proven visual duration, including provider B-frame ordering', async () => {
+  const clips = [
+    lipSyncMp4({ video: 5, sampleCount: 150 }),
+    lipSyncMp4({ video: 5, sampleCount: 4, compositionOffsets: [2.5, 3.75, 1.25, 2.5], edit: { seconds: 5, start: 2.5 } }),
+  ];
   const realFetch = globalThis.fetch;
-  globalThis.fetch = async (_url, init) => {
-    const [, start, end] = /bytes=(\d+)-(\d+)/.exec(init.headers.Range);
-    const last = Math.min(Number(end), bytes.length - 1);
-    return new Response(bytes.subarray(Number(start), last + 1), {
-      status: 206, headers: { 'content-range': `bytes ${start}-${last}/${bytes.length}` },
-    });
-  };
   try {
-    const owner = '11111111-2222-3333-4444-555555555555';
-    const key = uploadKeyFor(owner, 'video/mp4', 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee').key;
-    const result = await resolveUploadedSource(owner, key, { accountId: 'a', accessKeyId: 'k', secretAccessKey: 's', bucket: 'b', jurisdiction: 'eu' });
-    assert.equal(result.ok, true);
-    assert.deepEqual(result.dimensions, { width: 640, height: 360 });
-    assert.equal(result.seconds, 5);
-    assert.ok(result.videoSeconds >= 4.99 && result.videoSeconds <= 5);
-    assert.equal(checkSource(record, { video_url: result }).error, 'source_resolution_out_of_range');
+    for (const bytes of clips) {
+      globalThis.fetch = async (_url, init) => {
+        const [, start, end] = /bytes=(\d+)-(\d+)/.exec(init.headers.Range);
+        const last = Math.min(Number(end), bytes.length - 1);
+        return new Response(bytes.subarray(Number(start), last + 1), {
+          status: 206, headers: { 'content-range': `bytes ${start}-${last}/${bytes.length}` },
+        });
+      };
+      const owner = '11111111-2222-3333-4444-555555555555';
+      const key = uploadKeyFor(owner, 'video/mp4', 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee').key;
+      const result = await resolveUploadedSource(owner, key, { accountId: 'a', accessKeyId: 'k', secretAccessKey: 's', bucket: 'b', jurisdiction: 'eu' });
+      assert.equal(result.ok, true);
+      assert.deepEqual(result.dimensions, { width: 640, height: 360 });
+      assert.equal(result.seconds, 5);
+      assert.ok(result.videoSeconds >= 4.99 && result.videoSeconds <= 5);
+      assert.equal(checkSource(record, { video_url: result }).error, 'source_resolution_out_of_range');
+    }
   } finally { globalThis.fetch = realFetch; }
 });

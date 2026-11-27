@@ -1,4 +1,3 @@
-import { hasExactPromptOrigin } from '../../../lib/templatePromptOrigin.mjs';
 import { swapRequest } from './templateSwapClient.mjs';
 import { templateContract, fidelityTemplateId, templateBoundPrompt } from '../../../lib/templateClientContract.js';
 // Generate from the template page itself (ADR-0120 amendment 1). Pure pieces, so they are unit-tested without React.
@@ -10,6 +9,7 @@ import { sendInOrder, submitErrorCode, createBatch, allocationSnapshot } from '.
 import { audioDurationConfig, settingsInputs } from './generationSettings.js';
 import { createPromptModelAvailable, TEMPLATE_PROMPT_MAX } from './templateDraft.js';
 import { templateStartIdFor } from '../../../lib/templateStartCheck.js';
+import { withTemplateReferencePriority } from '../../../lib/templateReferencePriority.js';
 
 /** True when the model's one required media is a single photo (a start image), so the template page can take it. */
 export function photoOnlyModel(model) {
@@ -37,24 +37,18 @@ export function inlineBlockReason(preset, model, { photo = false } = {}) {
   return null;
 }
 
-// A start image only fixes the first frame; this line keeps the person in it as the lead for the whole clip.
-// Only for a prompt the person edited: an unedited exact source prompt is never changed (ADR-0325).
-const PHOTO_CHARACTER_LINE = 'The person in the attached photo is the main character; keep their face, hair and clothing the same throughout.';
-
-function withPhotoLine(text, withPhoto) {
-  const joined = `${text}\n\n${PHOTO_CHARACTER_LINE}`;
-  return withPhoto && joined.length <= TEMPLATE_PROMPT_MAX ? joined : text;
-}
-
 /** The inputs object Create builds for this template: prompt, shape, length, the template's own negative prompt. */
 const auditedInputs = new WeakSet();
 export function templateInputs(preset, model, { prompt, aspect, durationSeconds, aspectOptions, withPhoto = false }) {
-  const exactOrigin = hasExactPromptOrigin(preset.sourcePromptOrigin);
+  const exactOrigin = preset.sourcePromptOrigin === 'community-source-exact';
   const exact = exactOrigin && typeof preset.sourcePrompt === 'string' ? preset.sourcePrompt : preset.prompt;
   const uneditedExact = exactOrigin && prompt === exact;
+  const text = prompt === exact ? prompt : prompt.trim();
+  const guarded = withTemplateReferencePriority(text, withPhoto && preset.kind !== 'image' && !!model.media?.image, model.promptMax || TEMPLATE_PROMPT_MAX);
   const inputs = {
-    // Like Create: the recipe's own words go unchanged, anything the person edited is trimmed.
-    prompt: withPhotoLine(prompt === exact ? prompt : prompt.trim(), withPhoto && preset.kind !== 'image' && !uneditedExact),
+    // Like Create: anything the person edited is trimmed. Every photo-driven
+    // video template gets the same reference-first continuity instruction.
+    prompt: guarded ?? text,
     aspect_ratio: aspectOptions.length ? aspect : undefined,
     duration_seconds: model.kind === 'video' ? durationSeconds : undefined,
     ...settingsInputs(model, { seed: '', negative: preset.negativePrompt || '', voice: '', duration: '' }),

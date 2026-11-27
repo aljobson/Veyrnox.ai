@@ -4,12 +4,13 @@ import * as RN from 'react-native';
 import BeatPianoScreen from '../src/app/(app)/beats/piano/[id]';
 import { BeatInstrumentsSection, restoreInstrumentLibraryTriggerFocus } from '../src/components/beats/BeatInstrumentsSection';
 import { useBeatEdit } from '../src/lib/beatNative/useBeatEdit';
-import { addInstrumentTrack, addNote, asMidiDoc, midiRegions, midiTracks, midiTrackSections, noteLabel } from '../src/lib/beatNative/midi';
+import { addInstrumentTrack, addNote, asMidiDoc, filterInstruments, midiRegions, midiTracks, midiTrackSections, noteLabel } from '../src/lib/beatNative/midi';
 import { beatStore, getBeat, newBeat, putBeat, resetBeats } from '../src/lib/beatNative/store';
 import { t } from '../src/lib/i18n';
 import { Button } from '../src/components/ui';
 import { noteLengthUnits, notePosition } from '../src/lib/beatNative/rollGeometry';
 import { validateBeat } from '../src/lib/beatNative/doc';
+import { VIVID_HUES, vividHue } from '../src/theme';
 beforeAll(() => require('../src/lib/beatNative/store').beatStore.setOwner('test-owner'));
 
 jest.mock('../src/lib/beatNative/persist', () => ({ ...jest.requireActual('../src/lib/beatNative/persist'), documentFiles: () => ({ read: async () => null, write: async () => {}, remove: async () => {}, list: async () => [] }) }));
@@ -98,12 +99,18 @@ test('keyboard press and release, playback, background cleanup', async () => {
 });
 function LibraryHarness({ id }: { id: string }) {
     const edit = useBeatEdit(id);
-    return <><BeatInstrumentsSection doc={edit.doc!} apply={edit.apply} audio={() => mockAudio} onOpen={() => {}} /><Button label={t('beat.undo')} onPress={edit.undo} /></>;
+    return <><BeatInstrumentsSection doc={edit.doc!} apply={edit.apply} onOpen={() => {}} /><Button label={t('beat.undo')} onPress={edit.undo} /></>;
 }
-test('library audition and add use shared voices and a single undoable store edit', async () => {
+test('compact neutral instrument tiles add directly with one undoable store edit and no preview control', async () => {
     const doc = newBeat('Library'); await act(async () => root.render(<LibraryHarness id={doc.id} />));
-    await press(t('beatPiano.library.add')); await press(t('beatPiano.library.audition', { name: 'Grand piano' }));
-    expect(mockAudio.audition).toHaveBeenCalledWith({ engine: 'voice', id: 'piano', preset: 'grand' });
+    await press(t('beatPiano.library.add'));
+    const vividFills = new Set(VIVID_HUES.map(hue => vividHue(hue, 'dark').fill));
+    expect(filterInstruments('').map(group => group.id).slice(0, 3)).toEqual(['drums', 'piano', 'guitar']);
+    expect(root.container.queryAll(node => RN.StyleSheet.flatten(node.props.style)?.width === '31%').length).toBeGreaterThan(0);
+    expect(root.container.queryAll(node => vividFills.has(RN.StyleSheet.flatten(node.props.style)?.backgroundColor))).toHaveLength(0);
+    expect(root.container.queryAll(node => node.props.source?.testUri?.endsWith('/drum.png')).length).toBeGreaterThan(0);
+    expect(root.container.queryAll(node => node.props.source?.testUri?.endsWith('/guitar.png')).length).toBeGreaterThan(0);
+    expect(nodes(t('beatPiano.library.audition', { name: 'Grand piano' }))).toHaveLength(0);
     await press(t('beatPiano.library.addNamed', { name: 'Grand piano' }));
     expect(midiRegions(getBeat(doc.id)!)).toHaveLength(1); expect(beatStore.saveState(doc.id)).toBe('saving');
     await press(t('beat.undo')); expect(midiRegions(getBeat(doc.id)!)).toHaveLength(0);
@@ -140,7 +147,7 @@ test('snap and strength expose radio semantics without relying on colour', async
 
 test('instrument library stays open and shows feedback when adding is refused', async () => {
     const doc = newBeat('Refused');
-    await act(async () => root.render(<BeatInstrumentsSection doc={doc} apply={() => false} audio={() => mockAudio} onOpen={() => {}} />));
+    await act(async () => root.render(<BeatInstrumentsSection doc={doc} apply={() => false} onOpen={() => {}} />));
     await press(t('beatPiano.library.add')); await press(t('beatPiano.library.addNamed', { name: 'Grand piano' }));
     expect(nodes(t('beatPiano.library.close')).length).toBeGreaterThan(0);
     expect(root.container.queryAll(n => n.children.includes(t('beat.refused', { reason: '' }))).length).toBeGreaterThan(0);

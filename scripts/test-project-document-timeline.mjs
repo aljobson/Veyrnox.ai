@@ -102,7 +102,7 @@ try {
     await check('the function body still carries the 0254 write caps', async () => {
         await db.query('RESET ROLE');
         const src = await value("SELECT pg_get_functiondef('private.save_project_document(uuid,integer,jsonb,text,integer)'::regprocedure)");
-        for (const needle of ['project_revisions', 'daily_document_saves', 'LIMIT_REACHED', 'project_timeline_within_bounds']) assert.ok(src.includes(needle), needle);
+        for (const needle of ['project_revisions', 'daily_document_saves', 'LIMIT_REACHED', 'project_document_within_bounds']) assert.ok(src.includes(needle), needle);
     });
     await check('the bounds helper is callable by nobody from the API', async () => {
         for (const role of ['anon', 'authenticated', 'service_role']) {

@@ -1,3 +1,4 @@
+import { useOwnerProofCatalog } from '../../../lib/useOwnerProofModels';
 import { useLibraryShapes } from '../../../lib/useLibraryShapes';
 import { SHAPE_FILTERS, shapeMeasurementIds, type ShapeFilter } from '../../../lib/libraryView';
 import { useMusicAvailable } from '../../../lib/music/useMusicAvailable';
@@ -6,7 +7,7 @@ import type { VideoThumbnail } from 'expo-video';
 import { createAssetLinks, type AssetLink } from '../../../lib/libraryMedia';
 import { posterFor, clearPosters } from '../../../lib/videoPoster';
 import { appendPage, applyStatus, inFlightIds, mergePage } from '../../../lib/libraryPoll';
-import { Text, Button, Chip, ListRow, themedStyles, useThemedStyles } from '../../../components/ui';
+import { Text, Button, Chip, VividCard, themedStyles, useThemedStyles } from '../../../components/ui';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, FlatList, RefreshControl, ScrollView, View } from 'react-native';
@@ -28,7 +29,7 @@ import { useLibraryAudio } from '../../../lib/useLibraryAudio';
 import { retryDelayMs } from '../../../lib/retryDelay';
 
 import { EmptyState } from '../../../components/EmptyState';
-import { VeyLoader } from '../../../components/VeyLoader';
+import { LoadingSkeleton } from '../../../components/LoadingSkeleton';
 
 export default function Library() {
     const styles = useThemedStyles(sheets);
@@ -61,7 +62,8 @@ export default function Library() {
     const [favourites, setFavourites] = useState<string[]>([]);
     const [models, setModels] = useState<CatalogModel[]>([]);
     // The two Seedance 2.5 offers are hidden from the supported list (isSupported), so they come from the full catalog.
-    const [offers, setOffers] = useState<CatalogModel[]>([]);
+    const [publicOffers, setOffers] = useState<CatalogModel[]>([]);
+    const offers = useOwnerProofCatalog(publicOffers, true);
     const kinds = useMemo(() => kindMap(models), [models]);
     const names = useMemo(() => new Map(models.map((m) => [m.id, m.name])), [models]);
     const [focused, setFocused] = useState(false);
@@ -268,10 +270,10 @@ export default function Library() {
         <View style={styles.screen}>
             <Stack.Screen options={{ title: t('label.Library') }} />
             <Text variant="title2" tone="primary" style={styles.heading} accessibilityRole="header">{t('label.Library')}</Text>
-            {musicAvailable ? <ListRow icon="vinylRecord" title={t('music.title')} accessibilityLabel={t('music.title')} onPress={() => router.push('/music' as never)} /> : null}
             <View style={styles.headerActions}>
-            <Button variant="primary" accessibilityRole="button" accessibilityLabel={t('app.library.openSmartCut')} accessibilityHint={t('app.explore.smartCutStart')} onPress={() => router.push('/smart-cut')} label={t('app.library.openSmartCut')} />
-            <Button variant="secondary" accessibilityRole="button" accessibilityLabel={t('library.videoFilesLabel')} onPress={() => router.push('/library/files')} label={t('library.videoFiles')} />
+                {musicAvailable ? <VividCard hue="purple" icon="vinylRecord" title={t('music.title')} layout="row" showChevron accessibilityLabel={t('music.title')} onPress={() => router.push('/music' as never)} /> : null}
+                <VividCard hue="orange" icon="scissors" title={t('app.library.openSmartCut')} detail={t('app.explore.smartCutStart')} layout="row" showChevron accessibilityLabel={t('app.library.openSmartCut')} accessibilityHint={t('app.explore.smartCutStart')} onPress={() => router.push('/smart-cut')} />
+                <VividCard hue="blue" icon="folder" title={t('library.videoFiles')} layout="row" showChevron accessibilityLabel={t('library.videoFilesLabel')} onPress={() => router.push('/library/files')} />
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.barScroll} contentContainerStyle={styles.bar} accessibilityLabel={t('library.filter.type')}>
                 {KIND_FILTERS.map((f) => (
@@ -291,7 +293,7 @@ export default function Library() {
                     <Button variant="tertiary" accessibilityRole="button" disabled={waiting} onPress={() => void load()} label={t('recovery.retry')} />
                 </View>
             ) : jobs === null ? (
-                <VeyLoader />
+                <LoadingSkeleton variant={view === 'grid' ? 'grid' : 'list'} />
             ) : (
                 <FlatList
                     contentContainerStyle={styles.list}

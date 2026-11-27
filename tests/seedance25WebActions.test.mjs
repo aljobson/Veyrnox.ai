@@ -28,7 +28,8 @@ function component(request) {
         '../_lib/gateway': { gatewayFetch: request, makeIdempotencyKey: () => 'stable-web-key', notifyBalanceChanged() {} },
         '../_lib/uploadSourceFile': { uploadSourceFile() { assert.fail('owned asset must not upload'); } },
         '../../lib/authClient': { getSession: () => ({ user: { id: 'owner' } }) },
-        '../_lib/useCatalog': { useCatalog: () => ({ models: [] }) },
+        '../_lib/useOwnerProofModels.js': { useOwnerProofCatalog: models => models },
+    '../_lib/useCatalog': { useCatalog: () => ({ models: [] }) },
     };
     const source = readFileSync('app/veyrnox/_components/Seedance25Actions.js', 'utf8');
     const code = ts.transpileModule(source, { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS } }).outputText;

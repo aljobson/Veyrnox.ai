@@ -53,18 +53,22 @@ export function BeatRegionView(props: Props) {
             hitSlop={{ left: 0, right: Math.max(0, 44 - width), top: 0, bottom: 0 }}
             style={[s.block, { width }, region.clipId ? s.midi : region.assetId ? s.audio : s.drums, selected && s.selected]}>
             <Text testID={`region-label-${region.id}`} pointerEvents="none" numberOfLines={2} variant="caption">{regionName(doc, region)}</Text>
+            <View pointerEvents="none" style={s.texture}>{Array.from({ length: 12 }, (_, index) =>
+                <View key={index} style={[s.textureBar, { height: 4 + (index * 7 % 13) }]} />)}</View>
         </View>
         {showHandles && <><Handle mode="trim" props={props} style={{ left: 0, top: 0 }} />
             <Handle mode="resize" props={props} style={{ left: width - 22, bottom: 0 }} /></>}
     </View>;
 }
 const sheets = themedStyles((p, _r, scheme) => ({
-    region: { position: 'absolute', top: ds.space.xs, height: 88 },
-    block: { minHeight: 88, height: '100%', borderWidth: 2, borderRadius: ds.radius.xs, backgroundColor: p.surface, paddingVertical: ds.space.xxl, overflow: 'hidden' },
+    region: { position: 'absolute', top: ds.space.xs, height: 56 },
+    block: { minHeight: 56, height: '100%', borderWidth: 2, borderRadius: ds.radius.xs, backgroundColor: p.surface, paddingVertical: ds.space.sm, paddingHorizontal: ds.space.sm, overflow: 'hidden' },
     selected: { borderColor: p.accent },
     drums: { borderColor: featureHue('iris', scheme).ink, backgroundColor: featureHue('iris', scheme).wash },
     audio: { borderColor: featureHue('sky', scheme).ink, backgroundColor: featureHue('sky', scheme).wash },
     midi: { borderColor: featureHue('rose', scheme).ink, backgroundColor: featureHue('rose', scheme).wash },
+    texture: { position: 'absolute', left: ds.space.sm, right: ds.space.sm, bottom: 5, height: 17, flexDirection: 'row', alignItems: 'flex-end', gap: 3, opacity: 0.35 },
+    textureBar: { width: 2, borderRadius: 1, backgroundColor: p.textSecondary },
     handleHit: { position: 'absolute', width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
     handle: { width: 24, height: 24, borderRadius: ds.radius.xs, backgroundColor: p.accent },
 }));

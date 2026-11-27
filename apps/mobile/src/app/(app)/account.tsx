@@ -161,9 +161,9 @@ export default function Account() {
             ) : null}
 
             <Section title={t('opt.settings')}>
-                {ACTIVE_LOCALES.length > 1 ? <ListRow icon="globe" title={t('language.title')} onPress={() => router.push('/language' as never)} /> : null}
-                {isAnalyticsEnabled() ? <ListRow icon="shieldCheck" title={t('analyticsConsent.choices')} onPress={() => router.push('/privacy-choices')} /> : null}
-                <ListRow icon="swatches" title={t('acct.appearance')} onPress={() => router.push('/appearance')} />
+                {ACTIVE_LOCALES.length > 1 ? <Row icon="globe" label={t('language.title')} onPress={() => router.push('/language' as never)} /> : null}
+                {isAnalyticsEnabled() ? <ListRow icon="shieldCheck" title={t('analyticsConsent.choices')} accessibilityRole="button" onPress={() => router.push('/privacy-choices')} /> : null}
+                <Row icon="swatches" label={t('acct.appearance')} onPress={() => router.push('/appearance')} />
             </Section>
 
             {billing !== 'off' ? (

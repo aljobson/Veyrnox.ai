@@ -294,12 +294,6 @@
     "ratio": 1.89
   },
   {
-    "id": "bestCut.auto",
-    "english": "Auto-detect",
-    "translation": "Detectar automáticamente",
-    "ratio": 2.18
-  },
-  {
     "id": "bestCut.tryAnyway",
     "english": "Try Anyway",
     "translation": "Probar de todos modos",
@@ -3409,9 +3403,9 @@
   },
   {
     "id": "editorSimple.aiEdit",
-    "english": "Quick tools",
+    "english": "AI Edit",
     "translation": "Herramientas rápidas",
-    "ratio": 1.82
+    "ratio": 2.86
   },
   {
     "id": "editorAi.stale",
@@ -3582,6 +3576,12 @@
     "ratio": 2
   },
   {
+    "id": "music.create.smart.structure",
+    "english": "Song structure",
+    "translation": "Estructura de la canción",
+    "ratio": 1.71
+  },
+  {
     "id": "music.create.advanced.auto",
     "english": "Auto",
     "translation": "Automático",
@@ -3730,6 +3730,12 @@
     "english": "Hot",
     "translation": "Ardiente",
     "ratio": 2.67
+  },
+  {
+    "id": "beat.home.empty",
+    "english": "No music edits yet",
+    "translation": "Aún no hay ediciones musicales",
+    "ratio": 1.67
   },
   {
     "id": "beat.pattern.on",
@@ -4119,12 +4125,6 @@
     "id": "musicPublication.listen",
     "english": "Shared song",
     "translation": "Canción compartida",
-    "ratio": 1.64
-  },
-  {
-    "id": "beatAi.targetStems",
-    "english": "Target stem",
-    "translation": "Aislar instrumento",
     "ratio": 1.64
   },
   {
@@ -4948,6 +4948,126 @@
     "english": "Face skin",
     "translation": "Piel de la cara",
     "ratio": 1.67
+  },
+  {
+    "id": "onboarding.notifications.now",
+    "english": "now",
+    "translation": "ahora",
+    "ratio": 1.67
+  },
+  {
+    "id": "projects.unfiled",
+    "english": "Unfiled",
+    "translation": "Sin archivar",
+    "ratio": 1.71
+  },
+  {
+    "id": "projects.folderName",
+    "english": "Folder name",
+    "translation": "Nombre de la carpeta",
+    "ratio": 1.82
+  },
+  {
+    "id": "editor.safeArea",
+    "english": "Safe-area preview",
+    "translation": "Vista previa del área segura",
+    "ratio": 1.65
+  },
+  {
+    "id": "editor.safeArea.off",
+    "english": "Off",
+    "translation": "Desactivada",
+    "ratio": 3.67
+  },
+  {
+    "id": "app.smartCut.draft.restore",
+    "english": "Restore setup",
+    "translation": "Restaurar configuración",
+    "ratio": 1.77
+  },
+  {
+    "id": "editorCaptionTools.stylePicker",
+    "english": "Caption preset",
+    "translation": "Preajuste de subtítulos",
+    "ratio": 1.64
+  },
+  {
+    "id": "editorCaptionTools.style.box",
+    "english": "Box",
+    "translation": "Recuadro",
+    "ratio": 2.67
+  },
+  {
+    "id": "editorCover.save",
+    "english": "Save",
+    "translation": "Guardar",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorCover.frames",
+    "english": "Cover frame choices",
+    "translation": "Opciones de fotograma de portada",
+    "ratio": 1.68
+  },
+  {
+    "id": "editorCover.scrub",
+    "english": "Cover frame",
+    "translation": "Fotograma de portada",
+    "ratio": 1.82
+  },
+  {
+    "id": "editorSimple.cut",
+    "english": "Cut",
+    "translation": "Cortar",
+    "ratio": 2
+  },
+  {
+    "id": "editorSimple.reportIssue",
+    "english": "Report Issue",
+    "translation": "Informar de un problema",
+    "ratio": 1.92
+  },
+  {
+    "id": "projects.smartCutBatch.open",
+    "english": "Open next",
+    "translation": "Abrir siguiente",
+    "ratio": 1.67
+  },
+  {
+    "id": "projects.smartCutBatch.complete",
+    "english": "Mark complete",
+    "translation": "Marcar como completado",
+    "ratio": 1.69
+  },
+  {
+    "id": "projects.smartCutBatch.fail",
+    "english": "Needs retry",
+    "translation": "Necesita otro intento",
+    "ratio": 1.91
+  },
+  {
+    "id": "projects.smartCutBatch.retry",
+    "english": "Retry",
+    "translation": "Reintentar",
+    "ratio": 2
+  },
+  {
+    "id": "projects.smartCutBatch.state.failed",
+    "english": "Needs retry",
+    "translation": "Necesita otro intento",
+    "ratio": 1.91
+  },
+  {
+    "id": "projectCloud.title",
+    "english": "Cloud sync",
+    "translation": "Sincronización en la nube",
+    "ratio": 2.5
+  },
+  {
+    "id": "projectCloud.error",
+    "english": "Could not change cloud sync.",
+    "translation": "No se pudo cambiar la sincronización en la nube.",
+    "ratio": 1.71
   },
   {
     "id": "musicAlbums.addTrack",

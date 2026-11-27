@@ -14,11 +14,18 @@ jest.mock('../src/components/ui', () => {
 let root: Root;
 beforeEach(() => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; setLocaleFromDevice(['en']); root = createRoot(); });
 afterEach(async () => { await act(async () => root.unmount()); });
-test('Video Language chips show the Language screen flags, Auto-detect none, labels stay plain', async () => {
-    await act(async () => root.render(<BestCutSettings />));
+test('transcription-language chips explain paid provider behavior and select Spanish', async () => {
+    const onChange = jest.fn();
+    await act(async () => root.render(<BestCutSettings onChange={onChange} />));
+    const rendered = root.container.queryAll(n => typeof n.props.children === 'string').map(n => n.props.children).join(' ');
+    expect(rendered).toContain(t('bestCut.language'));
+    expect(rendered).toContain(t('bestCut.languageHelp'));
+    expect(t('bestCut.languageHelp')).toMatch(/transcription service/i);
+    expect(t('bestCut.languageHelp')).toMatch(/may cost credits/i);
     const chips = root.container.queryAll(n => n.type === 'chip');
     expect(chips).toHaveLength(BEST_CUT_LANGUAGES.length + 1);
     const auto = chips.find(c => c.props.label === t('bestCut.auto'))!;
+    expect(auto.props.selected).toBe(true);
     expect(auto.queryAll(n => n.type === 'text' && String(n.props.testID ?? '').startsWith('best-cut-flag'))).toHaveLength(0);
     for (const code of BEST_CUT_LANGUAGES) {
         const chip = chips.find(c => c.props.label === t(`bestCut.language.${code}`))!;
@@ -28,6 +35,10 @@ test('Video Language chips show the Language screen flags, Auto-detect none, lab
         expect(chip.props.accessibilityLabel).toBeUndefined();
         expect(chip.props.label).not.toContain(flag.props.children);
     }
+    const spanish = chips.find(c => c.props.label === t('bestCut.language.es'))!;
+    await act(async () => spanish.props.onPress());
+    expect(onChange).toHaveBeenLastCalledWith({ captions: true, language: 'es' });
+    expect(spanish.props.selected).toBe(true);
 });
 test('the consent text prints the brand as the bold wordmark VEYRNOX.ai', () => {
     const parts = brandText(t('bestCut.consent')) as any[];

@@ -1,3 +1,4 @@
+import { ownerProofCandidate, ownerProofEligible, ownerProofCapability } from '../../../../lib/ownerProof.js';
 import { DEFAULT_MOTION_PROMPT } from '../../../../lib/additionalModelCapabilities.js';
 import { veoI2vFingerprint, replayVeoI2v } from '../../../../lib/veoI2vReplay.js';
 import { veoI2vAvailable } from '../../../../lib/veoI2vAdmission.js';
@@ -34,7 +35,7 @@ import { requestWaitUntil } from '../../../../lib/requestWaitUntil.js';
 import { resolveRouteSet } from '../../../../lib/supplierRoutesDispatch.js';
 import { NextResponse } from 'next/server';
 import { rpc, select, envConfig } from '../../../../packages/db/supabase-client.js';
-import { capabilityFor, declaredInputs, checkSource } from '../../../../lib/modelCapabilities.js';
+import { declaredInputs, checkSource } from '../../../../lib/modelCapabilities.js';
 import { withDerivedAspect } from '../../../../lib/crunKlingO1Reference.js';
 import { freeAllowanceOn as isFreeAllowanceOn, takeFreeJobDetailed } from '../../../../lib/freeJob.js';
 import { templateStartId } from '../../../../lib/templateStart.js';
@@ -65,6 +66,10 @@ export const RIGHTS_ATTESTATION_VERSION = 'terms-2026-11-07';
 // Catalog ids are lowercase slugs ('wan-2.5', 'veo-3.1-fast-kie'). Bounded
 // here so an unbounded string never reaches the PostgREST query string.
 const MODEL_ID_RE = /^[a-z0-9][a-z0-9.-]{0,63}$/;
+// Music generations have their own quote, candidate and durable dispatch
+// lifecycle. Letting these ids enter the generic gateway can debit a user and
+// submit to Suno without creating the delivery records the Music worker owns.
+const MUSIC_ONLY_MODEL_IDS = new Set(['ace-step', 'ace-step-1.5']);
 
 const MAX_REQUEST_BYTES = 512 * 1024;
 const UNIT_SECONDS = 5;
@@ -90,6 +95,39 @@ function priceFor(modelRow, inputs, record = null) {
 // Like the other admission switches, absent or anything except exact 'true' is off.
 const maxChargeEnabled = env => !!env && env.MAX_CHARGE_ENABLED === 'true';
 
+function generationRateRefusal(rl) {
+    if (!rl || typeof rl.ok !== 'boolean') {
+        // A null/odd body is not a pass; fail closed like a thrown RPC.
+        console.error('[generations] rate check returned no verdict');
+        return NextResponse.json({ error: 'rate_check_unavailable' }, { status: 503 });
+    }
+    if (rl.ok === false) {
+        if (rl.code === 'RATE_LIMITED') {
+            const retryAfter = Math.max(1, Math.min(600, Number(rl.retry_after_seconds) || 60));
+            return new NextResponse(
+                JSON.stringify({ error: 'rate_limited', limit: rl.limit, count: rl.count, retry_after_seconds: retryAfter }),
+                {
+                    status: 429,
+                    headers: {
+                        'content-type': 'application/json',
+                        'retry-after': String(retryAfter),
+                    },
+                }
+            );
+        }
+        if (rl.code === 'USER_NOT_FOUND') {
+            return NextResponse.json({ error: 'user_not_provisioned' }, { status: 409 });
+        }
+        // ADR-0327: an operator turned AI off for this account.
+        if (rl.code === 'AI_DISABLED') {
+            return NextResponse.json({ error: 'ai_disabled' }, { status: 403 });
+        }
+        const rlCode = rl.code ? String(rl.code).toLowerCase() : 'rate_check_failed';
+        return NextResponse.json({ error: rlCode }, { status: 400 });
+    }
+    return null;
+}
+
 export async function POST(req) {
     const authId = req.headers.get('x-veyrnox-auth-id');
     if (!authId) return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
@@ -111,15 +149,36 @@ export async function POST(req) {
     const maxCharge = maxChargeEnabled(process.env) ? requestedMaxCharge : undefined;
     let inputs = body && body.inputs;
     if (typeof modelId !== 'string' || !MODEL_ID_RE.test(modelId)) return NextResponse.json({ error: 'model_id_required' }, { status: 400 });
+    if (MUSIC_ONLY_MODEL_IDS.has(modelId)) {
+        return NextResponse.json({ error: 'music_generation_required' }, { status: 409 });
+    }
+    let proofRate, proofEligible = false, ownerProof = false;
+    const proofCandidate = (seedance25Offer(modelId) || (veoI2vOffer(modelId) && readGenerationSources(body).references?.length > 0))
+        && ownerProofCandidate(req, { modelId });
+    // Dark Seedance already has a rate boundary for valid replay-shaped requests.
+    // Other offers keep their existing validation and rate-check ordering below.
+    if (proofCandidate && seedance25Offer(modelId) && !seedance25Open(modelId)
+        && typeof idempotencyKey === 'string' && IDEMPOTENCY_RE.test(idempotencyKey)
+        && !SEEDANCE25_TEMPLATE_KEYS.some(key => Object.hasOwn(body, key))) {
+        try { proofRate = await rpc('check_generation_rate_limit', {
+            p_auth_id: authId, p_limit_per_window: RATE_LIMIT_PER_WINDOW, p_window_seconds: RATE_WINDOW_SECONDS,
+        }, cfg) ?? {}; } catch { proofRate = {}; }
+        proofEligible = await ownerProofEligible(req, cfg, { modelId });
+        ownerProof = proofEligible && proofRate?.ok === true;
+        if (proofEligible) {
+            const refusal = generationRateRefusal(proofRate);
+            if (refusal) return refusal;
+        }
+    }
     // A private row is reached only through swap admission below, never by naming it.
     if (isPrivateModelId(modelId)) return NextResponse.json({ error: 'model_not_found' }, { status: 404 });
     // A dark offer reveals no input contract. Only an owned, fingerprint-matched
     // existing job may bypass this gate; rate-limit that lookup before DB reads.
-    if (!seedance25Open(modelId)) {
+    if (!ownerProof && !seedance25Open(modelId)) {
         if (typeof idempotencyKey === 'string' && IDEMPOTENCY_RE.test(idempotencyKey)
             && !SEEDANCE25_TEMPLATE_KEYS.some(key => Object.hasOwn(body, key))) {
             try {
-                const rate = await rpc('check_generation_rate_limit', {
+                const rate = proofRate ?? await rpc('check_generation_rate_limit', {
                     p_auth_id: authId, p_limit_per_window: RATE_LIMIT_PER_WINDOW, p_window_seconds: RATE_WINDOW_SECONDS,
                 }, cfg);
                 if (rate?.ok === true) {
@@ -167,7 +226,7 @@ export async function POST(req) {
         // key format was validated above. Rate-limit even rejected attempts before
         // either replay read; malformed templates must not bypass the shared gate.
         try {
-            const rate = await rpc('check_generation_rate_limit', {
+            const rate = proofRate ?? await rpc('check_generation_rate_limit', {
                 p_auth_id: authId,
                 p_limit_per_window: RATE_LIMIT_PER_WINDOW,
                 p_window_seconds: RATE_WINDOW_SECONDS,
@@ -214,40 +273,14 @@ export async function POST(req) {
     // The same number goes to admission below, where the count is taken under the row lock.
     let effectiveLimit = RATE_LIMIT_PER_WINDOW;
     try {
-        const rl = await rpc('check_generation_rate_limit', {
+        const rl = proofRate ?? await rpc('check_generation_rate_limit', {
             p_auth_id: authId,
             p_limit_per_window: RATE_LIMIT_PER_WINDOW,
             p_window_seconds: RATE_WINDOW_SECONDS,
         }, cfg);
-        if (!rl || typeof rl.ok !== 'boolean') {
-            // A null/odd body is not a pass; fail closed like a thrown RPC.
-            console.error('[generations] rate check returned no verdict');
-            return NextResponse.json({ error: 'rate_check_unavailable' }, { status: 503 });
-        }
-        if (rl.ok === false) {
-            if (rl.code === 'RATE_LIMITED') {
-                const retryAfter = Math.max(1, Math.min(600, Number(rl.retry_after_seconds) || 60));
-                return new NextResponse(
-                    JSON.stringify({ error: 'rate_limited', limit: rl.limit, count: rl.count, retry_after_seconds: retryAfter }),
-                    {
-                        status: 429,
-                        headers: {
-                            'content-type': 'application/json',
-                            'retry-after': String(retryAfter),
-                        },
-                    }
-                );
-            }
-            if (rl.code === 'USER_NOT_FOUND') {
-                return NextResponse.json({ error: 'user_not_provisioned' }, { status: 409 });
-            }
-            // ADR-0327: an operator turned AI off for this account.
-            if (rl.code === 'AI_DISABLED') {
-                return NextResponse.json({ error: 'ai_disabled' }, { status: 403 });
-            }
-            const rlCode = rl.code ? String(rl.code).toLowerCase() : 'rate_check_failed';
-            return NextResponse.json({ error: rlCode }, { status: 400 });
-        }
+        proofRate = rl;
+        const refusal = generationRateRefusal(rl);
+        if (refusal) return refusal;
         const granted = Number(rl.limit);
         if (Number.isInteger(granted) && granted >= 1 && granted < RATE_LIMIT_PER_WINDOW) effectiveLimit = granted;
     } catch (err) {
@@ -255,6 +288,11 @@ export async function POST(req) {
         // rate check must not turn into an unlimited submission path.
         console.error('[generations] rate check errored:', err);
         return NextResponse.json({ error: 'rate_check_unavailable' }, { status: 503 });
+    }
+
+    if (proofCandidate && !proofEligible) {
+        proofEligible = await ownerProofEligible(req, cfg, { modelId });
+        ownerProof = proofEligible && proofRate?.ok === true;
     }
 
     if (veoI2vHash) {
@@ -265,7 +303,7 @@ export async function POST(req) {
     if (seedance25Hash) {
         const replay = await replaySeedance25(authId, modelId, idempotencyKey, seedance25Hash, cfg);
         if (replay) return NextResponse.json(replay.body, { status: replay.status });
-        if (!seedance25Open(modelId)) return NextResponse.json({ error: 'model_not_found' }, { status: 404 });
+        if (!ownerProof && !seedance25Open(modelId)) return NextResponse.json({ error: 'model_not_found' }, { status: 404 });
     }
 
     if (hasTemplateSwap && (!templateSwapSwitchOn(process.env) || typeof body.template_swap !== 'string'
@@ -346,7 +384,7 @@ export async function POST(req) {
         return NextResponse.json({ error: 'catalog_lookup_failed' }, { status: 502 });
     }
     // The long-template Seedance offer is refused, before any charge, while its runtime key is off (lib/seedanceLongTemplates.js).
-    if (!modelRow || !modelRow.active || !seedanceLongModelOpen(modelRow.id)) return NextResponse.json({ error: 'model_not_found' }, { status: 404 });
+    if (!modelRow || (!ownerProof && !modelRow.active) || !seedanceLongModelOpen(modelRow.id)) return NextResponse.json({ error: 'model_not_found' }, { status: 404 });
     // ADR-0058 decision 9: Cloudflare supplies the visitor country. Keep US
     // requests off BytePlus until its written end-user ruling is recorded.
     if (modelRow.provider === 'byteplus' && req.headers.get('cf-ipcountry')?.trim().toUpperCase() === 'US') {
@@ -364,15 +402,15 @@ export async function POST(req) {
     // No capability record = no known contract for this endpoint: refuse rather
     // than forward inputs the provider may bill differently for.
     const hasVeoSource = !!veoI2vOffer(modelId) && references.references.length > 0;
-    if (hasVeoSource && !veoI2vEnabled(modelId)) return NextResponse.json({ error: 'source_slot_invalid' }, { status: 400 });
-    if (hasVeoSource && !await veoI2vAvailable(modelRow, cfg, { routeSet: { own: ownRoute, routes: offerRoutes } })) {
+    if (hasVeoSource && !ownerProof && !veoI2vEnabled(modelId)) return NextResponse.json({ error: 'source_slot_invalid' }, { status: 400 });
+    if (hasVeoSource && !await veoI2vAvailable(modelRow, cfg, { ownerProof, routeSet: { own: ownRoute, routes: offerRoutes } })) {
         return NextResponse.json({ error: 'image_generation_unavailable', retry_after_seconds: 60 }, { status: 503, headers: { 'retry-after': '60' } });
     }
     // Check before declaredInputs drops undeclared controls on these deliberately non-strict records.
     if (hasVeoSource && inputs.resolution !== undefined && inputs.resolution !== '720p') {
         return NextResponse.json({ error: 'resolution_not_supported' }, { status: 400 });
     }
-    const publicRecord = capabilityFor(modelRow.provider_endpoint);
+    const publicRecord = ownerProofCapability(modelRow, ownerProof);
     const record = templateSwap && publicRecord ? templateSwapCapability(publicRecord, templateSwap, swapPeople, swapImages) : publicRecord;
     if (!record || record.provider !== modelRow.provider) {
         console.error('[generations] no capability record for', modelRow.id, modelRow.provider_endpoint);
@@ -384,7 +422,7 @@ export async function POST(req) {
         return NextResponse.json({ error: 'inputs_key_not_allowed' }, { status: 400 });
     }
     if (record.outputStems && !editorFeatureEnabled('EDITOR_AUDIO_STEMS_ENABLED')) return NextResponse.json({ error: 'audio_stems_unavailable' }, { status: 503 });
-    if (modelRow.gated_flag) return NextResponse.json({ error: 'model_gated' }, { status: 402 });
+    if (!ownerProof && modelRow.gated_flag) return NextResponse.json({ error: 'model_gated' }, { status: 402 });
     for (const key of ['output_resolution', 'audio_enabled', ...SPEECH_CONTROL_KEYS]) {
         if (inputs[key] !== undefined && !Object.hasOwn(record.inputs, key)) {
             return NextResponse.json({ error: `inputs_key_not_allowed:${key}` }, { status: 400 });
@@ -531,7 +569,7 @@ export async function POST(req) {
     // real template that belongs to this model, it never reaches a provider (the provider gets storedInputs / modelInputs below),
     // and a bad or missing one is simply ignored.
     const presetId = swap || templateClip || templateSwap ? null : templateStartId(body && body.preset, modelId);
-    const jobInputs = { ...storedInputs, ...(presetId ? { preset_id: presetId } : {}),
+    const jobInputs = { ...storedInputs, ...(ownerProof ? { owner_proof: true } : {}), ...(presetId ? { preset_id: presetId } : {}),
         ...(templateCheck.metadata ? { template_fidelity: { ...templateCheck.metadata, request_hash: requestHash } } : {}) };
     // Only authenticated ownership + key proves a replay. Malformed reads are unknown.
     async function existingJob() {
@@ -554,7 +592,7 @@ export async function POST(req) {
     let allowanceKind = 'none';
     // ADR-0069: allowance and zero-credit job are atomic. No allowance falls through to paid debit;
     // after a lost acknowledgement ledger_debit finds the existing job by key.
-    if (freeAllowanceOn && Number(modelRow.free_allowance_per_day) > 0) {
+    if (!ownerProof && freeAllowanceOn && Number(modelRow.free_allowance_per_day) > 0) {
         const allowance = await takeFreeJobDetailed({
             cfg, authId, userId, key: idempotencyKey, modelId: templateSwap ? modelRow.id : modelId, inputs: jobInputs,
             limit: effectiveLimit, windowSeconds: RATE_WINDOW_SECONDS,
