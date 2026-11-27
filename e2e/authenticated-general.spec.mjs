@@ -34,20 +34,21 @@ async function open(fixture, page, path, heading) {
   await expect(title).toBeVisible();
 }
 
-test('Dashboard authenticated balance, template pagination and filters remain read-only', async ({ page }) => {
+test('Dashboard authenticated balance and unified template catalogue remain read-only', async ({ page }) => {
   const fixture = await fixtureFor(page);
-  await open(fixture, page, '/app', 'Explore presets');
+  await open(fixture, page, '/app', 'Templates');
   await expect(page.getByTestId('app-credit-balance')).toBeVisible();
-  // 71 listed video templates without the long-prompt key (20 Nov 2026: 45 over the Kling 3.0 cap hidden; 21 Nov 2026: three supercar refuels and five clip-dependent prompts hidden), so one page of 50 holds them all and there is no "Show more".
-  await expect(page.locator('#preset-gallery-results > a')).toHaveCount(50);
-  await page.getByRole('button', { name: 'Show more templates', exact: true }).click();
-  await expect(page.locator('#preset-gallery-results > a')).toHaveCount(61);
-  await expect(page.getByRole('button', { name: 'Show more templates', exact: true })).toHaveCount(0);
-  const filters = page.getByRole('group', { name: 'Filter templates', exact: true });
-  await filters.getByRole('button', { name: 'New', exact: true }).click();
-  await expect(filters.getByRole('button', { name: 'New', exact: true })).toHaveAttribute('aria-pressed', 'true');
-  await filters.getByRole('button', { name: 'All', exact: true }).click();
-  await expect(page.locator('#preset-gallery-results > a')).toHaveCount(50);
+  const catalog = page.getByTestId('template-catalog');
+  await expect(catalog).toBeVisible();
+  await expect(page.getByTestId('crun-template-count')).toHaveText('1,088 templates across Kling, Seedance and Vidu');
+  await expect(catalog.getByRole('tab', { name: 'Kling', exact: true })).toHaveAttribute('aria-selected', 'true');
+  await expect(catalog.getByRole('heading', { name: /Kling templates/, exact: true })).toBeVisible();
+  await catalog.getByRole('tab', { name: 'ByteDance / Seedance', exact: true }).click();
+  await expect(catalog.getByRole('tab', { name: 'ByteDance / Seedance', exact: true })).toHaveAttribute('aria-selected', 'true');
+  await expect(catalog.getByRole('heading', { name: 'ByteDance / Seedance templates', exact: true })).toBeVisible();
+  await catalog.getByRole('tab', { name: 'Veo', exact: true }).click();
+  await expect(catalog.getByRole('tab', { name: 'Veo', exact: true })).toHaveAttribute('aria-selected', 'true');
+  await expect(catalog.getByRole('heading', { name: 'Veo templates', exact: true })).toBeVisible();
   expect(writes(fixture)).toEqual([]);
 });
 
