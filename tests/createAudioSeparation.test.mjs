@@ -31,6 +31,7 @@ test('generic Create entry points contain image and video, not audio', () => {
   const mobileCreate = read('apps/mobile/src/app/(app)/(tabs)/create.tsx');
   const mobileTemplates = read('apps/mobile/src/app/(app)/create/presets.tsx');
   const mobileHome = read('apps/mobile/src/app/(app)/(tabs)/index.tsx');
+  const authenticatedMediaQa = read('e2e/authenticated-media.spec.mjs');
   assert.match(priceSlip, /m\.kind === 'image' \|\| m\.kind === 'video'/);
   assert.match(priceSlip, /\['video', 'image'\]/);
   assert.doesNotMatch(createGoals.match(/CREATE_GOALS = \[[\s\S]*?\];/)?.[0] ?? '', /audio|all/);
@@ -41,6 +42,8 @@ test('generic Create entry points contain image and video, not audio', () => {
   assert.match(mobileHome, /presetKind\(p\) === 'audio'\)[\s\S]*?audioTemplateHref/);
   assert.match(mobileTemplates, /legacyAudio[\s\S]*?router\.replace\('\/audio'\)/);
   assert.match(mobileTemplates, /openAudio = \(a: AudioTemplate\) => router\.push\(audioTemplateHref\(a\)\)/);
+  assert.doesNotMatch(authenticatedMediaQa, /create-goal-audio/);
+  assert.match(authenticatedMediaQa, /create-goal-video/);
 });
 
 test('the Create brief keeps files, aspect, count, dictation, prompt help and templates', () => {
