@@ -1,4 +1,3 @@
-import { passkeyGate } from '../lib/passkeys';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -81,6 +80,7 @@ export default function SignIn() {
                         {t('signIn.ready')}
                     </Text>
                 ) : null}
+                <Button variant="tertiary" icon="key" label={t('passkey.signIn')} disabled={blocked} onPress={() => router.push('/passkey')} />
                 <AuthProviderButton
                     provider="apple"
                     consent={agreed}
@@ -97,7 +97,6 @@ export default function SignIn() {
                         if (!blocked) router.push('/email');
                     }}
                 />
-                {passkeyGate() ? <Button variant="tertiary" icon="key" label={t('passkey.signIn')} disabled={blocked} onPress={() => router.push('/passkey')} /> : null}
                 {!compact && DEV_MOCK ? (
                     <Button
                         variant="tertiary"
