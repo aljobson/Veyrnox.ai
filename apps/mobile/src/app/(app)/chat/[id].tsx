@@ -100,7 +100,6 @@ export default function Conversation() {
         }
         router.dismissTo({ pathname: '/music/create', params: { lyricHandoff } });
     }
-
     async function toggleSkill(skill: Skill) {
         if (musicSeed || skillBusy.current) return;
         const ids = selectedIds.includes(skill.id) ? selectedIds.filter(id => id !== skill.id) : [...selectedIds, skill.id];
