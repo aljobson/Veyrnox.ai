@@ -5112,6 +5112,12 @@
     "ratio": 2.43
   },
   {
+    "id": "music.lyricAssistant.title",
+    "english": "Lyricist",
+    "translation": "Автор текстов",
+    "ratio": 1.63
+  },
+  {
     "id": "studioAssistant.apply",
     "english": "Apply local edit",
     "translation": "Применить локальное изменение",

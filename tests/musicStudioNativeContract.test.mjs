@@ -50,6 +50,20 @@ test('add track presents compact inline sources, keeps library separate and keep
   assert.doesNotMatch(instrumentTray, /audition|icon="play"/);
 });
 
+test('native Studio catalogs load when the iPhone runtime omits Intl.PluralRules', async () => {
+  const descriptor = Object.getOwnPropertyDescriptor(Intl, 'PluralRules');
+  try {
+    Object.defineProperty(Intl, 'PluralRules', { configurable: true, writable: true, value: undefined });
+    const fallback = await import(`../lib/i18n/musicStudioAssistantTranslations.mjs?no-plural-rules=${Date.now()}`);
+    assert.equal(fallback.MUSIC_STUDIO_ASSISTANT_NATIVE_TRANSLATIONS.en['studioAssistant.tracks.one'], '{count} track in this beat.');
+    assert.equal(fallback.MUSIC_STUDIO_ASSISTANT_NATIVE_TRANSLATIONS.ar['studioAssistant.tracks.zero'], 'لا توجد مسارات في هذا الإيقاع ({count}).');
+    assert.equal(fallback.MUSIC_STUDIO_ASSISTANT_NATIVE_TRANSLATIONS.ja['studioAssistant.tracks.one'], undefined);
+  } finally {
+    if (descriptor) Object.defineProperty(Intl, 'PluralRules', descriptor);
+    else delete Intl.PluralRules;
+  }
+});
+
 test('native mute and solo preserve the live engine and refusal result', () => {
   assert.match(screen, /const applied = apply\(operation, announce, \{ \.\.\.\(key \? \{ key \} : \{\}\), liveMix: true \}\)/);
   assert.match(screen, /if \(!applied\) return false/);

@@ -19,7 +19,7 @@ import { frameLayers, resolvePictures, paintFrame, timelineSize } from './editor
 export { EXPORT_HEIGHTS, outputSize } from './editorRender.mjs';
 import { usesWebKit, canEncodeSafariVideo, createSafariCanvasSource } from './editorSafariEncoder.mjs';
 import { createSafariAudioSource } from './editorSafariAudio.mjs';
-import { addVideoFrameWithTimeout } from './editorExportEncoder.mjs';
+import { addVideoFrameWithTimeout, cancelExportWithTimeout, finalizeExportWithTimeout } from './editorExportEncoder.mjs';
 
 import { sequenceTransitionAfter } from './editorSequence.mjs';
 import { SAMPLE_RATE, mixAudio } from './editorAudio.mjs';
@@ -66,7 +66,7 @@ export async function exportBlocker(size = { width: 1280, height: 720 }, options
  * Render the timeline to an MP4 Blob. `blobs` maps media id to the file's bytes. `onProgress({ stage, done, total })`.
  * Rejects with an AbortError when `signal` aborts; any partial output is discarded.
  */
-export async function exportTimeline(tl, blobs, { signal = new AbortController().signal, height = 720, frameRate = 30, format = 'mp4', quality = 'standard', bitrate = EXPORT_BITRATES[quality], fitMode = 'contain', hardwareAcceleration = 'prefer-software', videoFrameTimeoutMs = 30000, onProgress = () => {}, onPreview = null } = {}) {
+export async function exportTimeline(tl, blobs, { signal = new AbortController().signal, height = 720, frameRate = 30, format = 'mp4', quality = 'standard', bitrate = EXPORT_BITRATES[quality], fitMode = 'contain', hardwareAcceleration = 'prefer-software', videoFrameTimeoutMs = 30000, finalizeTimeoutMs = 30000, onProgress = () => {}, onPreview = null } = {}) {
     if (signal.aborted) throw abortError();
     if(!Number.isFinite(bitrate)||bitrate<128000||bitrate>32000000)throw new Error('Choose a supported video bitrate.');
     const total = totalFrames(tl);
@@ -156,11 +156,11 @@ export async function exportTimeline(tl, blobs, { signal = new AbortController()
         await flush(mix ? mix.length : 0);
         video.close();
         await audio?.close();
-        await output.finalize();
+        await finalizeExportWithTimeout(() => output.finalize(), { signal, timeoutMs: finalizeTimeoutMs });
         onProgress({ stage: 'done', done: total, total });
         return new Blob([output.target.buffer], { type: format === 'mov' ? 'video/quicktime' : 'video/mp4' });
     } catch (error) {
-        if (output) await output.cancel().catch(() => {});
+        if (output) await cancelExportWithTimeout(() => output.cancel()).catch(() => {});
         throw signal.aborted ? abortError() : error;
     } finally {
         video?.dispose?.();
