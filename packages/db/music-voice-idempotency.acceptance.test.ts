@@ -59,9 +59,60 @@ describe('music voice state-change idempotency', { skip: !DATABASE_URL && 'DATAB
       if (!(await one("SELECT to_regclass('public.editor_library_renders') IS NOT NULL AS ready")).ready) {
         await client.query('CREATE TABLE public.editor_library_renders (owner_id UUID, r2_key TEXT)');
       }
+      if (!(await one("SELECT to_regclass('public.asset_reap_queue') IS NOT NULL AS ready")).ready) {
+        await client.query(`CREATE TABLE public.asset_reap_queue (
+          r2_key TEXT PRIMARY KEY,
+          not_before TIMESTAMPTZ NOT NULL DEFAULT now()
+        )`);
+      }
+      if (!(await one("SELECT to_regclass('public.upload_reservations') IS NOT NULL AS ready")).ready) {
+        await client.query(`CREATE TABLE public.upload_reservations (
+          r2_key TEXT PRIMARY KEY,
+          user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+          size_bytes BIGINT NOT NULL,
+          put_expires_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp() + interval '16 minutes'
+        )`);
+      }
+      if (!(await one("SELECT to_regclass('public.admin_roles') IS NOT NULL AS ready")).ready) {
+        await client.query(`CREATE TABLE public.admin_roles (
+          user_id UUID PRIMARY KEY REFERENCES public.users(id) ON DELETE RESTRICT,
+          role TEXT NOT NULL
+        )`);
+      }
       await client.query(`ALTER TABLE public.users
+        ADD COLUMN IF NOT EXISTS is_admin BOOLEAN NOT NULL DEFAULT false,
         ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ,
         ADD COLUMN IF NOT EXISTS frozen_at TIMESTAMPTZ`);
+      if (!(await one("SELECT to_regprocedure('public.admin_require_permission(text,text)') IS NOT NULL AS ready")).ready) {
+        await client.query(`CREATE FUNCTION public.admin_require_permission(p_auth_id TEXT,p_permission TEXT)
+          RETURNS VOID LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $function$
+          BEGIN
+            IF NOT EXISTS (
+              SELECT 1 FROM public.users u JOIN public.admin_roles r ON r.user_id=u.id
+              WHERE u.auth_id=p_auth_id AND u.is_admin
+                AND p_permission=ANY(public.admin_role_permissions(r.role))
+            ) THEN RAISE EXCEPTION 'permission_denied' USING ERRCODE='42501'; END IF;
+          END $function$`);
+      }
+      if (!(await one("SELECT to_regprocedure('public.admin_lock_mutation(uuid,text,text,timestamptz)') IS NOT NULL AS ready")).ready) {
+        await client.query(`CREATE FUNCTION public.admin_lock_mutation(
+          p_auth_id UUID,p_permission TEXT,p_aal TEXT,p_mfa_at TIMESTAMPTZ
+        ) RETURNS UUID LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $function$
+          DECLARE actor UUID; BEGIN
+            PERFORM public.admin_require_permission(p_auth_id::text,p_permission);
+            IF p_aal<>'aal2' OR p_mfa_at IS NULL OR NOT isfinite(p_mfa_at)
+              OR p_mfa_at NOT BETWEEN clock_timestamp()-interval '300 seconds' AND clock_timestamp()+interval '5 seconds'
+              THEN RAISE EXCEPTION 'mfa_required' USING ERRCODE='P0001'; END IF;
+            SELECT id INTO actor FROM public.users
+              WHERE auth_id=p_auth_id::text AND is_admin AND deleted_at IS NULL AND frozen_at IS NULL;
+            IF actor IS NULL THEN RAISE EXCEPTION 'not_admin' USING ERRCODE='42501'; END IF;
+            RETURN actor;
+          END $function$`);
+      }
+      if (!(await one("SELECT to_regprocedure('public.telemetry_path_allowed(text)') IS NOT NULL AS ready")).ready) {
+        await client.query(`CREATE FUNCTION public.telemetry_path_allowed(p_path TEXT)
+          RETURNS BOOLEAN LANGUAGE sql IMMUTABLE SET search_path='' AS $function$ SELECT false $function$`);
+      }
       const sql = (await readFile(new URL('./schema/supabase/0623_music_voice_verification.sql', import.meta.url), 'utf8'))
         .replace(/^BEGIN;\s*$/m, '').replace(/^COMMIT;\s*$/m, '');
       await client.query(sql);
