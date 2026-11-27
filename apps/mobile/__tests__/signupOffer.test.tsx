@@ -1,10 +1,12 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'test-renderer';
+import { StyleSheet } from 'react-native';
 import { SignupOffer } from '../src/components/SignupOffer';
 import { HARD_PAYWALL_STARTER_CREDITS } from '../src/lib/hardPaywall';
 import { creditsCardKeys } from '../src/lib/firstRun';
 import { SIGNUP_FREE_CREDITS, signupOfferCopy } from '../src/lib/signupOffer';
 import { plural, t } from '../src/lib/i18n';
+import { VIVID_HUES, vividHue } from '../src/theme';
 
 const flag = process.env.EXPO_PUBLIC_HARD_PAYWALL_ENABLED;
 let root: Root;
@@ -39,4 +41,11 @@ test('the rendered offer follows the hard paywall switch', async () => {
     delete process.env.EXPO_PUBLIC_HARD_PAYWALL_ENABLED;
     await act(async () => root.render(<SignupOffer />));
     expect(texts()).toContain(t('signIn.offer.body'));
+});
+
+test('the offer is the login screen vivid focal card', async () => {
+    await act(async () => root.render(<SignupOffer />));
+    const card = root.container.queryAll(node => node.props.accessibilityRole === 'summary')[0];
+    const vividFills = VIVID_HUES.map(hue => vividHue(hue, 'dark').fill);
+    expect(vividFills).toContain(StyleSheet.flatten(card.props.style).backgroundColor);
 });

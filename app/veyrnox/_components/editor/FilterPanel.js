@@ -35,5 +35,10 @@ export function FilterPanel({ tl, selected, selection = [], disabled, apply }) {
             <Button size="sm" variant="ghost" disabled={disabled || !!problem} onClick={() => apply(timeline => resetFilterGrade(timeline, targets))}>{t("app.editor.filters.reset")}</Button>
             <p className="text-xs text-vx-fg-muted">{t("app.editor.filters.help")}</p>
         </div>
+        <div className="space-y-2 border-t border-vx-border pt-3">
+            <h3 className="text-xs font-bold">{t('app.photoStudio.title')}</h3>
+            <p className="text-xs text-vx-fg-muted">{t('app.photoStudio.intro')}</p>
+            <a className="inline-flex min-h-10 items-center rounded-lg border border-vx-border px-3 text-xs font-bold text-vx-accent" href="/app/photo-studio">{t('app.photoStudio.enable')}</a>
+        </div>
     </section>;
 }

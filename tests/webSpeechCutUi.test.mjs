@@ -12,9 +12,40 @@ test('the analysis panel shows the price and the processor before any charge and
   const panel = read('app/veyrnox/_components/SmartCutAnalyse.js');
   assert.match(panel, /app\.smartCut\.analyse\.confirm/);
   assert.match(panel, /app\.smartCut\.analyse\.privacy/);
+  assert.match(panel, /app\.smartCut\.analyse\.language/);
+  assert.match(panel, /language \}\)/);
+  assert.match(panel, /analysisKey = \(jobId, selectedLanguage\) => JSON\.stringify\(\[jobId, selectedLanguage\]\)/);
+  assert.match(panel, /completed\.has\(analysisKey\(clip\.job_id, language\)\)/);
+  assert.match(panel, /setCompleted\(\(value\) => new Set\(value\)\.add\(keyId\)\)/);
   assert.match(panel, /onClick=\{analyseAll\}/);
   // The quote is read on mount; nothing may start a paid request without the confirm click.
   assert.doesNotMatch(panel, /useEffect\([^)]*startSpeech/s);
+});
+
+test('accepted analysis reports explicit queued, transcribing, reconnecting and checking stages', () => {
+  const panel = read('app/veyrnox/_components/SmartCutAnalyse.js');
+  assert.match(panel, /onProgress: \(stage\)/);
+  assert.match(panel, /data-smart-cut-stage=\{run\.stage\}/);
+  for (const stage of ['queued', 'transcribing', 'retrying', 'checking']) {
+    assert.ok(messages[`app.smartCut.analyse.stage.${stage}`], stage);
+  }
+});
+
+test('mobile progress uses one privacy-minimal OS card without prompting for permission', () => {
+  const progress = read('apps/mobile/src/lib/smartCutProgressNotification.ts');
+  const card = read('apps/mobile/src/components/smart-cut/SmartCutAnalysisCard.tsx');
+  const push = read('apps/mobile/src/lib/push.ts');
+  assert.match(progress, /SMART_CUT_PROGRESS_ID = 'veyrnox-smart-cut-progress'/);
+  assert.match(progress, /getPermissionsAsync/);
+  assert.doesNotMatch(progress, /requestPermissionsAsync/);
+  assert.match(progress, /sticky: true/);
+  assert.match(progress, /data: \{ type: 'smart-cut' \}/);
+  assert.match(progress, /stage === 'retrying'[\s\S]*'editorSpeech\.retrying'/);
+  assert.doesNotMatch(progress, /clip\.label|jobId|transcript/);
+  assert.match(card, /progressNotification\.current\?\.update/);
+  assert.match(card, /progressNotification\.current\?\.complete/);
+  assert.match(card, /t\(smartCutProgressStageKey\(progressStage\)\)/);
+  assert.match(push, /smartCutRouteFromPush/);
 });
 
 test('the edit sheet hands finished analyses to the planner and the planner stays free', () => {
@@ -36,7 +67,7 @@ test('every analyse message key the code can ask for exists in English', () => {
   for (const code of ['source_too_long', 'duration_mismatch', 'price_changed', 'speech_cut_unavailable', 'insufficient_balance', 'poll_timeout', 'x']) {
     assert.ok(messages[speechErrorKey({ code })], code);
   }
-  for (const key of ['title', 'body', 'privacy', 'price', 'confirm', 'checking', 'running', 'done', 'tooLong', 'noSpeech', 'retry', 'unavailable', 'refunded']) {
+  for (const key of ['title', 'body', 'privacy', 'price', 'confirm', 'checking', 'running', 'done', 'tooLong', 'noSpeech', 'retry', 'unavailable', 'refunded', 'language', 'languageAuto', 'languageHelp']) {
     assert.ok(messages[`app.smartCut.analyse.${key}`], key);
   }
   assert.ok(messages['app.library.smartCutThis']);

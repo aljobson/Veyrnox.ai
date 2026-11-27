@@ -23,6 +23,8 @@ describe('development mock parity', () => {
         '/api/v1/cinema/voting',
         '/api/v1/cinema/story-polls',
         '/api/v1/cinema/progress',
+        '/api/v1/music/entitlements',
+        '/api/v1/music/drafts/custom',
     ])('serves %s', (route) => {
         expect(source).toContain(route);
     });
@@ -43,6 +45,16 @@ describe('development mock parity', () => {
         expect(source).toContain("kind: 'text-to-image'");
         expect(source).toContain("kind: 'text-to-video'");
         expect(source).toContain("created: Date.now() - 20_000");
+    });
+
+    test('keeps the native Music contract and Lyricist reply fixture', () => {
+        expect(source).toContain('Development-only native Music contract');
+        expect(source).toContain('body.revision !== state.musicDraft.revision');
+        expect(source).toContain('features: { albums: false, inspiration: false, studioChat: false, dailyChallenge: false, persistentQueue: false }');
+        expect(source).toContain("requestText.includes('BEGIN REVISED LYRICS')");
+        expect(source).toContain("requestText.includes('END REVISED LYRICS')");
+        expect(source).not.toContain("path === '/api/v1/music/quote'");
+        expect(source).toContain("path === '/api/v1/music/generations'");
     });
 });
 

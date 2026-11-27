@@ -114,7 +114,7 @@ export function MfaCard() {
     const intro = failed ? t('acct.mfa.unavailable') : !profile ? t('acct.mfa.loading') : state === 'none' ? t('acct.mfa.intro') : t('acct.mfa.enabled');
 
     return (
-        <Card title={t('acct.mfa.title')} help={intro}>
+        <Card title={t('acct.mfa.title')} help={intro} icon="shieldCheck" hue="purple">
             {!profile && !failed ? <ActivityIndicator color={styles.accent.color} accessibilityLabel={t('acct.mfa.loading')} /> : null}
             {failed ? <Button variant="tertiary" label={t('acct.mfa.retry')} onPress={() => void load()} /> : null}
 

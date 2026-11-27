@@ -142,7 +142,10 @@ test('web finished warning names Landscape 1280x768 when 16:9 was requested', as
 test('applying a plan can change the shape anchor; planning blocks but Undo restores the snapshot', async () => {
     const sheet = hooks(), planner = hooks();
     const common = { '../../../components/I18nProvider': { useI18n: () => ({ t: key => key, locale: 'en' }) },
-        '../../../lib/i18n/locales.mjs': { localeTag: () => 'en' }, '../_lib/useAssetUrl': {}, '../_lib/smartCut': smartCut };
+        '../../../lib/i18n/locales.mjs': { localeTag: () => 'en' }, '../_lib/useAssetUrl': {}, '../_lib/smartCut': smartCut,
+        '../../lib/authClient': { getStoredUserId: () => 'owner', onSessionChange: () => () => {} },
+        '../_lib/smartCutSetupDraft.mjs': { readSmartCutSetupDraft: () => null, removeSmartCutSetupDraft() {}, smartCutSetupHasWork: () => false, writeSmartCutSetupDraft() {} },
+        './SmartCutFeedback': { SmartCutFeedback: 'feedback' } };
     const { SmartCutPlanner } = load('app/veyrnox/_components/SmartCutPlanner.js', {
         ...common, react: planner.react, '../_lib/smartCutAnalysis': {}, '../_lib/smartCutFillers': {},
     });
@@ -186,6 +189,9 @@ test('a mismatch blocks creating and applying even an already open plan', () => 
     const { SmartCutPlanner } = load('app/veyrnox/_components/SmartCutPlanner.js', {
         react: h.react, '../../../components/I18nProvider': { useI18n: () => ({ t: key => key, locale: 'en' }) },
         '../../../lib/i18n/locales.mjs': { localeTag: () => 'en' }, '../_lib/useAssetUrl': {},
+        '../../lib/authClient': { getStoredUserId: () => 'owner', onSessionChange: () => () => {} },
+        '../_lib/smartCutSetupDraft.mjs': { readSmartCutSetupDraft: () => null, removeSmartCutSetupDraft() {}, smartCutSetupHasWork: () => false, writeSmartCutSetupDraft() {} },
+        './SmartCutFeedback': { SmartCutFeedback: 'feedback' },
         '../_lib/smartCut': smartCut, '../_lib/smartCutAnalysis': {}, '../_lib/smartCutFillers': {},
     });
     const render = () => h.render(() => SmartCutPlanner({ clips: [{ job_id: 'a', duration: 10, out_s: 10 }], startOpen: true,
@@ -257,7 +263,10 @@ test('no paid Smart Cut step is open while the clips\' sound is still being read
     const build = (audioFor) => {
         const sheet = hooks(), planner = hooks();
         const common = { '../../../components/I18nProvider': { useI18n: () => ({ t: key => key, locale: 'en' }) },
-            '../../../lib/i18n/locales.mjs': { localeTag: () => 'en' }, '../_lib/useAssetUrl': {}, '../_lib/smartCut': smartCut };
+            '../../../lib/i18n/locales.mjs': { localeTag: () => 'en' }, '../_lib/useAssetUrl': {}, '../_lib/smartCut': smartCut,
+            '../../lib/authClient': { getStoredUserId: () => 'owner', onSessionChange: () => () => {} },
+            '../_lib/smartCutSetupDraft.mjs': { readSmartCutSetupDraft: () => null, removeSmartCutSetupDraft() {}, smartCutSetupHasWork: () => false, writeSmartCutSetupDraft() {} },
+            './SmartCutFeedback': { SmartCutFeedback: 'feedback' } };
         const { SmartCutPlanner } = load('app/veyrnox/_components/SmartCutPlanner.js', { ...common, react: planner.react, '../_lib/smartCutAnalysis': {}, '../_lib/smartCutFillers': {} });
         const { EditSheet } = load('app/veyrnox/_components/EditSheet.js', {
             ...common, react: sheet.react, '../../../lib/videoShape.mjs': shapes,

@@ -128,7 +128,7 @@ test.each(['workspace', 'project'])('a workspace or project change while the pic
     if (change === 'workspace') { await mount(); await press(t('brand.upload.files')); await switchSpace('Client work'); }
     else {
         root = createRoot(); const props = { workspaceId: WS, state: readState(), onSaved: jest.fn() };
-        await act(async () => root.render(<BrandKitEditor {...props} projects={[{ id: WS, name: 'Project', workspaceId: WS, version: 0, createdAt: null, updatedAt: null, latestRevision: null, savedAt: null }]} />));
+        await act(async () => root.render(<BrandKitEditor {...props} projects={[{ id: WS, name: 'Project', workspaceId: WS, folderId: null, version: 0, createdAt: null, updatedAt: null, latestRevision: null, savedAt: null, editingTimeSavedSeconds: null }]} />));
         await press(t('brand.upload.files')); await act(async () => root.render(<BrandKitEditor {...props} projects={[]} />));
     }
     await act(async () => pick.resolve(picked)); expect(reservations()).toHaveLength(0); expect(mockPut).not.toHaveBeenCalled();

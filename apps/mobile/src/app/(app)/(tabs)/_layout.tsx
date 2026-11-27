@@ -7,7 +7,7 @@ import { MenuButton } from '../../../components/MenuDrawer';
 import { HEADER_MAX_FONT_SCALE, MIN_TARGET } from '../../../lib/a11y';
 import { t } from '../../../lib/i18n';
 import { type MenuIcon } from '../../../lib/menuIcons';
-import { paletteForScheme } from '../../../theme';
+import { paletteForScheme, vividHue, type VividHue } from '../../../theme';
 import { Text, Icon, useAppearance } from '../../../components/ui';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tabHeaderShowsWordmark } from '../../../lib/headerLayout';
@@ -30,8 +30,10 @@ function tabIcon(name: MenuIcon) {
     };
 }
 
-// Five bottom tabs. Studio is a top-level destination at the stable /editor route; Cinema remains available from the main menu without
+// Five bottom tabs. Editor is a top-level destination at the stable /editor route; Cinema remains available from the main menu without
 // crowding the bar with a sixth item. The (tabs) folder is a group, so each tab keeps its short public URL.
+const TAB_HUES: Record<string, VividHue> = { index: 'blue', create: 'purple', editor: 'orange', library: 'green', publish: 'pink' };
+
 export default function TabsLayout() {
     const { settings, scheme } = useAppearance();
     const palette = paletteForScheme(scheme, settings);
@@ -43,6 +45,7 @@ export default function TabsLayout() {
         <View style={styles.fill} importantForAccessibility={menuOpen ? 'no-hide-descendants' : 'auto'} accessibilityElementsHidden={menuOpen}>
         <Tabs
             screenOptions={({ route }) => {
+                const tabTone = vividHue(TAB_HUES[route.name] ?? 'teal', scheme);
                 return {
                     headerStyle: { backgroundColor: palette.background },
                     headerTintColor: palette.text,
@@ -54,7 +57,7 @@ export default function TabsLayout() {
                     headerRight: () => <HeaderRight palette={palette} />,
                     sceneStyle: { backgroundColor: palette.background, paddingLeft: insets.left, paddingRight: insets.right },
                     tabBarStyle: { backgroundColor: palette.background, borderTopColor: palette.border, borderTopWidth: StyleSheet.hairlineWidth },
-                    tabBarActiveTintColor: palette.accent,
+                    tabBarActiveTintColor: scheme === 'dark' ? tabTone.glow : tabTone.fill,
                     tabBarInactiveTintColor: palette.muted,
                     tabBarItemStyle: { minHeight: MIN_TARGET, justifyContent: 'center' },
                 };
@@ -70,7 +73,7 @@ export default function TabsLayout() {
             />
             <Tabs.Screen
                 name="editor"
-                options={{ tabBarIcon: tabIcon('scissors'), title: t('tabs.studio'), tabBarLabel: tabLabel('tabs.studio'), tabBarAccessibilityLabel: t('tabs.studio') }}
+                options={{ tabBarIcon: tabIcon('scissors'), title: t('editor.title'), tabBarLabel: tabLabel('editor.title'), tabBarAccessibilityLabel: t('editor.title') }}
             />
             <Tabs.Screen
                 name="library"

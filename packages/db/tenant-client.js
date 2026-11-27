@@ -3,7 +3,7 @@ import { readConfig } from '../security/config.js';
 import { ApiError } from '../security/errors.js';
 import { readBody } from '../security/input.js';
 
-export async function tenantRequest(request, context, path, { method = 'GET', body, maxBytes = 256 * 1024, limitAware = false, removalAware = false, beatAware = false, proFileAware = false } = {}) {
+export async function tenantRequest(request, context, path, { method = 'GET', body, maxBytes = 256 * 1024, limitAware = false, removalAware = false, beatAware = false, proFileAware = false, folderAware = false } = {}) {
     const cfg = readConfig(process.env);
     const authorization = request.headers.get('authorization');
     if (!authorization?.toLowerCase().startsWith('bearer ')) throw new ApiError(401, 'UNAUTHORIZED', 'Authentication required.');
@@ -26,7 +26,16 @@ export async function tenantRequest(request, context, path, { method = 'GET', bo
             409: ['CONFLICT', 'The request conflicts with the saved state.'],
             429: ['RATE_LIMITED', 'Too many requests. Try again later.'],
         };
-        if (proFileAware && [409, 429].includes(response.status)) {
+        if (folderAware && [409, 429].includes(response.status)) {
+            let code;
+            try { code = JSON.parse(new TextDecoder().decode(await readBody(response, 4096)))?.message; }
+            catch { /* Unrecognised vendor errors remain generic. */ }
+            finally { await response.body?.cancel().catch(() => {}); }
+            const allowed = response.status === 409
+                ? ['VERSION_CONFLICT', 'IDEMPOTENCY_CONFLICT', 'NAME_CONFLICT', 'FOLDER_NOT_EMPTY', 'FOLDER_DEPTH_LIMIT']
+                : ['LIMIT_REACHED'];
+            if (allowed.includes(code)) throw new ApiError(response.status, code, 'The folder operation could not be completed.');
+        } else if (proFileAware && [409, 429].includes(response.status)) {
             let code;
             try { code = JSON.parse(new TextDecoder().decode(await readBody(response, 4096)))?.message; }
             catch { /* Unrecognised vendor errors remain generic. */ }

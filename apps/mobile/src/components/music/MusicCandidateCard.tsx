@@ -3,6 +3,7 @@ import { View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Button, Card, Text } from '../ui';
 import { VeyLoader } from '../VeyLoader';
+import { GenerationProgress } from '../GenerationProgress';
 import { plural, t } from '../../lib/i18n';
 import { MUSIC_ASSET_PATH } from '../../lib/music/validate';
 import type { MusicCandidateView } from '../../lib/music/types';
@@ -25,11 +26,13 @@ export function MusicCandidateCard({ candidate, onPlay, openSongLabel, requireVa
         ? plural('jobCancel.cancelled', candidate.credits) : t('jobCancel.cancelledFree') : null;
     useAnnouncement(cancelledMessage, { onMount: true, everywhere: true, eventKey: candidate.job_id ?? candidate.ordinal });
     return <Card>
-        <Text variant="title3" accessibilityRole="header">{t('music.create.candidate', { label: candidate.label })}</Text>
+        <Text variant="title3" accessibilityRole="header">{candidate.label === 'Track' ? t('music.create.track') : t('music.create.candidate', { label: candidate.label })}</Text>
         <Text>{state === 'refunded' && candidate.credits !== undefined
             ? t(candidate.credits > 0 ? 'music.create.refundedPaid' : 'music.create.refundedFree')
             : t(`music.create.${state}`)}</Text>
-        {!terminal ? <VeyLoader label={t('music.create.running')} /> : null}
+        {!terminal ? candidate.job_id
+            ? <GenerationProgress jobId={candidate.job_id} kind="audio" compact />
+            : <VeyLoader label={t('music.create.running')} width={28} /> : null}
         {candidate.state === 'ready' ? <View>
             {input ? <Button label={t('music.playNamed', { title: candidate.label })} onPress={() => onPlay(input)} />
                 : <Text>{t('music.create.unplayable')}</Text>}

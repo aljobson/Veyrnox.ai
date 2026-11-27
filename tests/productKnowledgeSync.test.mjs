@@ -107,6 +107,9 @@ const replacedEditorKnowledge = {
 const extendedAccountKnowledge = new Set([
     'When a friend you refer buys their first Credit Pack, you earn Credits worth 10% of that Pack, added to your balance 14 days later if the purchase has not been refunded or disputed. Credits only; they never expire. Nothing is paid out as money.',
 ]);
+// The public and signed-in preset galleries now distinguish Veyrnox templates
+// from CRUN provider previews instead of presenting the old model-count line.
+const retiredTemplateCountKnowledge = new Set(['{templates} on {models}']);
 
 test('phase B retains every app route knowledge item from origin/main', async () => {
     const baseline = JSON.parse(await readFile(path.join(root, 'tests/fixtures/app-knowledge-main.json'), 'utf8'));
@@ -131,6 +134,7 @@ test('phase B retains every app route knowledge item from origin/main', async ()
                 if (entry.route === '/app/editor' && replacedEditorKnowledge[field]?.has(value)) continue;
                 if (entry.route === '/app/account' && field === 'descriptions' && extendedAccountKnowledge.has(value)
                     && [...actual].some(currentValue => currentValue.startsWith(normal(value)))) continue;
+                if (['/app', '/presets'].includes(entry.route) && field === 'descriptions' && retiredTemplateCountKnowledge.has(value)) continue;
                 // ADR-0326 replaces the comma-separated palette with native swatches.
                 if (entry.route === '/app/editor' && field === 'descriptions' && value === 'Use up to 12 hex colours separated by commas.') continue;
                 if (entry.route === '/app/chat' && retiredChatKnowledge[field]?.has(value)) continue;

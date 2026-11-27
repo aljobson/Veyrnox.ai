@@ -22,8 +22,8 @@ import { t } from '../../lib/i18n';
 import { framesIn, timelineOf, type Clipboard, type Media, type Selection, type Timeline } from '../../lib/nativeEditorModel';
 import { fetchProject } from '../../lib/projects';
 import type { SlotKind } from '../../lib/sources';
+import type { Tool } from './tools/editorTools';
 
-type Tool = 'media' | 'audio' | 'generate' | 'text' | 'captions' | 'transcript' | 'scenes' | 'clips' | 'effects' | 'transitions' | 'filters' | 'animation' | 'motion' | 'mask' | 'markers' | 'brand' | 'adjust';
 type Ripple = 'none' | 'lane' | 'all';
 const EDITOR_LOAD_TIMEOUT_MS = 15000;
 

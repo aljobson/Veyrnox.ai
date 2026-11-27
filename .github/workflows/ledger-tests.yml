@@ -156,9 +156,12 @@ jobs:
     needs: changes
     if: needs.changes.outputs.relevant == 'true'
     runs-on: ubuntu-latest
-    # Was 5. "Rebuild from scratch" replays every migration and had grown past it: main's own runs were
-    # cancelled at the limit on 2026-11-03 with no test failing.
-    timeout-minutes: 10
+    # The schema is replayed once, then PostgreSQL template clones provide the
+    # isolated databases needed by mutation-heavy acceptance suites. This keeps
+    # full replay coverage without paying for the same 621 migrations four times.
+    # The retained acceptance inventory still exceeds 30 minutes on hosted
+    # runners, so give the exhaustive gate enough time to report a real verdict.
+    timeout-minutes: 60
 
     services:
       postgres:
@@ -209,22 +212,29 @@ jobs:
               await c.query('DROP DATABASE IF EXISTS editor_speech_check');
               await c.query('DROP DATABASE IF EXISTS crun_suno_check');
               await c.query('CREATE DATABASE rebuild_check');
-              await c.query('CREATE DATABASE supplier_spend_check');
-              await c.query('CREATE DATABASE editor_speech_check');
-              await c.query('CREATE DATABASE crun_suno_check');
               await c.end();
             })();
           "
-          DATABASE_URL="${DATABASE_URL%/*}/supplier_spend_check" node scripts/replay-migrations.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/replay-migrations.mjs
+          # Clone the fully replayed schema so mutation-heavy suites stay isolated
+          # without replaying every migration three more times.
+          node -e "
+            const pg = require('pg');
+            (async () => {
+              const c = new pg.Client({ connectionString: process.env.DATABASE_URL });
+              await c.connect();
+              await c.query('CREATE DATABASE supplier_spend_check TEMPLATE rebuild_check');
+              await c.query('CREATE DATABASE editor_speech_check TEMPLATE rebuild_check');
+              await c.query('CREATE DATABASE crun_suno_check TEMPLATE rebuild_check');
+              await c.end();
+            })();
+          "
           DATABASE_URL="${DATABASE_URL%/*}/supplier_spend_check" npx tsx --test --test-concurrency=1 packages/db/provider-spend-limits.acceptance.test.ts packages/db/user-inflight-cap.acceptance.test.ts
           # AI edit and speech analysis (0450-0452) need a fully replayed database of their own.
-          DATABASE_URL="${DATABASE_URL%/*}/editor_speech_check" node scripts/replay-migrations.mjs
           DATABASE_URL="${DATABASE_URL%/*}/editor_speech_check" EDITOR_AI_EDIT_TEST_DATABASE_URL="${DATABASE_URL%/*}/editor_speech_check" npx tsx --test --test-concurrency=1 packages/db/editorAiEdit.acceptance.test.ts packages/db/speechAnalysis.acceptance.test.ts
           # Crun Suno music (0591-0593) needs a fully replayed database of its own: its concurrency cases commit rows,
           # which must not reach rebuild_check (they would fill the fal capacity the dispatch script below measures).
-          DATABASE_URL="${DATABASE_URL%/*}/crun_suno_check" node scripts/replay-migrations.mjs
           DATABASE_URL="${DATABASE_URL%/*}/crun_suno_check" CRUN_SUNO_MUSIC_TEST_DATABASE_URL="${DATABASE_URL%/*}/crun_suno_check" npx tsx --test --test-concurrency=1 packages/db/crun-suno-music.acceptance.test.ts packages/db/crun-suno-consumers.acceptance.test.ts packages/db/crun-suno-quote-controls.acceptance.test.ts packages/db/music-daily-allowance.acceptance.test.ts
-          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/replay-migrations.mjs
           # Music pair depends on the current catalog route and subscription-credit columns,
           # so exercise it against the fully replayed schema rather than the legacy fixture below.
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" npx tsx --test --test-concurrency=1 packages/db/music-pair.acceptance.test.ts packages/db/music-long-song.acceptance.test.ts packages/db/music-blocks.acceptance.test.ts packages/db/music-publication-takedown.acceptance.test.ts
@@ -318,6 +328,7 @@ jobs:
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-music-albums.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-mfa-recovery.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" PRIVACY_EXPORT_SERVER_URL="$DATABASE_URL" node scripts/test-privacy-export.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-smart-cut-feedback.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-job-deletion.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-job-cancel.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-supplier-route-failover.mjs

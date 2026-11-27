@@ -8,10 +8,13 @@ export const STATIC_ROUTE_CRAWL_EXCLUSIONS: Readonly<Record<string, string>> = {
     '+not-found': 'Expo Router fallback, exercised only by unmatched-route tests.',
     'dev-b1-beat': 'Development-only beat engine harness, not a production route.',
     'dev-n0-beat': 'Development-only beat engine harness, not a production route.',
+    'email-code': 'Passwordless email authentication is covered outside the signed-in route sweep.',
     film: 'Retired Film Studio entry point is intentionally absent from production navigation.',
     'film/cloud': 'Retired Film Studio route is intentionally absent from production navigation.',
     'film/workspace': 'Retired Film Studio route is intentionally absent from production navigation.',
     'first-run': 'Covered by the dedicated fresh-install onboarding E2E path.',
+    'notification-primer': 'Contextual one-shot explanation after a long generation; generic crawling could open the system permission prompt.',
+    onboarding: 'Signed-out value-first onboarding is outside the authenticated route sweep.',
     'sign-in': 'Authentication is covered by the sign-in helper and is outside the signed-in route sweep.',
     welcome: 'Legacy onboarding entry is outside the signed-in route sweep.',
 };
@@ -64,9 +67,10 @@ export function selectInventoryRoutes(
 /** Accessible English names asserted by the signed-in drawer smoke test. */
 export const NAVIGATION_MENU_LABELS = [
     'Create',
+    'Creative tools',
     'Audio',
     'Smart Cut',
-    'Studio',
+    'Editor',
     'Publish',
     'Social Cinema',
     'Library',

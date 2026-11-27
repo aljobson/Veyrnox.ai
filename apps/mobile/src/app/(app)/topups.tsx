@@ -5,14 +5,16 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { Action } from '../../components/account/shared';
+import { useAppearance } from '../../components/ui';
 import { entryDate } from '../../lib/creditHistory';
 import { plural, t } from '../../lib/i18n';
 import { dollars, fetchTopUps, merge, statusKey, type TopUp, type TopUpCursor } from '../../lib/topUps';
-import { colors, LIST_END_PADDING } from '../../theme';
+import { colors, LIST_END_PADDING, VIVID_HUES, vividHue } from '../../theme';
 
 // Past credit purchases, newest first. Read-only.
 export default function TopUps() {
     const { api } = useAuth();
+    const { scheme } = useAppearance();
     const [items, setItems] = useState<TopUp[] | null>(null);
     const [next, setNext] = useState<TopUpCursor | null>(null);
     const [failed, setFailed] = useState(false);
@@ -70,18 +72,19 @@ export default function TopUps() {
                     ListEmptyComponent={<Text style={styles.note}>{t('topup.empty')}</Text>}
                     onEndReached={() => void more()}
                     onEndReachedThreshold={0.4}
-                    renderItem={({ item }) => (
-                        <View style={styles.row} accessible accessibilityLabel={rawText(`${plural('topup.credits', item.credits)}, ${t(statusKey(item.status))}, ${entryDate(item.createdAt)}`)}>
+                    renderItem={({ item, index }) => {
+                        const tone = vividHue(VIVID_HUES[index % VIVID_HUES.length], scheme);
+                        return <View style={[styles.row, { backgroundColor: tone.fill, borderColor: tone.edge }]} accessible accessibilityLabel={rawText(`${plural('topup.credits', item.credits)}, ${t(statusKey(item.status))}, ${entryDate(item.createdAt)}`)}>
                             <View style={{ flexShrink: 1, gap: 2 }}>
-                                <Text style={styles.name}>{plural('topup.credits', item.credits)}</Text>
-                                <Text style={styles.note}>{entryDate(item.createdAt)}</Text>
+                                <Text style={[styles.name, { color: tone.foreground }]}>{plural('topup.credits', item.credits)}</Text>
+                                <Text style={[styles.note, { color: tone.foregroundMuted }]}>{entryDate(item.createdAt)}</Text>
                             </View>
                             <View style={{ alignItems: 'flex-end', gap: 2 }}>
-                                {item.priceCents !== null ? <Text style={styles.name}>{dollars(item.priceCents)}</Text> : null}
-                                <Text style={styles.note}>{t(statusKey(item.status))}</Text>
+                                {item.priceCents !== null ? <Text style={[styles.name, { color: tone.foreground }]}>{dollars(item.priceCents)}</Text> : null}
+                                <Text style={[styles.note, { color: tone.foregroundMuted }]}>{t(statusKey(item.status))}</Text>
                             </View>
-                        </View>
-                    )}
+                        </View>;
+                    }}
                     ListFooterComponent={
                         loadingMore ? <ActivityIndicator color={colors.accent} /> : moreFailed ? <Action label={t('topup.moreRetry')} onPress={() => void more()} /> : undefined
                     }

@@ -194,7 +194,7 @@ function buildSunoRequest(inputs) {
     for (const field of ['style_weight', 'weirdness_constraint']) {
         if (inputs[field] !== undefined && (typeof inputs[field] !== 'number' || !Number.isFinite(inputs[field]) || inputs[field] < 0 || inputs[field] > 1)) return { ok: false, error: `inputs_invalid:${field}` };
     }
-    if (inputs.duration !== undefined && (!Number.isInteger(inputs.duration) || inputs.duration < 1 || inputs.duration > 135)) return { ok: false, error: 'inputs_invalid:duration' };
+    if (inputs.duration !== undefined && (!Number.isInteger(inputs.duration) || inputs.duration < 1 || inputs.duration > 360)) return { ok: false, error: 'inputs_invalid:duration' };
     if (inputs.variety !== undefined && (!Number.isInteger(inputs.variety) || inputs.variety < 0 || inputs.variety > 4)) return { ok: false, error: 'inputs_invalid:variety' };
     const input = { mode, instrumental, model: version, tags: tags.value };
     for (const [field, value] of [['title', title.value], ['lyrics', lyrics.value], ['negative_tags', negative.value],

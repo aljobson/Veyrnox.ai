@@ -13,6 +13,11 @@ test('the Instruments card uses the piano-keys icon, not the sparkle', () => {
     expect(card).not.toContain('icon="sparkle"');
 });
 
+test('the Instruments card balances the pink Audio card with orange', () => {
+    expect(card).toContain('hue="amber"');
+    expect(card).not.toContain('hue="rose"');
+});
+
 test('the piano-keys icon is registered and its file exists', () => {
     expect(MENU_ICONS.pianoKeys).toBeDefined();
     expect(fs.existsSync(path.join(__dirname, '../assets/icons/piano-keys.png'))).toBe(true);

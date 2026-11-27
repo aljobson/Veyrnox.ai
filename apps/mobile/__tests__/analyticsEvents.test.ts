@@ -20,6 +20,12 @@ test('application events reject unknown names, content and unbounded values', ()
     expect(eventProperties('generation_finished', { kind: 'private', outcome: 'secret error' })).toEqual({});
     expect(eventProperties('onboarding_step', { step: 'questions', action: 'skip', answer: 'private' })).toEqual({ step: 'questions', action: 'skip' });
     expect(eventProperties('onboarding_step', { step: 'recap', action: 'next' })).toEqual({ step: 'recap', action: 'next' });
+    expect(eventProperties('onboarding_answered', { question: 'goal', answer: 'video', prompt: 'private' })).toEqual({ question: 'goal', answer: 'video' });
+    expect(eventProperties('onboarding_result_viewed', { role: 'creator', goal: 'video', destination: 'youtube', idea: 'private' })).toEqual({ role: 'creator', goal: 'video', destination: 'youtube' });
+    expect(eventProperties('guest_browse_started', { source: 'result', url: 'private' })).toEqual({ source: 'result' });
+    expect(eventProperties('sign_in_started', { source: 'personalised', email: 'private' })).toEqual({ source: 'personalised' });
+    expect(eventProperties('notification_primer_finished', { action: 'later', prompt: 'private' })).toEqual({ action: 'later' });
+    expect(eventProperties('paywall_viewed', { mode: 'screen', product: 'private' })).toEqual({ mode: 'screen' });
 });
 test('SDK envelope permits identity linking without person or URL properties', () => {
     expect(sanitizeEnvelope({ event: '$identify', $set: { email: 'private' }, properties: { distinct_id: 'user', $anon_distinct_id: 'anon', $set_once: { name: 'private' }, url: 'secret', $current_url: 'secret', $referrer: 'secret' } })).toEqual({ event: '$identify', properties: { distinct_id: 'user', $anon_distinct_id: 'anon' } });

@@ -51,6 +51,17 @@ test('native semantic masks are converted to a Core Graphics grayscale clip mask
     expect(compositor).not.toContain('private static func alphaMask');
 });
 
+test('native compositor paints opted-in overlays between the subject base and person matte', () => {
+    const compositor = readFileSync(resolve(__dirname, '../modules/editor-media/ios/VeyrnoxEditorMediaModule.swift'), 'utf8');
+    expect(compositor).toContain('private static func subjectCompositeOrder');
+    expect(compositor).toContain('result.append(.visual(index, .base))');
+    expect(compositor).toContain('result.append(contentsOf: behindVisuals.map { .visual($0, .normal) })');
+    expect(compositor).toContain('result.append(contentsOf: behindTexts.map { .text($0) })');
+    expect(compositor).toContain('result.append(.visual(index, .foreground))');
+    expect(compositor).toContain('if semantic != .base, let semanticMask = clip["semanticMask"]');
+    expect(compositor).toContain('if semantic != .foreground {');
+});
+
 test('motion worker is visible to the editor-media lifecycle worker and legacy compositor audio is gone', () => {
     const compositor = readFileSync(resolve(__dirname, '../modules/editor-media/ios/VeyrnoxEditorMediaModule.swift'), 'utf8');
     const advanced = readFileSync(resolve(__dirname, '../modules/editor-media/ios/EditorAdvancedAudioMix.swift'), 'utf8');

@@ -140,9 +140,9 @@ test('the drawer E2E labels cannot drift from the production menu registry', () 
     expect(NAVIGATION_MENU_LABELS).toEqual(registryLabels);
 });
 
-test('the native editor E2E uses the current Studio entry contract', () => {
+test('the native editor E2E uses the current Editor entry contract', () => {
     const source = fs.readFileSync(path.join(ROOT, 'tests', 'editor.e2e.ts'), 'utf8');
-    expect(source).toContain("getByRole('button', 'Studio', { selected: true })");
+    expect(source).toContain("getByRole('button', 'Editor', { selected: true })");
     expect(source).toContain("getByRole('button', 'Professional')");
     expect(source).not.toContain("getByRole('button', 'New edit')");
 });

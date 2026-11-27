@@ -1,9 +1,10 @@
 export const MUSIC_PREVIEW_FLAG = 'veyrnox_music_preview';
 export const MUSIC_STORE_KEY = 'veyrnox_music_preview_v1';
 export const MUSIC_STORE_EVENT = 'veyrnox:music-preview';
-export const MUSIC_QUOTE_ID = 'music-preview-pair-2x5-v1';
+export const MUSIC_QUOTE_ID = 'music-preview-track-1x5-v1';
 export const MUSIC_CANDIDATE_COST = 5;
-export const MUSIC_PAIR_COST = MUSIC_CANDIDATE_COST * 2;
+// Kept as an export for old preview consumers; creation now produces one track.
+export const MUSIC_PAIR_COST = MUSIC_CANDIDATE_COST;
 
 export function newMusicPreviewState() {
   return {
@@ -49,7 +50,7 @@ export function quoteMusicRequest(input, state) {
   if (!prompt) return null;
   return {
     id: MUSIC_QUOTE_ID,
-    candidates: 2,
+    candidates: 1,
     perCandidate: MUSIC_CANDIDATE_COST,
     total: MUSIC_PAIR_COST,
     balance: state.credits,
@@ -73,7 +74,7 @@ export function createMusicRequest(state, input, now = Date.now()) {
   const existing = state.requests.find((request) => request.idempotencyKey === key);
   if (existing) return { state, request: existing, replayed: true };
   if (input?.quoteId !== MUSIC_QUOTE_ID) throw new Error('Refresh the credit quote before creating.');
-  if (state.credits < MUSIC_PAIR_COST) throw new Error('You need 10 preview credits for two versions.');
+  if (state.credits < MUSIC_PAIR_COST) throw new Error('You need 5 preview credits for one track.');
 
   const id = String(input.requestId || `music-${now.toString(36)}`);
   const title = cleanTitle(input.title, prompt);
@@ -88,14 +89,14 @@ export function createMusicRequest(state, input, now = Date.now()) {
     styles: String(input.styles || '').trim().slice(0, 500),
     scenario: input.scenario === 'fail-b' ? 'fail-b' : 'success',
     debit: MUSIC_PAIR_COST,
-    candidates: ['A', 'B'].map((label) => ({
+    candidates: ['Track'].map((label) => ({
       id: `${id}-${label.toLowerCase()}`,
       label,
       status: 'queued',
       progress: 4,
       charged: MUSIC_CANDIDATE_COST,
       refunded: false,
-      duration: label === 'A' ? 41 : 47,
+      duration: 41,
     })),
   };
   const next = {
@@ -103,7 +104,7 @@ export function createMusicRequest(state, input, now = Date.now()) {
     credits: state.credits - MUSIC_PAIR_COST,
     requests: [request, ...state.requests],
     ledger: [
-      { id: `${id}-debit`, requestId: id, amount: -MUSIC_PAIR_COST, reason: 'Two-version music preview' },
+      { id: `${id}-debit`, requestId: id, amount: -MUSIC_PAIR_COST, reason: 'One-track music preview' },
       ...state.ledger,
     ],
   };
@@ -111,9 +112,7 @@ export function createMusicRequest(state, input, now = Date.now()) {
 }
 
 function candidatePhase(label, elapsed, scenario) {
-  const marks = label === 'A'
-    ? { composing: 500, mastering: 1400, done: 2500 }
-    : { composing: 800, mastering: 2200, done: 3900 };
+  const marks = { composing: 500, mastering: 1400, done: 2500 };
   if (elapsed < marks.composing) return { status: 'queued', progress: 8 };
   if (elapsed < marks.mastering) {
     const progress = 18 + Math.round(((elapsed - marks.composing) / (marks.mastering - marks.composing)) * 34);
@@ -123,7 +122,7 @@ function candidatePhase(label, elapsed, scenario) {
     const progress = 58 + Math.round(((elapsed - marks.mastering) / (marks.done - marks.mastering)) * 38);
     return { status: 'mastering', progress };
   }
-  if (label === 'B' && scenario === 'fail-b') return { status: 'failed', progress: 100 };
+  if (label === 'Track' && scenario === 'fail-b') return { status: 'failed', progress: 100 };
   return { status: 'ready', progress: 100 };
 }
 
@@ -142,7 +141,7 @@ export function advanceMusicState(state, now = Date.now()) {
       if (phase.status === 'failed' && !candidate.refunded) {
         credits += candidate.charged;
         ledger = [
-          { id: `${candidate.id}-refund`, requestId: request.id, candidateId: candidate.id, amount: candidate.charged, reason: `Version ${candidate.label} failed` },
+          { id: `${candidate.id}-refund`, requestId: request.id, candidateId: candidate.id, amount: candidate.charged, reason: `${candidate.label} failed` },
           ...ledger,
         ];
         next = { ...next, refunded: true };

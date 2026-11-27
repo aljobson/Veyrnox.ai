@@ -7,7 +7,7 @@ import { pathToFileURL } from 'node:url';
 import { signEditorRenderBody, verifyEditorRenderBody, CALLBACK_PATH, SIGNATURE_HEADER, TIMESTAMP_HEADER } from '../../lib/editorServerRenderSigning.js';
 import { connectConcat, executeCalls } from './rpc.mjs';
 
-export const MAX_BYTES = 25 * 1024 * 1024;
+export const MAX_BYTES = 100 * 1024 * 1024;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 

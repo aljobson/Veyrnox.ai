@@ -2,6 +2,7 @@ import { ApiError, type ApiClient } from '../api';
 import { isRecord } from '../responseShapes';
 import { aiPaths, aiPollPath, assetSigningPath } from './shared';
 import type { Asset, Candidate, Op, Quote, QuoteSnapshot, Song, Status } from './types';
+import { secureRemoteSongUrl } from '../beatNative/remoteSong';
 export const uuid = (v: unknown): v is string => typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
 const integer = (v: unknown) => typeof v === 'number' && Number.isSafeInteger(v);
 export const validQuote = (v: unknown): v is QuoteSnapshot => isRecord(v) && integer(v.total_credits) && (v.total_credits as number) >= 0 && integer(v.balance) && integer(v.balance_after) && typeof v.affordable === 'boolean' && typeof v.expires_at === 'string' && /^\d{4}-\d\d-\d\dT/.test(v.expires_at) && Number.isFinite(Date.parse(v.expires_at));
@@ -18,7 +19,10 @@ export function createBeatAiClient(api: ApiClient, owner: string, signal?: Abort
         submit: (r: { submitPath: string; quoteId: string; key: string }) => call(r.submitPath, (v): v is { generation_id?: string; request_id?: string; state: string } => isRecord(v) && (uuid(v.generation_id) || uuid(v.request_id)) && typeof v.state === 'string', { quote_id: r.quoteId, idempotency_key: r.key }),
         poll: (r: { op: Op; requestId?: string }) => { if (!uuid(r.requestId)) throw new ApiError(0, 'invalid_request'); return call(aiPollPath(r), validStatus); },
         song: (id: string) => call(`/music/songs/${encodeURIComponent(id)}`, (v): v is Song => isRecord(v) && uuid(v.version_id) && isRecord(v.current_version) && uuid(v.current_version.id) && Array.isArray(v.actions) && v.actions.every(a => typeof a === 'string')),
-        sign: (item: Pick<Asset, 'source' | 'ref'>) => { const path = assetSigningPath(item); if (!path) throw new ApiError(0, 'invalid_asset'); return call(path, (v): v is { url: string; size_bytes?: number } => isRecord(v) && typeof v.url === 'string' && /^https:\/\//.test(v.url) && (v.size_bytes === undefined || integer(v.size_bytes) && (v.size_bytes as number) > 0)); },
+        sign: (item: Pick<Asset, 'source' | 'ref'>) => { const path = assetSigningPath(item); if (!path) throw new ApiError(0, 'invalid_asset'); return call(path, (v): v is { url: string; size_bytes?: number } => {
+            if (!isRecord(v) || typeof v.url !== 'string' || !(v.size_bytes === undefined || integer(v.size_bytes) && (v.size_bytes as number) > 0)) return false;
+            try { secureRemoteSongUrl(v.url); return true; } catch { return false; }
+        }); },
     };
 }
 export type BeatAiClient = ReturnType<typeof createBeatAiClient>;

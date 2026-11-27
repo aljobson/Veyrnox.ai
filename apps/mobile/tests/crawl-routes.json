@@ -45,6 +45,7 @@
 "language",
 "library",
 "library/files",
+"live-edit",
 "mcp",
 "model/compare",
 "models",

@@ -1,26 +1,27 @@
-import { passkeyGate } from '../lib/passkeys';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Link, useRouter } from 'expo-router';
+import { Link, useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuth } from '../auth/AuthProvider';
 import { BrandIntro } from '../components/BrandIntro';
 import { SignupOffer } from '../components/SignupOffer';
 import { SignedInRedirect } from '../components/SignedInRedirect';
-import { Button, Icon, Text, AuthProviderButton, themedStyles, useThemedStyles } from '../components/ui';
+import { Button, Text, AuthProviderButton, themedStyles, useThemedStyles } from '../components/ui';
 import { ConsentRow } from '../components/ui/ConsentRow';
 import { DEV_MOCK } from '../lib/config';
 import { ds, colors } from '../theme';
 import { t } from '../lib/i18n';
 import { playSelection } from '../lib/haptics';
-const PROMISES = [
-    { icon: 'image', label: 'signIn.photo' },
-    { icon: 'video', label: 'signIn.video' },
-    { icon: 'lightbulb', label: 'signIn.idea' },
-] as const;
+import { captureEvent } from '../lib/analytics/events';
+import { useAnnouncement } from '../lib/useAnnouncement';
+
 export default function SignIn() {
     const { appleNativeAvailable, signInWithApple, signInWithOAuth, signInWithEmail, status } = useAuth();
     const router = useRouter();
+    const { from } = useLocalSearchParams<{ from?: string }>();
+    const personalised = from === 'onboarding';
+    const compact = personalised || from === 'existing' || from === 'preview';
+    const entrySource = personalised ? 'personalised' : from === 'existing' ? 'existing' : from === 'preview' ? 'preview' : 'direct';
     const insets = useSafeAreaInsets();
     const styles = useThemedStyles(sheets);
     const [busy, setBusy] = useState(false);
@@ -28,6 +29,8 @@ export default function SignIn() {
     const [error, setError] = useState<string | null>(null);
     const [agreed, setAgreed] = useState(false);
     const blocked = busy || !agreed;
+    useAnnouncement(agreed ? t('signIn.ready') : null, { everywhere: true });
+    useEffect(() => { if (status === 'signedOut') captureEvent('sign_in_started', { source: entrySource }); }, [entrySource, status]);
     async function run(action: () => Promise<void>) {
         if (!agreed || busy || running.current) return;
         running.current = true;
@@ -62,23 +65,22 @@ export default function SignIn() {
             >
                 <View style={styles.hero}>
                     <BrandIntro fontSize={32} />
-                    <Text variant="caption" tone="accent">{t('signIn.kicker')}</Text>
-                    <Text variant="display">{t('signIn.title')}</Text>
-                    <Text tone="secondary">{t('signIn.subtitle')}</Text>
-                    <View accessible style={styles.promises}>
-                        {PROMISES.map((p) => (
-                            <View key={p.label} style={styles.promise}>
-                                <Icon name={p.icon} size={20} />
-                                <Text variant="footnote" tone="secondary">{t(p.label)}</Text>
-                            </View>
-                        ))}
-                    </View>
+                    <Text variant="display">{personalised ? t('onboarding.signIn.title') : t('signIn.title')}</Text>
+                    <Text tone="secondary">{personalised ? t('onboarding.signIn.body') : t('signIn.subtitle')}</Text>
                 </View>
-                <SignupOffer />
+                {!compact ? (
+                    <Link href="/preview" asChild>
+                        <Button variant="secondary" label={t('preview.browse')} accessibilityRole="link" accessibilityHint={t('preview.browseHint')} />
+                    </Link>
+                ) : null}
+                {!compact ? <SignupOffer compact /> : null}
                 <ConsentRow agreed={agreed} onChange={setAgreed} />
-                <Text variant="footnote" tone="tertiary" accessibilityLiveRegion="polite">
-                    {t(agreed ? 'signIn.ready' : 'signIn.tickFirst')}
-                </Text>
+                {!compact && agreed ? (
+                    <Text variant="footnote" tone="tertiary">
+                        {t('signIn.ready')}
+                    </Text>
+                ) : null}
+                <Button variant="tertiary" icon="key" label={t('passkey.signIn')} disabled={blocked} onPress={() => router.push('/passkey')} />
                 <AuthProviderButton
                     provider="apple"
                     consent={agreed}
@@ -95,11 +97,7 @@ export default function SignIn() {
                         if (!blocked) router.push('/email');
                     }}
                 />
-                {passkeyGate() ? <Button variant="tertiary" icon="key" label={t('passkey.signIn')} disabled={blocked} onPress={() => router.push('/passkey')} /> : null}
-                <Link href="/preview" asChild>
-                    <Button variant="tertiary" label={t('preview.browse')} accessibilityRole="link" accessibilityHint={t('preview.browseHint')} />
-                </Link>
-                {DEV_MOCK ? (
+                {!compact && DEV_MOCK ? (
                     <Button
                         variant="tertiary"
                         label={t('signIn.demo')}
@@ -117,11 +115,10 @@ export default function SignIn() {
         </View>
     );
 }
+
 const sheets = themedStyles((p) => ({
     frame: { flex: 1, backgroundColor: p.bg },
     scroll: { flex: 1 },
     screen: { flexGrow: 1, gap: ds.space.md },
-    hero: { gap: ds.space.lg, marginBottom: ds.space.lg },
-    promises: { gap: ds.space.sm },
-    promise: { flexDirection: 'row', alignItems: 'center', gap: ds.space.md },
+    hero: { gap: ds.space.md, marginBottom: ds.space.sm },
 }));

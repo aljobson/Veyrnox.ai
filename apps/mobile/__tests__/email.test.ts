@@ -1,6 +1,6 @@
 import { emailAuthMessage, validateEmailForm } from '../src/lib/auth/emailForm';
 import { allowTurnstileNavigation, parseTurnstileMessage, turnstileHtml } from '../src/lib/auth/turnstile';
-import { resendSignupEmail, signInWithPassword, signUpWithPassword } from '../src/lib/auth/supabaseAuth';
+import { requestEmailCode, resendSignupEmail, signInWithPassword, signUpWithPassword, verifyEmailCode } from '../src/lib/auth/supabaseAuth';
 import { readConfirmVerifier } from '../src/lib/auth/confirmStore';
 import { OAUTH_BRIDGE_URL } from '../src/lib/config';
 
@@ -108,5 +108,24 @@ describe('password grants', () => {
     test('a rejected captcha is a typed error', async () => {
         fetchMock.mockResolvedValue(new Response(JSON.stringify({ error_code: 'captcha_failed' }), { status: 400 }));
         await expect(signInWithPassword('a@b.co', 'pw', 'bad')).rejects.toMatchObject({ code: 'captcha_failed' });
+    });
+});
+
+describe('six-digit email grants', () => {
+    const fetchMock = jest.fn();
+    beforeEach(() => { fetchMock.mockReset(); globalThis.fetch = fetchMock as unknown as typeof fetch; });
+    test('requests a code for an existing account with captcha and never creates a user', async () => {
+        fetchMock.mockResolvedValue(new Response('{}', { status: 200 }));
+        await requestEmailCode('person@example.test', 'proof');
+        const [url, init] = fetchMock.mock.calls[0];
+        expect(url).toContain('/auth/v1/otp');
+        expect(JSON.parse(init.body)).toEqual({ email: 'person@example.test', create_user: false, gotrue_meta_security: { captcha_token: 'proof' } });
+    });
+    test('verifies the six-digit code through the email grant and returns a normal session', async () => {
+        fetchMock.mockResolvedValue(new Response(JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_in: 3600 }), { status: 200 }));
+        await expect(verifyEmailCode('person@example.test', '123456')).resolves.toMatchObject({ accessToken: 'a', refreshToken: 'r' });
+        const [url, init] = fetchMock.mock.calls[0];
+        expect(url).toContain('/auth/v1/token?grant_type=email');
+        expect(JSON.parse(init.body)).toEqual({ email: 'person@example.test', token: '123456', type: 'email' });
     });
 });

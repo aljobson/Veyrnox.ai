@@ -26,6 +26,10 @@ describe('music long-song pricing and ceiling (0563, 0567)', { skip: !DATABASE_U
       await client.query(sql);
       await client.query(sql);
     }
+    // This suite deliberately reinstalls the historical 0563/0567 pair RPCs
+    // after the current schema. Suspend only the current 0620 quote normalizer
+    // inside this rolled-back fixture so the historical contract stays coherent.
+    await client.query('ALTER TABLE public.music_generation_quotes DISABLE TRIGGER music_quote_aaa_single_generation');
     const updated = await client.query(`UPDATE public.model_catalog
       SET active=true, gated_flag=false, credits_5s=3
       WHERE id='ace-step-1.5' RETURNING provider, provider_endpoint, modality`);
@@ -242,8 +246,12 @@ describe('music long-song pricing and ceiling (0563, 0567)', { skip: !DATABASE_U
     const owner = await user();
     await client.query('SAVEPOINT legacy_models');
     try {
-      // The loop model is intentionally inactive on main; enable only in this rolled-back fixture.
-      const updated = await client.query(`UPDATE public.model_catalog SET active=true,gated_flag=false
+      // The loop model is intentionally inactive on main. This suite reinstalls
+      // the historical fal pair RPCs, so restore ace-step's matching historical
+      // provider only inside this rolled-back fixture as well.
+      const updated = await client.query(`UPDATE public.model_catalog SET active=true,gated_flag=false,
+          provider=CASE WHEN id='ace-step' THEN 'fal' ELSE provider END,
+          provider_endpoint=CASE WHEN id='ace-step' THEN 'fal-ai/ace-step' ELSE provider_endpoint END
         WHERE id IN ('ace-step','ace-step-loop') RETURNING id,credits_5s`);
       assert.equal(updated.rowCount, 2);
       for (const model of updated.rows) {

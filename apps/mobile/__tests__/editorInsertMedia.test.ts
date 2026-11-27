@@ -71,13 +71,35 @@ describe('QA build 50 F10: a new clip never lands on top of another clip', () =>
         expect(result.selection).toEqual({ track: 'video', id: lantern.id });
     });
 
-    test('a free gap on the first track is used, and a busy first track falls through to a free second one', () => {
+    test('a free gap on the first track is used, and an overlapping visual is appended above existing layers', () => {
         const first = inserted(emptyTimeline(), media, 0).timeline;
         expect(inserted(first, { id: 'later', kind: 'video', frames: 30 }, 90).timeline.tracks.filter(track => track.kind === 'video')).toHaveLength(1);
         const two = inserted(first, { id: 'second', kind: 'video', frames: 30 }, 0).timeline;
         const third = inserted(two, { id: 'third', kind: 'video', frames: 30 }, 60).timeline;
-        expect(third.tracks.filter(track => track.kind === 'video')).toHaveLength(2);
-        expect(third.video.at(-1)!.trackId).toBe(third.tracks.filter(track => track.kind === 'video')[1].id);
+        expect(third.tracks.filter(track => track.kind === 'video')).toHaveLength(3);
+        expect(third.video.at(-1)!.trackId).toBe(third.tracks.filter(track => track.kind === 'video')[2].id);
+    });
+
+    test('an overlapping photo is appended above footage even when a lower video track is free', () => {
+        const timeline = emptyTimeline();
+        const videoTracks = timeline.tracks.filter(track => track.kind === 'video');
+        timeline.tracks.push({ ...videoTracks[0], id: 'video-upper', name: 'Video 2' });
+        timeline.video.push({ id: 'v1', mediaId: 'footage', start: 0, in: 0, len: 90, trackId: 'video-upper', volume: 1, transition: 0, rate: 1 });
+        timeline.media.footage = { id: 'footage', kind: 'video', frames: 90 };
+        const result = inserted(timeline, { id: 'photo', kind: 'image', frames: 90 }, 0);
+        const tracks = result.timeline.tracks.filter(track => track.kind === 'video');
+        expect(tracks.at(-1)!.id).not.toBe(videoTracks[0].id);
+        expect(result.timeline.video.at(-1)).toMatchObject({ mediaId: 'photo', trackId: tracks.at(-1)!.id });
+    });
+
+    test('an overlapping visual is refused when all 16 project tracks are already in use', () => {
+        const timeline = emptyTimeline();
+        while (timeline.tracks.length < 16) timeline.tracks.push({
+            ...timeline.tracks[0], id: `video-extra-${timeline.tracks.length}`, name: `Video ${timeline.tracks.length}`,
+        });
+        timeline.video.push({ id: 'v1', mediaId: 'footage', start: 0, in: 0, len: 90, trackId: timeline.tracks[0].id, volume: 1, transition: 0, rate: 1 });
+        timeline.media.footage = { id: 'footage', kind: 'video', frames: 90 };
+        expect(insertMediaAt(timeline, { id: 'photo', kind: 'image', frames: 90 }, 0)).toEqual({ error: 'full' });
     });
 
     test('audio over audio gets its own audio track; a clip that ends exactly at the playhead does not count as overlap', () => {

@@ -1,4 +1,4 @@
-import { tokensForScheme } from '../src/theme';
+import { tokensForScheme, VIVID_HUES, vividHue } from '../src/theme';
 import { act } from 'react';
 import * as RN from 'react-native';
 import { createRoot, type Root } from 'test-renderer';
@@ -40,6 +40,11 @@ beforeEach(() => {
     mockMedia.getJob.mockResolvedValue({ state: 'succeeded', credits: 3, model_id: 'm' }); mockMedia.getAsset.mockResolvedValue(file); root = createRoot();
 });
 afterEach(async () => { await act(async () => root.unmount()); jest.useRealTimers(); });
+test('Library destinations use vivid navigation cards while media remains untouched', async () => {
+    await render();
+    const fills = new Set(VIVID_HUES.map(hue => vividHue(hue, 'dark').fill));
+    expect(root.container.queryAll(node => fills.has(RN.StyleSheet.flatten(node.props.style)?.backgroundColor)).length).toBeGreaterThanOrEqual(2);
+});
 test('grid is default; visible completed image requests one link with generated attribution', async () => {
     const image = row('a', 'succeeded'); await render([image]); expect(mockList.numColumns).toBe(2);
     await act(async () => { mockList.onViewableItemsChanged({ viewableItems: [{ item: image }] }); mockList.onViewableItemsChanged({ viewableItems: [{ item: image }] }); });

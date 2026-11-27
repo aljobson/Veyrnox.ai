@@ -25,7 +25,7 @@ const fixture = paid => ({
 
 // Frozen pre-longSongs response, including property order for serialized compatibility.
 const previousEntitlements = paid => ({
-  available: true, mode: 'simple', output_count: 2, concurrency_limit: 4,
+  available: true, mode: 'simple', output_count: 1, concurrency_limit: 4,
   balance: 23, free_credits: 4, free_expires_at: '2026-11-20T00:00:00Z',
   models: [{
     generation_modes: ['simple'],
@@ -35,7 +35,7 @@ const previousEntitlements = paid => ({
       duration_seconds: { min: 10, max: 60, default: 60 },
       lyrics: false, styles: false, instrumental: 'required',
     },
-    id: 'ace-step', name: 'ACE-Step', credits_per_candidate: 5, total_credits: 10,
+    id: 'ace-step', name: 'ACE-Step', credits_per_candidate: 5, total_credits: 5,
     instrumental_only: true, requires_paid_plan: false, available: true,
   }, {
     generation_modes: ['simple', 'custom'],
@@ -45,7 +45,7 @@ const previousEntitlements = paid => ({
       duration_seconds: { min: 10, max: 60, default: 60 },
       lyrics: true, styles: true, instrumental: 'optional',
     },
-    id: 'ace-step-1.5', name: 'ACE-Step 1.5', credits_per_candidate: 3, total_credits: 6,
+    id: 'ace-step-1.5', name: 'ACE-Step 1.5', credits_per_candidate: 3, total_credits: 3,
     instrumental_only: false, requires_paid_plan: true, available: paid,
   }],
   custom_drafts: {

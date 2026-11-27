@@ -53,7 +53,7 @@ export function GrantsCard() {
     }
 
     return (
-        <Card title={t('acct.oauth.title')} help={t('acct.oauth.help')}>
+        <Card title={t('acct.oauth.title')} help={t('acct.oauth.help')} icon="cpu" hue="teal">
             {grants === null && !note ? <ActivityIndicator color={styles.accent.color} accessibilityLabel={t('acct.oauth.loading')} /> : null}
             {grants?.length === 0 ? <Text variant="footnote" tone="secondary">{t('acct.oauth.empty')}</Text> : null}
             {grants?.map((g) => (

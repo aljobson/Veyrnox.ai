@@ -114,6 +114,8 @@ test('the confirmation says what the request does', () => {
     // /app/account is the one that ends the others (scope=global).
     const nav = readFileSync(new URL('../app/veyrnox/_components/NavAuthButtons.js', import.meta.url), 'utf8');
     assert.match(nav, /body=\{t\('public.account.signOutBody'\)\}/);
+    assert.equal((nav.match(/window\.location\.replace\(href\('\/\?auth=sign_in'\)\)/g) || []).length, 2,
+        'successful and best-effort sign-out both reopen the passkey-capable sign-in surface');
     assert.match(english['public.account.signOutBody'], /This ends your session on this device\./);
     const account = readFileSync(new URL('../app/lib/accountSecurity.js', import.meta.url), 'utf8');
     assert.match(account, /\['others', 'global'\]/);

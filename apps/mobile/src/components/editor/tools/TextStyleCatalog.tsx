@@ -3,7 +3,7 @@ import { TITLE_STYLES } from '../../../../../../app/veyrnox/_lib/editorPresets.m
 import { t, rawText } from '../../../lib/i18n';
 import { touchTarget } from '../../../lib/a11y';
 import { editorTextPreviewStyle } from '../../../lib/editorTextPreview';
-import { colors, ds, type, tokensForScheme } from '../../../theme';
+import { studioColors as colors, ds, type, tokensForScheme } from '../../../theme';
 import { styles } from '../fullEditorStyles';
 function sampleSurface(color: string) {
     const [r, g, b] = [1, 3, 5].map(index => parseInt(color.slice(index, index + 2), 16) / 255)

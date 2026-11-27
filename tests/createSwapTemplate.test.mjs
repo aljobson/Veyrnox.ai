@@ -14,6 +14,8 @@ test('a swap prompt left as the template wrote it is blocked on any model; an ed
   assert.equal(swapTemplatePromptKept(swap, 'A woman in a pink dress walks through a 1980s street'), false);
   assert.equal(swapTemplatePromptKept({ id: 'x', sourcePrompt: 'A slow pan over a beach', prompt: 'A slow pan over a beach' }, 'A slow pan over a beach'), false);
   assert.equal(swapTemplatePromptKept(null, swap.prompt), false);
+  const truncated = { id: 'community-midnight-sports-drive', sourcePrompt: 'face reference Identity WARDROBE', prompt: 'face reference Identity WARDROBE' };
+  assert.equal(swapTemplatePromptKept(truncated, truncated.prompt), true, 'the registry fails closed even when the captured prompt omits its source-video wording');
 });
 
 test('Create sends a live swap template to the swap screen before it loads the normal form', () => {

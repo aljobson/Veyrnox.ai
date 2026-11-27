@@ -9,8 +9,9 @@ import { Icon, themedStyles, useThemedStyles } from './ui';
 export function HomeBackButton() {
     const router = useRouter();
     const styles = useThemedStyles(sheets);
+    const goBack = () => router.canGoBack() ? router.back() : router.replace('/');
     return (
-        <Pressable accessibilityRole="button" accessibilityLabel={t('public.vey.back')} style={styles.button} onPress={() => router.replace('/')}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('public.vey.back')} style={styles.button} onPress={goBack}>
             <Icon name="arrowLeft" tint={styles.ink.color} />
         </Pressable>
     );

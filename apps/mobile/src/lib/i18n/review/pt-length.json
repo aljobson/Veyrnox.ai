@@ -348,12 +348,6 @@
     "ratio": 1.78
   },
   {
-    "id": "bestCut.auto",
-    "english": "Auto-detect",
-    "translation": "Detectar automaticamente",
-    "ratio": 2.18
-  },
-  {
     "id": "bestCut.tryAnyway",
     "english": "Try Anyway",
     "translation": "Tentar mesmo assim",
@@ -3457,9 +3451,9 @@
   },
   {
     "id": "editorSimple.aiEdit",
-    "english": "Quick tools",
+    "english": "AI Edit",
     "translation": "Ferramentas rápidas",
-    "ratio": 1.73
+    "ratio": 2.71
   },
   {
     "id": "editorSimple.allTools",
@@ -3654,6 +3648,12 @@
     "ratio": 2.17
   },
   {
+    "id": "music.create.smart.tempo",
+    "english": "Tempo",
+    "translation": "Andamento",
+    "ratio": 1.8
+  },
+  {
     "id": "music.create.advanced.auto",
     "english": "Auto",
     "translation": "Automático",
@@ -3766,6 +3766,12 @@
     "english": "Hot",
     "translation": "Quente",
     "ratio": 2
+  },
+  {
+    "id": "beat.home.empty",
+    "english": "No music edits yet",
+    "translation": "Ainda não há edições musicais",
+    "ratio": 1.61
   },
   {
     "id": "beat.pattern.on",
@@ -3883,7 +3889,7 @@
   },
   {
     "id": "beat.local.loadError",
-    "english": "Could not load saved beats. Retry loading.",
+    "english": "Could not load saved songs. Retry loading.",
     "translation": "Não foi possível carregar os beats salvos. Tente carregar novamente.",
     "ratio": 1.62
   },
@@ -4282,6 +4288,12 @@
     "english": "Fade in (ms)",
     "translation": "Entrada gradual (ms)",
     "ratio": 1.67
+  },
+  {
+    "id": "beatMix.dock.mix",
+    "english": "Mix",
+    "translation": "Mistura",
+    "ratio": 2.33
   },
   {
     "id": "beatMix.master.room",
@@ -4854,6 +4866,90 @@
     "ratio": 1.86
   },
   {
+    "id": "onboarding.notifications.now",
+    "english": "now",
+    "translation": "agora",
+    "ratio": 1.67
+  },
+  {
+    "id": "editor.safeArea.off",
+    "english": "Off",
+    "translation": "Desativado",
+    "ratio": 3.33
+  },
+  {
+    "id": "app.smartCut.draft.restore",
+    "english": "Restore setup",
+    "translation": "Restaurar configuração",
+    "ratio": 1.69
+  },
+  {
+    "id": "editorCaptionTools.stylePicker",
+    "english": "Caption preset",
+    "translation": "Predefinição de legendas",
+    "ratio": 1.71
+  },
+  {
+    "id": "editorCaptionTools.style.box",
+    "english": "Box",
+    "translation": "Caixa",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorCover.textPlaceholder",
+    "english": "Add text",
+    "translation": "Adicionar texto",
+    "ratio": 1.88
+  },
+  {
+    "id": "editorSimple.cut",
+    "english": "Cut",
+    "translation": "Cortar",
+    "ratio": 2
+  },
+  {
+    "id": "projects.smartCutBatch.complete",
+    "english": "Mark complete",
+    "translation": "Marcar como concluído",
+    "ratio": 1.62
+  },
+  {
+    "id": "projects.smartCutBatch.fail",
+    "english": "Needs retry",
+    "translation": "Precisa de nova tentativa",
+    "ratio": 2.27
+  },
+  {
+    "id": "projects.smartCutBatch.retry",
+    "english": "Retry",
+    "translation": "Tentar novamente",
+    "ratio": 3.2
+  },
+  {
+    "id": "projects.smartCutBatch.state.failed",
+    "english": "Needs retry",
+    "translation": "Precisa de nova tentativa",
+    "ratio": 2.27
+  },
+  {
+    "id": "projectCloud.title",
+    "english": "Cloud sync",
+    "translation": "Sincronização na nuvem",
+    "ratio": 2.2
+  },
+  {
+    "id": "projectCloud.error",
+    "english": "Could not change cloud sync.",
+    "translation": "Não foi possível alterar a sincronização na nuvem.",
+    "ratio": 1.79
+  },
+  {
+    "id": "email.codeCta",
+    "english": "Email me a 6-digit code",
+    "translation": "Enviar um código de 6 dígitos por e-mail",
+    "ratio": 1.74
+  },
+  {
     "id": "musicAlbums.addTrack",
     "english": "Add",
     "translation": "Adicionar",
@@ -4882,6 +4978,12 @@
     "english": "Sample this song",
     "translation": "Usar um sample desta música",
     "ratio": 1.69
+  },
+  {
+    "id": "music.lyricAssistant.retry",
+    "english": "Try again",
+    "translation": "Tentar novamente",
+    "ratio": 1.78
   },
   {
     "id": "studioAssistant.value_on",

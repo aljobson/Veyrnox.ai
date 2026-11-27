@@ -151,6 +151,9 @@ export async function installProductFixtures(page, options = {}) {
       if (url.pathname.startsWith('/api/v1/library-sync')) return state.user ? json({ error: 'not_found' }, 404) : json({ error: 'not_authenticated' }, 401);
       if (method === 'GET') {
         if (url.pathname === '/api/catalog') return json({ models: options.models || SYNTHETIC_MODELS });
+        if (url.pathname === '/api/template-catalog' && url.searchParams.get('summary') === '1') {
+          return json({ total: 1088, providers: { kling: 226, seedance: 341, vidu: 521 } });
+        }
         // The template gallery and one template in full: static data the browser no longer bundles (the same functions the
         // routes serve, so the cards and counts are the real ones); nothing per-user, no price.
         if (url.pathname === '/api/templates') {
@@ -184,6 +187,7 @@ export async function installProductFixtures(page, options = {}) {
         if (url.pathname === '/api/v1/chat/folders') return json({ folders: [] });
         if (url.pathname === '/api/v1/chat/personas') return json({ enabled: false, personas: [] });
         if (url.pathname === '/api/v1/workspaces') return json({ workspaces: [{ id: WORKSPACE, name: 'Synthetic workspace', role: 'owner' }] });
+        if (url.pathname === '/api/v1/project-folders') return json({ folders: [] });
       }
       fixture.unhandled.push({ method, path: url.pathname });
       return ['GET', 'HEAD', 'OPTIONS'].includes(method) ? json({ error: 'synthetic_route_unhandled' }, 501) : route.abort('blockedbyclient');

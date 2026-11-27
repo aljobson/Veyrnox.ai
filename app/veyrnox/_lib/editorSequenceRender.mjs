@@ -83,43 +83,71 @@ function titleRevealBounds(g,lines,px,lineHeight,y0,style,H,W) {
     top+=Math.min(0,shadowY)-padding;bottom+=Math.max(0,shadowY)+padding;
     return {x:left,y:top,width:Math.max(0,right-left),height:Math.max(0,bottom-top)};
 }
-export function paintSequence(g, W, H, layers, pictures) {
-    g.save(); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over'; g.filter = 'none'; g.fillStyle = layers.background; g.fillRect(0, 0, W, H);
-    layers.visuals.forEach((v, i) => {
-        const pic = pictures.visuals[i]; if (!pic) return;
-        const c = v.clip;
-        const t = evaluatedTransform(c, v.offset), reveal=evaluatedReveal(c,v.offset), parameters=evaluatedParameters(c,v.offset),f=parameters.filter;
+/**
+ * One deterministic paint list. A referenced subject is drawn once without its matte, then the
+ * opted-in title/image overlays, then once through its whole-person matte. Unrelated layers keep
+ * their canonical order and normal titles remain above the finished visual stack.
+ */
+export function subjectCompositeOrder(layers) {
+    const subjects=new Set(layers.visuals.filter(({clip})=>clip.semanticMask?.category==='person').map(({clip})=>clip.id));
+    const visualBehind=new Map(),textBehind=new Map();
+    layers.visuals.forEach((visual,index)=>{if(subjects.has(visual.clip.behindSubject)){const list=visualBehind.get(visual.clip.behindSubject)||[];list.push(index);visualBehind.set(visual.clip.behindSubject,list);}});
+    layers.texts.forEach((item,index)=>{if(subjects.has(item.behindSubject)){const list=textBehind.get(item.behindSubject)||[];list.push(index);textBehind.set(item.behindSubject,list);}});
+    const claimedVisuals=new Set([...visualBehind.values()].flat()),claimedTexts=new Set([...textBehind.values()].flat()),order=[];
+    layers.visuals.forEach((visual,index)=>{
+        if(claimedVisuals.has(index))return;
+        const id=visual.clip.id,visuals=visualBehind.get(id)||[],texts=textBehind.get(id)||[];
+        if(!visuals.length&&!texts.length){order.push({kind:'visual',index,semantic:'normal'});return;}
+        order.push({kind:'visual',index,semantic:'base'});
+        visuals.forEach(overlay=>order.push({kind:'visual',index:overlay,semantic:'normal'}));
+        texts.forEach(overlay=>order.push({kind:'text',index:overlay}));
+        order.push({kind:'visual',index,semantic:'foreground'});
+    });
+    layers.texts.forEach((_,index)=>{if(!claimedTexts.has(index))order.push({kind:'text',index});});
+    return order;
+}
+
+function paintSequenceVisual(g,W,H,layers,pictures,i,semantic='normal') {
+    const v=layers.visuals[i],pic=pictures.visuals[i]; if(!v||!pic)return;
+    const c=v.clip,t=evaluatedTransform(c,v.offset),reveal=evaluatedReveal(c,v.offset),parameters=evaluatedParameters(c,v.offset),f=parameters.filter;
+    if(semantic!=='foreground'){
         if(revealActive(reveal)){g.save();clipReveal(g,reveal,0,0,W,H);}
         if(v.shape!==undefined){g.save();clipPictureShape(g,0,0,W,H,v.shape);}
         paintBackground(g,W,H,c,pic,pictures.backgrounds?.[i],t.opacity*(v.alpha??1),v.wipe);
         if(v.shape!==undefined)g.restore();
         if(revealActive(reveal))g.restore();
-        const crop = c.crop || { x: 0, y: 0, width: 1, height: 1 };
-        const sw = pic.width * crop.width, sh = pic.height * crop.height;
-        const factor = (c.fit === 'cover' ? Math.max : Math.min)(W / sw, H / sh);
-        const w = sw * factor, h = sh * factor;
-        g.save(); g.translate(W * (t.x + (v.slideX || 0)), H * (t.y + (v.slideY || 0))); g.rotate((t.rotation + (v.spin || 0)) * Math.PI / 180); g.scale(t.scale * (v.zoom || 1) * (t.flipX ? -1 : 1), t.scale * (v.zoom || 1) * (t.flipY ? -1 : 1));
-        g.globalAlpha = t.opacity * (v.alpha ?? 1); g.globalCompositeOperation = c.blend || 'source-over';
-        g.filter = `brightness(${f.brightness}) contrast(${f.contrast}) saturate(${f.saturate}) hue-rotate(${f.hue}deg) blur(${f.blur+(v.transitionBlur||0)}px)`;
-        if (v.wipe !== undefined) clipPictureWipe(g,-w/2,-h/2,w,h,v.wipe);
-        if (v.shape !== undefined) clipPictureShape(g,-w/2,-h/2,w,h,v.shape);
-        clipReveal(g,reveal,-w/2,-h/2,w,h);
-        const effect = c.effect;
-        const processed=smartPictureActive(c.smartPicture)?smartPicture(pic,crop,c.smartPicture,w,h):pic;
-        const processedCrop=processed===pic?crop:{x:0,y:0,width:1,height:1};
-        const adjustedColour=!neutralColour(parameters.colour) ? colourPicture(processed,processedCrop,parameters.colour,w,h):processed;
-        const colourCrop=adjustedColour===pic?crop:{x:0,y:0,width:1,height:1};
-        let rendered=effect && effect.type !== 'none' && effect.intensity > 0 ? effectPicture(adjustedColour,colourCrop,effect,v.offset) : adjustedColour;
-        let renderedCrop=rendered===adjustedColour?colourCrop:{x:0,y:0,width:1,height:1};
-        if(c.mask&&c.mask!=='none'){rendered=maskedPicture(rendered,renderedCrop,c,v.offset,w,h);renderedCrop={x:0,y:0,width:1,height:1};}
-        const semanticMask=pictures.masks?.[i];
-        if(semanticMask){rendered=semanticMaskedPicture(rendered,renderedCrop,semanticMask,crop,w,h);renderedCrop={x:0,y:0,width:1,height:1};}
-        g.drawImage(rendered,rendered.width*renderedCrop.x,rendered.height*renderedCrop.y,rendered.width*renderedCrop.width,rendered.height*renderedCrop.height,-w/2,-h/2,w,h);
-        g.restore();
+    }
+    const crop=c.crop||{x:0,y:0,width:1,height:1},sw=pic.width*crop.width,sh=pic.height*crop.height;
+    const factor=(c.fit==='cover'?Math.max:Math.min)(W/sw,H/sh),w=sw*factor,h=sh*factor;
+    g.save();g.translate(W*(t.x+(v.slideX||0)),H*(t.y+(v.slideY||0)));g.rotate((t.rotation+(v.spin||0))*Math.PI/180);g.scale(t.scale*(v.zoom||1)*(t.flipX?-1:1),t.scale*(v.zoom||1)*(t.flipY?-1:1));
+    g.globalAlpha=t.opacity*(v.alpha??1);g.globalCompositeOperation=c.blend||'source-over';
+    g.filter=`brightness(${f.brightness}) contrast(${f.contrast}) saturate(${f.saturate}) hue-rotate(${f.hue}deg) blur(${f.blur+(v.transitionBlur||0)}px)`;
+    if(v.wipe!==undefined)clipPictureWipe(g,-w/2,-h/2,w,h,v.wipe);
+    if(v.shape!==undefined)clipPictureShape(g,-w/2,-h/2,w,h,v.shape);
+    clipReveal(g,reveal,-w/2,-h/2,w,h);
+    const effect=c.effect,processed=smartPictureActive(c.smartPicture)?smartPicture(pic,crop,c.smartPicture,w,h):pic;
+    const processedCrop=processed===pic?crop:{x:0,y:0,width:1,height:1};
+    const adjustedColour=!neutralColour(parameters.colour)?colourPicture(processed,processedCrop,parameters.colour,w,h):processed;
+    const colourCrop=adjustedColour===pic?crop:{x:0,y:0,width:1,height:1};
+    let rendered=effect&&effect.type!=='none'&&effect.intensity>0?effectPicture(adjustedColour,colourCrop,effect,v.offset):adjustedColour;
+    let renderedCrop=rendered===adjustedColour?colourCrop:{x:0,y:0,width:1,height:1};
+    if(c.mask&&c.mask!=='none'){rendered=maskedPicture(rendered,renderedCrop,c,v.offset,w,h);renderedCrop={x:0,y:0,width:1,height:1};}
+    const semanticMask=pictures.masks?.[i];
+    if(semantic!=='base'&&semanticMask){rendered=semanticMaskedPicture(rendered,renderedCrop,semanticMask,crop,w,h);renderedCrop={x:0,y:0,width:1,height:1};}
+    g.drawImage(rendered,rendered.width*renderedCrop.x,rendered.height*renderedCrop.y,rendered.width*renderedCrop.width,rendered.height*renderedCrop.height,-w/2,-h/2,w,h);
+    g.restore();
+    if(semantic!=='base'){
         if(v.flash){g.save();g.globalCompositeOperation='screen';g.globalAlpha=v.flash*.75;g.fillStyle='#ffffff';g.fillRect(0,0,W,H);g.restore();}
-        if(v.leak){paintLightLeak(g,W,H,v.leak);}
-    });
-    for (const item of layers.texts) paintStyledText(g, W, H, item);
+        if(v.leak)paintLightLeak(g,W,H,v.leak);
+    }
+}
+
+export function paintSequence(g, W, H, layers, pictures) {
+    g.save();g.globalAlpha=1;g.globalCompositeOperation='source-over';g.filter='none';g.fillStyle=layers.background;g.fillRect(0,0,W,H);
+    for(const layer of subjectCompositeOrder(layers)){
+        if(layer.kind==='text')paintStyledText(g,W,H,layers.texts[layer.index]);
+        else paintSequenceVisual(g,W,H,layers,pictures,layer.index,layer.semantic);
+    }
     g.restore();
 }
 export function paintStyledText(g, W, H, item) {

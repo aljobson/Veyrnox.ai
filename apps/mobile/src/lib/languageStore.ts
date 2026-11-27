@@ -48,6 +48,12 @@ export async function saveLanguage(code: string | null, pendingAccountSync = fal
     return writeFallback(raw);
 }
 
+// The first-launch gate updates the synchronous startup read before revealing sign-in.
+export function saveLanguageSync(code: string, pendingAccountSync = false): boolean {
+    const raw = JSON.stringify({ ...JSON.parse(serializeLanguage(code)), pendingAccountSync });
+    return writeFallback(raw);
+}
+
 // The account keeps the choice too (the same call the website makes), so chat replies and the web follow it. English
 // clears it, as on the site. Never blocks or fails the screen.
 export async function saveAccountLanguage(api: Pick<ApiClient, 'request'>, code: string): Promise<void> {

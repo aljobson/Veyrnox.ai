@@ -8,6 +8,7 @@ import { crunInputRefusal, PHOTO_CHARACTER_LINE } from '../lib/crunInputRefusal.
 import { capabilityFor, publicCapabilities } from '../lib/modelCapabilities.js';
 import { ALL_TEMPLATES } from '../app/veyrnox/_lib/templates.js';
 import { TEMPLATE_FACE_WORDING_COMPACT } from '../lib/templateFaceWording.mjs';
+import { TEMPLATE_REFERENCE_PRIORITY } from '../lib/templateReferencePriority.js';
 
 const CAP = 0.01796; // ADR-0037
 const seedance = { model: 'bytedance/seedance2-0-r2v' };
@@ -31,6 +32,7 @@ test('a template runs without its own negative prompt; nothing else gets through
   assert.equal(crunInputRefusal(crunRow, { prompt: withNegative.prompt }, { preset: withNegative.id }), null, 'current clients send none');
   assert.equal(crunInputRefusal(crunRow, own, { preset: withNegative.id }), null, 'an older client sends the template\'s own');
   assert.equal(crunInputRefusal(crunRow, { ...own, prompt: `${withNegative.prompt}\n\n${PHOTO_CHARACTER_LINE}` }, { preset: withNegative.id }), null);
+  assert.equal(crunInputRefusal(crunRow, { ...own, prompt: `${TEMPLATE_REFERENCE_PRIORITY}\n\n${withNegative.prompt}` }, { preset: withNegative.id }), null, 'current clients send the reference-priority contract');
   assert.equal(crunInputRefusal(crunRow, { ...own, negative_prompt: 'blurry' }, { preset: withNegative.id }), refused);
   assert.equal(crunInputRefusal(crunRow, { ...own, prompt: 'a different prompt' }, { preset: withNegative.id }), refused);
   assert.equal(crunInputRefusal(crunRow, { ...own, prompt: `${withNegative.prompt} extra` }, { preset: withNegative.id }), refused);
@@ -42,9 +44,9 @@ test('a template runs without its own negative prompt; nothing else gets through
   assert.equal(crunInputRefusal(crunRow, { prompt: withoutNegative.prompt }, { preset: withoutNegative.id }), null);
 });
 
-test('web and mobile append the same photo line the gateway recognises', () => {
+test('web and mobile use the shared reference-priority contract', () => {
   for (const file of ['app/veyrnox/_lib/templateGenerate.js', 'apps/mobile/src/lib/templateGenerate.ts']) {
-    assert.ok(readFileSync(file, 'utf8').includes(PHOTO_CHARACTER_LINE), file);
+    assert.ok(readFileSync(file, 'utf8').includes('withTemplateReferencePriority'), file);
   }
 });
 

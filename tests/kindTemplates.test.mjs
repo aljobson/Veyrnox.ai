@@ -21,8 +21,8 @@ test('audio answers the Create audio templates in the shape older mobile builds 
         for (const key of ['id', 'name', 'category', 'modelId', 'prompt']) assert.equal(typeof t[key], 'string', `${t.id} ${key}`);
         assert.ok(modelIds.has(internalModelId(t.modelId)), `${t.id} opens a known model (${t.modelId})`);
     }
-    assert.deepEqual(body.categories, ['MUSIC', 'CINEMATIC']);
-    for (const t of body.templates) assert.ok(t.previewAudio && t.previewAttribution, `${t.id} ships a licensed preview with its credit line`);
+    assert.deepEqual(body.categories, ['SOUND FX']);
+    for (const t of body.templates) assert.equal(t.modelId, 'suno-sounds', `${t.id} opens the active Sound Effects model`);
 });
 
 test('image answers only image templates, each runnable with a full prompt and a picture', async () => {
