@@ -895,7 +895,8 @@ test('F03-H2 Custom lyrics autosave privately, survive reload and never request 
   expect(serverDraft.styles).toBe('Warm piano, restrained percussion, 84 bpm; wide stereo space with a close, intimate centre');
   expect(serverDraft.title).toBe('Harbour Frame');
   expect(generationCalls).toBe(0);
-  await expect(page.getByRole('button', { name: 'Custom generation unavailable for this model' })).toBeDisabled();
+  await expect(page.getByRole('region', { name: 'Custom generation availability' })).toContainText('Draft now. Generate with a plan.');
+  await expect(page.getByRole('link', { name: 'Compare plans for Custom' })).toHaveAttribute('href', '/app/credits#subscriptions');
   await page.screenshot({ path: 'replica/suno/clone-screens/S06-server-mobile.png', fullPage: true });
 
   await page.reload();

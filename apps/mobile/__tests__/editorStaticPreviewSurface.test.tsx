@@ -31,8 +31,16 @@ jest.mock('@shopify/react-native-skia', () => ({
     Image: (props: any) => require('react').createElement(require('react-native').View, { ...props, testID: 'mock-skia-image' }),
 }));
 jest.mock('../src/components/editor/EditorMediaPreview', () => ({
-    EditorMediaPreview: () => require('react').createElement(require('react-native').View,
-        { testID: 'legacy-editor-preview', accessibilityLabel: 'Legacy preview' }),
+    EditorMediaPreview: ({ media }: { media: { id: string } }) => require('react').createElement(require('react-native').View,
+        { testID: 'legacy-editor-preview', accessibilityLabel: `Legacy preview ${media.id}` }),
+}));
+jest.mock('../src/components/editor/EditorNativePreviewSurface', () => ({
+    EditorNativePreviewSurface: (props: any) => {
+        const React = require('react'), View = require('react-native').View;
+        React.useLayoutEffect(() => { props.onDisplayed({ frame: props.frame, exact: true }); return () => props.onDisplayed(null); },
+            [props.frame, props.onDisplayed]);
+        return React.createElement(View, { testID: 'mock-native-preview', account: props.account, project: props.project });
+    },
 }));
 
 const deferred = <T,>() => {
@@ -56,6 +64,34 @@ beforeEach(() => {
         'timeline-background', 'image-source', 'graphic-source', 'fit', 'crop', 'transform', 'visual-layering', 'blend', 'mask', 'clip-animation',
         'clip-background-solid', 'clip-background-blur', 'clip-background-image', 'basic-filter');
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+});
+
+test('live preview draws every active visual in canonical bottom-to-top track order', async () => {
+    const root = createRoot(), value = timeline();
+    value.tracks.push({ id: 'video-upper', kind: 'video', name: 'Video 2', locked: false, muted: false, hidden: false });
+    value.media.overlay = { id: 'overlay', kind: 'image', frames: 90, width: 320, height: 180, hasAudio: false };
+    value.video.push({ id: 'v2', mediaId: 'overlay', start: 0, in: 0, len: 90, trackId: 'video-upper' });
+    try {
+        await act(async () => root.render(<PlaybackPreview frameStore={createFrameStore(5)} timeline={value}
+            api={{ request: jest.fn() }} playing localMediaUris={{ image: 'file://base.png', overlay: 'file://overlay.png' }} />));
+        expect(root.container.queryAll(node => node.props.testID === 'legacy-editor-preview')
+            .map(node => node.props.accessibilityLabel)).toEqual(['Legacy preview image', 'Legacy preview overlay']);
+    } finally { await act(async () => root.unmount()); }
+});
+
+test('an exact native frame replaces the approximate stack and owns behind-subject text', async () => {
+    const root = createRoot(), value = timeline();
+    value.text = [{ id: 't1', text: 'Behind subject', start: 0, len: 90, trackId: 'text-0', x: .5, y: .5, size: 8 }];
+    try {
+        await act(async () => root.render(<PlaybackPreview staticPreview frameStore={createFrameStore(5)} timeline={value}
+            api={{ request: jest.fn() }} playing={false} localMediaUris={{ image: 'file://image.png' }}
+            nativeIdentity={{ account: 'account', project: 'project' }} />));
+        const native = root.container.queryAll(node => node.props.testID === 'mock-native-preview')[0];
+        expect(native.props).toMatchObject({ account: 'account', project: 'project' });
+        expect(root.container.queryAll(node => node.props.accessibilityRole === 'image')).toHaveLength(1);
+        expect(root.container.queryAll(node => node.children.includes('Approximate preview'))).toHaveLength(0);
+        expect(root.container.queryAll(node => node.children.includes('Behind subject'))).toHaveLength(0);
+    } finally { await act(async () => root.unmount()); }
 });
 
 test('keeps legacy visible until a current paused frame commits, then atomically returns on play', async () => {
@@ -249,7 +285,7 @@ test.each([
         const surface = root.container.queryAll(node => node.props.testID === 'editor-static-preview-surface')[0];
         await act(async () => surface.props.onLayout({ nativeEvent: { layout: { width: 320, height: 180 } } }));
         expect(mockLoader.load).not.toHaveBeenCalled();
-        expect(root.container.queryAll(node => node.props.testID === 'legacy-editor-preview')).toHaveLength(1);
+        expect(root.container.queryAll(node => node.props.testID === 'legacy-editor-preview')).toHaveLength(_name === 'transition' ? 2 : 1);
     } finally { await act(async () => root.unmount()); }
 });
 

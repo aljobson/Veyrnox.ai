@@ -18,6 +18,7 @@ export interface Workspace {
 export interface Project {
     readonly id: string;
     readonly workspaceId: string | null;
+    readonly folderId: string | null;
     readonly name: string;
     readonly version: number;
     readonly createdAt: string | null;
@@ -25,6 +26,15 @@ export interface Project {
     // Newest saved document revision and when it was saved (the project row's own version/updated_at only move on rename).
     readonly latestRevision: number | null;
     readonly savedAt: string | null;
+    readonly editingTimeSavedSeconds: number | null;
+}
+
+export interface ProjectFolder {
+    readonly id: string;
+    readonly workspaceId: string;
+    readonly parentId: string | null;
+    readonly name: string;
+    readonly version: number;
 }
 
 export interface Version {
@@ -52,13 +62,58 @@ export function parseProject(raw: unknown): Project | null {
     return {
         id,
         workspaceId: str(r.workspace_id),
+        folderId: str(r.folder_id),
         name: str(r.name) ?? t('projects.untitledproject'),
         version: typeof r.version === 'number' && Number.isInteger(r.version) && r.version >= 0 ? r.version : 0,
         createdAt: str(r.created_at),
         updatedAt: str(r.updated_at),
         latestRevision: typeof r.latest_revision === 'number' && Number.isInteger(r.latest_revision) && r.latest_revision > 0 ? r.latest_revision : null,
         savedAt: str(r.saved_at),
+        editingTimeSavedSeconds: typeof r.editing_time_saved_seconds === 'number' && Number.isSafeInteger(r.editing_time_saved_seconds) && r.editing_time_saved_seconds > 0
+            ? r.editing_time_saved_seconds : null,
     };
+}
+
+export function parseProjectFolder(raw: unknown): ProjectFolder | null {
+    const r = isObject(raw) && isObject(raw.folder) ? raw.folder : raw;
+    if (!isObject(r)) return null;
+    const id = str(r.id), workspaceId = str(r.workspace_id), name = str(r.name);
+    if (!id || !workspaceId || !name) return null;
+    return {
+        id,
+        workspaceId,
+        parentId: str(r.parent_id),
+        name,
+        version: typeof r.version === 'number' && Number.isInteger(r.version) && r.version > 0 ? r.version : 1,
+    };
+}
+
+export function parseProjectFolders(body: unknown): ProjectFolder[] {
+    const list = isObject(body) && Array.isArray(body.folders) ? body.folders : [];
+    return list.map(parseProjectFolder).filter((folder): folder is ProjectFolder => folder !== null);
+}
+
+export function folderLabel(folder: ProjectFolder, folders: readonly ProjectFolder[]): string {
+    const names = [folder.name];
+    let parentId = folder.parentId;
+    const seen = new Set([folder.id]);
+    while (parentId && names.length < 4 && !seen.has(parentId)) {
+        seen.add(parentId);
+        const parent = folders.find((candidate) => candidate.id === parentId);
+        if (!parent) break;
+        names.unshift(parent.name);
+        parentId = parent.parentId;
+    }
+    return names.join(' / ');
+}
+
+export function editingTimeSavedClock(seconds: number): string {
+    const safe = Math.max(0, Math.floor(seconds));
+    const hours = Math.floor(safe / 3600);
+    const minutes = Math.floor(safe % 3600 / 60);
+    const remainder = safe % 60;
+    return hours > 0 ? `${hours}:${String(minutes).padStart(2, '0')}:${String(remainder).padStart(2, '0')}`
+        : `${minutes}:${String(remainder).padStart(2, '0')}`;
 }
 
 export const projectVersion = (p: Pick<Project, 'version' | 'latestRevision'>): number => p.latestRevision ?? p.version;
@@ -91,6 +146,7 @@ export const versionLabel = (v: Version): string => (v.restoredFrom !== null ? t
 const enc = encodeURIComponent;
 export const fetchWorkspaces = async (api: ApiClient) => parseWorkspaces(await api.request('/api/v1/workspaces'));
 export const fetchProjects = async (api: ApiClient, workspaceId: string) => parseProjects(await api.request(`/api/v1/projects?workspace_id=${enc(workspaceId)}`));
+export const fetchProjectFolders = async (api: ApiClient, workspaceId: string) => parseProjectFolders(await api.request(`/api/v1/project-folders?workspace_id=${enc(workspaceId)}`));
 export const fetchProject = async (api: ApiClient, id: string) => parseProject(await api.request(`/api/v1/projects/${enc(id)}`));
 export const fetchHistory = async (api: ApiClient, id: string, before?: number) =>
     parseHistory(await api.request(`/api/v1/projects/${enc(id)}/history${before === undefined ? '' : `?before=${enc(String(before))}`}`));
@@ -111,6 +167,14 @@ export const renameProject = async (api: ApiClient, id: string, name: string, ve
     changed(parseProject(await api.request(`/api/v1/projects/${enc(id)}`, { method: 'PATCH', headers: JSON_HEADERS, body: JSON.stringify({ name, version }) })));
 export const deleteProject = async (api: ApiClient, id: string, version: number) =>
     changed(await api.request(`/api/v1/projects/${enc(id)}`, { method: 'DELETE', headers: JSON_HEADERS, body: JSON.stringify({ version }) }));
+export const createProjectFolder = async (api: ApiClient, workspaceId: string, parentId: string | null, name: string, idempotencyKey: string) =>
+    changed(parseProjectFolder(await api.request('/api/v1/project-folders', { method: 'POST', headers: { ...JSON_HEADERS, 'Idempotency-Key': idempotencyKey }, body: JSON.stringify({ workspace_id: workspaceId, parent_id: parentId, name }) })));
+export const renameProjectFolder = async (api: ApiClient, id: string, name: string, version: number) =>
+    changed(parseProjectFolder(await api.request(`/api/v1/project-folders/${enc(id)}`, { method: 'PATCH', headers: JSON_HEADERS, body: JSON.stringify({ name, version }) })));
+export const deleteProjectFolder = async (api: ApiClient, id: string, version: number) =>
+    changed(await api.request(`/api/v1/project-folders/${enc(id)}`, { method: 'DELETE', headers: JSON_HEADERS, body: JSON.stringify({ version }) }));
+export const moveProjectToFolder = async (api: ApiClient, id: string, folderId: string | null, version: number) =>
+    changed(parseProject(await api.request(`/api/v1/projects/${enc(id)}`, { method: 'PATCH', headers: JSON_HEADERS, body: JSON.stringify({ folder_id: folderId, version }) })));
 // Restoring writes a new version copied from an older one; nothing is lost.
 // The document route requires an Idempotency-Key (packages/security/input.js); the caller keeps one key per restore tap.
 export const restoreVersion = async (api: ApiClient, id: string, currentRevision: number, restoreRevision: number, idempotencyKey: string) =>
@@ -118,6 +182,12 @@ export const restoreVersion = async (api: ApiClient, id: string, currentRevision
 
 export function projectsErrorMessage(err: unknown): string {
     const status = (err as { status?: unknown } | null)?.status;
+    const body = (err as { body?: unknown } | null)?.body;
+    const code = isObject(body) && isObject(body.error) ? str(body.error.code) : null;
+    if (code === 'NAME_CONFLICT') return t('projects.folderNameConflict');
+    if (code === 'FOLDER_NOT_EMPTY') return t('projects.folderNotEmpty');
+    if (code === 'FOLDER_DEPTH_LIMIT') return t('projects.folderDepthLimit');
+    if (code === 'LIMIT_REACHED') return t('projects.folderLimitReached');
     if (status === 0) return t('projects.noconnectionCheckyourinternetandtry');
     if (status === 404) return t('projects.projectsarenotavailableyet');
     if (status === 409) return t('projects.thisprojectchangedsomewhereelseReloadit');

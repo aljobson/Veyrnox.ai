@@ -5,7 +5,7 @@ const box = (type, payload) => {
   return bytes;
 };
 const join = (...parts) => Buffer.concat(parts);
-export function lipSyncMp4({ movieScale = 10000, video = 7.2, movie = video, audio = null, duplicateVideo = false, handler = 'vide', enabled = true, edit = null, composition = false, compositionOffset = null, sampleCount = 180, duplicateHandler = false } = {}) {
+export function lipSyncMp4({ movieScale = 10000, video = 7.2, movie = video, audio = null, duplicateVideo = false, handler = 'vide', enabled = true, edit = null, composition = false, compositionOffset = null, compositionOffsets = null, sampleCount = 180, duplicateHandler = false } = {}) {
   const scale = 10000;
   function track(seconds, kind) {
     const tkhd = Buffer.alloc(84); tkhd[3] = enabled ? 3 : 0;
@@ -15,8 +15,10 @@ export function lipSyncMp4({ movieScale = 10000, video = 7.2, movie = video, aud
     const hdlr = Buffer.alloc(24); hdlr.write(kind, 8);
     const stts = Buffer.alloc(16); stts.writeUInt32BE(1, 4); stts.writeUInt32BE(sampleCount, 8); stts.writeUInt32BE(Math.round(seconds * scale / sampleCount), 12);
     const stsz = Buffer.alloc(12); stsz.writeUInt32BE(1, 4); stsz.writeUInt32BE(sampleCount, 8);
-    const compositionBytes = Buffer.alloc(16); compositionBytes.writeUInt32BE(1, 4); compositionBytes.writeUInt32BE(sampleCount, 8); compositionBytes.writeUInt32BE(Math.round((compositionOffset || 0) * scale), 12);
-    const ctts = compositionOffset !== null ? box('ctts', compositionBytes) : composition ? box('ctts', Buffer.alloc(8)) : Buffer.alloc(0);
+    const offsets = compositionOffsets || (compositionOffset !== null ? Array(sampleCount).fill(compositionOffset) : null);
+    const compositionBytes = Buffer.alloc(8 + (offsets?.length || 0) * 8); compositionBytes.writeUInt32BE(offsets?.length || 0, 4);
+    offsets?.forEach((offset, index) => { compositionBytes.writeUInt32BE(1, 8 + index * 8); compositionBytes.writeUInt32BE(Math.round(offset * scale), 12 + index * 8); });
+    const ctts = offsets ? box('ctts', compositionBytes) : composition ? box('ctts', Buffer.alloc(8)) : Buffer.alloc(0);
     const mdia = box('mdia', join(box('mdhd', mdhd), box('hdlr', hdlr), duplicateHandler ? box('hdlr', hdlr) : Buffer.alloc(0), box('minf', box('stbl', join(box('stts', stts), box('stsz', stsz), ctts)))));
     let edts = Buffer.alloc(0);
     if (edit && kind !== 'soun') {

@@ -83,7 +83,7 @@ export function DevicesCard() {
     }
 
     return (
-        <Card title={t('acct.dev.title')} help={t('acct.dev.help')}>
+        <Card title={t('acct.dev.title')} help={t('acct.dev.help')} icon="phone" hue="green">
             {rows === null ? <ActivityIndicator color={styles.accent.color} accessibilityLabel={t('acct.dev.loading')} /> : null}
             {loadFailed ? <Status text={t('acct.dev.loadFailed')} error /> : null}
             {rows && !loadFailed && rows.length === 0 ? <Text variant="footnote" tone="secondary">{t('acct.dev.empty')}</Text> : null}

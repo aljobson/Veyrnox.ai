@@ -168,8 +168,6 @@
   "musicPublic.genre.jazz": "Established musical genre or reaction loanword in this locale. Machine translated; native review pending.",
   "musicPublic.genre.rnb-soul": "Established musical genre or reaction loanword in this locale. Machine translated; native review pending.",
   "musicPublic.genre.country-folk": "Established musical genre or reaction loanword in this locale. Machine translated; native review pending.",
-  "beat.home.untitled": "Same in es: a loanword, brand-style name or number used unchanged in this language.",
-  "beat.home.loaded": "Same in es: a loanword, brand-style name or number used unchanged in this language.",
   "beat.tempo": "Same in es: a loanword, brand-style name or number used unchanged in this language.",
   "beat.tempoValue": "Same in es: a loanword, brand-style name or number used unchanged in this language.",
   "beat.pattern.swing": "Swing is established Spanish music-production terminology and is intentionally unchanged.",
@@ -268,5 +266,11 @@
   "music.create.suno.style.jazz": "Same spelling in Spanish and English for this label: Jazz.",
   "music.create.suno.style.pop": "Same spelling in Spanish and English for this label: Pop.",
   "music.create.suno.style.rock": "Same spelling in Spanish and English for this label: Rock.",
-  "musicAlbums.type.ep": "EP is the standard music-release abbreviation in Spanish and English."
+  "musicAlbums.type.ep": "EP is the standard music-release abbreviation in Spanish and English.",
+  "onboarding.notifications.app": "Veyrnox is the product name and is intentionally unchanged in every language.",
+"bestCut.settings": "Smart Cut is the product feature name and remains unchanged across languages.",
+  "editorLocalExport.codec.h264": "H.264 is the locale-independent standard video codec name.",
+  "editorLocalExport.codec.hevc": "HEVC is the locale-independent standard video codec name.",
+  "projects.smartCutBatch.eyebrow": "Smart Cut is the product feature name and remains unchanged across languages."
+
 }

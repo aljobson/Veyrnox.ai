@@ -4,18 +4,14 @@ import { sequenceLayers, paintSequence } from './editorSequenceRender.mjs';
 // call frameLayers() then paintFrame(), so they agree frame for frame; only where the pictures come from differs (a seekable sink
 // in the preview, sequential readers in the export). Text is drawn with the canvas text API and never put into the page.
 import { FPS, videoLayout, effectiveTransition, textsAt } from './editorTimeline.mjs';
+import { canvasPixelSize } from './editorCanvasFormat.mjs';
 
 export const EXPORT_HEIGHTS = Object.freeze([720, 1080]);
-const ASPECT_RATIO = { '16:9': 16 / 9, '9:16': 9 / 16, '1:1': 1 };
 
 /** Even pixel sizes at the chosen shape (or the first clip's), with the long edge no wider than 1920. */
 export function outputSize(width, height, targetHeight = 720, aspect = 'source', maximumWidth = 1920) {
-    const ratio = ASPECT_RATIO[aspect] ?? (width > 0 && height > 0 ? width / height : 16 / 9);
-    let h = (maximumWidth === 3840 ? EDITOR_EXPORT_HEIGHTS : EXPORT_HEIGHTS).includes(targetHeight) ? targetHeight : 720;
-    let w = h * ratio;
-    if (w > maximumWidth) { w = maximumWidth; h = w / ratio; }
-    const even = n => Math.max(2, Math.round(n / 2) * 2);
-    return { width: even(w), height: even(h) };
+    const heightPreset = (maximumWidth === 3840 ? EDITOR_EXPORT_HEIGHTS : EXPORT_HEIGHTS).includes(targetHeight) ? targetHeight : 720;
+    return canvasPixelSize(aspect, heightPreset, maximumWidth, width, height);
 }
 
 export function timelineSize(tl, targetHeight = 720) {

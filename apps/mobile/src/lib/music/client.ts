@@ -17,7 +17,7 @@ import { isMusicDraft, isMusicGenerationView, isMusicEntitlements, isMusicGenera
 import { isMusicDailyChallenge } from './dailyChallenge';
 import type {
     MusicDraft, MusicDraftInput, MusicGenerationView, MusicCustomQuoteInput, MusicEntitlements, MusicGeneration, MusicInspirationResult, MusicLibraryTab, MusicLibraryTabData, MusicQuote,
-    MusicRow, MusicSongRow, MusicLifecycle, MusicSimpleQuoteInput, MusicSong, MusicSongsQuery, MusicProviderContract, MusicReuseContext, MusicReuseInput,
+    MusicRow, MusicSongRow, MusicLifecycle, MusicSimpleQuoteInput, MusicSong, MusicSongsQuery, MusicProviderContract, MusicReuseContext, MusicReuseInput, MusicInspirationSource,
 } from './types';
 
 // Typed client over /api/v1/music/*. Request and response shapes come from the route handlers
@@ -64,8 +64,8 @@ export async function getEntitlements(api: ApiClient): Promise<MusicEntitlements
     return value;
 }
 
-export async function analyzeMusicInspiration(api: ApiClient, key: string, idempotencyKey: string, signal?: AbortSignal): Promise<MusicInspirationResult> {
-    const value = await api.request<unknown>(`${BASE}/inspiration`, { ...post({ kind: 'audio', key,
+export async function analyzeMusicInspiration(api: ApiClient, kind: MusicInspirationSource, key: string, idempotencyKey: string, signal?: AbortSignal): Promise<MusicInspirationResult> {
+    const value = await api.request<unknown>(`${BASE}/inspiration`, { ...post({ kind, key,
         rights_confirmed: true, idempotency_key: idempotencyKey }), signal }, { timeoutMs: 75_000 });
     if (!isMusicInspirationResult(value)) throw bad();
     return value;

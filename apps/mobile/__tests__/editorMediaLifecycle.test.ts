@@ -32,6 +32,18 @@ test('begin, bounded append and finish preserve the versioned session contract',
     expect(await client.release('project-1', 'vx-pcm-1')).toEqual({ ok: true, value: null }); client.close();
 });
 
+test('HEVC is bound at begin and the finished artifact must report hvc1', async () => {
+    const { native } = nativeHarness();
+    jest.mocked(native.finishEncode).mockResolvedValueOnce({ ok: true, artifactId: 'mp4-hevc', uri: 'file:///cache/mp4-hevc.mp4', kind: 'mp4', size: 4096,
+        width: 1280, height: 720, fps: 30, frames: 1, durationUs: 33333, videoCodec: 'hvc1' });
+    const client = createEditorMediaClient(native); await client.setOwner('account-1');
+    const begun = await client.beginEncode('project-1', { ...encode, codec: 'hevc' });
+    expect(begun).toMatchObject({ ok: true, value: { codec: 'hevc' } });
+    if (!begun.ok) return;
+    expect(await client.finishEncode(begun.value)).toMatchObject({ ok: true, value: { videoCodec: 'hvc1' } });
+    client.close();
+});
+
 test('finished output audio must match whether audio was bound at begin', async () => {
     const { native } = nativeHarness(), client = createEditorMediaClient(native); await client.setOwner('account-1');
     const silent = await client.beginEncode('project-1', encode); if (!silent.ok) throw Error('begin failed');

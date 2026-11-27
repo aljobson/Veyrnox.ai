@@ -9,6 +9,7 @@ import { ensureOnline, observe, markOnline, markOffline } from './network';
 import { ApiError, API_BASE, type ApiClient } from './api';
 import { GENERATION_PROMPT_MAX } from './promptLimits';
 import { internalModelId } from './publicModelIds';
+import { markNotificationPrimerPending } from './notificationPrimer';
 
 export interface CatalogModel {
     readonly id: string;
@@ -212,7 +213,13 @@ export const mediaApi = (api: ApiClient) => ({
                 ...(!r.references && r.assets?.length ? { source_assets: r.assets.map((a) => ({ asset_id: a.assetId, slot: a.slot })) } : {}),
                 ...(r.references?.length || r.sources?.length || r.assets?.length ? { consent: r.sourceRights === undefined ? agreed : r.sourceRights && agreed } : {}),
             }),
-        }, owner === undefined ? undefined : { owner }).then(result => { noteLocalSubmission(result.job_id); noteJobStarted(result.job_id, Date.now(), r.modelId); void noteGenerationSubmitted(result.job_id, r.modelId, r.analyticsKind); return result; });
+        }, owner === undefined ? undefined : { owner }).then(result => {
+            noteLocalSubmission(result.job_id);
+            noteJobStarted(result.job_id, Date.now(), r.modelId);
+            void noteGenerationSubmitted(result.job_id, r.modelId, r.analyticsKind);
+            void markNotificationPrimerPending(r.analyticsKind);
+            return result;
+        });
     },
     getJob: (id: string) =>
         api.request<{ state: JobState; credits: number; model_id: string; error_code?: string; refunded?: boolean; output_type?: 'editor-render'; render_id?: string | null }>(`/api/v1/jobs/${encodeURIComponent(id)}`),

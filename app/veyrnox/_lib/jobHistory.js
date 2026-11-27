@@ -125,6 +125,7 @@ export async function markJobSettled(job_id, state, errorCode, credits, refunded
   if (!['queued', 'running', 'succeeded', 'failed', 'refunded', 'cancelled'].includes(state)) return false;
   const isRefunded = refunded === true || state === 'refunded';
   const settledState = isRefunded ? 'failed' : historyState(state);
+  let historyChanged = false;
   let storage;
   try { storage = localStorage; } catch { /* memory-only claim */ }
   const entry = readJobHistory().find(r => r.job_id === job_id);
@@ -137,16 +138,25 @@ export async function markJobSettled(job_id, state, errorCode, credits, refunded
       if (!current || current.settled) return false;
       if (settledState === 'queued' || settledState === 'running') {
         if (current.replay_check) {
-          try { storage?.setItem(key, JSON.stringify(list.map(r => r.job_id === job_id ? { ...r, replay_check: false } : r))); } catch { /* Keep watching. */ }
+          try {
+            storage?.setItem(key, JSON.stringify(list.map(r => r.job_id === job_id ? { ...r, replay_check: false } : r)));
+            historyChanged = true;
+          } catch { /* Keep watching. */ }
         }
         return false;
       }
-      try { storage?.setItem(key, JSON.stringify(list.map(r => r.job_id === job_id ? { ...r, settled: settledState } : r))); } catch { /* unavailable */ }
+      try {
+        storage?.setItem(key, JSON.stringify(list.map(r => r.job_id === job_id ? { ...r, settled: settledState } : r)));
+        historyChanged = true;
+      } catch { /* unavailable */ }
       return !current.replay_check;
     },
   });
   if (won && getSession()?.user?.id === owner) signalSettled(entry, settledState, errorCode, credits, isRefunded);
-  announceChange();
+  // A running watcher reads the same state every five seconds. Broadcasting
+  // those no-op reads wakes the swap poll immediately and can exhaust its
+  // long-running window in seconds. Notify only when the history changed.
+  if (historyChanged) announceChange();
   return won;
 }
 

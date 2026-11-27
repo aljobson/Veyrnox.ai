@@ -1,16 +1,31 @@
-# Recon map: ByeCut (iOS/iPadOS)
+# Recon map: ByeCut (Android runtime + public iOS/iPadOS evidence)
 
 Scope: the core talking-head workflow — import raw takes, ask AI for a first cut, review the proposed cuts and alternate takes, add word-level captions, then export or share. The Veyrnox reconstruction is named **Smart Cut** and must use Veyrnox branding, components, media contracts, and billing.
 
 For: Veyrnox.ai creators producing TikToks, Reels, Shorts, UGC ads, tutorials, course lessons, podcast clips, and product updates.
 
-Date: 2026-11-06
+Date: 2026-11-24
 
 ## Clean-room boundary
 
-This map uses public product pages, the public App Store listing/version history, public terms, and five public marketing screenshots. It does not use ByeCut source code, a decrypted IPA, private APIs, network captures, proprietary prompts, customer data, or copied media. The installed iPhone app was not inspected because iPhone Mirroring remained locked and the current terms restrict copying/reverse engineering subject to applicable law. The reference screenshots in `screens/` are evidence only and must never ship.
+This map uses public product pages, the public App Store listing/version history, public terms, five public marketing screenshots, and read-only interaction with the user's own installed Android app. It does not use ByeCut source code, decompiled methods, private APIs, network captures, proprietary prompts, customer data, or copied product assets. The Android run stopped before starting a trial or sending the user's media to ByeCut's AI service. Reference screenshots in `screens/` are evidence only and must never ship.
 
-REA readiness was checked because the user requested the REA workflow. The installed CLI reported version 3.2.1 with stale Codex registration, while the active Codex session exposed no REA tools. No configuration repair or artifact analysis was attempted because there was no authorised local IPA and binary decompilation is outside this clean-room scope.
+REA readiness was checked because the user requested the REA workflow. The installed CLI reported version 3.2.1 and predates Android analysis, while the active Codex session exposed no usable Android REA target. Package identity was established independently with Android package-manager output and Android SDK `aapt` against the user-authorized APK copy; those are shell observations, not REA evidence. The current installed split APK set was copied intact to `/Users/aljobson/Downloads/ByeCut-APK/`, with convenience copies at `/Users/aljobson/Downloads/ByeCut.apk` and `/Users/aljobson/Downloads/ByeCut.apks`, at the user's request.
+
+## Android device observations (2026-11-20 and 2026-11-24)
+
+- Device: the user's unlocked Pixel 10 Pro XL on Android 17, USB serial intentionally omitted from this report.
+- Package: `com.thinkbyte.theocut`; the current 2026-11-24 install is version `0.3.13` (version code 17), application label `ByeCut` (`aapt`-verified). The earlier 2026-11-20 run used 0.3.11 (14).
+- S02 Projects was observed directly: search, settings, Batch AI Edit, filter/sort, new project, `Start an AI Edit`, an editing-time-saved card, folders, and a recent project card.
+- S08 Editor was observed directly: portrait preview, editable project name, Export, playback, undo/redo, zoomable thumbnail timeline and bottom `AI Edit / Cut / Sound / Text / Layers` tools.
+- S05 AI Edit setup was observed directly on the existing local project: optional script and notes, Music Video, Multiple Reels, output count, Original/9:16 shape, Snappy-to-Relaxed pacing, Auto-detect spoken language, source clips and `Create Best Cut`. The account had zero AI edits, so no analysis was started.
+- S12 Export was observed directly without rendering: Video/Audio Only, automatic gallery save, 1080p, Source (30 FPS), H.264, Recommended quality and a 1080×1920 / 00:18 / ~38 MB summary.
+- S13 Settings was observed directly: ByeCut Free, Google Drive Sync off, account, zero AI edits, storage, Video & Captions auto-detect, system appearance, device language, notifications off, Privacy & AI, tour/onboarding, support/rating and version 0.3.13 (17).
+- Batch AI Edit's plan boundary was observed directly. It says one action can start several selected videos and they can finish while ByeCut is closed; it is gated to Pro, Extreme and Ultimate. `See Plans` was not pressed.
+- S14 subscription gate was observed directly. The 0.3.13 trial sheet disclosed seven days free, a day-five reminder and day-seven billing. `Continue` was not pressed, notifications were not enabled and no trial was started.
+- S15 first-use AI disclosure was observed directly. It says AI Edit finds the best takes, shares audio and some video frames, and does not use them to train AI models, with `Agree and Continue` and `Not Now`.
+- The current public website says AI Edit sends audio/transcript/script/notes and never video, while the observed Android disclosure says audio and some frames. That is a live product inconsistency, not a basis for Veyrnox copy. Veyrnox must describe only its own implemented processor and data path.
+- Neither observed run crossed a paid analysis, export, upload, purchase or new-consent boundary. Setup and export configuration are now device-observed; processing progress, AI results/review, completed export, background completion and notification delivery remain public-source evidence rather than device-verified behavior.
 
 ## Sources
 
@@ -25,6 +40,9 @@ REA readiness was checked because the user requested the REA workflow. The insta
 | 7 | Current privacy policy | https://thinkbyte.tech/en/portfolio/byecut/privacy | Public privacy reference for audio/text processing and account-linked data |
 | 8 | AI Edit feature page | https://byecut.com/features/ai-auto-edit | Public AI Edit positioning and entry point |
 | 9 | Auto-captions feature page | https://byecut.com/features/auto-captions | Public caption positioning and presets entry point |
+| 10 | Official cross-platform download page | https://byecut.com/download?from=mobile_bar | Confirms Android availability and the advertised AI Edit/caption/editor feature set |
+| 11 | User-owned Android install | android://com.thinkbyte.theocut@0.3.13 | Package identity and directly observed S02, S05, S08, S12, S13, S14 and S15 states |
+| 12 | User-authorized APK copy | file:///Users/aljobson/Downloads/ByeCut-APK/ | Base plus arm64, English and xxhdpi split identity; copied for the owner, not shipped or decompiled |
 
 ## Core loop
 
@@ -35,18 +53,20 @@ A creator imports messy talking-head takes, optionally supplies the intended scr
 | ID | screen | route / how to reach | purpose | key components | states seen or publicly described |
 | --- | --- | --- | --- | --- | --- |
 | S01 | Welcome and sign-in | First launch or signed-out state | Authenticate before online AI features | Sign in with Apple, email, six-digit code, privacy/AI-sharing explanation | signed out; Apple sign-in; email-code sign-in; error guidance described |
-| S02 | Home and projects | App launch after sign-in | Resume projects, see saved time, start a project | project cards, folders, search/sort, time-saved summary, new-project action, allowance summary | empty; populated; folders/subfolders; local-only; optional iCloud sync |
+| S02 | Home and projects | App launch after sign-in | Resume projects, see saved time, start a project | project cards, folders, search/sort, time-saved summary, new-project action, allowance summary | Android populated state observed; empty/folder/sync states publicly described |
 | S03 | New project menu | `+` from Home | Choose the creation path | Start AI Edit, template, Photos import, Files import | menu pictured publicly; AI Edit and manual paths |
 | S04 | Media import | S03 → Photos or Files | Select one long recording or several clips | media grid/list, selection order, duration/quality/storage checks, iCloud-file state | selected/unselected; importing; low storage; iCloud delay; unsupported/no speech warning |
-| S05 | AI Edit setup | S03 → Start AI Edit → import | Tell the editor what should survive and how it should feel | optional script, editing notes, spoken-language detection/override, Snappy↔Relaxed pacing, allowance estimate, start action | blank; script supplied; notes supplied; language auto/manual; over allowance; no speech |
+| S05 | AI Edit setup | S03 → Start AI Edit → import | Tell the editor what should survive and how it should feel | optional script, editing notes, Music Video, Multiple Reels, output count, Original/9:16 shape, spoken-language detection/override, Snappy↔Relaxed pacing, source clips, allowance estimate, start action | Android populated setup observed with zero allowance; script supplied; notes supplied; language auto/manual; over allowance; no speech |
 | S06 | AI Edit progress | Start from S05 | Show transcription, analysis, quality checks, retry/recovery | stage list, percentage/status, cancel, background/Lock Screen progress, retry guidance | transcribing; analysing; selecting takes; quality checks; retrying; interrupted; failed; complete |
 | S07 | Cut review | AI plan needs attention or finishes | Compare source and proposal before applying | RAW/CUT toggle, duration saved, transcript sections, warnings, kept/removed labels, alternate takes, preview, restart/discard/apply | passed and auto-apply; warning; incomplete script match; alternate takes; thumbs rating |
-| S08 | Main editor | Apply plan or create manually | Refine the non-destructive timeline | video preview, playhead, multitrack timeline, waveforms, snapping, trim/split/merge, undo/redo, safe-area guides, tool tray | portrait/landscape; empty/loading preview; selected clip; quiet waveform; edited timeline |
+| S08 | Main editor | Apply plan or create manually | Refine the non-destructive timeline | video preview, playhead, multitrack timeline, waveforms, snapping, trim/split/merge, undo/redo, safe-area guides, tool tray | Android portrait editor and populated timeline observed; landscape/loading/error states publicly described |
 | S09 | Captions and text | Editor → Captions/Text | Generate, correct, style, show/hide, and position captions | word-level transcript, language selector, Edit Text, style cards, resize handles, alignment guides, visibility toggle | generating; existing captions; correction; hidden; timing issue; language issue; style preview |
 | S10 | Media and effects tools | Editor toolbar | Add polish after the first cut | titles, overlays, music, imported audio, voiceover, cleanup, filters/colour, speed/reverse/freeze, stabilization, background removal, masks, chroma key, face retouch | tool-specific empty/configured/processing/error states; exact layouts not established |
 | S11 | Plain-language assistant | Editor → assistant | Turn an instruction into an inspectable edit plan | prompt field, proposed operations, affected clips, warnings, accept/reject | described publicly; exact prompt and private implementation unknown |
-| S12 | Export and share | Editor → Export | Render with explicit output settings and preserve progress | resolution, frame rate, codec, aspect/canvas, save to Photos, share sheet, progress preview | up to 4K/60 fps; H.264/HEVC; rendering in background; success; failure; low storage |
-| S13 | Settings, account, sync, and plans | Home/Editor → Settings | Manage identity, language, appearance, AI allowance, sync, referrals, subscriptions, support, deletion | account, allowance meter, language, appearance, iCloud switch, backup, referrals, restore purchase, plan cards | Free/Creator/Pro/Extreme; light/dark/system; sync off/on; restore; offer code; delete account |
+| S12 | Export and share | Editor → Export | Render with explicit output settings and preserve progress | Video/Audio Only, automatic gallery save, resolution, frame rate, codec, quality, dimensions/duration/size summary, share sheet, progress preview | Android 1080p / Source 30 FPS / H.264 / Recommended setup observed; public sources describe up to 4K/60 fps, HEVC, background rendering, success, failure and low storage |
+| S13 | Settings, account, sync, and plans | Home/Editor → Settings | Manage identity, language, appearance, AI allowance, sync, notifications, privacy, subscriptions and support | account, allowance meter, language, appearance, Google Drive sync, storage, Video & Captions, notifications, Privacy & AI, tour/onboarding, support, plans | Android Free plan with zero allowance, sync/notifications off, auto-detect captions, system appearance and device language observed; paid/restore/delete states not tested |
+| S14 | AI Edit subscription gate | Android editor → AI Edit without entitlement | Explain paid AI value and select a plan | value bullets, plan cards, current selection, trial CTA, restore, terms/privacy/redeem links, close | Android populated paywall observed; no trial started; purchase/restore/error states not tested |
+| S15 | AI processing disclosure | Android AI Edit first use after gate | Obtain an informed choice before any remote analysis | best-cut hero, data-sharing summary, training statement, Learn More, Agree and Continue, Not Now | Android disclosure observed; Not Now/back path verified; Agree path deliberately not executed |
 
 ## Flows
 
@@ -85,6 +105,11 @@ F07 Export and share
     S08 → S12 choose format → Export → progress preview → save to Photos or share
     happy path clicks: 3–4
     edge: low storage, Photos permission denied, background render interrupted, codec unsupported by destination, share cancelled
+
+F08 Observed Android gated AI Edit
+    S02 open recent project → S08 tap AI Edit → S14 close without trial → S15 review disclosure → Not Now/back → S08
+    happy path clicks: blocked before the paid/consented AI path
+    edge: no entitlement, restore purchase, consent declined, public privacy copy conflicts with Android disclosure
 ```
 
 ## Components
@@ -113,6 +138,8 @@ F07 Export and share
 | ExportProgress | inline/Live Activity | rendering, background, failed, saved/shared | S12 |
 | SettingsRow | navigation, switch, destructive | default, loading, error | S13 |
 | PlanCard | Free, Creator, Pro, Extreme | current, trial eligible, purchase/restore error | S13 |
+| AiSubscriptionGate | plan list, trial CTA, restore | selected, not entitled, purchase error, closed | S14 |
+| AiProcessingDisclosure | compact sheet, full details link | not accepted, accepted version, declined | S15 |
 
 ## Inferred data model
 
@@ -181,13 +208,18 @@ AiAllowance     owner_id, plan, period_start, period_end, seconds_total, seconds
 ProjectBackup   id, project_id, format_version, created_at, local_uri, import_state
                 evidence: public portable-backup description
                 confidence: medium
+
+ConsentReceipt owner_id, project_id, disclosure_version, accepted_at, data_categories,
+               processor, policy_version
+               evidence: observed Android S15; server enforcement is inferred
+               confidence: medium
 ```
 
 Relationships: User 1-n Project; User 1-n Folder; Folder 0/1-n Folder and Project; Project 1-n MediaAsset, Clip, EditPlan, TimelineTrack, ExportJob, and ProjectBackup; EditPlan 1-n TranscriptSection; TranscriptSection 1-n TakeCandidate, while its TranscriptWord membership is derived from overlapping time ranges; TimelineTrack 1-n TimelineItem; User 1-1 current AiAllowance.
 
 ## Feature matrix
 
-See `features.csv`. Must: 25, should: 32, could: 17, skip: 8.
+See `features.csv`. Must: 27, should: 33, could: 18, skip: 9.
 
 ## Out of scope (cannot or should not be cloned)
 
@@ -205,4 +237,5 @@ Build **Smart Cut** as an explainable pre-editor rather than a full second video
 
 ## Size
 
-Screens: 13. Flows: 7. Entities: 15. Hard parts: word-accurate speech segmentation and best-take ranking; non-destructive timeline mutation with reversible plan application; reliable large-media import/export/background execution. Core Smart Cut slice: **M** (a few weeks in the existing editor). Full parity with every manual editing/effect/sync surface: **L** (a quarter) and should be split into milestones.
+Screens: 15. Flows: 8. Entities: 16. Hard parts: word-accurate speech segmentation and best-take ranking; non-destructive timeline mutation with reversible plan application; reliable large-media import/export/background execution. Core Smart Cut slice: **M** (a few weeks in the existing editor). Full parity with every manual editing/effect/sync surface: **L** (a quarter) and should be split into milestones.
+

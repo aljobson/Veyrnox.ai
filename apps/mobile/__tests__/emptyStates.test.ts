@@ -51,13 +51,20 @@ describe('where the empty states and prompt show', () => {
         expect(src('components', 'VeyCharacter.tsx')).toContain('accessibilityElementsHidden');
     });
 
-    test('each main tab shows Vey, not a grey spinner, on its first load', () => {
+    test('known layouts show structural placeholders on their first load', () => {
         for (const tab of ['index', 'create', 'library', 'editor', 'publish']) {
-            expect(app('(tabs)', `${tab}.tsx`)).toContain('<VeyLoader');
+            expect(app('(tabs)', `${tab}.tsx`)).toContain('<LoadingSkeleton');
         }
-        const loader = src('components', 'VeyLoader.tsx');
-        expect(loader).toContain('accessibilityRole="progressbar"');
-        expect(loader).toContain("t('common.loading')");
+        for (const screen of [
+            app('templates', '[id].tsx'), app('music', 'index.tsx'), app('music', '[id].tsx'),
+            app('beats', 'index.tsx'), app('wins.tsx'), app('publish', 'drafts.tsx'), src('app', 'preview.tsx'),
+            src('components', 'cinema', 'CinemaProfile.tsx'), src('components', 'cinema', 'DiscoveryList.tsx'),
+            src('components', 'beats', 'BeatSongLibrarySheet.tsx'), src('components', 'editor', 'EditorLoadState.tsx'),
+        ]) expect(screen).toContain('<LoadingSkeleton');
+        const skeleton = src('components', 'LoadingSkeleton.tsx');
+        expect(skeleton).toContain('accessibilityRole="progressbar"');
+        expect(skeleton).toContain('accessibilityState={{ busy: true }}');
+        expect(skeleton).not.toContain('VeyCharacter');
     });
 
     test('the empty state announces itself and its action has a name', () => {

@@ -46,3 +46,13 @@ test('poster requests share work, use a bounded midpoint and release the player'
     await a; await flush(); expect(generate).toHaveBeenCalledWith([0.2], { maxWidth: 480, maxHeight: 480 }); expect(release).toHaveBeenCalledTimes(1);
     await posterFor('job', 'new-url', deps); expect(deps.createPlayer).toHaveBeenCalledTimes(1); clearPosters();
 });
+test('poster cache keeps separately selected cover frames', async () => {
+    clearPosters(); const generate = jest.fn().mockResolvedValue([{}]);
+    const deps = { createPlayer: jest.fn(() => ({ status: 'readyToPlay', duration: 10, addListener: () => ({ remove: jest.fn() }), generateThumbnailsAsync: generate,
+        release: jest.fn() })) } as unknown as FrameDeps;
+    await posterFor('cover-job', 'url', deps, 1.25);
+    await posterFor('cover-job', 'url', deps, 7.5);
+    await posterFor('cover-job', 'url', deps, 1.25);
+    expect(generate.mock.calls.map(call => call[0])).toEqual([[1.25], [7.5]]);
+    clearPosters();
+});

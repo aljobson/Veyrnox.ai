@@ -31,6 +31,10 @@ import {
   augmentMusicStyle, buildMusicLyricAssistantPrompt, buildMusicLyricSelectionPrompt, insertMusicStructureLabel, musicWritingReferences,
   MUSIC_LYRIC_ASSISTANT_REQUEST_MAX, MUSIC_STRUCTURE_LABELS, nextMusicPrompt,
 } from './musicWriting';
+import { MusicCreationModeTabs } from './MusicCreationModeTabs';
+import {
+  buildMusicDirection, canMergeMusicStyleDirection, EMPTY_MUSIC_DIRECTION, mergeMusicStyleDirection, MusicAdvancedDirectionFields,
+} from './MusicAdvancedDirectionFields';
 
 const MUSIC_GUIDE_KEY = 'veyrnox.music.create-guide.v1';
 
@@ -70,9 +74,9 @@ function MusicFirstRunGuide() {
         <button type="button" onClick={dismiss} className="min-h-10 rounded-full border border-vx-border px-4 text-sm font-bold">Got it</button>
       </div>
       <ol className="mt-5 grid gap-3 text-sm sm:grid-cols-3">
-        <li className="rounded-2xl bg-vx-base p-4"><strong>1. Shape</strong><span className="mt-1 block text-vx-fg-muted">Use Simple for sound direction or Custom for a private writing draft.</span></li>
-        <li className="rounded-2xl bg-vx-base p-4"><strong>2. Review</strong><span className="mt-1 block text-vx-fg-muted">A server quote shows the exact two-version cost before credits move.</span></li>
-        <li className="rounded-2xl bg-vx-base p-4"><strong>3. Compare</strong><span className="mt-1 block text-vx-fg-muted">Each private candidate progresses and settles independently.</span></li>
+        <li className="rounded-2xl bg-vx-base p-4"><strong>1. Shape</strong><span className="mt-1 block text-vx-fg-muted">Describe the sound or bring your own lyrics, then use the smart controls for the musical feel.</span></li>
+        <li className="rounded-2xl bg-vx-base p-4"><strong>2. Review</strong><span className="mt-1 block text-vx-fg-muted">A server quote shows the exact one-track cost before credits move.</span></li>
+        <li className="rounded-2xl bg-vx-base p-4"><strong>3. Create</strong><span className="mt-1 block text-vx-fg-muted">Your private track progresses here and is saved to Music Library when ready.</span></li>
       </ol>
     </section>
   );
@@ -174,6 +178,8 @@ function LyricsFocusEditor({ value, onChange, maxLength, onSelectionAssistant, a
 function SunoSimpleFields({ entitlements, model, modelId, setModelId, description, setDescription, instrumental, setInstrumental, quote, busy, clearQuote, reviewQuote, confirmQuote, canQuote, hasSharedSlot }) {
   const { t, locale } = useI18n();
   const promptMax = sunoLimit(model, 'prompt');
+  const [direction, setDirection] = useState(EMPTY_MUSIC_DIRECTION);
+  const directedPrompt = buildMusicDirection(description, direction, promptMax);
 
   useEffect(() => {
     if (model?.instrumental_only && !instrumental) setInstrumental(true);
@@ -182,28 +188,39 @@ function SunoSimpleFields({ entitlements, model, modelId, setModelId, descriptio
   async function review(event) {
     event.preventDefault();
     if (!canQuote) return;
-    await reviewQuote(sunoSimpleQuoteRequest({ model, prompt: description, instrumental }));
+    await reviewQuote(sunoSimpleQuoteRequest({ model, prompt: directedPrompt, instrumental }));
+  }
+
+  function updateDirection(next) {
+    const voiceChanged = next.voice !== direction.voice;
+    setDirection(next);
+    if (voiceChanged) {
+      if (next.voice === 'Instrumental') setInstrumental(true);
+      else setInstrumental(Boolean(model?.instrumental_only));
+    }
+    clearQuote();
   }
 
   return (
     <>
-      <label className="block text-sm font-bold text-vx-fg-body">
-        {t('app.music.suno.offer')}
-        <select value={model?.id || modelId} onChange={(event) => { const next = entitlements?.models?.find((item) => item.id === event.target.value); setModelId(event.target.value); if (next?.instrumental_only) setInstrumental(true); clearQuote(); }} className="mt-2 min-h-12 w-full rounded-xl border border-vx-border-boost bg-vx-base px-4 text-vx-fg focus-visible:ring-2 focus-visible:ring-vx-accent">
-          {(entitlements?.models || []).map((item) => <option key={item.id} value={item.id} disabled={item.available === false}>{item.name}</option>)}
-        </select>
-      </label>
+      <fieldset>
+        <legend className="text-sm font-bold text-vx-fg-body">{t('app.music.suno.offer')}</legend>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {(entitlements?.models || []).map((item) => <button key={item.id} type="button" aria-pressed={(model?.id || modelId) === item.id} disabled={item.available === false} onClick={() => { setModelId(item.id); setInstrumental(Boolean(item.instrumental_only) || direction.voice === 'Instrumental'); clearQuote(); }} className={`min-h-11 rounded-full border px-4 text-sm font-bold disabled:opacity-40 ${(model?.id || modelId) === item.id ? 'border-vx-accent bg-vx-accent text-vx-accent-ink' : 'border-vx-border bg-vx-base text-vx-fg-body hover:border-vx-border-boost'}`}>{item.name}</button>)}
+        </div>
+      </fieldset>
       <label className="block">
         <span className="flex items-center justify-between gap-3 text-sm font-bold text-vx-fg-body"><span>{t('app.music.suno.brief')}</span><span aria-live="polite" className="font-vx-mono text-xs font-normal text-vx-fg-faint">{Array.from(description).length}/{promptMax}</span></span>
         <textarea value={description} onChange={(event) => { setDescription(capSunoText(event.target.value, promptMax)); clearQuote(); }} rows={7} className="mt-2 w-full resize-y rounded-2xl border border-vx-border-boost bg-vx-base px-4 py-3 leading-6 text-vx-fg focus:border-vx-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-vx-accent" />
       </label>
+      <MusicAdvancedDirectionFields value={direction} onChange={updateDirection} voiceLocked={model?.instrumental_only} />
       <label className="flex min-h-12 items-center justify-between gap-4 rounded-2xl border border-vx-border bg-vx-base px-4 py-3 text-sm font-bold text-vx-fg-body">
         <span>{t('app.music.suno.instrumental')}</span>
-        <input type="checkbox" checked={instrumental} disabled={model?.instrumental_only} onChange={(event) => { setInstrumental(event.target.checked); clearQuote(); }} className="h-5 w-5 accent-vx-accent" />
+        <input type="checkbox" checked={instrumental} disabled={model?.instrumental_only} onChange={(event) => { const checked = event.target.checked; setInstrumental(checked); setDirection((current) => ({ ...current, voice: checked ? 'Instrumental' : '' })); clearQuote(); }} className="h-5 w-5 accent-vx-accent" />
       </label>
       <section aria-label={t('app.music.suno.reviewPrice')} className="rounded-2xl border border-dashed border-vx-border-boost bg-vx-base p-4">
         {quote?.mode === 'simple' ? <div className="space-y-2 text-sm">
-          <div className="flex items-center justify-between gap-3"><span>{quote.output_count} × {quote.credits_per_candidate}</span><strong className="font-vx-mono">{musicCredits(t, locale, quote.list_credits ?? quote.total_credits)}</strong></div>
+          <div className="flex items-center justify-between gap-3"><span>1 track</span><strong className="font-vx-mono">{musicCredits(t, locale, quote.list_credits ?? quote.total_credits)}</strong></div>
           {quote.daily_free_candidates > 0 ? <p className="text-vx-accent">{dailyCovered(t, locale, quote.daily_free_candidates)}</p> : null}
           <p className="font-vx-mono text-vx-money">{quote.total_credits === 0 ? t('app.music.suno.noAccountCredits') : t('app.music.suno.payable', { credits: musicCredits(t, locale, quote.total_credits) })}</p>
         </div> : <p className="text-sm text-vx-fg-muted">{t('app.music.suno.reviewPrice')}</p>}
@@ -219,6 +236,8 @@ function SunoCustomDraftFields({ custom, entitlements, quote, busy, clearQuote, 
   const { t, locale } = useI18n();
   const model = entitlements?.models?.find((item) => item.provider_contract === 'crun-suno-v1' && item.generation_modes?.includes('custom'));
   const [controls, setControls] = useState(SUNO_CONTROL_DEFAULTS);
+  const [direction, setDirection] = useState(EMPTY_MUSIC_DIRECTION);
+  const [directionError, setDirectionError] = useState('');
 
   useEffect(() => {
     if (custom.loaded && model?.id && custom.draft.model_id !== model.id) custom.update('model_id', model.id);
@@ -228,6 +247,22 @@ function SunoCustomDraftFields({ custom, entitlements, quote, busy, clearQuote, 
 
   function updateControl(field, value) {
     setControls((current) => ({ ...current, [field]: value }));
+  }
+
+  function updateDirection(next) {
+    if (!canMergeMusicStyleDirection(custom.draft.styles, next, sunoLimit(model, 'styles'))) {
+      setDirectionError('Your saved style direction is full. Shorten it before adding another Smart Direction choice.');
+      return;
+    }
+    const voiceChanged = next.voice !== direction.voice;
+    setDirectionError('');
+    setDirection(next);
+    custom.update('styles', mergeMusicStyleDirection(custom.draft.styles, next, sunoLimit(model, 'styles')));
+    if (voiceChanged) {
+      updateControl('instrumental', next.voice === 'Instrumental');
+      updateControl('vocalGender', next.voice === 'Female vocal' ? 'female' : next.voice === 'Male vocal' ? 'male' : 'auto');
+    }
+    clearQuote();
   }
 
   async function refreshQuoteRequest(freshEntitlements) {
@@ -261,15 +296,17 @@ function SunoCustomDraftFields({ custom, entitlements, quote, busy, clearQuote, 
       {custom.previousText ? <button type="button" onClick={custom.copyPreviousText} className="min-h-11 rounded-full border border-vx-accent px-4 text-sm font-bold">{t('app.music.suno.copyPreviousText')}</button> : null}
       <label className="flex min-h-12 items-center justify-between gap-4 rounded-2xl border border-vx-border bg-vx-base px-4 py-3 text-sm font-bold text-vx-fg-body">
         <span>{t('app.music.suno.instrumental')}</span>
-        <input type="checkbox" checked={controls.instrumental} onChange={(event) => updateControl('instrumental', event.target.checked)} className="h-5 w-5 accent-vx-accent" />
+        <input type="checkbox" checked={controls.instrumental} onChange={(event) => updateDirection({ ...direction, voice: event.target.checked ? 'Instrumental' : '' })} className="h-5 w-5 accent-vx-accent" />
       </label>
-      <MusicSunoControls model={model} draft={custom.draft} updateDraft={custom.update} controls={controls} updateControl={updateControl} />
+      <MusicAdvancedDirectionFields value={direction} onChange={updateDirection} />
+      {directionError ? <p role="alert" className="text-sm text-vx-danger">{directionError}</p> : null}
+      <MusicSunoControls model={model} draft={custom.draft} updateDraft={custom.update} controls={controls} updateControl={updateControl} showVocalGender={false} />
       <div aria-live="polite" className="rounded-xl border border-vx-border bg-vx-base p-3 text-sm text-vx-fg-muted">
         {custom.status === 'saving' ? t('app.music.suno.savingDraft') : custom.status === 'saved' ? t('app.music.suno.savedRevision', { count: custom.draft.revision }) : custom.status === 'conflict' ? t('app.music.suno.draftConflict') : custom.status === 'error' ? sunoError(t, custom.error) : t('app.music.suno.changesSave')}
       </div>
       {custom.conflict ? <div className="flex flex-wrap gap-2"><button type="button" onClick={custom.loadNewer} className="min-h-11 rounded-full border border-vx-border px-4 text-sm font-bold">{t('app.music.suno.useServer')}</button><button type="button" onClick={custom.keepMine} className="min-h-11 rounded-full border border-vx-accent px-4 text-sm font-bold">{t('app.music.suno.keepMine')}</button></div> : null}
       {quote?.mode === 'custom' ? <div className="space-y-2 rounded-xl border border-vx-border-boost p-3 text-sm">
-        <div><span>{quote.output_count} × {quote.credits_per_candidate}</span><strong className="float-right font-vx-mono">{musicCredits(t, locale, quote.list_credits ?? quote.total_credits)}</strong></div>
+        <div><span>1 track</span><strong className="float-right font-vx-mono">{musicCredits(t, locale, quote.list_credits ?? quote.total_credits)}</strong></div>
         {quote.daily_free_candidates > 0 ? <p className="text-vx-accent">{dailyCovered(t, locale, quote.daily_free_candidates)}</p> : null}
         <p className="font-vx-mono text-vx-money">{quote.total_credits === 0 ? t('app.music.suno.noAccountCredits') : t('app.music.suno.payable', { credits: musicCredits(t, locale, quote.total_credits) })}</p>
       </div> : null}
@@ -288,6 +325,8 @@ function CustomDraftFields({ custom, entitlements, quote, busy, clearQuote, quot
   const [lyricHandoff, setLyricHandoff] = useState(null);
   const [lyricistProfileId, setLyricistProfileId] = useState('');
   const [instrumental, setInstrumental] = useState(false);
+  const [direction, setDirection] = useState(EMPTY_MUSIC_DIRECTION);
+  const [directionError, setDirectionError] = useState('');
   const [rightsConfirmed, setRightsConfirmed] = useState(false);
   const [generationError, setGenerationError] = useState('');
   const limits = entitlements?.custom_drafts || { lyrics_max: 3000, styles_max: 500, title_max: 80 };
@@ -418,6 +457,19 @@ function CustomDraftFields({ custom, entitlements, quote, busy, clearQuote, quot
     }, startedAt);
   }
 
+  function updateDirection(next) {
+    if (!canMergeMusicStyleDirection(custom.draft.styles, next, limits.styles_max)) {
+      setDirectionError('Your saved style direction is full. Shorten it before adding another Smart Direction choice.');
+      return;
+    }
+    const voiceChanged = next.voice !== direction.voice;
+    setDirectionError('');
+    setDirection(next);
+    custom.update('styles', mergeMusicStyleDirection(custom.draft.styles, next, limits.styles_max));
+    if (voiceChanged) setInstrumental(next.voice === 'Instrumental');
+    clearQuote();
+  }
+
   return (
     <>
       <LyricsFocusEditor value={custom.draft.lyrics} onChange={(value) => custom.update('lyrics', value)} maxLength={limits.lyrics_max} onSelectionAssistant={openSelectionAssistant} assistantBusy={assistantBusy} />
@@ -458,18 +510,24 @@ function CustomDraftFields({ custom, entitlements, quote, busy, clearQuote, quot
         <textarea value={custom.draft.styles} onChange={(event) => custom.update('styles', event.target.value)} maxLength={limits.styles_max} rows={3} placeholder="Warm piano, restrained percussion, 84 bpm" className="mt-2 w-full resize-y rounded-xl border border-vx-border-boost bg-vx-base px-4 py-3 text-vx-fg placeholder:text-vx-fg-faint focus:border-vx-accent focus:outline-none" />
         <span className="mt-1 block text-right font-vx-mono text-xs font-normal text-vx-fg-faint">{custom.draft.styles.length}/{limits.styles_max}</span>
       </label>
+      <MusicAdvancedDirectionFields value={direction} onChange={updateDirection} />
+      {directionError ? <p role="alert" className="text-sm text-vx-danger">{directionError}</p> : null}
       <button type="button" onClick={() => custom.update('styles', augmentMusicStyle(custom.draft.styles, limits.styles_max))} className="min-h-10 rounded-full border border-vx-border px-4 text-sm font-bold hover:border-vx-border-boost">Expand style direction</button>
       <label className="block text-sm font-bold text-vx-fg-body">
         Working title <span className="font-normal text-vx-fg-muted">(optional)</span>
         <input value={custom.draft.title} onChange={(event) => custom.update('title', event.target.value)} maxLength={limits.title_max} placeholder="Harbour Frame" className="mt-2 min-h-12 w-full rounded-xl border border-vx-border-boost bg-vx-base px-4 text-vx-fg placeholder:text-vx-fg-faint focus:border-vx-accent focus:outline-none" />
       </label>
-      <label className="block text-sm font-bold text-vx-fg-body">
-        Draft target
-        <select value={selectedModel?.id || custom.draft.model_id} onChange={(event) => custom.update('model_id', event.target.value)} disabled={!entitlements?.models?.length} className="mt-2 min-h-12 w-full rounded-xl border border-vx-border-boost bg-vx-base px-4 text-vx-fg focus:border-vx-accent focus:outline-none">
-          {(entitlements?.models || []).map((item) => <option key={item.id} value={item.id} disabled={!item.generation_modes?.includes('custom') || item.available === false}>{item.name}{item.generation_modes?.includes('custom') ? item.available === false ? ' · paid plan required' : ' · Custom ready' : ' · draft only'}</option>)}
-          {!entitlements?.models?.length ? <option>No verified model available</option> : null}
-        </select>
-      </label>
+      <fieldset>
+        <legend className="text-sm font-bold text-vx-fg-body">Draft target</legend>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {(entitlements?.models || []).map((item) => {
+            const disabled = !item.generation_modes?.includes('custom') || item.available === false;
+            const selected = (selectedModel?.id || custom.draft.model_id) === item.id;
+            return <button key={item.id} type="button" aria-pressed={selected} disabled={disabled} onClick={() => { custom.update('model_id', item.id); clearQuote(); }} className={`min-h-11 rounded-full border px-4 text-sm font-bold disabled:opacity-40 ${selected ? 'border-vx-accent bg-vx-accent text-vx-accent-ink' : 'border-vx-border bg-vx-base text-vx-fg-body hover:border-vx-border-boost'}`}>{item.name}</button>;
+          })}
+          {!entitlements?.models?.length ? <span className="text-sm text-vx-fg-muted">No verified model available</span> : null}
+        </div>
+      </fieldset>
 
       <section aria-label="Selected model capabilities" className="rounded-2xl border border-vx-border bg-vx-base p-4 text-sm">
         <div className="flex items-center justify-between gap-3"><strong>{selectedModel?.name || 'No model selected'}</strong><span className="font-vx-mono text-xs text-vx-fg-muted">Catalog verified</span></div>
@@ -535,13 +593,13 @@ function CustomDraftFields({ custom, entitlements, quote, busy, clearQuote, quot
               <input type="checkbox" checked={rightsConfirmed} onChange={(event) => { setRightsConfirmed(event.target.checked); clearQuote(); }} className="mt-1 h-5 w-5 shrink-0 accent-vx-accent" />
               <span><strong>I wrote these lyrics or have permission to use them.</strong><span className="mt-1 block text-vx-fg-muted">This attestation is frozen with the exact saved draft revision used for generation.</span></span>
             </label>
-          ) : <p className="text-sm text-vx-fg-muted">ACE-Step receives <span className="font-vx-mono">[Instrumental]</span>; the saved lyrics stay in your private draft and are not sent with this pair.</p>}
+          ) : <p className="text-sm text-vx-fg-muted">ACE-Step receives <span className="font-vx-mono">[Instrumental]</span>; the saved lyrics stay in your private draft and are not sent with this track.</p>}
           {generationError ? <p role="alert" className="text-sm text-vx-danger">{generationError}</p> : null}
           {quote?.mode === 'custom' ? (
-            <div className="rounded-xl border border-vx-border-boost p-3 text-sm"><span>2 versions × {quote.credits_per_candidate} credits</span><strong className="float-right font-vx-mono text-vx-money">{quote.total_credits} credits</strong></div>
+            <div className="rounded-xl border border-vx-border-boost p-3 text-sm"><span>1 track</span><strong className="float-right font-vx-mono text-vx-money">{quote.total_credits} credits</strong></div>
           ) : null}
           {quote?.mode === 'custom' ? (
-            <button type="button" onClick={() => confirmQuote({ title: custom.draft.title.trim() })} disabled={!quote.affordable || Boolean(busy) || !hasSharedSlot} className="min-h-12 w-full rounded-full bg-vx-accent px-5 font-extrabold text-vx-accent-ink disabled:opacity-40">{busy === 'confirming' ? 'Confirming one pair…' : `Create two ${instrumental ? 'instrumental' : 'lyric'} versions · ${quote.total_credits} cr`}</button>
+            <button type="button" onClick={() => confirmQuote({ title: custom.draft.title.trim() })} disabled={!quote.affordable || Boolean(busy) || !hasSharedSlot} className="min-h-12 w-full rounded-full bg-vx-accent px-5 font-extrabold text-vx-accent-ink disabled:opacity-40">{busy === 'confirming' ? 'Confirming one track…' : `Create ${instrumental ? 'instrumental' : 'lyric'} track · ${quote.total_credits} cr`}</button>
           ) : (
             <button type="button" onClick={reviewCustomQuote} disabled={!canQuoteCustom} className="min-h-12 w-full rounded-full bg-vx-accent px-5 font-extrabold text-vx-accent-ink disabled:opacity-40">{busy === 'quoting' ? 'Reviewing live price…' : 'Review Custom quote'}</button>
           )}
@@ -570,7 +628,7 @@ function CustomDraftFields({ custom, entitlements, quote, busy, clearQuote, quot
 }
 
 export function MusicServerStudio({ sourcesEnabled = false, sampleSeed = null, sampleMix = null, licensedTemplate = null, challengeSeed = null }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const challengePrompt = challengeSeed ? t(challengeSeed.prompt_key) : '';
   const challengeTitle = challengeSeed ? t(challengeSeed.title_key) : '';
   const { entitlements, quote, generations, busy, error, errorCode, clearQuote, quoteRevisionNow, reviewQuote, confirmQuote, refreshGeneration, reload } = useMusicServerState();
@@ -586,6 +644,7 @@ export function MusicServerStudio({ sourcesEnabled = false, sampleSeed = null, s
   const [excludeStyles, setExcludeStyles] = useState('');
   const [tempoKey, setTempoKey] = useState({ bpm: '', keyScale: '', timeSignature: '' });
   const [instrumental, setInstrumental] = useState(true);
+  const [direction, setDirection] = useState(EMPTY_MUSIC_DIRECTION);
   const [sourceId, setSourceId] = useState(null);
   const model = useMemo(() => entitlements?.models?.find((item) => item.id === modelId) || entitlements?.models?.[0], [entitlements, modelId]);
   const sunoCustomModel = entitlements?.models?.find((item) => isSunoContract(item) && item.generation_modes?.includes('custom'));
@@ -594,7 +653,8 @@ export function MusicServerStudio({ sourcesEnabled = false, sampleSeed = null, s
   const custom = useMusicCustomDraft({ active: mode === 'custom', defaultModelId: sunoCustomModel?.id || model?.id || modelId, providerContract: sunoCustomModel?.provider_contract || model?.provider_contract || null, onContractStale: reload });
   const customSelectedModel = entitlements?.models?.find((item) => item.id === custom.draft.model_id);
   const customReady = Boolean(customSelectedModel?.generation_modes?.includes('custom') && customSelectedModel?.available !== false);
-  const prompt = activeSeed ? buildMusicSamplePrompt(activeSeed, description, activeMix) : description.trim();
+  const basePrompt = activeSeed ? buildMusicSamplePrompt(activeSeed, description, activeMix) : description.trim();
+  const prompt = sunoActive ? basePrompt : buildMusicDirection(basePrompt, direction, 500);
   const sunoPrompt = capSunoText(prompt, sunoLimit(model, 'prompt'));
   // The box shows what was typed, untrimmed: showing the trimmed prompt drops a trailing space on every keystroke.
   const sunoField = capSunoText(description, sunoLimit(model, 'prompt'));
@@ -638,6 +698,16 @@ export function MusicServerStudio({ sourcesEnabled = false, sampleSeed = null, s
     setDescription(value);
   }
 
+  function updateDirection(next) {
+    const voiceChanged = next.voice !== direction.voice;
+    setDirection(next);
+    if (voiceChanged) {
+      if (next.voice === 'Instrumental') setInstrumental(true);
+      else setInstrumental(Boolean(model?.instrumental_only));
+    }
+    clearQuote();
+  }
+
   async function review(event) {
     event.preventDefault();
     if (sunoActive || mode !== 'simple' || tempoKeyBlocked) return;
@@ -661,12 +731,12 @@ export function MusicServerStudio({ sourcesEnabled = false, sampleSeed = null, s
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10">
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="font-vx-mono text-xs font-bold uppercase tracking-widest text-vx-accent">{mode === 'simple' ? 'Prompt to pair' : 'Private writing draft'}</p>
-          <h1 className="mt-2 font-vx text-4xl font-black tracking-tight sm:text-5xl">{mode === 'simple' ? 'Create a private sound draft.' : 'Shape lyrics without losing the thread.'}</h1>
-          <p className="mt-3 max-w-2xl text-vx-fg-body">{mode === 'simple' ? 'Review an exact live-catalog quote, then confirm two independently tracked instrumental versions.' : customReady ? 'Lyrics, style and title autosave privately. Save one exact revision, attest your rights, review its quote, then confirm two versions.' : 'Lyrics, style and title autosave privately with revision conflicts. Generation stays off until a compatible model is selected.'}</p>
+          <p className="font-vx-mono text-xs font-bold uppercase tracking-widest text-vx-accent">{mode === 'simple' ? 'Describe your track' : 'Bring your lyrics'}</p>
+          <h1 className="mt-2 font-vx text-4xl font-black tracking-tight sm:text-5xl">Create music, your way.</h1>
+          <p className="mt-3 max-w-2xl text-vx-fg-body">{mode === 'simple' ? 'Describe the idea, shape it with smart controls, then create one polished private track.' : customReady ? 'Write lyrics, set the voice and feel, review the exact quote, then create one private track.' : 'Lyrics, style and title autosave privately with revision conflicts. Generation stays off until a compatible model is selected.'}</p>
         </div>
         <div className="flex items-center gap-3 rounded-2xl border border-vx-border bg-vx-panel px-4 py-3">
-          <div><span className="block text-sm text-vx-fg-muted">Spendable balance</span><span className="block text-xs text-vx-fg-faint">Shared pairs {activeGenerationCount}/{concurrencyLimit}</span></div>
+          <div><span className="block text-sm text-vx-fg-muted">Spendable balance</span><span className="block text-xs text-vx-fg-faint">Active tracks {activeGenerationCount}/{concurrencyLimit}</span></div>
           <div className="text-right"><strong data-testid="music-credits" className="font-vx-mono text-lg text-vx-money">{entitlements ? entitlements.balance : '—'} cr</strong>
             {entitlements?.daily_allowance?.unavailable ? <span className="mt-1 block text-xs text-vx-fg-muted">{t('app.music.suno.dailyAllowanceUnavailable')}</span>
               : entitlements?.daily_allowance?.enabled ? <span className="mt-1 block text-xs text-vx-accent">{entitlements.daily_allowance.candidates_remaining === 0
@@ -684,10 +754,7 @@ export function MusicServerStudio({ sourcesEnabled = false, sampleSeed = null, s
         <form onSubmit={review} className="self-start rounded-2xl border border-vx-border bg-vx-panel p-5 shadow-2xl lg:sticky lg:top-24 lg:col-span-2 sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="font-vx text-2xl font-black">{mode === 'simple' ? 'Direction' : 'Custom draft'}</h2>
-            <div role="tablist" aria-label="Music creation mode" className="flex rounded-full border border-vx-border bg-vx-base p-1 text-sm font-bold">
-              <button type="button" role="tab" aria-selected={mode === 'simple'} onClick={() => selectMode('simple')} className={`rounded-full px-4 py-2 capitalize ${mode === 'simple' ? 'bg-vx-fg text-vx-base' : 'text-vx-fg-muted hover:text-vx-fg'}`}>Simple</button>
-              <button type="button" role="tab" aria-selected={mode === 'custom'} onClick={() => selectMode('custom')} className={`rounded-full px-4 py-2 capitalize ${mode === 'custom' ? 'bg-vx-fg text-vx-base' : 'text-vx-fg-muted hover:text-vx-fg'}`}>Custom</button>
-            </div>
+            <MusicCreationModeTabs mode={mode} onChange={selectMode} compact />
           </div>
 
           <div className="mt-6 space-y-5">
@@ -710,13 +777,14 @@ export function MusicServerStudio({ sourcesEnabled = false, sampleSeed = null, s
               Working title <span className="font-normal text-vx-fg-muted">(optional)</span>
               <input value={title} onChange={change(setTitle)} maxLength={80} placeholder="Harbour Frame" className="mt-2 min-h-12 w-full rounded-xl border border-vx-border-boost bg-vx-base px-4 text-vx-fg placeholder:text-vx-fg-faint focus:border-vx-accent focus:outline-none" />
             </label>
-            <label className="block text-sm font-bold text-vx-fg-body">
-              Verified model
-              <select value={model?.id || modelId} onChange={change(setModelId)} disabled={!entitlements?.models?.length} className="mt-2 min-h-12 w-full rounded-xl border border-vx-border-boost bg-vx-base px-4 text-vx-fg focus:border-vx-accent focus:outline-none">
-                {(entitlements?.models || []).map((item) => <option key={item.id} value={item.id} disabled={item.available === false}>{item.name}{item.requires_paid_plan ? item.available ? ' · paid plan' : ' · paid plan required' : ''}</option>)}
-                {!entitlements?.models?.length ? <option>Loading verified models…</option> : null}
-              </select>
-            </label>
+            <MusicAdvancedDirectionFields value={direction} onChange={updateDirection} voiceLocked={model?.instrumental_only} />
+            <fieldset>
+              <legend className="text-sm font-bold text-vx-fg-body">Verified model</legend>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {(entitlements?.models || []).map((item) => <button key={item.id} type="button" aria-pressed={(model?.id || modelId) === item.id} disabled={item.available === false} onClick={() => { setModelId(item.id); clearQuote(); }} className={`min-h-11 rounded-full border px-4 text-sm font-bold disabled:opacity-40 ${(model?.id || modelId) === item.id ? 'border-vx-accent bg-vx-accent text-vx-accent-ink' : 'border-vx-border bg-vx-base text-vx-fg-body hover:border-vx-border-boost'}`}>{item.name}</button>)}
+                {!entitlements?.models?.length ? <span className="text-sm text-vx-fg-muted">Loading verified models…</span> : null}
+              </div>
+            </fieldset>
             {model?.available === false ? <p role="status" className="rounded-2xl border border-vx-border bg-vx-base px-4 py-3 text-sm text-vx-fg-muted">This higher-quality model requires an active paid plan. Choose ACE-Step or open Credits &amp; billing to upgrade.</p> : null}
             {model?.controls?.duration_seconds ? (
               <MusicDurationField id="music-duration" ariaLabel="Song duration" value={durationSeconds} onChange={change((value) => setDurationSeconds(Number(value)))} bounds={model.controls.duration_seconds} blockSeconds={model.controls.duration_price_block_seconds} />
@@ -750,14 +818,14 @@ export function MusicServerStudio({ sourcesEnabled = false, sampleSeed = null, s
             </label>
 
             {!entitlements?.available && entitlements ? <p role="status" className="rounded-2xl border border-vx-border bg-vx-base px-4 py-3 text-sm text-vx-fg-muted">Server generation is paused. You can review this screen, but no quote or spend can start.</p> : null}
-            {!hasSharedSlot ? <p role="status" className="rounded-2xl border border-vx-border bg-vx-base px-4 py-3 text-sm text-vx-fg-muted">All four shared request slots are active. New quotes stay paused until one pair finishes.</p> : null}
+            {!hasSharedSlot ? <p role="status" className="rounded-2xl border border-vx-border bg-vx-base px-4 py-3 text-sm text-vx-fg-muted">All four shared request slots are active. New quotes stay paused until one track finishes.</p> : null}
             {!instrumental ? <p role="status" className="text-sm text-vx-fg-muted">Vocal and lyrics generation is not connected in this increment.</p> : null}
             {sourceId ? <p role="status" className="rounded-2xl border border-vx-border bg-vx-base px-4 py-3 text-sm text-vx-fg-muted">The source is attached privately. Quote and generation remain disabled until the active model explicitly supports owned-audio conditioning.</p> : null}
 
             <section aria-label="Credit quote" data-testid="music-quote" className="rounded-2xl border border-dashed border-vx-border-boost bg-vx-base p-4">
               {quote ? (
                 <>
-                  <div className="flex items-center justify-between gap-3 text-sm text-vx-fg-body"><span>2 versions × {quote.credits_per_candidate} credits</span><strong className="font-vx-mono text-vx-money">{quote.total_credits} credits</strong></div>
+                  <div className="flex items-center justify-between gap-3 text-sm text-vx-fg-body"><span>1 track</span><strong className="font-vx-mono text-vx-money">{quote.total_credits} credits</strong></div>
                   <p className="mt-2 text-xs leading-5 text-vx-fg-muted">Exact live-catalog quote. Balance after confirmation: {quote.balance_after}. Expires {new Date(quote.expires_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.</p>
                 </>
               ) : <p className="text-sm text-vx-fg-muted">Review the direction to receive an exact, short-lived quote before spending.</p>}
@@ -769,20 +837,20 @@ export function MusicServerStudio({ sourcesEnabled = false, sampleSeed = null, s
               </button>
             ) : (
               <button type="button" onClick={() => confirmQuote({ title: title.trim() })} disabled={!quote.affordable || Boolean(busy) || !hasSharedSlot} className="vx-press min-h-12 w-full rounded-full bg-vx-accent px-5 font-extrabold text-vx-accent-ink hover:bg-vx-accent-hover disabled:cursor-not-allowed disabled:opacity-40">
-                {busy === 'confirming' ? 'Confirming one pair…' : quote.affordable ? `Create two versions · ${quote.total_credits} cr` : 'Not enough spendable credits'}
+                {busy === 'confirming' ? 'Confirming one track…' : quote.affordable ? `Create one track · ${quote.total_credits} cr` : 'Not enough spendable credits'}
               </button>
             )}
-            <p className="text-center text-xs text-vx-fg-faint">Credits move only after the second confirmation. Each candidate is tracked independently.</p>
+            <p className="text-center text-xs text-vx-fg-faint">Credits move only after confirmation. Your track is tracked independently.</p>
               </>
             ) : sunoActive ? <SunoCustomDraftFields custom={custom} entitlements={entitlements} quote={quote} busy={busy} clearQuote={clearQuote} quoteRevisionNow={quoteRevisionNow} reviewQuote={reviewQuote} confirmQuote={confirmQuote} hasSharedSlot={hasSharedSlot} /> : <CustomDraftFields custom={custom} entitlements={entitlements} quote={quote} busy={busy} clearQuote={clearQuote} quoteRevisionNow={quoteRevisionNow} reviewQuote={reviewQuote} confirmQuote={confirmQuote} hasSharedSlot={hasSharedSlot} />}
           </div>
         </form>
 
         <section aria-labelledby="results-title" className="min-w-0 lg:col-span-3">
-          <div className="mb-4"><p className="font-vx-mono text-xs font-bold uppercase tracking-widest text-vx-accent">{mode === 'simple' ? 'Independent candidates' : 'Revision-safe writing'}</p><h2 id="results-title" className="mt-1 font-vx text-2xl font-black">{mode === 'simple' ? 'Current server request' : 'Custom workspace'}</h2></div>
+          <div className="mb-4"><p className="font-vx-mono text-xs font-bold uppercase tracking-widest text-vx-accent">{mode === 'simple' ? 'Your track' : 'Revision-safe writing'}</p><h2 id="results-title" className="mt-1 font-vx text-2xl font-black">{mode === 'simple' ? 'Current creation' : 'Lyrics workspace'}</h2></div>
           {mode === 'custom' && !generations.length ? (
             <div className="rounded-2xl border border-dashed border-vx-border p-8 sm:p-12">
-              <p className="font-vx text-2xl font-black">{customReady ? 'Your saved lyrics can become a private pair.' : 'Draft first. Generate only when verified.'}</p>
+              <p className="font-vx text-2xl font-black">{customReady ? 'Your saved lyrics can become a private track.' : 'Draft first. Generate only when verified.'}</p>
               <p className="mt-3 max-w-xl text-vx-fg-muted">{customReady ? 'The selected paid model accepts exact saved lyrics and style direction. Nothing is quoted or spent until the ownership attestation and separate confirmation.' : 'This workspace keeps original lyrics, style direction and title with optimistic revisions. Choose a Custom-ready catalog model before any quote or spend.'}</p>
               <dl className="mt-6 grid gap-3 text-sm sm:grid-cols-2">
                 <div className="rounded-2xl bg-vx-panel p-4"><dt className="text-vx-fg-muted">Current revision</dt><dd className="mt-1 font-vx-mono font-bold">{custom.draft.revision}</dd></div>
@@ -790,11 +858,11 @@ export function MusicServerStudio({ sourcesEnabled = false, sampleSeed = null, s
               </dl>
             </div>
           ) : !generations.length ? (
-            <div className="rounded-2xl border border-dashed border-vx-border p-8 sm:p-12"><p className="font-vx text-2xl font-black">Your confirmed pair will land here.</p><p className="mt-3 max-w-xl text-vx-fg-muted">Reviewing a quote does not create or charge anything. After confirmation, both versions progress independently.</p></div>
+            <div className="rounded-2xl border border-dashed border-vx-border p-8 sm:p-12"><p className="font-vx text-2xl font-black">Your track will land here.</p><p className="mt-3 max-w-xl text-vx-fg-muted">Reviewing a quote does not create or charge anything. After confirmation, the track progresses privately.</p></div>
           ) : (
             <div className="space-y-5">{generations.map((generation, index) => (
               <section key={generation.id} data-testid={`music-generation-${generation.id}`} aria-label={`Music request ${generations.length - index}`} className="rounded-2xl border border-vx-border bg-vx-panel p-4 sm:p-5">
-                <div className="mb-4 flex flex-wrap items-center justify-between gap-2"><div><p className="font-vx-mono text-xs font-bold uppercase tracking-widest text-vx-accent">Pair request</p><h3 className="mt-1 font-vx text-xl font-black">{generation.title || 'Untitled sound draft'}</h3></div><span className="rounded-full border border-vx-border px-3 py-1 font-vx-mono text-xs uppercase text-vx-fg-muted">{generation.state}</span></div>
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-2"><div><p className="font-vx-mono text-xs font-bold uppercase tracking-widest text-vx-accent">Track request</p><h3 className="mt-1 font-vx text-xl font-black">{generation.title || 'Untitled sound draft'}</h3></div><span className="rounded-full border border-vx-border px-3 py-1 font-vx-mono text-xs uppercase text-vx-fg-muted">{generation.state}</span></div>
                 <div className="space-y-3">{(generation.candidates || []).map((candidate) => <MusicServerCandidate key={candidate.job_id || candidate.ordinal} candidate={candidate} title={generation.title} onCancelled={() => refreshGeneration(generation.id)} />)}</div>
               </section>
             ))}</div>

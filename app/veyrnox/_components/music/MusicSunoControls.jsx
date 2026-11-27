@@ -73,7 +73,7 @@ function Slider({ id, label, value, onChange, bounds }) {
   );
 }
 
-export function MusicSunoControls({ model, draft, updateDraft, controls, updateControl, compact = false, showTextFields = true, showRights = true }) {
+export function MusicSunoControls({ model, draft, updateDraft, controls, updateControl, compact = false, showTextFields = true, showRights = true, showVocalGender = true }) {
   const { t } = useI18n();
   const titleMax = sunoLimit(model, 'title');
   const lyricsMax = sunoLimit(model, 'lyrics');
@@ -101,13 +101,14 @@ export function MusicSunoControls({ model, draft, updateDraft, controls, updateC
       <StylePicker label={t('app.music.suno.exclude')} value={controls.excludeStyles} onChange={(value) => updateControl('excludeStyles', value)} max={excludeMax} counter="suno-exclude"
         note={t('app.music.suno.excludeNote', { count: excludeApplied })} />
 
-      <label className="block text-sm font-bold text-vx-fg-body">{t('app.music.suno.model')}
-        <select value={controls.sunoModel} onChange={(event) => updateControl('sunoModel', event.target.value)} className="mt-2 min-h-12 w-full rounded-xl border border-vx-border-boost bg-vx-base px-4 text-vx-fg focus-visible:ring-2 focus-visible:ring-vx-accent">
-          {(model?.controls?.suno_model || []).map((value) => <option key={value} value={value}>{value}</option>)}
-        </select>
-      </label>
+      <fieldset>
+        <legend className="text-sm font-bold text-vx-fg-body">{t('app.music.suno.model')}</legend>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {(model?.controls?.suno_model || []).map((value) => <button key={value} type="button" aria-pressed={controls.sunoModel === value} onClick={() => updateControl('sunoModel', value)} className={`min-h-11 rounded-full border px-4 text-sm font-bold ${controls.sunoModel === value ? 'border-vx-accent bg-vx-accent text-vx-accent-ink' : 'border-vx-border bg-vx-base text-vx-fg-body hover:border-vx-border-boost'}`}>{value}</button>)}
+        </div>
+      </fieldset>
 
-      {!controls.instrumental ? <fieldset>
+      {showVocalGender && !controls.instrumental ? <fieldset>
         <legend className="text-sm font-bold text-vx-fg-body">{t('app.music.suno.vocalGender')}</legend>
         <div className="mt-2 flex flex-wrap gap-2">
           {(model?.controls?.vocal_gender || []).map((value) => <label key={value} className="flex min-h-11 items-center gap-2 rounded-full border border-vx-border px-4 text-sm">

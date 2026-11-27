@@ -1,11 +1,12 @@
 import { Text as StatusText } from '../../../components/ui/Text';
+import { VividCard } from '../../../components/ui/VividCard';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 import { touchTarget } from '../../../lib/a11y';
 import { guideById, guideDestination, presentGuide } from '../../../lib/helpGuides';
 import { t } from '../../../lib/i18n';
-import { colors, fonts, LIST_END_PADDING } from '../../../theme';
+import { colors, fonts, LIST_END_PADDING, VIVID_HUES } from '../../../theme';
 
 export default function HelpGuide() {
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -39,17 +40,17 @@ export default function HelpGuide() {
                 <>
                     <Text style={styles.title} accessibilityRole="header">{guide.title}</Text>
                     <Text style={styles.body}>{guide.summary}</Text>
-                    {guide.steps.map((step, index) => (
-                        <View key={index} style={styles.section}>
-                            <Text style={styles.heading} accessibilityRole="header">{t('helpGuides.step', { number: index + 1, title: step.title })}</Text>
-                            <Text style={styles.body}>{step.body}</Text>
-                        </View>
-                    ))}
+                    {guide.steps.map((step, index) => <VividCard
+                        key={index}
+                        hue={VIVID_HUES[index % VIVID_HUES.length]}
+                        icon="listChecks"
+                        title={t('helpGuides.step', { number: index + 1, title: step.title })}
+                        detail={step.body}
+                        layout="row"
+                    />)}
                     {guide.links.length > 0 && <Text style={styles.heading} accessibilityRole="header">{t('helpGuides.links')}</Text>}
                     {guide.links.map(link => (
-                        <Pressable key={link.href} accessibilityRole="link" style={[styles.row, touchTarget]} onPress={() => void open(link.href)}>
-                            <Text style={styles.link}>{link.label}</Text>
-                        </Pressable>
+                        <VividCard key={link.href} hue="teal" icon="externalLink" title={link.label} layout="compact" showChevron accessibilityRole="link" onPress={() => void open(link.href)} />
                     ))}
                 </>
             ) : <Text style={styles.body}>{t('helpGuides.unavailable')}</Text>}
@@ -64,7 +65,5 @@ const styles = StyleSheet.create({
     title: { color: colors.text, fontFamily: fonts.display, fontSize: 24 },
     heading: { color: colors.text, fontSize: 18, fontWeight: '600' },
     body: { color: colors.body, fontSize: 16, lineHeight: 24 },
-    section: { gap: 8 },
-    row: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 16 },
     link: { color: colors.accent, fontSize: 16 },
 });

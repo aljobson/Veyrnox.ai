@@ -18,7 +18,7 @@ import { t } from '../src/lib/i18n';
 import { BEAT_SHORTCUTS, BEAT_SOUNDS, createBeatFromTemplate, addAudioRegion, soundAsset } from '../src/lib/beatNative/labs';
 import { PHONE_CAPABILITIES, SHORTCUT_CAPABILITY } from '../src/lib/beatNative/controls';
 import { PHONE_TIP_TARGETS } from '../src/lib/beatNative/coachMarks';
-import { beatStore, resetBeats } from '../src/lib/beatNative/store';
+import { beatStore, listBeats, resetBeats } from '../src/lib/beatNative/store';
 import { createTemplateBeat } from '../src/lib/beatNative/templates';
 import { fixedDoc, USER, PROJECT, deferred } from './beatNativeFixtures';
 import type { MusicSongDetail } from '../src/lib/music/types';
@@ -29,9 +29,9 @@ const mockApi = { request: jest.fn(async () => ({ projects: [] })) };
 const mockGetAccessToken = jest.fn(async () => `h.${btoa(JSON.stringify({ sub: USER }))}.s`);
 const mockSeen = new Map<string, string>();
 const mockDecode = jest.fn();
-let mockParams = { id: PROJECT, song: PROJECT, revision: '2' };
+let mockParams: Record<string, string> = { id: PROJECT, song: PROJECT, revision: '2' };
 let mockPreviewFinish = () => {};
-jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useRouter: () => ({ push: mockPush, replace: mockReplace }), useLocalSearchParams: () => mockParams, useFocusEffect: (cb: () => void) => require('react').useEffect(cb, [cb]) }));
+jest.mock('expo-router', () => ({ Stack: { Screen: ({ options }: { options?: { headerRight?(): unknown } }) => options?.headerRight?.() ?? null }, useRouter: () => ({ push: mockPush, replace: mockReplace }), useLocalSearchParams: () => mockParams, useFocusEffect: (cb: () => void) => require('react').useEffect(cb, [cb]) }));
 jest.mock('../src/components/beats/ai/BeatAiPanel', () => ({ BeatAiPanel: () => null }));
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi, getAccessToken: mockGetAccessToken, generation: 0 }) }));
 jest.mock('../src/lib/beatNative/persist', () => ({ ...jest.requireActual('../src/lib/beatNative/persist'), documentFiles: () => ({ read: async () => null, write: async () => {}, remove: async () => {}, list: async () => [] }) }));
@@ -151,27 +151,31 @@ test.each(['hiphop', 'lofi'] as const)('%s template and added audio expose kit c
     expect(beatStore.putBeat(doc)).toBe(true);
     mockParams = { id: initial.id, song: PROJECT, revision: '2' };
     await act(async () => root.render(<BeatEditor />));
-    doc.tracks.forEach((track, index) => {
-        const label = t('beat.kit', { track: t('beat.track', { n: index + 1 }) });
+    await press(t('beatMix.title'));
+    for (const track of doc.tracks) {
+        await press(track.name);
+        await press(t('beat.track.controls'));
+        const label = t('beat.kit', { track: track.name });
         const controls = root.container.queryAll(node => node.props.accessibilityLabel === label);
         expect(controls.length > 0).toBe(track.kind !== 'audio' && track.kind !== 'midi');
-    });
+        await press(t('beat.track.controls'));
+    }
 });
-test('non-trashed song detail has Make a beat next to the existing song actions', async () => {
+test('non-trashed song detail opens the AI Music Editor next to the existing song actions', async () => {
     jest.spyOn(musicClient, 'getSong').mockResolvedValue({ ...songFixture, id: PROJECT, actions: [] } as MusicSongDetail);
     await act(async () => root.render(<SongDetail />)); await press(t('beatLabs.makeBeat'));
     expect(mockPush).toHaveBeenCalledWith({ pathname: '/beats/new', params: { song: PROJECT } });
 });
-test('trashed song detail has no Make a beat action', async () => {
+test('trashed song detail has no Edit with AI action', async () => {
     jest.spyOn(musicClient, 'getSong').mockResolvedValue({ ...songFixture, id: PROJECT, lifecycle_status: 'trashed' } as MusicSongDetail);
     await act(async () => root.render(<SongDetail />));
     expect(text(t('music.trashBanner')).length).toBeGreaterThan(0);
     expect(byLabel(t('beatLabs.makeBeat'))).toBeUndefined();
 });
-test('beats home catches creation failure, shows a notice, and never navigates', async () => {
-    jest.spyOn(templates, 'createTemplateBeat').mockRejectedValue(new Error('save_failed'));
+test('Music Editor home catches creation failure, shows a notice, and never navigates', async () => {
+    jest.spyOn(templates, 'createMusicEdit').mockRejectedValue(new Error('save_failed'));
     await act(async () => root.render(<BeatsHome />));
-    await press(t('beat.home.new')); await press(t('beatLabs.template.blank'));
+    await press(t('beat.home.new'));
     expect(text(t('beatLabs.createFailed')).length).toBeGreaterThan(0);
     expect(mockPush).not.toHaveBeenCalled();
 });
@@ -180,9 +184,8 @@ test('preview preparation is visible, then natural finish restores Audition', as
     await act(async () => root.render(<BeatSoundsSheet bpm={92} onAdd={() => true} onClose={() => {}} />));
     const name = t('beatLabs.sound.pad');
     await press(t('beatLabs.auditionNamed', { name }));
-    expect(text(t('beatLabs.previewLoading')).length).toBeGreaterThan(0);
+    expect(byLabel(t('beatLabs.auditionNamed', { name })).props.accessibilityState.busy).toBe(true);
     await act(async () => { ready.resolve('pad'); });
-    expect(text(t('beatLabs.previewLoading'))).toHaveLength(0);
     expect(byLabel(t('beatLabs.stopNamed', { name }))).toBeDefined();
     await act(async () => mockPreviewFinish());
     expect(byLabel(t('beatLabs.auditionNamed', { name }))).toBeDefined();
@@ -202,4 +205,11 @@ test('successful seed route replaces itself with the editor; unmount releases it
     await act(async () => root.render(<NewSongBeat />));
     expect(mockReplace).toHaveBeenCalledWith({ pathname: '/beats/[id]', params: { id: PROJECT } });
     await act(async () => root.unmount()); expect(session.release).toHaveBeenCalledTimes(1); root = createRoot();
+});
+
+test('opening Music Editor directly creates an empty edit and shows the add-track sheet', async () => {
+    mockParams = { id: PROJECT, revision: '2' };
+    await act(async () => root.render(<NewSongBeat />));
+    expect(mockReplace).toHaveBeenCalledWith({ pathname: '/beats/[id]', params: expect.objectContaining({ setup: '1' }) });
+    expect(listBeats()).toHaveLength(1);
 });

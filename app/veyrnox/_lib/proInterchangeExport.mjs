@@ -5,6 +5,7 @@ import { reportDispositions } from './proInterchangeDispositions.mjs';
 import { FC_ITEM_COLOUR, mediaInfo, projectSettings, sequenceSettings, nearestLabel, visualEffects, textEffects, stackingLanes, assertCounts, sequenceCounts } from './proInterchangeFormat.mjs';
 import { importProInterchange } from './proInterchangeImport.mjs';
 import { scanProProject } from '../../../lib/proProjectScan.mjs';
+import { canvasPixelSize } from './editorCanvasFormat.mjs';
 export { stackingLanes } from './proInterchangeFormat.mjs';
 export function exportProInterchange(tl, options = {}) {
     return result(() => {
@@ -25,9 +26,9 @@ export function exportProInterchange(tl, options = {}) {
             reportDispositions(m,'media',`media.${m.id}`,report);
             if(m.kind!=='audio' && (!m.width||!m.height))loss(report,`media.${m.id}`,'dimensions','approximated','Unknown dimensions use the neutral MediaInfo defaults.');
         }
-        const size = {'16:9':[1920,1080],'9:16':[1080,1920],'1:1':[1080,1080]}[tl.aspect];
         const first = Object.values(tl.media).find(m=>m.kind==='video');
-        const [width,height] = size || [first?.width,first?.height];
+        const size = tl.aspect === 'source' ? {width:first?.width,height:first?.height} : canvasPixelSize(tl.aspect,1080,1920);
+        const {width,height} = size;
         if (!width || !height) refuse('source_dimensions_missing');
         let next = 1; const allocate = () => next++;
         const items = {}, mediaIds = new Map();
@@ -94,7 +95,8 @@ export function exportProInterchange(tl, options = {}) {
             sequence.markers.push({id:allocate(),start:framesToTicks(m.frame),duration:0,name:m.label,comment:'',kind:'Comment',color:nearestLabel(m.color),custom_color:m.color});
         }
         assertCounts({...counts,audio:counts.audio+companions,tracks:sequence.video_tracks.length+sequence.audio_tracks.length},refuse);
-        items[sequenceId]={id:sequenceId,name:safeText(options.name,120,'Sequence'),label:FC_ITEM_COLOUR.sequence,kind:{Sequence:sequence},metadata:{'veyrnox.tracks.v1':tl.tracks.flatMap(t=>order.get(t.id)||[]).join(',')}};
+        items[sequenceId]={id:sequenceId,name:safeText(options.name,120,'Sequence'),label:FC_ITEM_COLOUR.sequence,kind:{Sequence:sequence},metadata:{'veyrnox.tracks.v1':tl.tracks.flatMap(t=>order.get(t.id)||[]).join(','),
+            ...(!['source','16:9','9:16','1:1'].includes(tl.aspect)?{'veyrnox.canvas.v1':tl.aspect}:{})}};
         const project={name:safeText(options.name,120,'Veyrnox sequence'),settings:projectSettings(),root:{id:0,name:'Root',children:Object.keys(items).map(id=>({Item:Number(id)}))},items,next_id:next};
         const bytes=new TextEncoder().encode(JSON.stringify({format:'filmcraft.project',schema_version:17,generator:'Veyrnox P3 interchange (experimental)',project}));
         const scan=scanProProject(bytes,{duplicateKeys:'all'});if(!scan.ok)refuse(scan.reason);

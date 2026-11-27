@@ -4,15 +4,19 @@ import { Text as StatusText } from '../ui/Text';
 import { Alert, Platform, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { touchTarget } from '../../lib/a11y';
 import { formatNumber, t } from '../../lib/i18n';
-import { colors } from '../../theme';
-import { useServerExport, type ServerExportProps } from './useServerExport';
+import { studioColors as colors } from '../../theme';
+import { SERVER_EXPORT_RESOLUTIONS, useServerExport, type ServerExportProps } from './useServerExport';
 import { useOptionalSafeAreaInsets } from '../../lib/safeArea';
 import { bottomSheetSafePadding } from '../../lib/modalLayout';
+import { framesIn, timelineOf } from '../../lib/nativeEditorModel';
+import { ExportFootagePreview } from './ExportFootagePreview';
 
 export function ServerExportSheet(props: ServerExportProps) {
     const insets = useOptionalSafeAreaInsets();
     const state = useServerExport(props);
     const working = ['preparing', 'uploading', 'sending', 'rendering'].includes(state.phase);
+    const timeline = timelineOf(props.document.timeline), previewFrames = framesIn(timeline);
+    const previewFrame = state.phase === 'uploading' ? Math.round(Math.max(0, previewFrames - 1) * state.progress) : Math.round(Math.max(0, previewFrames - 1) / 2);
     const sheetInsets = bottomSheetSafePadding(insets, 24, 24, 24);
     const cancel = () => {
         if (state.phase === 'uploading') { void state.cancel(); return; }
@@ -26,9 +30,10 @@ export function ServerExportSheet(props: ServerExportProps) {
             <Text accessibilityRole="header" style={styles.heading}>{t('editorServerExport.title')}</Text>
             {state.message ? <StatusText variant="inherit" accessibilityRole={Platform.OS === 'android' ? 'alert' : undefined} style={styles.text}>{state.message}</StatusText> : null}
             {working ? <StatusText variant="inherit" accessibilityLiveRegion={Platform.OS === 'android' ? 'polite' : undefined} style={styles.text}>{t(`editorServerExport.${state.phase}` as Parameters<typeof t>[0])}</StatusText> : null}
+            {['uploading', 'sending', 'rendering'].includes(state.phase) && previewFrames ? <ExportFootagePreview timeline={timeline} frame={previewFrame} api={props.api} localMediaUris={props.localMediaUris ?? {}} /> : null}
             {state.phase === 'uploading' ? <View accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: 100, now: Math.round(state.progress * 100) }} style={styles.track}><View style={[styles.fill, { width: `${state.progress * 100}%` }]} /></View> : null}
-            {!working && !state.job ? <View>
-                {(['1080p', '720p'] as const).map(value => <Pressable key={value} accessibilityRole="button" accessibilityLabel={rawText(value)} accessibilityState={{ selected: state.resolution === value }} onPress={() => state.choose(value)} style={[styles.button, touchTarget]}>
+            {state.preferencesReady && !working && !state.job ? <View>
+                {SERVER_EXPORT_RESOLUTIONS.map(value => <Pressable key={value} accessibilityRole="button" accessibilityLabel={rawText(value)} accessibilityState={{ selected: state.resolution === value }} onPress={() => state.choose(value)} style={[styles.button, touchTarget]}>
                     <Text style={styles.text}>{state.limits[value] ? t('editorServerExport.resolution', { resolution: value, seconds: state.limits[value]! }) : value}</Text>
                 </Pressable>)}
             </View> : null}

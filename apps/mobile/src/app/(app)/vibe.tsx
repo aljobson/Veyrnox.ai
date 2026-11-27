@@ -33,6 +33,10 @@ export default function Vibe() {
     const { retake, from } = useLocalSearchParams<{ retake?: string; from?: string }>();
     // Arrived by replace from the first-run Welcome: there is nothing to go back to, so leave for the app (and the paywall).
     const leave = () => { if (from === 'welcome') router.replace('/'); else router.back(); };
+    const back = () => {
+        if (from === 'welcome' || !router.canGoBack()) router.replace('/');
+        else router.back();
+    };
     const [busy, setBusy] = useState(false);
     // Reset during render so even the first render for the next session has no old busy state.
     if (identity.owner !== owner || identity.generation !== generation) {
@@ -132,6 +136,9 @@ export default function Vibe() {
             </ScrollView>
 
             <View style={styles.footer}>
+                {language === 'ask' ? (
+                    <Button variant="tertiary" icon="arrowLeft" label={t('public.vey.back')} onPress={back} />
+                ) : null}
                 {language === 'ask' && languageNote ? (
                     <Button label={t('vibe.language.continue')} onPress={() => void continueLanguage()} />
                 ) : null}

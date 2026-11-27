@@ -116,9 +116,8 @@ test('the tokens.js fallback marks the same models as speech that the capability
     // With /api/catalog unreachable the picker is this list; a speech row
     // without the mark would get the starter prompt back.
     const endpointById = {
-        ...LIVE_SPEECH,
         'ace-step': 'fal-ai/ace-step', 'ace-step-1.5': 'fal-ai/ace-step-1.5',
-        'elevenlabs-sfx-v2': 'fal-ai/elevenlabs/sound-effects/v2', 'mmaudio-v2': 'fal-ai/mmaudio-v2/text-to-audio',
+        'suno-sounds': 'crun:suno/sounds-generate',
     };
     const audio = MODELS.filter((m) => m.kind === 'audio');
     assert.deepEqual(audio.map((m) => m.id).sort(), Object.keys(endpointById).sort(), 'every audio row in the fallback is checked');
@@ -150,7 +149,7 @@ test('the create page keeps the starter out of state, so a speech model cannot s
     assert.doesNotMatch(page, /neon-lit/);
     assert.equal((page.match(/\bsetPrompt\(/g) || []).length, 8, 'typing, dictation, incoming drafts, recovered draft, account reset, a picked template and the Edit prompt swap of a private template are the only text setters');
     // Draft text is explicit input; image drafts deliberately carry no duration.
-    assert.match(page, /setPrompt\(draft\.prompt\);\n    if \(draft\.durationSeconds\) setDuration\(`/);
+    assert.match(page, /setPrompt\(draft\.prompt\);\n\s+if \(draft\.durationSeconds\) setDuration\(`/);
     assert.match(page, /setPrompt\(saved\.prompt\)/);
     assert.match(page, /setPrompt\(null\); setSources/);
     assert.match(page, /if \(draft\) setPrompt\(draft\.prompt\);/);

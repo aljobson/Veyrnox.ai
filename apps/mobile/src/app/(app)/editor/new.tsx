@@ -46,7 +46,7 @@ function Choice({ icon, title, body, disabled, onPress }: { readonly icon: MenuI
 function NewEditor() {
     const { api } = useAuth();
     const router = useRouter();
-    const { jobId, blank, cuts } = useLocalSearchParams<{ jobId?: string; blank?: string; cuts?: string }>();
+    const { jobId, blank, add, cuts } = useLocalSearchParams<{ jobId?: string; blank?: string; add?: string; cuts?: string }>();
     const planned = useMemo(() => decodeCuts(cuts), [cuts]);
     const key = useRef<string | null>(null);
     key.current ??= randomUUID();
@@ -74,7 +74,7 @@ function NewEditor() {
             if (!run.workspaceId) throw new ApiError(404, 'unavailable');
             if (!current()) return;
             const project = await createProject(api, run.workspaceId, run.name, key.current!);
-            if (current()) router.replace({ pathname: '/editor/[projectId]', params: { projectId: project.id, ...(planned ? { cuts: encodeCuts(planned) } : run.jobId ? { jobId: run.jobId } : {}) } });
+            if (current()) router.replace({ pathname: '/editor/[projectId]', params: { projectId: project.id, ...(planned ? { cuts: encodeCuts(planned) } : run.jobId ? { jobId: run.jobId } : {}), ...(add === '1' ? { add: '1' } : {}) } });
         } catch (err) {
             if (current()) { setProblem(err instanceof OfflineError || (err as ApiError).status === 0 ? 'editor.createOffline' : editorErrorKey((err as ApiError).status)); setProblemStatus(typeof (err as ApiError).status === 'number' ? (err as ApiError).status : null); }
         } finally { busy.current = false; if (current()) setPending(false); }

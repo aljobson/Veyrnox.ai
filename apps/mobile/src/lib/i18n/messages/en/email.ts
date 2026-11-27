@@ -41,4 +41,5 @@ export default {
     'email.checking': 'Checking this device…',
     'email.captchaFailed': 'The security check could not load. Check your connection and try again.',
     'email.newHere': 'New here? Create an account',
+    'email.codeCta': 'Email me a 6-digit code',
 } as const;

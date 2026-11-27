@@ -41,7 +41,7 @@ test('rows show the latest saved version and sort by last saved', async () => {
     expect(lines.find(l => l.startsWith('Version 19'))).toBeTruthy();
     expect(lines.find(l => /^Version 2 /.test(l))).toBeTruthy();
     expect(lines.filter(l => /^Version 1 /.test(l)).length).toBe(1);
-    expect(root.container.queryAll(node => node.props.testID === 'editor-home-best-cut')).toHaveLength(1);
+    expect(root.container.queryAll(node => node.props.testID === 'editor-home-best-cut')).toHaveLength(0);
 });
 
 test('a save that finishes after the focus fetch refreshes the list without clearing rows', async () => {
@@ -68,16 +68,16 @@ test('a quiet refresh that fails keeps the rows and shows the retry', async () =
     expect(lines.some(l => /busy|try again/i.test(l))).toBe(true);
 });
 
-test('Studio keeps native workspaces reachable when Professional Editor is off', async () => {
+test('Editor does not fall back to a duplicate tool directory when editing is off', async () => {
     mockEditorEnabled = false;
     await act(async () => root.render(<EditorHome />));
     const lines = text();
     expect(requests).toHaveLength(0);
-    expect(lines).toContain('Studio');
-    expect(lines).toContain('Projects');
-    expect(lines).toContain('Beat maker');
-    expect(lines).toContain('Smart Cut');
-    expect(lines).not.toContain('Professional editor');
+    expect(lines).toContain('Editor');
+    expect(lines).not.toContain('Projects');
+    expect(lines).not.toContain('Music editor');
+    expect(lines).not.toContain('Smart Cut');
+    expect(lines).not.toContain('New edit');
     expect(lines).not.toContain('Editor is not available in this build.');
     const refreshables = root.container.queryAll(node => Object.hasOwn(node.props, 'refreshing'));
     expect(refreshables).toHaveLength(1);

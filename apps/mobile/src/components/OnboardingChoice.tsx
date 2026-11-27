@@ -5,7 +5,7 @@ import { EASE_OUT } from '../lib/motionCurves';
 import { touchTarget } from '../lib/a11y';
 import { rawText } from '../lib/i18n/translate';
 import type { MenuIcon } from '../lib/menuIcons';
-import { ds, featureHue, type FeatureHue } from '../theme';
+import { ds, featureHue, vividHue, type FeatureHue } from '../theme';
 import { Icon, Text, themedStyles, useThemedStyles } from './ui';
 import { useReducedMotionResolved } from './ui/useReducedMotion';
 
@@ -103,8 +103,8 @@ const sheets = themedStyles((p, _ramp, scheme) => ({
     on: { borderWidth: 3, borderColor: p.textPrimary },
     badge: { width: 40, height: 40, borderRadius: ds.radius.md, borderWidth: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: p.bgElevated2 },
     badgeBig: { width: 64, height: 64, alignSelf: 'flex-end', borderRadius: ds.radius.lg, borderColor: 'rgba(255,255,255,0.72)', backgroundColor: 'rgba(255,255,255,0.16)' },
-    tileAccent: { position: 'absolute', width: 150, height: 150, borderRadius: 75, top: -76, left: -46 },
-    tileAccentSecondary: { position: 'absolute', width: 128, height: 128, borderRadius: 64, top: -62, right: -52, opacity: 0.58 },
+    tileAccent: { position: 'absolute', width: 150, height: 150, borderRadius: 75, top: -76, left: -46, opacity: 0.48 },
+    tileAccentSecondary: { position: 'absolute', width: 128, height: 128, borderRadius: 64, top: -62, right: -52, opacity: 0.28 },
     tileLabel: { marginTop: 'auto', alignSelf: 'flex-start', color: p.onMedia },
     rowLabel: { flex: 1 },
     // Let the assigned card hue remain visible through a real template preview, preserving the colourful journey system.
@@ -128,14 +128,14 @@ const sheets = themedStyles((p, _ramp, scheme) => ({
     // Onboarding gets its own richer palette. The values stay dark enough for white text/icons and change in OLED mode;
     // the translucent second tone provides depth without adding a gradient dependency.
     vividInk: { color: p.onMedia },
-    mintVivid: { backgroundColor: scheme === 'dark' ? '#064E3B' : '#047857', borderColor: scheme === 'dark' ? '#34D399' : '#065F46' },
-    irisVivid: { backgroundColor: scheme === 'dark' ? '#312E81' : '#5B21B6', borderColor: scheme === 'dark' ? '#A78BFA' : '#4C1D95' },
-    skyVivid: { backgroundColor: scheme === 'dark' ? '#0C4A6E' : '#0369A1', borderColor: scheme === 'dark' ? '#38BDF8' : '#075985' },
-    roseVivid: { backgroundColor: scheme === 'dark' ? '#831843' : '#BE185D', borderColor: scheme === 'dark' ? '#FB7185' : '#9D174D' },
-    amberVivid: { backgroundColor: scheme === 'dark' ? '#78350F' : '#92400E', borderColor: scheme === 'dark' ? '#FBBF24' : '#78350F' },
-    mintAccent: { backgroundColor: 'rgba(110,231,183,0.32)' },
-    irisAccent: { backgroundColor: 'rgba(196,181,253,0.30)' },
-    skyAccent: { backgroundColor: 'rgba(125,211,252,0.32)' },
-    roseAccent: { backgroundColor: 'rgba(253,164,175,0.30)' },
-    amberAccent: { backgroundColor: 'rgba(252,211,77,0.32)' },
+    mintVivid: { backgroundColor: vividHue('green', scheme).fill, borderColor: vividHue('green', scheme).edge },
+    irisVivid: { backgroundColor: vividHue('purple', scheme).fill, borderColor: vividHue('purple', scheme).edge },
+    skyVivid: { backgroundColor: vividHue('blue', scheme).fill, borderColor: vividHue('blue', scheme).edge },
+    roseVivid: { backgroundColor: vividHue('pink', scheme).fill, borderColor: vividHue('pink', scheme).edge },
+    amberVivid: { backgroundColor: vividHue('orange', scheme).fill, borderColor: vividHue('orange', scheme).edge },
+    mintAccent: { backgroundColor: vividHue('green', scheme).glow },
+    irisAccent: { backgroundColor: vividHue('purple', scheme).glow },
+    skyAccent: { backgroundColor: vividHue('blue', scheme).glow },
+    roseAccent: { backgroundColor: vividHue('pink', scheme).glow },
+    amberAccent: { backgroundColor: vividHue('orange', scheme).glow },
 }));

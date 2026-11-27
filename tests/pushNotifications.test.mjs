@@ -34,6 +34,18 @@ test('a failure says "refunded" only when the ledger says REFUNDED', () => {
     assert.doesNotMatch(buildMessage(item({ kind: 'job_failed', job_state: 'FAILED' }), 'x').body, /refund/i);
 });
 
+test('Smart Cut completion is silent, routes to Smart Cut and exposes no analysis identifier', () => {
+    const done = buildMessage(item({ kind: 'smart_cut_done', inputs: { transcript: 'private words' } }), 'x');
+    assert.equal(done.title, 'Your Smart Cut is ready');
+    assert.equal(done.sound, null);
+    assert.deepEqual(done.data, { type: 'smart-cut', state: 'succeeded' });
+    assert.ok(!JSON.stringify(done).includes('j1'));
+    assert.ok(!JSON.stringify(done).includes('private words'));
+    const failed = buildMessage(item({ kind: 'smart_cut_failed', job_state: 'REFUNDED' }), 'x');
+    assert.deepEqual(failed.data, { type: 'smart-cut', state: 'failed' });
+    assert.match(failed.body, /refunded/i);
+});
+
 test('Expo tickets: ok, permanent DeviceNotRegistered, and every transport failure retryable', async () => {
     const ok = (data) => async () => Response.json({ data });
     assert.deepEqual(await sendExpoBatch([{}, {}], { fetcher: ok([{ status: 'ok', id: 'a' }, { status: 'error', details: { error: 'DeviceNotRegistered' } }]) }),
@@ -80,8 +92,16 @@ test('a sweep enqueues, claims, sends and settles each item as sent', async () =
     const rpcs = db({ batch: [item()] });
     const out = await runPushSweep({ env: ON, cfg });
     assert.deepEqual(out, { ok: true, queued: 0, claimed: 1, sent: 1, failed: 0 });
-    assert.deepEqual(rpcs.map((r) => r.name), ['push_enqueue_job_events', 'push_claim_batch', 'expo', 'push_settle', 'push_prune']);
-    assert.deepEqual(rpcs[3].args, { p_id: 'o1', p_outcome: 'sent', p_error: null, p_dead_token_ids: [] });
+    assert.deepEqual(rpcs.map((r) => r.name), ['push_enqueue_job_events', 'push_enqueue_smart_cut_events', 'push_claim_batch', 'expo', 'push_settle', 'push_prune']);
+    assert.deepEqual(rpcs[4].args, { p_id: 'o1', p_outcome: 'sent', p_error: null, p_dead_token_ids: [] });
+});
+
+test('a database awaiting the Smart Cut migration still sends existing job pushes', async () => {
+    db.tickets = undefined;
+    const rpcs = db({ batch: [item()], failRpc: 'push_enqueue_smart_cut_events' });
+    const out = await runPushSweep({ env: ON, cfg });
+    assert.deepEqual(out, { ok: true, queued: 0, claimed: 1, sent: 1, failed: 0 });
+    assert.ok(rpcs.some((call) => call.name === 'push_settle'));
 });
 
 test('a device Expo calls unregistered is switched off; a transient failure is retried', async () => {

@@ -63,6 +63,30 @@ test('a v2 document with a timeline forwards; a damaged timeline never reaches u
  assert.equal((await PUT(req({expected_revision:2,document:noKey}),params)).status,400);
 });
 
+test('the save boundary derives editing time for clients that do not yet send the summary', async () => {
+ const { withTimeline } = await import('../lib/projectDocument.js');
+ const { emptyTimeline, addMedia, addVideoClip } = await import('../app/veyrnox/_lib/editorTimeline.mjs');
+ let timeline=emptyTimeline(); timeline=addMedia(timeline,{id:'j-long',kind:'video',frames:600,name:'long.mp4',hasAudio:true,width:1280,height:720});
+ timeline=addVideoClip(timeline,'j-long',{in:0,len:150});
+ const document=withTimeline(emptyProjectDocument(id),timeline); delete document.editing_summary;
+ let sent; globalThis.fetch=async(url,init)=>{sent=JSON.parse(init.body);return Response.json({revision:1});};
+ assert.equal((await PUT(req({expected_revision:0,document}),params)).status,200);
+ assert.deepEqual(sent.p_document.editing_summary,{source_frames:600,edited_frames:150,fps:30});
+ const inflated={...document,editing_summary:{source_frames:999999,edited_frames:1,fps:1}};
+ assert.equal((await PUT(req({expected_revision:0,document:inflated}),params)).status,200);
+ assert.deepEqual(sent.p_document.editing_summary,{source_frames:600,edited_frames:150,fps:30},'the server never persists a client claim');
+});
+
+test('timeline saves preserve the chosen cover while deriving server-owned metadata', async () => {
+ const { withTimeline } = await import('../lib/projectDocument.js');
+ const { emptyTimeline } = await import('../app/veyrnox/_lib/editorTimeline.mjs');
+ const cover={frame:0,text:'Cover title',text_color:'#FFFFFF'};
+ const document=withTimeline({...emptyProjectDocument(id),cover},emptyTimeline());
+ let sent; globalThis.fetch=async(url,init)=>{sent=JSON.parse(init.body);return Response.json({revision:1});};
+ assert.equal((await PUT(req({expected_revision:0,document}),params)).status,200);
+ assert.deepEqual(sent.p_document.cover,cover);
+});
+
 test('v3 saves require the advanced server flag; valid saves forward and damaged values never reach the database', async () => {
  const { withTimeline } = await import('../lib/projectDocument.js');
  const { emptySequence, addSequenceText } = await import('../app/veyrnox/_lib/editorSequence.mjs');

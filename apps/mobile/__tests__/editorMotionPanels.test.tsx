@@ -17,7 +17,7 @@ const tl = timelineOf(webSequenceV3()), frameStore = createFrameStore(), applyTi
 let selection: Selection | null, renders = 0;
 function Harness() {
     renders++;
-    const props = { timeline: tl, selection, applyTimeline, setProblem: jest.fn(), frameStore };
+    const props = { timeline: tl, selection, applyTimeline, patchSelected: jest.fn(), setProblem: jest.fn(), frameStore };
     const motionActions = useMotionActions({ ...props, setFrame, setPlaying }), maskActions = useMaskActions(props);
     return <><MotionPanel {...props} motionActions={motionActions} /><MaskPanel {...props} maskActions={maskActions} /></>;
 }

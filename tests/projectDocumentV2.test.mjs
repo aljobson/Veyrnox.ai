@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { emptyProjectDocument, withTimeline, equalProjectDocuments, validProjectDocument } from '../lib/projectDocument.js';
+import { editingSummaryForTimeline, editingTimeSavedSeconds, emptyProjectDocument, withTimeline, equalProjectDocuments, validProjectCover, validProjectDocument } from '../lib/projectDocument.js';
 import { FPS, emptyTimeline, addMedia, addVideoClip, addText } from '../app/veyrnox/_lib/editorTimeline.mjs';
 
 const id = '11111111-1111-4111-8111-111111111111';
@@ -24,6 +24,49 @@ test('v2 carries a validated timeline or null, with exactly five keys', () => {
     assert.equal(validProjectDocument(withTimeline(v1, { ...timeline(), schemaVersion: 1 }), id), false, 'an old timeline version');
     assert.equal(validProjectDocument(withTimeline(v1, { ...timeline(), video: 'nope' }), id), false, 'damage is refused, never repaired');
     assert.equal(validProjectDocument({ ...v2, extra: 1 }, id), false);
+    assert.equal(validProjectDocument({ ...v1, canvas: { aspect_ratio: '4:5', frame_rate: 30 } }, id), true);
+    assert.equal(validProjectDocument({ ...v1, canvas: { aspect_ratio: 'custom:5x8', frame_rate: 30 } }, id), true);
+    assert.equal(validProjectDocument({ ...v1, canvas: { aspect_ratio: 'custom:10x16', frame_rate: 30 } }, id), false);
+});
+
+test('project covers are validated, preserved through timeline saves and included in equality', () => {
+    const cover = { frame: 75, text: 'Morning routine', text_color: '#FFE66D' };
+    assert.equal(validProjectCover(cover), true);
+    for (const damaged of [
+        { ...cover, frame: -1 }, { ...cover, frame: 1.5 }, { ...cover, text: 'x'.repeat(121) },
+        { ...cover, text: 'bad\u0000text' }, { ...cover, text_color: 'yellow' }, { ...cover, extra: true },
+    ]) assert.equal(validProjectCover(damaged), false);
+    const v1 = { ...emptyProjectDocument(id), cover };
+    assert.equal(validProjectDocument(v1, id), true);
+    const v2 = withTimeline(v1, timeline());
+    assert.deepEqual(v2.cover, cover);
+    assert.equal(validProjectDocument(v2, id), true);
+    assert.equal(equalProjectDocuments(v2, { ...v2, cover: { ...cover, frame: 76 } }), false);
+    assert.equal(equalProjectDocuments(v2, { ...v2, cover: { text_color: '#FFE66D', text: 'Morning routine', frame: 75 } }), true);
+});
+
+test('saved documents derive an honest editing-time summary from unique referenced source video', () => {
+    let tl = emptyTimeline();
+    tl = addMedia(tl, vid('j-long', 20));
+    tl = addVideoClip(tl, 'j-long', { in: 0, len: 4 * FPS });
+    tl = addVideoClip(tl, 'j-long', { in: 10 * FPS, len: 3 * FPS });
+    const summary = editingSummaryForTimeline(tl);
+    assert.deepEqual(summary, { source_frames: 20 * FPS, edited_frames: 7 * FPS, fps: FPS });
+    assert.equal(editingTimeSavedSeconds(summary), 13);
+    const doc = withTimeline(emptyProjectDocument(id), tl);
+    assert.deepEqual(doc.editing_summary, summary);
+    assert.equal(validProjectDocument(doc, id), true);
+    assert.equal(validProjectDocument({ ...doc, editing_summary: { source_frames: 0, edited_frames: 0, fps: 0 } }, id), false, 'malformed derived data is refused');
+});
+
+test('editing-time summary is omitted unless every source duration is trustworthy and the cut is shorter', () => {
+    const full = timeline();
+    assert.equal(editingSummaryForTimeline(full), null);
+    assert.equal(withTimeline(emptyProjectDocument(id), full).editing_summary, undefined);
+    const damaged = JSON.parse(JSON.stringify(full));
+    delete damaged.media['j-abc'].frames;
+    assert.equal(editingSummaryForTimeline(damaged), null);
+    assert.equal(editingTimeSavedSeconds({ source_frames: 90, edited_frames: 90, fps: 30 }), null);
 });
 
 test('v2 equality ignores key order inside the timeline and sees edits', () => {

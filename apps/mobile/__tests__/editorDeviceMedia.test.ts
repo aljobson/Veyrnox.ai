@@ -8,6 +8,7 @@ import {
     removeProjectMedia,
     setEditorMediaOwner,
 } from '../src/lib/editorDeviceMedia';
+import { EDITOR_IMPORT_RESERVE_BYTES, editorImportHasSpace } from '../src/lib/editorImportSpace';
 import { editorMedia } from '../src/lib/editorMedia';
 import { fetchProject } from '../src/lib/projects';
 import { getDocument } from '../src/lib/editorProjects';
@@ -68,7 +69,7 @@ function setup() {
     return { data, storage, store: createEditorMediaStore(storage) };
 }
 const doc = (include: boolean) => ({ project_id: C, schema_version: 3 as const, timeline: { ...emptyTimeline(), media: include ? { [`l-${D}`]: { id: `l-${D}`, kind: 'video' } } : {} } });
-beforeEach(() => { mockNodes.clear(); mockDeleted.length = 0; mockCopy.mockReset().mockResolvedValue(undefined); mockDigest.mockReset(); mockRead.mockReset();
+beforeEach(() => { mockNodes.clear(); mockDeleted.length = 0; mockCopy.mockReset().mockResolvedValue(undefined); mockDigest.mockReset(); mockRead.mockReset(); mockSpace = 3e9;
     mockHeader = new Uint8Array(16); mockNodes.set('file://picked', { dir: false, size: 500 }); });
 afterEach(() => { jest.restoreAllMocks(); });
 
@@ -96,6 +97,13 @@ test('verified media signatures cover every pack media family and reject MIME fo
     expect(matchesMediaSignature('audio/wav', bytes('RIFF0000WAVE'))).toBe(true);
     expect(matchesMediaSignature('audio/ogg', bytes('OggS'))).toBe(true);
     expect(matchesMediaSignature('audio/mpeg', bytes('RIFF0000WAVE'))).toBe(false);
+});
+test('Photos and Files imports keep a 100 MB working reserve before copying media', () => {
+    mockSpace = EDITOR_IMPORT_RESERVE_BYTES + 499;
+    expect(editorImportHasSpace(500)).toBe(false);
+    mockSpace = EDITOR_IMPORT_RESERVE_BYTES + 500;
+    expect(editorImportHasSpace(500)).toBe(true);
+    expect(editorImportHasSpace(undefined, Number.NaN)).toBe(true);
 });
 test('copy and hydration survive omitted media and restoring an older revision; owner changes erase old files', async () => {
     const s = setup(); await s.store.setOwner(A); const file = await s.store.copy(C, `l-${D}`, 'file://picked', 'video/mp4', 4);

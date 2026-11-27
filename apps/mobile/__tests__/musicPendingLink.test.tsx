@@ -10,7 +10,7 @@ let mockStatus = 'signedOut';
 jest.mock('expo-secure-store', () => ({ getItem: (key: string) => mockSlots.get(key) ?? null,
     setItem: (key: string, value: string) => { mockSlots.set(key, value); }, deleteItemAsync: async (key: string) => { mockSlots.delete(key); } }));
 jest.mock('../src/components/ui', () => ({ ...jest.requireActual('../src/components/ui'), useAppearance: () => ({ settings: jest.requireActual('../src/theme').getAppearance(), scheme: 'light' }) }));
-jest.mock('expo-router', () => ({ Redirect: (props: { href: string }) => { mockRedirect(props.href); return null; }, Stack: { Screen: () => null } }));
+jest.mock('expo-router', () => ({ Redirect: (props: { href: string }) => { mockRedirect(props.href); return null; }, Stack: { Screen: () => null }, useCanGoBack: () => false }));
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ status: mockStatus, generation: 0 }) }));
 jest.mock('../src/lib/useOfflineRecovery', () => ({ useOfflineRecovery: () => undefined }));
 jest.mock('../src/components/ErrorFallback', () => ({ SignedInErrorBoundary: () => null }));

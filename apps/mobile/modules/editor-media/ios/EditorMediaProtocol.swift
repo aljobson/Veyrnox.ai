@@ -58,6 +58,7 @@ struct BeginEncodeRequest: Record {
   @Field var videoBitRate: Int = 6_000_000
   @Field var audioBitRate: Int? = nil
   @Field var audioArtifactId: String? = nil
+  @Field var codec: String? = nil
   @Field var alpha: Bool? = nil
 }
 

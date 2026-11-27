@@ -44,6 +44,7 @@ test('positive generation capabilities use 30,000 or an explicit verified provid
     ['crun:kling/o1-r2v-ref', 2500], // Crun's documented limit (0586).
     ['crun:kling/o1-r2v', 2500], // Crun's documented limit for template swaps (ADR-0351 amendment 21).
     ['crun:suno/music-generate', 500], // Our Suno simple-brief cap (Suno allows 3000; ADR-0376).
+    ['crun:suno/sounds-generate', 500], // Dedicated CRUN sound-effects prompt bound (docs read 2026-11-24).
     ['crun:flux-2-pro', 5000], // Crun's documented limit (0581).
     ['crun:kling/avatar', 2500], // Crun's documented limit (0581).
     ['higgsfield:kling-video/v3.0/pro/image-to-video', 2500],
@@ -92,11 +93,8 @@ test('all recorded exact community prompts fit the new contract without truncati
 test('product prompt-audit documents keep the recalculated exact-prompt counts', () => {
   const audit = readFileSync('docs/product/template-prompt-audit-2026-10-29.md', 'utf8').replace(/\s+/g, ' ');
   const recipes = readFileSync('docs/product/template-recipes.md', 'utf8').replace(/\s+/g, ' ');
-  // These documents count the community corpus; the 20 Veyrnox originals are pinned in originalSeedanceTemplates.test.mjs.
-  const community = PRESETS.filter(p => p.promptOrigin !== 'veyrnox-original');
-  assert.equal(community.length, PRESETS.length - 20);
-  const compatible = community.filter(p => p.sourcePromptRunnable).length;
-  const incompatible = community.length - compatible;
+  const compatible = PRESETS.filter(p => p.sourcePromptRunnable).length;
+  const incompatible = PRESETS.length - compatible;
   assert.ok(audit.includes(`Audit-compatible: **${compatible}**; incompatible: **${incompatible}**.`));
   assert.ok(recipes.includes(`${compatible} public exact prompts are compatible and ${incompatible} incompatible`));
   assert.match(audit, /No copy-only blocking/);

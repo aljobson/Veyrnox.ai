@@ -16,9 +16,9 @@ const selected = { track: 'video' as const, id: 'v1' };
 const event = (pageX = 0, pageY = 0, locationX = 0, locationY = 10) => ({ nativeEvent: { pageX, pageY, locationX, locationY } });
 const node = (id: string) => root.container.queryAll(n => n.props.testID === id)[0];
 async function render(selections = [selected], snap = false, ripple?: 'none' | 'lane' | 'all', analysisMarks?: readonly { frame: number; kind: 'hard' | 'possible'; selected: boolean }[],
-    clipRanges?: readonly ClipRangeBand[]) {
+    clipRanges?: readonly ClipRangeBand[], waveforms?: Readonly<Record<string, readonly number[]>>) {
     await act(async () => root.render(<EditorTimeline timeline={timeline} selections={selections} ppf={2} total={300} frame={0} playing={false} snap={snap} ripple={ripple} onSeek={onSeek}
-        analysisMarks={analysisMarks} clipRanges={clipRanges} onSelect={onSelect} onApply={onApply} onViewport={onViewport} />));
+        analysisMarks={analysisMarks} clipRanges={clipRanges} waveforms={waveforms} onSelect={onSelect} onApply={onApply} onViewport={onViewport} />));
 }
 async function call(id: string, prop: string, value = event()) { await act(async () => node(id).props[prop](value)); }
 beforeEach(() => {
@@ -52,6 +52,14 @@ test('positions clips and playhead in a single scroller and scrubs on grant and 
     await call('timeline-ruler', 'onResponderGrant', event(100, 0, 120)); await call('timeline-ruler', 'onResponderMove', event(140));
     expect(onSeek.mock.calls).toEqual([[60], [80]]); expect(node('timeline-ruler').props.onResponderTerminationRequest()).toBe(false);
     await call('timeline-ruler', 'onResponderRelease'); expect(onApply).not.toHaveBeenCalled();
+});
+test('renders decoded audio peaks behind clip labels without adding accessibility noise', async () => {
+    await render([], false, undefined, undefined, undefined, { v1: [0, .25, 1] });
+    const waveform = node('waveform-v1');
+    expect(waveform.props.accessibilityElementsHidden).toBe(true);
+    expect(waveform.props.importantForAccessibility).toBe('no-hide-descendants');
+    expect(waveform.children).toHaveLength(3);
+    expect(waveform.children.map((bar: any) => StyleSheet.flatten(bar.props.style).height)).toEqual([2, 8, 30]);
 });
 test('scene suggestions render as transient non-document marks with an accessible ruler summary', async () => {
     await render([], false, undefined, [{ frame: 75, kind: 'hard', selected: true }, { frame: 90, kind: 'possible', selected: false }]);

@@ -7,6 +7,7 @@
     "@expo-google-fonts/instrument-serif": "^0.4.1",
     "@expo-google-fonts/inter": "^0.4.2",
     "@expo-google-fonts/space-grotesk": "^0.4.1",
+    "@expo/ui": "~58.0.29",
     "@sentry/react-native": "~8.28.0",
     "@shopify/react-native-skia": "2.14.0",
     "drawably": "^0.4.2",
@@ -37,6 +38,7 @@
     "expo-updates": "~58.0.22",
     "expo-video": "~58.0.14",
     "expo-web-browser": "~58.1.0",
+    "expo-widgets": "~58.0.29",
     "fflate": "0.8.3",
     "posthog-react-native": "4.86.0",
     "react": "19.3.0",
@@ -68,6 +70,7 @@
     "wobnimo": "0.2.0"
   },
   "scripts": {
+    "postinstall": "node scripts/patch-expo-module-scan.mjs",
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
