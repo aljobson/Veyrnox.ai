@@ -31,3 +31,24 @@ test('abandoned unused URLs recover slots only via confirmed deletion', async ()
     });
     assert.deepEqual(result, { ok: true, deleted: 1, failed: 0 });
 });
+test('active voice evidence also survives the reservation sweep', async () => {
+    let cleaned = 0, removed = 0;
+    const result = await sweepUploadReservations({}, {}, {
+        find: async () => [{ r2_key: key }], protectedKeys: new Set([key]),
+        cleanDerived: async () => { cleaned++; return { ok: true }; },
+        remove: async () => { removed++; return { ok: true }; },
+    });
+    assert.deepEqual(result, { ok: true, deleted: 0, failed: 0 });
+    assert.deepEqual({ cleaned, removed }, { cleaned: 0, removed: 0 });
+});
+test('reservation cleanup rechecks voice protection immediately before deletion', async () => {
+    let cleaned = 0, removed = 0;
+    const result = await sweepUploadReservations({}, {}, {
+        find: async () => [{ r2_key: key }],
+        isProtected: async candidate => candidate === key,
+        cleanDerived: async () => { cleaned++; return { ok: true }; },
+        remove: async () => { removed++; return { ok: true }; },
+    });
+    assert.deepEqual(result, { ok: true, deleted: 0, failed: 0 });
+    assert.deepEqual({ cleaned, removed }, { cleaned: 0, removed: 0 });
+});

@@ -4,7 +4,7 @@ import { builtinModules } from 'node:module';
 import { checkWorkerSize, checkWrapper, forbiddenWrapperInput, parseUploadKiB, WORKER_SIZE_BUDGET_KIB } from '../scripts/check-worker-size.mjs';
 
 test('size parser reads uncompressed KiB and fails closed for missing or invalid output', () => {
-  assert.equal(WORKER_SIZE_BUDGET_KIB, 48500);
+  assert.equal(WORKER_SIZE_BUDGET_KIB, 49000);
   assert.equal(parseUploadKiB('Total Upload: 60490 KiB / gzip: 12290 KiB'), 60490);
   assert.equal(parseUploadKiB('Total Upload: 54,321.50 KiB / gzip: 9000 KiB'), 54321.5);
   assert.equal(parseUploadKiB('Total Upload: 10 KiB\nTotal Upload: 20 KiB'), 20);

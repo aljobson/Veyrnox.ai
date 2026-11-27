@@ -15,6 +15,10 @@ const dailyChallengeSource = readFileSync(join(root, 'messages', 'musicDailyChal
 const musicDailyChallengeByLocale = new Function(dailyChallengeSource
     .replace('const musicDailyChallengeByLocale =', 'return')
     .replace(/ as const;\s*export default musicDailyChallengeByLocale;\s*$/, ';'))();
+const musicVoicesSource = readFileSync(join(root, 'messages', 'musicVoices.ts'), 'utf8');
+const musicVoicesByLocale = new Function(musicVoicesSource
+    .replace('const musicVoicesByLocale =', 'return')
+    .replace(/ as const;\s*export default musicVoicesByLocale;\s*$/, ';'))();
 const musicRemixSource = readFileSync(join(root, 'messages', 'musicRemix.ts'), 'utf8');
 const musicRemixByLocale = new Function(musicRemixSource
     .replace('const musicRemixByLocale =', 'return')
@@ -50,7 +54,7 @@ for (const file of readdirSync(join(root, 'messages', 'app')).filter(f => f.ends
     const webSource = readFileSync(join(root, 'messages', `${locale}.ts`), 'utf8');
     const web = new Function(webSource.replace(/ as const;/, ';').replace(/export default (\w+);/, 'return $1;'))();
     const catalog = { ...app, ...musicAlbumsByLocale[locale], ...musicDailyChallengeByLocale[locale],
-        ...musicRemixByLocale[locale], ...musicSourcesByLocale[locale], ...musicLyricistByLocale[locale], ...musicLyricAssistantByLocale[locale],
+        ...musicVoicesByLocale[locale], ...musicRemixByLocale[locale], ...musicSourcesByLocale[locale], ...musicLyricistByLocale[locale], ...musicLyricAssistantByLocale[locale],
         ...MUSIC_STUDIO_ASSISTANT_NATIVE_TRANSLATIONS[locale], ...web };
     const rows = Object.entries(catalog).filter(([key, value]) => sourceFor(key) && [...value].length > [...sourceFor(key)].length * 1.6)
         .map(([key, value]) => ({ id: key, english: sourceFor(key), translation: value, ratio: Number(([...value].length / [...sourceFor(key)].length).toFixed(2)) }));
