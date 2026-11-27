@@ -1,13 +1,13 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
-  "explore.templateTotalWithCrun": "{ready} prontos · {previews} prévias CRUN",
-  "templates.kind.crun": "Prévias CRUN",
-  "crunTemplates.providerLabel": "Fornecedor CRUN",
-  "crunTemplates.count": "{loaded} de {total} prévias carregadas",
-  "crunTemplates.help": "Explore o catálogo CRUN ao vivo. Estas são apenas prévias até que os preços e a geração sejam ativados no Veyrnox.",
-  "crunTemplates.previewOnly": "Somente prévia",
-  "crunTemplates.previewLabel": "Prévia CRUN de {name}",
+  "explore.templateTotalWithCrun": "{previews} modelos",
+  "templates.kind.crun": "Modelos",
+  "crunTemplates.providerLabel": "Fornecedor de modelos",
+  "crunTemplates.count": "{loaded} de {total} modelos carregados",
+  "crunTemplates.help": "Explore modelos do Kling, Seedance e Vidu. A geração ficará disponível quando os preços do Veyrnox e a prova paga estiverem concluídos.",
+  "crunTemplates.previewOnly": "Ainda não executável",
+  "crunTemplates.previewLabel": "Modelo {name}",
   "crunTemplates.previewUnavailable": "Prévia indisponível",
   "crunTemplates.inputCount": "Imagens de entrada: {count}",
   "crunTemplates.input": "Entrada: {input}",

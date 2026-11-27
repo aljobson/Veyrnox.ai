@@ -1,13 +1,13 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
-  "explore.templateTotalWithCrun": "{ready} तैयार · {previews} CRUN प्रीव्यू",
-  "templates.kind.crun": "CRUN प्रीव्यू",
-  "crunTemplates.providerLabel": "CRUN प्रदाता",
-  "crunTemplates.count": "{total} में से {loaded} प्रीव्यू लोड हुए",
-  "crunTemplates.help": "लाइव CRUN कैटलॉग ब्राउज़ करें। Veyrnox में कीमत और जनरेशन चालू होने तक ये केवल प्रीव्यू हैं।",
-  "crunTemplates.previewOnly": "केवल प्रीव्यू",
-  "crunTemplates.previewLabel": "{name} का CRUN प्रीव्यू",
+  "explore.templateTotalWithCrun": "{previews} टेम्पलेट",
+  "templates.kind.crun": "टेम्पलेट",
+  "crunTemplates.providerLabel": "टेम्पलेट प्रदाता",
+  "crunTemplates.count": "{total} में से {loaded} टेम्पलेट लोड हुए",
+  "crunTemplates.help": "Kling, Seedance और Vidu के टेम्पलेट ब्राउज़ करें। Veyrnox की कीमत और सशुल्क प्रमाण पूरा होने के बाद जनरेशन उपलब्ध होगा।",
+  "crunTemplates.previewOnly": "अभी चलाने योग्य नहीं",
+  "crunTemplates.previewLabel": "{name} टेम्पलेट",
   "crunTemplates.previewUnavailable": "प्रीव्यू उपलब्ध नहीं है",
   "crunTemplates.inputCount": "इनपुट इमेज: {count}",
   "crunTemplates.input": "इनपुट: {input}",

@@ -1,13 +1,13 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
-  "explore.templateTotalWithCrun": "{ready}件が利用可能 · CRUNプレビュー{previews}件",
-  "templates.kind.crun": "CRUNプレビュー",
-  "crunTemplates.providerLabel": "CRUNプロバイダー",
-  "crunTemplates.count": "{total}件中{loaded}件のプレビューを読み込み済み",
-  "crunTemplates.help": "CRUNのライブカタログを閲覧できます。Veyrnoxで料金設定と生成が有効になるまでは、プレビューのみ利用できます。",
-  "crunTemplates.previewOnly": "プレビューのみ",
-  "crunTemplates.previewLabel": "{name}のCRUNプレビュー",
+  "explore.templateTotalWithCrun": "テンプレート{previews}件",
+  "templates.kind.crun": "テンプレート",
+  "crunTemplates.providerLabel": "テンプレート提供元",
+  "crunTemplates.count": "{total}件中{loaded}件のテンプレートを読み込み済み",
+  "crunTemplates.help": "Kling、Seedance、Viduのテンプレートを閲覧できます。Veyrnoxの料金設定と有料検証が完了すると生成を利用できます。",
+  "crunTemplates.previewOnly": "まだ実行できません",
+  "crunTemplates.previewLabel": "{name}テンプレート",
   "crunTemplates.previewUnavailable": "プレビューを利用できません",
   "crunTemplates.inputCount": "入力画像：{count}枚",
   "crunTemplates.input": "入力：{input}",

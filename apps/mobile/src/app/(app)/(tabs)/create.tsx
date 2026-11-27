@@ -129,7 +129,7 @@ export default function Create() {
                         <EntryTile hue="purple" icon="squares" label={`${t('templates.kind.video')} ${t('label.Templates')}`} onPress={() => router.push('/create/presets')} />
                         <EntryTile hue="pink" icon="squares" label={`${t('templates.kind.image')} ${t('label.Templates')}`} onPress={() => router.push({ pathname: '/create/presets', params: { kind: 'image' } })} />
                         <EntryTile hue="teal" icon="audio" label={`${t('templates.kind.audio')} ${t('label.Templates')}`} onPress={() => router.push({ pathname: '/create/presets', params: { kind: 'audio' } })} />
-                        <EntryTile hue="green" icon="squares" label={t('templates.kind.crun')} onPress={() => router.push({ pathname: '/create/presets', params: { kind: 'crun' } })} />
+                        <EntryTile hue="green" icon="squares" label={t('label.Templates')} onPress={() => router.push({ pathname: '/create/presets', params: { kind: 'crun' } })} />
                         <EntryTile hue="orange" icon="wrench" label={t('menu.tools')} accessibilityLabel={t('toolsDir.entry')} onPress={() => router.push('/create/tools')} />
                         {models.some(m => m.id === 'wan-2.5-kie' && !m.gated) ? <EntryTile hue="green" icon="film" label={t('facelessReel.chip')} onPress={() => router.push('/faceless-reel')} /> : null}
                         {agent ? <EntryTile hue="purple" icon="filmReel" label={t('create.agentTitle')} accessibilityLabel={rawText(`${t('create.agentTitle')}. ${t('create.agentHint')}`)} onPress={() => router.push('/create/agent')} /> : null}

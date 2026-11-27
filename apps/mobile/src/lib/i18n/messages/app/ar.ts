@@ -1,13 +1,13 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
-  "explore.templateTotalWithCrun": "{ready} جاهز · {previews} معاينة من CRUN",
-  "templates.kind.crun": "معاينات CRUN",
-  "crunTemplates.providerLabel": "موفّر CRUN",
-  "crunTemplates.count": "تم تحميل {loaded} من {total} معاينة",
-  "crunTemplates.help": "تصفّح كتالوج CRUN المباشر. هذه معاينات فقط إلى أن يتم تفعيل الأسعار والإنشاء في Veyrnox.",
-  "crunTemplates.previewOnly": "معاينة فقط",
-  "crunTemplates.previewLabel": "معاينة CRUN لـ {name}",
+  "explore.templateTotalWithCrun": "{previews} قالب",
+  "templates.kind.crun": "القوالب",
+  "crunTemplates.providerLabel": "موفّر القوالب",
+  "crunTemplates.count": "تم تحميل {loaded} من {total} قالبًا",
+  "crunTemplates.help": "تصفّح قوالب Kling وSeedance وVidu. يصبح الإنشاء متاحًا بعد اكتمال تسعير Veyrnox والإثبات المدفوع.",
+  "crunTemplates.previewOnly": "غير قابل للتشغيل بعد",
+  "crunTemplates.previewLabel": "قالب {name}",
   "crunTemplates.previewUnavailable": "المعاينة غير متاحة",
   "crunTemplates.inputCount": "صور الإدخال: {count}",
   "crunTemplates.input": "الإدخال: {input}",

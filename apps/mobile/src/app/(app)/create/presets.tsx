@@ -122,7 +122,7 @@ export default function Templates() {
             const next = await fetchCrunTemplateCatalog(selectedProvider, crun.page + 1);
             setCrun(current => {
                 if (!current || current.provider !== selectedProvider) return current;
-                const byId = new Map([...current.templates, ...next.templates].map(item => [item.id, item]));
+                const byId = new Map([...current.templates, ...next.templates].map(item => [item.catalogId, item]));
                 return { ...next, templates: [...byId.values()] };
             });
         } catch { if (crunProviderRef.current === selectedProvider) setCrunFailed(true); }
@@ -136,13 +136,15 @@ export default function Templates() {
         <Text variant="title1" accessibilityRole="header">{t('presets.templates')}</Text>
         {unavailableId ? <Text accessibilityLiveRegion="assertive">{unavailablePreset ? t('presets.isnotavailablerightnow', { value1: unavailablePreset.title }) : t('presets.thattemplateisnotavailablerightnow')}</Text> : null}
         <View style={styles.kinds} accessibilityRole="tablist" accessibilityLabel={t('templates.kind.label')}>
-            {KINDS.map(k => <Chip key={k} selected={kind === k} accessibilityRole="tab" accessibilityState={{ selected: kind === k }} label={t(`templates.kind.${k}`)} onPress={() => { setKind(k); setQuery(''); }} />)}
+            {KINDS.map(k => <Chip key={k} selected={kind === k} accessibilityRole="tab" accessibilityState={{ selected: kind === k }} label={k === 'crun' ? t('label.Templates') : t(`templates.kind.${k}`)} onPress={() => { setKind(k); setQuery(''); }} />)}
         </View>
         {kind === 'crun' ? (crunFailed && crun === null ? <View>{crunProviderTabs}{retry}</View>
-            : crun === null ? <View>{crunProviderTabs}<ActivityIndicator /></View> : <FlatList key={`crun-${crunProvider}`} data={crun.templates} numColumns={2} keyExtractor={item => item.id} contentContainerStyle={styles.list}
+            : crun === null ? <View>{crunProviderTabs}<ActivityIndicator /></View> : <FlatList key={`crun-${crunProvider}`} data={crun.templates} numColumns={2} keyExtractor={item => item.catalogId} contentContainerStyle={styles.list}
                 ListHeaderComponent={<View style={styles.header}>{crunProviderTabs}<Text>{t('crunTemplates.count', { loaded: crun.templates.length, total: crun.total })}</Text><Text tone="secondary">{t('crunTemplates.help')}</Text></View>}
                 ListFooterComponent={<View style={styles.footer}>{crunFailed ? <Text tone="danger">{t('presets.couldnotloadtemplatesCheckyourconnection')}</Text> : null}{crun.templates.length < crun.total ? <Button disabled={crunLoadingMore} label={crunLoadingMore ? t('common.loading') : t('crunTemplates.loadMore')} onPress={() => void loadMoreCrun()} /> : null}</View>}
-                renderItem={({ item }) => <CrunTemplateCard template={item} playing={playing === `crun:${crunProvider}:${item.id}`} onPlay={() => setPlaying(id => id === `crun:${crunProvider}:${item.id}` ? null : `crun:${crunProvider}:${item.id}`)} />} />)
+                onEndReachedThreshold={0.4}
+                onEndReached={() => void loadMoreCrun()}
+                renderItem={({ item }) => <CrunTemplateCard template={item} playing={playing === item.catalogId} onPlay={() => setPlaying(id => id === item.catalogId ? null : item.catalogId)} />} />)
         : kind === 'image' ? (imagesFailed ? retry
             : images === null ? <ActivityIndicator /> : <FlatList key="image" data={imagesShown} numColumns={2} keyExtractor={i => i.id} contentContainerStyle={styles.list}
                 ListHeaderComponent={<View style={styles.header}>
