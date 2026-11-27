@@ -6895,7 +6895,7 @@ export default {
     "music.create.lyrics_required": "Ajoutez des paroles pour une chanson vocale personnalisée ou choisissez Instrumental.",
     "music.create.contract_stale": "Le fournisseur de musique a changé. Votre brouillon a été actualisé ; vérifiez à nouveau le prix.",
     "music.create.suno.offer": "Modèle musical",
-    "music.create.suno.model": "Modèle Suno",
+    "music.create.suno.model": "Style de génération",
     "music.create.suno.style": "Style",
     "music.create.suno.exclude": "Styles à exclure",
     "music.create.suno.selectStyles": "Choisir des styles",

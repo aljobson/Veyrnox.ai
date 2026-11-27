@@ -6807,7 +6807,7 @@ export default {
     "music.create.lyrics_required": "कस्टम वोकल गीत के लिए बोल जोड़ें या वाद्य संगीत चुनें।",
     "music.create.contract_stale": "संगीत प्रदाता बदल गया। आपका ड्राफ़्ट रीफ़्रेश किया गया; कीमत फिर देखें।",
     "music.create.suno.offer": "संगीत मॉडल",
-    "music.create.suno.model": "Suno मॉडल",
+    "music.create.suno.model": "जनरेशन शैली",
     "music.create.suno.style": "शैली",
     "music.create.suno.exclude": "शैलियाँ बाहर रखें",
     "music.create.suno.selectStyles": "शैलियाँ चुनें",

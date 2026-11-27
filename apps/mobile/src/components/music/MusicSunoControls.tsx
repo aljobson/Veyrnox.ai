@@ -58,6 +58,7 @@ export function MusicSunoControls({ input, model, rights, onChange, onRights, sh
     const stylesMax = modelCounterLimit(model, 'styles')!;
     const excludeMax = modelCounterLimit(model, 'exclude_styles')!;
     const models = model.controls.suno_model ?? [];
+    const modelLabels = model.controls.suno_model_labels ?? {};
     const genders = model.controls.vocal_gender ?? [];
     const variety = Array.isArray(model.controls.variety) ? model.controls.variety : [];
     const duration = model.controls.duration_seconds;
@@ -72,7 +73,7 @@ export function MusicSunoControls({ input, model, rights, onChange, onRights, sh
             onChange={excludeStyles => onChange({ excludeStyles })} />
         <View style={styles.field}>
             <Text variant="bodyStrong">{t('music.create.suno.model')}</Text>
-            <SegmentedControl value={input.sunoModel} options={models.map(value => ({ value, label: value }))}
+            <SegmentedControl value={input.sunoModel} options={models.map(value => ({ value, label: modelLabels[value] ?? value }))}
                 onChange={(sunoModel: MusicSunoModel) => onChange({ sunoModel })} />
         </View>
         {showVocalGender && !input.instrumental ? <View style={styles.field}>
