@@ -28,7 +28,7 @@ export function audioTemplateHref(template: AudioTemplateLink) {
     if (template.category.trim().toUpperCase() === 'MUSIC') {
         return { pathname: '/music/create', params: { templatePrompt: prompt, templateTitle: title } } as const;
     }
-    return { pathname: '/audio', params: { templateModelId: template.modelId, templatePrompt: prompt, templateTitle: title } } as const;
+    return { pathname: '/audio', params: { templateModelId: template.modelId, templatePrompt: prompt } } as const;
 }
 
 const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v : null);

@@ -37,6 +37,6 @@ test('selected ideas enter the owning audio workspace without losing their promp
         pathname: '/music/create', params: { templatePrompt: 'Soulful', templateTitle: 'Midnight Soul' },
     });
     expect(audioTemplateHref({ category: 'SOUND FX', modelId: 'foley', name: ' Rain ', prompt: ' Soft rain ' })).toEqual({
-        pathname: '/audio', params: { templateModelId: 'foley', templatePrompt: 'Soft rain', templateTitle: 'Rain' },
+        pathname: '/audio', params: { templateModelId: 'foley', templatePrompt: 'Soft rain' },
     });
 });
