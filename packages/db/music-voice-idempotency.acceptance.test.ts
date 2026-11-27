@@ -114,7 +114,7 @@ describe('music voice state-change idempotency', { skip: !DATABASE_URL && 'DATAB
         await client.query(`CREATE FUNCTION public.telemetry_path_allowed(p_path TEXT)
           RETURNS BOOLEAN LANGUAGE sql IMMUTABLE SET search_path='' AS $function$ SELECT false $function$`);
       }
-      const sql = (await readFile(new URL('./schema/supabase/0623_music_voice_verification.sql', import.meta.url), 'utf8'))
+      const sql = (await readFile(new URL('./schema/supabase/0624_music_voice_verification.sql', import.meta.url), 'utf8'))
         .replace(/^BEGIN;\s*$/m, '').replace(/^COMMIT;\s*$/m, '');
       await client.query(sql);
     }
