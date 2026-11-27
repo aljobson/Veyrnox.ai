@@ -17,6 +17,10 @@ register(data(`export async function resolve(specifier, context, nextResolve) {
     export const musicSchemaEnabled = () => true;
     export const musicGenerationEnabled = () => false;
     export const musicAlbumsEnabled = () => false;
+    export const musicSourcesEnabled = () => {
+      const flags = JSON.parse(process.env.MUSIC_RUNTIME_FLAGS || '{}');
+      return flags.schema === true && flags.library === true && flags.sources === true;
+    };
     export const musicStudioChatEnabled = () => {
       const flags = JSON.parse(process.env.MUSIC_RUNTIME_FLAGS || '{}');
       return flags.ui === true && flags.beatEditor === true && flags.studioChat === true;
@@ -110,6 +114,28 @@ test('native Studio actions require the same combined UI, beat editor and studio
         headers: { 'x-veyrnox-auth-id': 'auth-user' },
       }));
       assert.equal((await response.json()).features.studioChat, expected);
+    }
+  } finally {
+    if (previous === undefined) delete process.env.MUSIC_RUNTIME_FLAGS;
+    else process.env.MUSIC_RUNTIME_FLAGS = previous;
+  }
+});
+
+test('native owned sources require the same composed schema, library and sources gate as web', async () => {
+  const previous = process.env.MUSIC_RUNTIME_FLAGS;
+  try {
+    for (const [flags, expected] of [
+      [{ sources: true }, false],
+      [{ schema: true, sources: true }, false],
+      [{ schema: true, library: true, sources: true }, false],
+      [{ schema: true, library: true, sources: true, nativeSources: true }, true],
+    ]) {
+      process.env.MUSIC_RUNTIME_FLAGS = JSON.stringify(flags);
+      const { GET } = await import(`../app/api/v1/music/entitlements/route.js?sources=${JSON.stringify(flags)}-${Date.now()}`);
+      const response = await GET(new Request('https://veyrnox.test/api/v1/music/entitlements', {
+        headers: { 'x-veyrnox-auth-id': 'auth-user' },
+      }));
+      assert.equal((await response.json()).features.sources, expected);
     }
   } finally {
     if (previous === undefined) delete process.env.MUSIC_RUNTIME_FLAGS;

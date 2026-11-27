@@ -24,7 +24,7 @@ test('the immutable baseline, dated current score, target and pre-activation cei
   assert.equal(current.total, 71);
   assert.deepEqual(target.areas, { creation: 80, editing: 85, daw: 97.5, library: 100, community: 100, ios: 93 });
   assert.equal(target.total, 90.8);
-  assert.equal(preactivation.total, 86.675);
+  assert.equal(preactivation.total, 85.925);
   assert.equal(Object.values(MUSIC_PARITY_AREA_WEIGHTS).reduce((sum, weight) => sum + weight, 0), 100);
 });
 
@@ -58,7 +58,7 @@ test('the dated production capability snapshot matches committed production conf
 });
 
 test('new parity capabilities are recognized but remain default off', () => {
-  for (const flag of ['albums', 'inspiration', 'studioChat', 'dailyChallenge', 'persistentQueue']) {
+  for (const flag of ['albums', 'inspiration', 'studioChat', 'dailyChallenge', 'persistentQueue', 'nativeSources']) {
     assert.equal(musicRuntimeFlag(flag, {}), false);
     assert.equal(musicRuntimeFlag(flag, { MUSIC_RUNTIME_FLAGS: JSON.stringify({ [flag]: true }) }), true);
   }
@@ -105,6 +105,15 @@ test('persistent queue earns only qualification until default-off rollout and iP
   assert.equal(row?.target, 'shipped');
   assert.equal(row?.proof, 'storage_account_ios_ui_device');
   assert.equal(musicRuntimeFlag('persistentQueue', {}), false);
+});
+
+test('native owned sources stay qualified behind their separate default-off phone gate', () => {
+  const row = MUSIC_PARITY_ROWS.find((item) => item.id === 'ios.song-actions-library');
+  assert.equal(row?.current, 'qualified');
+  assert.equal(row?.target, 'shipped');
+  assert.deepEqual(MUSIC_PARITY_FLAG_ROWS.nativeSources.rows, ['ios.song-actions-library']);
+  assert.equal(musicRuntimeFlag('nativeSources', {}), false);
+  assert.equal(MUSIC_PARITY_PRODUCTION_SNAPSHOT.flags.nativeSources, false);
 });
 
 test('Studio actions earn qualification without claiming rollout, iPhone proof, generation or plugins', () => {
