@@ -15,10 +15,10 @@ export interface SheetRow { id: string; icon: MenuIcon | string; label: string; 
 export type SimpleSheetName = 'add' | 'ai' | 'cut' | 'sound' | 'text' | 'layers' | 'more';
 export type SimpleDockTab = 'ai' | 'cut' | 'audio' | 'text' | 'media';
 
-function EditorToolIcon({ name, size = 24, active = false, muted = false }: { name: MenuIcon | string; size?: 20 | 24 | 28; active?: boolean; muted?: boolean }) {
-    const tint = active ? colors.accent : muted ? '#a0a0a7' : '#f1f1f2';
+function EditorToolIcon({ name, size = 24, active = false, filled = false, muted = false }: { name: MenuIcon | string; size?: 20 | 24 | 28; active?: boolean; filled?: boolean; muted?: boolean }) {
+    const tint = filled ? colors.accentInk : active ? colors.accent : muted ? '#a0a0a7' : '#f1f1f2';
     if (name in MENU_ICONS) return <Icon name={name as MenuIcon} size={size} tint={tint} />;
-    return <Text style={[styles.fallbackIcon, muted && styles.mutedInk, active && styles.activeInk]}>{name}</Text>;
+    return <Text style={[styles.fallbackIcon, muted && styles.mutedInk, active && styles.activeInk, filled && styles.filledInk]}>{name}</Text>;
 }
 
 // One bottom sheet for all three entries. Choosing a row closes the sheet first, then runs the action;
@@ -77,10 +77,15 @@ export function SimpleEditorBar({ active, trayOpen = false, onOpen }: {
     // Keep the bar above the home indicator; the panel above it scrolls instead of pushing the bar off screen.
     const bottom = useContext(SafeAreaInsetsContext)?.bottom ?? 0;
     return <View style={[styles.bar, { paddingBottom: trayOpen ? 7 : Math.max(22, bottom + 8) }]}>
-        {items.map((item) => <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={rawText(item.label)} accessibilityState={{ selected: active === item.id }} onPress={item.onPress} style={({ pressed }) => [styles.barButton, active === item.id && styles.barPrimary, pressed && styles.rowPressed]}>
-            <EditorToolIcon name={item.icon} size={24} active={active === item.id} muted={active !== item.id} />
-            <Text style={[styles.barLabel, active === item.id && styles.activeInk]}>{item.label}</Text>
-        </Pressable>)}
+        {items.map((item) => {
+            const selected = active === item.id;
+            const filled = selected && item.id !== 'ai';
+            return <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={rawText(item.label)} accessibilityState={{ selected }} onPress={item.onPress}
+                style={({ pressed }) => [styles.barButton, item.id === 'ai' && styles.aiButton, filled && styles.barPrimary, pressed && styles.rowPressed]}>
+                <EditorToolIcon name={item.icon} size={24} active={selected} filled={filled} muted={!selected && item.id !== 'ai'} />
+                <Text style={[styles.barLabel, item.id === 'ai' && styles.aiLabel, selected && !filled && styles.activeInk, filled && styles.filledInk]}>{item.label}</Text>
+            </Pressable>;
+        })}
     </View>;
 }
 
@@ -115,16 +120,19 @@ const styles = StyleSheet.create({
     rowCopy: { flex: 1, minWidth: 0 },
     rowLabel: { color: colors.text, fontSize: 16, fontWeight: '700' },
     rowHint: { color: colors.muted, fontSize: 12, marginTop: 2 },
-    bar: { flexShrink: 0, flexDirection: 'row', gap: 3, paddingHorizontal: 8, paddingTop: 5, paddingBottom: 5, borderTopWidth: StyleSheet.hairlineWidth, borderColor: '#29292c', backgroundColor: '#171719' },
-    barButton: { flex: 1, minWidth: 0, minHeight: 52, alignItems: 'center', justifyContent: 'center', gap: 2, backgroundColor: 'transparent' },
-    barPrimary: { backgroundColor: 'transparent' },
+    bar: { flexShrink: 0, flexDirection: 'row', gap: 5, paddingHorizontal: 8, paddingTop: 6, paddingBottom: 5, borderTopWidth: StyleSheet.hairlineWidth, borderColor: '#29292c', backgroundColor: '#171719' },
+    barButton: { flex: 1, minWidth: 0, minHeight: 54, alignItems: 'center', justifyContent: 'center', gap: 2, borderRadius: 14, borderWidth: 1, borderColor: 'transparent', backgroundColor: 'transparent' },
+    aiButton: { borderColor: colors.accent, backgroundColor: colors.accentSoft },
+    aiLabel: { color: '#f1f1f2' },
+    barPrimary: { borderColor: colors.accent, backgroundColor: colors.accent },
     barLabel: { color: '#a0a0a7', fontSize: 12, fontWeight: '800' },
     activeInk: { color: colors.accent },
+    filledInk: { color: colors.accentInk },
     mutedInk: { color: '#a0a0a7' },
     fallbackIcon: { color: '#f1f1f2', fontSize: 22, lineHeight: 26, fontWeight: '800', textAlign: 'center' },
     tray: { flexShrink: 0, borderTopWidth: StyleSheet.hairlineWidth, borderColor: '#2b2b2e', backgroundColor: '#1a1a1c' },
-    trayContent: { minWidth: '100%', paddingHorizontal: 12, paddingTop: 8, gap: 6 },
-    trayButton: { width: 74, minHeight: 54, alignItems: 'center', justifyContent: 'flex-start', gap: 3, paddingHorizontal: 3 },
+    trayContent: { minWidth: '100%', paddingHorizontal: 12, paddingTop: 9, gap: 8 },
+    trayButton: { width: 82, minHeight: 58, alignItems: 'center', justifyContent: 'flex-start', gap: 3, paddingHorizontal: 3 },
     trayIcon: { height: 26, alignItems: 'center', justifyContent: 'center' },
     trayLabel: { color: '#f1f1f2', fontSize: 12, lineHeight: 15, fontWeight: '600', textAlign: 'center' },
 });

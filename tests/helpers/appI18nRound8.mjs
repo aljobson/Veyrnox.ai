@@ -75,7 +75,7 @@ export function renderScenario(scenario,locale,messages,sourceOverrides={}){
  const f=fixture(locale,'/app/editor',{messages,signedIn:true,sourceOverrides,states:scenario.states?{[file]:scenario.states}:{},expose:{[files.device]:['DeviceFiles'],[files.chatText]:['Code']},moduleMocks:{
   'react-dom':{createPortal:node=>node},'./FilmMasterSave':{FilmMasterSave:({label})=>React.createElement('div',null,label)},
   '../JobAssetPreview':{JobAssetPreview:nil},'../StudioJobGrid':{StudioJobGrid:nil},
-  '../_components/PresetGallery':{PresetGallery:nil},'../_components/ExploreTemplates':{ExploreTemplates:nil},'./PublishFlag':{usePublishEnabled:()=>true},
+  '../_components/PresetGallery':{PresetGallery:nil},'../_components/ExploreTemplates':{ExploreTemplates:nil},'../_components/HomeTemplateCatalog':{HomeTemplateCatalog:nil},'./PublishFlag':{usePublishEnabled:()=>true},
   '../_lib/useAssetUrl':{useAssetUrl:()=>({url:'https://example.test/image.png',loading:false})},
  }});
  return f.render(React.createElement(f.load(file)[scenario.name],scenario.props||{}));

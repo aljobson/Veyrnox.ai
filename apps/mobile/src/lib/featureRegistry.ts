@@ -62,7 +62,7 @@ const MOBILE_FEATURE_DEFINITIONS = [
     { id: 'facelessReel', titleKey: 'facelessReel.chip', href: '/faceless-reel', icon: 'filmReel', keywords: 'faceless reel video', webRoutes: ['/app/faceless-reel'] },
     { id: 'vibe', titleKey: 'vibe.intro.title', href: '/vibe', icon: 'swatches', keywords: 'vibe taste preferences', webRoutes: ['/app/vibe'] },
 
-    { id: 'yourMusic', titleKey: 'music.title', href: '/music', icon: 'vinylRecord', keywords: 'songs music library history hooks', availability: 'music-live', webRoutes: ['/app/music', '/app/music/library', '/app/music/songs/[id]'] },
+    { id: 'yourMusic', titleKey: 'music.title', href: '/music', icon: 'vinylRecord', keywords: 'songs music library history hooks voices', availability: 'music-live', webRoutes: ['/app/music', '/app/music/library', '/app/music/songs/[id]', '/app/music/voices'] },
     { id: 'music', titleKey: 'audioHub.music.title', href: '/music/create', icon: 'audio', keywords: 'make generate song music', availability: 'music-live', audio: { group: 'studios', order: 0 }, webRoutes: ['/app/music/create'] },
     { id: 'speech', titleKey: 'audioHub.speech.title', href: '/speech', icon: 'microphone', keywords: 'text to speech voice', audio: { group: 'studios', order: 1 }, webRoutes: ['/app/text-to-speech'] },
     { id: 'dialogue', titleKey: 'audioHub.dialogue.title', href: '/dialogue', icon: 'chatsCircle', keywords: 'dialogue speakers conversation', audio: { group: 'studios', order: 2 }, webRoutes: ['/app/dialogue'] },
@@ -188,7 +188,7 @@ export const WEB_INVENTORY_EXCLUSIONS: readonly WebInventoryExclusion[] = [
         '/app/admin', '/app/admin/affiliates', '/app/admin/appeals', '/app/admin/changes', '/app/admin/cinema',
         '/app/admin/cinema/comments', '/app/admin/cinema/rankings', '/app/admin/cinema/story-polls',
         '/app/admin/cinema/submissions', '/app/admin/cinema/voting', '/app/admin/endpoints',
-        '/app/admin/music-comments', '/app/admin/payments', '/app/admin/plans', '/app/admin/reports',
+        '/app/admin/music-comments', '/app/admin/music-voices', '/app/admin/payments', '/app/admin/plans', '/app/admin/reports',
         '/app/admin/roles', '/app/admin/security', '/app/admin/support', '/app/admin/switches',
         '/app/admin/traffic', '/app/admin/users', '/app/admin/violations', '/app/admin/webhooks',
     ].map((webHref) => ({ webHref, reason: 'Internal administrator-only route.' })),

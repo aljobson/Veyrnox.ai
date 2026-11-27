@@ -39,6 +39,7 @@ function background(visual: EditorPreviewVisualPlan, images: Readonly<Record<str
     if (!raw || raw.type === 'none') return { value: { type: 'none' }, unsupported: [] };
     if (raw.type === 'solid') return { value: { type: 'solid', color: raw.color }, unsupported: [] };
     if (raw.type === 'blur') return { value: { type: 'blur', color: raw.color, blur: raw.blur }, unsupported: [] };
+    if (raw.type === 'gradient' || raw.type === 'video') return { value: { type: 'solid', color: raw.color }, unsupported: ['missing-source-image'] };
     const image = images[raw.mediaId];
     return { value: { type: 'image', color: raw.color, ...(image ? { image } : {}) }, unsupported: image ? [] : ['missing-background-image'] };
 }

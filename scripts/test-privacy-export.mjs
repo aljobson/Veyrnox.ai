@@ -325,11 +325,17 @@ try {
         'speech_gate_daily',
         // Content-free first-edit entitlement tombstone; no media, prompt or transcript.
         'smart_cut_first_edits',
+        // Content-free manual-editor debit/coverage tombstone; imported source identities are retained only as SHA-256 hashes.
+        'editor_manual_commit_receipts', 'editor_manual_commit_operations',
         // Provider reference links contain public metadata only, are available in-app,
         // and are erased with the account. The generic export has no Music section yet.
         // Music actors and blocks (ADR-0367) follow the existing Music exclusion: no generic Music export section.
         // The own block list is available through the API; both tables are erased on account deletion.
         'music_reference_links', 'music_actors', 'music_user_blocks', 'music_inspiration_requests',
+        // Music Voice status/consent metadata is account-bound and available through its owner API;
+        // raw recordings and challenge text are deliberately excluded and queued for deletion.
+        // As with the other Music tables below, the generic export has no Music section yet.
+        'music_voice_profiles', 'music_voice_events', 'music_voice_receipts',
         // Song reactions, creator follows and their write receipts (0515): ids and an emoji,
         // erased with the account. Counts are public; the generic export has no Music section yet.
         'music_song_reactions', 'music_creator_follows', 'music_social_mutations',

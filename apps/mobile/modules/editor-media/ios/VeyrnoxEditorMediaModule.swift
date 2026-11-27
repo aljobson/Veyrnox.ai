@@ -9,6 +9,8 @@ import Translation
 import UIKit
 
 public final class VeyrnoxEditorMediaModule: Module {
+  private var colorPickerSession: EditorColorPickerSession?
+
   public func definition() -> ModuleDefinition {
     Name("VeyrnoxEditorMedia")
     Events("progress")
@@ -69,6 +71,50 @@ public final class VeyrnoxEditorMediaModule: Module {
     AsyncFunction("release") { (account: String, project: String, artifactId: String, promise: Promise) in
       EditorMediaWorker.shared.release(account, project, artifactId: artifactId, promise: promise)
     }
+    AsyncFunction("pickColor") { (initialHex: String, promise: Promise) in
+      DispatchQueue.main.async { [weak self] in
+        guard let self else { promise.resolve(nil); return }
+        self.presentColorPicker(initialHex, promise: promise)
+      }
+    }
+    AsyncFunction("share") { (uri: String, mimeType: String, promise: Promise) in
+      DispatchQueue.main.async { [weak self] in
+        guard let self, let presenter = self.appContext?.utilities?.currentViewController(),
+              let file = URL(string: uri), file.isFileURL,
+              FileManager.default.fileExists(atPath: file.path) else {
+          promise.resolve(["ok": false, "code": "share-unavailable"])
+          return
+        }
+        let controller = UIActivityViewController(activityItems: [file], applicationActivities: nil)
+        if let popover = controller.popoverPresentationController {
+          popover.sourceView = presenter.view
+          popover.sourceRect = CGRect(x: presenter.view.bounds.midX, y: presenter.view.bounds.maxY,
+                                      width: 1, height: 1)
+          popover.permittedArrowDirections = []
+        }
+        controller.completionWithItemsHandler = { _, completed, _, error in
+          if let error {
+            promise.resolve(["ok": false, "code": "share-failed", "message": error.localizedDescription])
+          } else {
+            promise.resolve(["ok": true, "completed": completed])
+          }
+        }
+        presenter.present(controller, animated: true)
+      }
+    }
+  }
+
+  private func presentColorPicker(_ initialHex: String, promise: Promise) {
+    if let existing = colorPickerSession {
+      guard existing.controller.presentingViewController == nil else { promise.resolve(nil); return }
+      existing.cancel()
+    }
+    guard let presenter = appContext?.utilities?.currentViewController() else { promise.resolve(nil); return }
+    let session = EditorColorPickerSession(initialHex: initialHex, promise: promise) { [weak self] in self?.colorPickerSession = nil }
+    colorPickerSession = session
+    session.controller.modalPresentationStyle = .pageSheet
+    session.controller.presentationController?.delegate = session
+    presenter.present(session.controller, animated: true) { session.controller.presentationController?.delegate = session }
   }
 
   private func progress(_ account: String, _ project: String, _ owner: String, _ token: String)
@@ -77,6 +123,77 @@ public final class VeyrnoxEditorMediaModule: Module {
       self?.sendEvent("progress", ["account": account, "project": project, "owner": owner,
         "token": token, "stage": stage, "value": value])
     }
+  }
+}
+
+private final class EditorColorPickerSession: NSObject, UIColorPickerViewControllerDelegate, UIAdaptivePresentationControllerDelegate {
+  let controller = EditorColorPickerViewController()
+  private let promise: Promise
+  private let finished: () -> Void
+  private var selected: UIColor
+  private var resolved = false
+
+  init(initialHex: String, promise: Promise, finished: @escaping () -> Void) {
+    self.promise = promise
+    self.finished = finished
+    selected = UIColor(editorHex: initialHex) ?? .white
+    super.init()
+    controller.selectedColor = selected
+    controller.supportsAlpha = false
+    controller.delegate = self
+    controller.onDisappear = { [weak self] in self?.cancel() }
+  }
+
+  func colorPickerViewController(_ viewController: UIColorPickerViewController, didSelect color: UIColor, continuously: Bool) {
+    selected = color
+  }
+
+  func colorPickerViewControllerDidFinish(_ viewController: UIColorPickerViewController) {
+    selected = viewController.selectedColor
+    resolve()
+  }
+
+  func presentationControllerDidDismiss(_ presentationController: UIPresentationController) { resolve() }
+
+  func cancel() {
+    guard !resolved else { return }
+    resolved = true
+    promise.resolve(nil)
+    finished()
+  }
+
+  private func resolve() {
+    guard !resolved else { return }
+    resolved = true
+    promise.resolve(selected.editorHex)
+    finished()
+  }
+}
+
+private final class EditorColorPickerViewController: UIColorPickerViewController {
+  var onDisappear: (() -> Void)?
+
+  override func viewDidDisappear(_ animated: Bool) {
+    super.viewDidDisappear(animated)
+    onDisappear?()
+  }
+}
+
+private extension UIColor {
+  convenience init?(editorHex: String) {
+    let value = editorHex.trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "#", with: "")
+    guard value.count == 6, let number = UInt64(value, radix: 16) else { return nil }
+    self.init(red: CGFloat((number >> 16) & 0xff) / 255, green: CGFloat((number >> 8) & 0xff) / 255,
+      blue: CGFloat(number & 0xff) / 255, alpha: 1)
+  }
+
+  var editorHex: String {
+    let srgb = CGColorSpace(name: CGColorSpace.sRGB)!
+    let converted = cgColor.converted(to: srgb, intent: .defaultIntent, options: nil).map(UIColor.init(cgColor:)) ?? self
+    var red: CGFloat = 0, green: CGFloat = 0, blue: CGFloat = 0, alpha: CGFloat = 0
+    guard converted.getRed(&red, green: &green, blue: &blue, alpha: &alpha) else { return "#FFFFFF" }
+    let byte = { (component: CGFloat) in Int((min(1, max(0, component)) * 255).rounded()) }
+    return String(format: "#%02X%02X%02X", byte(red), byte(green), byte(blue))
   }
 }
 
@@ -311,14 +428,32 @@ enum EditorCompositor {
     if let transition = visual["transition"] as? [String: Any], let shape = transition["shape"] as? [String: Any] {
       clipTransitionShape(shape, rect: CGRect(x: 0, y: 0, width: width, height: height), context: context)
     }
-    context.setFillColor(color(background["color"] as? String ?? "#000000").cgColor)
-    context.fill(CGRect(x: 0, y: 0, width: width, height: height))
+    let backgroundRect = CGRect(x: 0, y: 0, width: width, height: height)
+    if type == "gradient" {
+      let first = color(background["color"] as? String ?? "#000000").cgColor
+      let second = color(background["secondaryColor"] as? String ?? "#4B2BFF").cgColor
+      if let gradient = CGGradient(colorsSpace: CGColorSpace(name: CGColorSpace.sRGB), colors: [first, second] as CFArray, locations: [0, 1]) {
+        let radians = CGFloat(number(background["angle"]) ?? 135) * .pi / 180
+        let center = CGPoint(x: CGFloat(width) / 2, y: CGFloat(height) / 2)
+        let radius = hypot(CGFloat(width), CGFloat(height)) / 2
+        let vector = CGPoint(x: cos(radians) * radius, y: sin(radians) * radius)
+        context.drawLinearGradient(gradient, start: CGPoint(x: center.x - vector.x, y: center.y - vector.y),
+          end: CGPoint(x: center.x + vector.x, y: center.y + vector.y), options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
+      }
+    } else {
+      context.setFillColor(color(background["color"] as? String ?? "#000000").cgColor)
+      context.fill(backgroundRect)
+    }
     var picture: CGImage?
     if type == "blur" { picture = source }
     else if type == "image", let media = visual["backgroundMedia"] as? [String: Any], media["kind"] as? String == "graphic",
             let graphic = media["graphic"] as? [String: Any] { picture = try graphicImage(graphic) }
     else if type == "image", let mediaId = background["mediaId"] as? String, let uri = sources[mediaId],
             let url = try? EditorMediaPaths.shared.inputURL(uri, identity: identity) { picture = try? sourceImage(url, at: 0) }
+    else if type == "video", let mediaId = background["mediaId"] as? String, let uri = sources[mediaId],
+            let url = try? EditorMediaPaths.shared.inputURL(uri, identity: identity) {
+      picture = try? sourceImage(url, at: number(visual["sourceTimeSeconds"]) ?? 0)
+    }
     guard let picture else { return }
     let crop: CGRect
     if type == "blur", let value = visual["crop"] as? [String: Any] {
@@ -893,7 +1028,7 @@ public final class VeyrnoxEditorCompositorModule: Module {
       promise.resolve(["ok": true, "platform": "ios", "minimumIos": "16.4", "protocolVersion": 2,
         "features": ["timeline-background", "image-source", "graphic-source", "video-source", "fit", "crop", "transform",
           "visual-layering", "blend", "mask", "transition", "clip-animation", "animation-reveal",
-          "clip-background-solid", "clip-background-blur", "clip-background-image", "basic-filter", "smart-picture",
+          "clip-background-solid", "clip-background-blur", "clip-background-image", "clip-background-gradient", "clip-background-video", "basic-filter", "smart-picture",
           "advanced-colour", "effect", "text-layer", "caption-words", "custom-font", "behind-subject",
           "semantic-mask", "semantic-mask-dynamic", "audio-mix"]])
     }

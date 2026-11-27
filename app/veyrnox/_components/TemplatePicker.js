@@ -49,7 +49,7 @@ export function TemplatePicker({ models, goal, selectedKind, onPick, onClose, ga
         {loading ? <p role="status" data-testid="create-template-picker-loading" className="mt-4 text-sm text-vx-fg-muted">{t('app.create.templates.loading')}</p> : rows.length ? <p className="mt-2 max-w-2xl text-sm leading-6 text-vx-fg-muted">{t('app.create.templates.help')}</p> : (
           <div data-testid="create-template-picker-empty" className="mt-4 rounded-xl border border-dashed border-vx-border p-6 text-center">
             <p className="mx-auto max-w-xl text-sm leading-6 text-vx-fg-body">{t(kind === 'video' ? 'app.create.templates.videoGallery' : 'app.create.templates.empty')}</p>
-            {kind === 'video' && <Link href="/presets" onClick={onClose} className="vx-press mt-4 inline-flex min-h-11 items-center justify-center rounded-full bg-vx-accent px-5 text-sm font-extrabold text-vx-accent-ink">{t('app.create.templates.openGallery')}</Link>}
+            {kind === 'video' && <Link href="/app/templates" onClick={onClose} className="vx-press mt-4 inline-flex min-h-11 items-center justify-center rounded-full bg-vx-accent px-5 text-sm font-extrabold text-vx-accent-ink">{t('app.create.templates.openGallery')}</Link>}
           </div>
         )}
         {error && <p role="alert" data-testid="create-template-picker-error" className="mt-3 rounded-xl border border-vx-danger/40 bg-vx-danger/5 px-3 py-2 text-sm font-bold text-vx-danger">{error}</p>}
@@ -95,7 +95,7 @@ export function TemplatePicker({ models, goal, selectedKind, onPick, onClose, ga
           })}
         </ul>}
 
-        {kind === 'video' && rows.length > 0 && <div className="mt-4 text-right text-xs"><Link href="/presets" onClick={onClose} className="font-bold text-vx-accent underline underline-offset-2">{t('app.create.templates.openGallery')}</Link></div>}
+        {kind === 'video' && rows.length > 0 && <div className="mt-4 text-right text-xs"><Link href="/app/templates" onClick={onClose} className="font-bold text-vx-accent underline underline-offset-2">{t('app.create.templates.openGallery')}</Link></div>}
         {kind === 'audio' && <div className="mt-4 text-right text-xs"><Link href="/app/music/sounds" className="font-bold text-vx-accent underline underline-offset-2">{t('app.audio.sounds.open')}</Link></div>}
       </div>
     </Modal>

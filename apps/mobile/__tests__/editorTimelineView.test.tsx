@@ -46,6 +46,19 @@ test('compact track headers keep long AX-scaled state text on one bounded line',
     const label = node('track-header-video-0').queryAll(n => n.children.includes('A deliberately long video track name'))[0];
     expect(label.props).toMatchObject({ numberOfLines: 1, maxFontSizeMultiplier: HEADER_MAX_FONT_SCALE });
 });
+test('every fixed track header exposes a contextual add action like the ByeCut lanes', async () => {
+    const onAddToTrack = jest.fn();
+    await act(async () => root.render(<EditorTimeline timeline={timeline} selections={[]} ppf={2} total={300} frame={0} playing={false} snap={false} onSeek={onSeek}
+        onSelect={onSelect} onApply={onApply} onViewport={onViewport} onAddToTrack={onAddToTrack} />));
+    for (const [id, kind, label] of [['track-add-video-video-0', 'video', 'Add Video 1 to timeline'], ['track-add-audio-audio-0', 'audio', 'Add Audio 1 to timeline'],
+        ['track-add-text-text-0', 'text', 'Add Text 1 to timeline']] as const) {
+        const add = node(id);
+        expect(add.props).toMatchObject({ accessibilityRole: 'button', accessibilityLabel: label });
+        expect(StyleSheet.flatten(add.props.style)).toMatchObject({ width: 44, minHeight: 44 });
+        await act(async () => add.props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 }));
+        expect(onAddToTrack).toHaveBeenLastCalledWith(kind, id.replace(`track-add-${kind}-`, ''));
+    }
+});
 test('positions clips and playhead in a single scroller and scrubs on grant and move', async () => {
     await render(); expect(StyleSheet.flatten(node('clip-v1').props.style)).toMatchObject({ left: 120, width: 178, height: 44 });
     expect(StyleSheet.flatten(node('timeline-playhead').props.style)).toMatchObject({ left: 0, width: 2, height: 256 });

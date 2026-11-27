@@ -37,6 +37,7 @@ const OUTSIDE = {
     'app/api/templates/route.js': 'public read',
     'app/api/templates/[id]/route.js': 'public read',
     'app/api/template-catalog/route.js': 'public read',
+    'app/api/template-catalog/ready/route.js': 'public read',
     'app/api/webhook/fal/route.js': 'provider signature',
     'app/api/webhook/kie/route.js': 'provider signature',
     'app/api/webhook/openrouter/route.js': 'provider signature',

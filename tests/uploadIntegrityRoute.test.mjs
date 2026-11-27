@@ -57,6 +57,24 @@ test('successful reservation yields a length-bound non-overwriting signature', a
     });
 });
 
+test('voice evidence is isolated from the legacy rollback sweep namespace', async () => {
+    const reserved = stub({ ok: true });
+    const req = new Request('https://veyrnox.test/api/v1/uploads', { method: 'POST', headers: { 'x-veyrnox-auth-id': auth },
+        body: JSON.stringify({ content_type: 'audio/wav', size_bytes: 1024, purpose: 'music_voice_evidence' }) });
+    const res = await POST(req), body = await res.json();
+    assert.equal(res.status, 200);
+    assert.match(body.key, new RegExp(`^music-voice-uploads/${auth}/[a-f0-9-]+\\.wav$`));
+    assert.equal(reserved().p_key, body.key);
+    for (const invalid of [
+        { content_type: 'image/png', size_bytes: 1024, purpose: 'music_voice_evidence' },
+        { content_type: 'audio/wav', size_bytes: 1024, purpose: 'unknown' },
+    ]) {
+        const denied = await POST(new Request('https://veyrnox.test/api/v1/uploads', { method: 'POST',
+            headers: { 'x-veyrnox-auth-id': auth }, body: JSON.stringify(invalid) }));
+        assert.equal(denied.status, 400);
+    }
+});
+
 test('optional deadline lookup failure or invalid timestamp preserves the existing grant reply', async () => {
     for (const createdAt of [null, 'invalid', 'unavailable']) {
         stub({ ok: true }, createdAt);

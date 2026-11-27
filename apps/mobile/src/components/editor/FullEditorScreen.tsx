@@ -39,6 +39,14 @@ import { useEditorTrackActions } from './useEditorTrackActions';
 import { PlaybackPreview, PlaybackTimeline, PlaybackTransport } from './EditorPlayback';
 import { EditorSafeAreaOverlay } from './EditorSafeAreaOverlay';
 import { EditorCoverSheet, type EditorCover } from './EditorCoverSheet';
+import { EditorCanvasSheet } from './EditorCanvasSheet';
+import { EditorPolishSheet } from './EditorPolishSheet';
+import { EditorZoomSlider } from './EditorZoomSlider';
+import { EditorTrimSheet } from './EditorTrimSheet';
+import { EditorCleanVoiceSheet } from './EditorCleanVoiceSheet';
+import { EditorClipThumb } from './EditorClipThumb';
+import { EditorClipAudioSheet } from './EditorClipAudioSheet';
+import { EditorFiltersSheet } from './EditorFiltersSheet';
 import { SAFE_AREA_GUIDES, safeAreaPercentStyle, type SafeAreaGuideId } from '../../lib/editorSafeArea';
 import { fitPpf, formatTimecode as timecode, moveItems, trimItem, PPF_MIN, PPF_MAX } from '../../lib/editorTimeline';
 import { libraryMedia, LIBRARY_STOPPED } from '../../lib/editorLibraryLength';
@@ -52,7 +60,8 @@ import { EditorLoadState } from './EditorLoadState';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { SafeAreaInsetsContext } from 'react-native-safe-area-context';
 import { editorLayoutBudget } from '../../lib/editorLayoutBudget';
-import { EDITOR_SERVER_EXPORT_ENABLED } from '../../lib/editorFlag';
+import { editorTopInset } from '../../lib/editorSafeInsets';
+import { editorManualCommitEnabled, EDITOR_SERVER_EXPORT_ENABLED } from '../../lib/editorFlag';
 import type { Cut } from '../../lib/smartCutHandoff';
 import { requireOnline, OFFLINE_PAID_MESSAGE } from '../../lib/network';
 import { exportUnavailable } from '../../lib/editorServerExport';
@@ -66,7 +75,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { Stack } from 'expo-router';
-import { Linking, Platform, Modal, Pressable, ScrollView, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import { Alert, Linking, Platform, Modal, Pressable, ScrollView, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { HEADER_MAX_FONT_SCALE, touchTarget } from '../../lib/a11y';
 import { formatNumber, plural, t } from '../../lib/i18n';
 import type { LibraryChoice } from '../../lib/librarySource';
@@ -98,10 +107,19 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     const [timelineTouch, setTimelineTouch] = useState(false); useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
     const [voiceoverAt, setVoiceoverAt] = useState<number | null>(null);
     const [assetPackAt, setAssetPackAt] = useState<number | null>(null);
+    const [targetTrackId, setTargetTrackId] = useState<string | null>(null);
     const [voiceoverMessage, setVoiceoverMessage] = useState<string | null>(null); useAnnouncement(voiceoverMessage); const onVoiceoverAdded = () => {
         setVoiceoverMessage(t('editorVoiceover.added')); setVoiceoverAt(null); };
     const [exportVisible, setExportVisible] = useState(false);
     const [localExportVisible, setLocalExportVisible] = useState(false);
+    const [canvasVisible, setCanvasVisible] = useState(false);
+    const [polishVisible, setPolishVisible] = useState(false);
+    const [trimVisible, setTrimVisible] = useState(false);
+    const [cleanVoiceVisible, setCleanVoiceVisible] = useState(false);
+    const [clipAudioVisible, setClipAudioVisible] = useState<'volume' | 'fade' | null>(null);
+    const [filtersVisible, setFiltersVisible] = useState(false);
+    const [previewFullscreen, setPreviewFullscreen] = useState(false);
+    const [previewTurned, setPreviewTurned] = useState(false);
     const [coverRestoreFrame, setCoverRestoreFrame] = useState<number | null>(null);
     const [projectFileBusy, setProjectFileBusy] = useState(false);
     const fileWaitTicket = useRef(0);
@@ -112,6 +130,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     const [safeAreaGuideId, setSafeAreaGuideId] = useState<SafeAreaGuideId>('off');
     const session = useFullEditorSession({ projectId, jobId, cuts, onOwnerChange: () => guard.teardown(() => router.back()), onCopy: id => guard.teardown(() => router.replace({ pathname:
         '/editor/[projectId]', params: { projectId: id } })) });
+    const manualCommitEnabled = editorManualCommitEnabled();
     const { getEditRevision, beginImport, replacing, leaveEditor, saveStatus, sync, currentDocument, preparePicked, savedDocument, api, router, name, document, dirty, problem, setProblem, tool,
         setTool, selection, setSelection, selections, setSelections, multiSelect, setMultiSelect, clipboard, setClipboard, snap, setSnap, ripple, setRipple, zoom, setZoom, privacyNotice,
         history, frameStore, setFrame, playing, setPlaying, projectAssets, localMediaUris, libraryKind, setLibraryKind, markDocument, save, acknowledgePrivacy, travel } = session;
@@ -129,7 +148,11 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     const [clipPreview, setClipPreview] = useState<{ id: string; endFrame: number } | null>(null);
     const [placement, setPlacement] = useState(0);
     const { speechQuote, setSpeechQuote, speechMode, setSpeechMode } = useSpeechCutAvailability(api, projectId);
-    const editFreshness = (): Freshness => ({ projectId, accountId: getCacheUser() ?? '', editRevision: getEditRevision() }); const guard = useEditorLeaveGuard(leaveEditor, router.back);
+    const editFreshness = (): Freshness => ({ projectId, accountId: getCacheUser() ?? '', editRevision: getEditRevision() });
+    const guard = useEditorLeaveGuard(leaveEditor, () => {
+        if (router.canGoBack()) router.back();
+        else router.replace('/editor');
+    });
     const [generate, setGenerate] = useState<{ visible: boolean; kind: Kind; frame: number; owner?: string; prompt?: string } | null>(null);
     const [stemChoice, setStemChoice] = useState<{ choice: LibraryChoice; stems: EditorStem[] } | null>(null);
     const isReady = () => currentDocument()?.project_id === projectId && sync.draftDecided && !sync.sheet && !sync.replacing && sync.live(), ready = isReady();
@@ -162,10 +185,11 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     useEffect(() => { if (!ready && assetPackAt !== null) setAssetPackAt(null); }, [assetPackAt, ready]);
     const returns = useEditorGenerationReturns({ api, projectId, announce: tool !== 'generate', get ready() { return isReady(); }, currentDocument, get dirty() { return sync.dirty; }, get
         saving() { return sync.saving; }, get revision() { return sync.revision; }, beginImport, sessionLive: () => sync.live(), insert: insertMedia });
-    function insertMedia(media: Media, at: number, select = false, onPlaced?: (trimmed: boolean) => void): InsertResult {
+    function insertMedia(media: Media, at: number, select = false, onPlaced?: (trimmed: boolean) => void, preferredTrackId?: string): InsertResult {
         const current = currentDocument(); if (!isReady() || !current || current.project_id !== projectId) return 'dropped';
-        const result = insertMediaAt(timelineOf(current.timeline), media, at);
-        if ('error' in result) { setProblem(result.error === 'full' ? t('editorAi.projectFull') : t('editor.unlockoraddatrackfirst', { value1: media.kind === 'audio' ? 'audio' : 'video' }));
+        const result = insertMediaAt(timelineOf(current.timeline), media, at, preferredTrackId);
+        if ('error' in result) { setProblem(result.error === 'full' ? t('editorAi.projectFull') : result.error === 'occupied' ? t('editorPack.cannotAdd')
+            : t('editor.unlockoraddatrackfirst', { value1: media.kind === 'audio' ? 'audio' : 'video' }));
             return result.error; }
         const commit = markDocument({ ...current, schema_version: 3, timeline: result.timeline });
         if (commit.status !== 'accepted') return commit;
@@ -176,7 +200,8 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     const openGenerate = (kind: Kind, prompt = '') => setGenerate({ visible: true, kind, prompt, frame: clampFrame(frameStore.get()), owner: getCacheUser() });
     // Short phones: shrink the preview so the toolbars and tool rail are never pushed off screen.
     const { width: windowWidth, height: windowHeight, fontScale } = useWindowDimensions(); const insets = useContext(SafeAreaInsetsContext);
-    const budget = editorLayoutBudget({ windowWidth, windowHeight, fontScale, topInset: insets?.top ?? 0, bottomInset: insets?.bottom ?? 0,
+    const topInset = editorTopInset(Platform.OS, insets?.top, windowHeight);
+    const budget = editorLayoutBudget({ windowWidth, windowHeight, fontScale, topInset, bottomInset: insets?.bottom ?? 0,
         trackCount: document ? timelineOf(document.timeline).tracks.length : 1 });
     const previewHeight = advanced ? budget.previewHeight : Math.max(72, Math.min(178, Math.round(windowHeight * (panelOpen ? 0.1 : 0.14))));
     const timeline = timelineOf(document?.timeline);
@@ -317,14 +342,25 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         setPlaying(false); setClipPreview(null); setClipAnnouncement(plural('editorClips.applied', added.length)); clips.clear();
     };
     const trackActions = useEditorTrackActions(timeline, () => timelineOf(currentDocument()?.timeline ?? document.timeline), applyTimeline);
+    const toggleTrackMute = (trackId: string) => applyTimeline({ ...timeline, tracks: timeline.tracks.map(track => track.id === trackId ? { ...track, muted: !track.muted } : track) });
+    const clipThumb = (mediaId: string) => {
+        const media = timeline.media[mediaId];
+        if (!media) return null;
+        return mediaId.startsWith('j-') ? <JobThumb links={thumbLinks} jobId={mediaId.slice(2)} size={36} />
+            : <EditorClipThumb media={media} uri={localMediaUris[mediaId]} cacheKey={projectId} />;
+    };
     const placeVoiceover: VoiceoverProps['insert'] = media => {
-        const result = insertMediaAt(timelineOf(currentDocument()?.timeline), media, voiceoverAt ?? 0);
+        const liveTimeline = timelineOf(currentDocument()?.timeline);
+        const preferred = targetTrackId && liveTimeline.tracks.some(track => track.id === targetTrackId && track.kind === 'audio') ? targetTrackId : undefined;
+        const result = insertMediaAt(liveTimeline, media, voiceoverAt ?? 0, preferred);
         if ('error' in result) return result.error; const commit = commitTimeline(result.timeline);
         if (commit.status !== 'accepted') return commit;
+        setTargetTrackId(null);
         setSelection(result.selection); setSelections([result.selection]); return 'placed';
     };
-    const updateCanvas = (patch: Partial<Canvas>) => { const nextCanvas = { ...canvas, ...patch }; const nextTimeline = { ...timeline, aspect: nextCanvas.aspect_ratio };
-        markDocument({ ...document, schema_version: 3, canvas: nextCanvas, ...(nextTimeline ? { timeline: nextTimeline } : {}) }); };
+    const updateCanvas = (patch: Partial<Canvas>) => { const current = currentDocument() ?? document, liveCanvas = canvasOf(current.canvas), liveTimeline = timelineOf(current.timeline);
+        const nextCanvas = { ...liveCanvas, ...patch }, nextTimeline = { ...liveTimeline, aspect: nextCanvas.aspect_ratio };
+        markDocument({ ...current, schema_version: 3, canvas: nextCanvas, timeline: nextTimeline }); };
     const selectClip = (next: Selection) => { setSelection(next); setSelections((current) => { if (!multiSelect) return [next];
             return current.some((item) => item.track === next.track && item.id === next.id) ? current.filter((item) => item.track !== next.track || item.id !== next.id) : [...current, next];
         }); };
@@ -339,14 +375,17 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         setSelection(null); setSelections([]); };
     const duplicateSelection = () => { const result = duplicateSelections(timeline, selections.length ? selections : selection ? [selection] : [], advanced && ripple === 'all'); if (!result) return;
         if (!applyTimeline(result.timeline)) return; setSelections(result.selections); setSelection(result.selections.at(-1) ?? null); };
-    const addOverlay = (kind: 'title' | 'caption') => { const seq = timeline.seq + 1; const trackId = timeline.tracks.find((track) => track.kind === 'text' && !track.locked)?.id;
+    const addOverlay = (kind: 'title' | 'caption', preferredTrackId?: string) => { const seq = timeline.seq + 1;
+        const preferred = preferredTrackId ? timeline.tracks.find((track) => track.id === preferredTrackId && track.kind === 'text' && !track.locked) : undefined;
+        if (preferredTrackId && !preferred) { setProblem(t('editor.unlockoraddatrackfirst', { value1: 'text' })); return; }
+        const trackId = preferred?.id ?? timeline.tracks.find((track) => track.kind === 'text' && !track.locked)?.id;
         const caption = kind === 'caption';
         const span = caption ? overlaySpan(timeline, frameStore.get(), Math.round(timeline.fps * 2)) : placeTitle(frameStore.get(), mediaFrames(timeline), total);
         const item: TextClip = { id: `t${seq}`, text: caption ? t('editor.captiondefault') : t('editor.yourtitle'), ...span, x: 0.5, y: caption ? 0.92 : 0.85, size: caption ? 4 : 6, trackId,
             style: DEFAULT_TEXT_STYLE, ...(caption ? { caption: true } : {}) }; if (!applyTimeline({ ...timeline, seq, text: [...timeline.text, item] })) return;
         setSelection({ track: 'text', id: item.id });
         setSelections([{ track: 'text', id: item.id }]); setTool(caption ? 'captions' : 'text'); };
-    const addText = () => addOverlay('title'), addCaption = () => addOverlay('caption'); const updateSelectedText = (text: string) => { if (selection?.track !== 'text') return;
+    const addText = () => addOverlay('title'), addTextToTrack = (trackId: string) => addOverlay('title', trackId), addCaption = () => addOverlay('caption'); const updateSelectedText = (text: string) => { if (selection?.track !== 'text') return;
         const value = text.slice(0, 1000);
         applyTimeline(updateClip(timeline, selection, { text: value, ...(selected && 'text' in selected && value !== selected.text && selected.words?.length ? { words: [] } : {}) })); };
     const patchSelected = (patch: Partial<Clip & TextClip>) => { if (!selection) return; applyTimeline(updateClip(timeline, selection, patch)); };
@@ -365,7 +404,13 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     const setGrouped = (grouped: boolean) => { const targets = selections.length ? selections : selection ? [selection] : []; applyTimeline(groupSelections(timeline, targets, grouped)); };
     const addTimelineTrack = (kind: TrackKind) => applyTimeline(addTrack(timeline, kind)); const addTimelineMarker = () => applyTimeline(addMarker(timeline, frameStore.get()));
     const updateTrack = (track: EditorTrack, patch: Partial<EditorTrack>) => applyTimeline({ ...timeline, tracks: timeline.tracks.map((item) => item.id === track.id ? { ...item, ...patch, id:
-        item.id, kind: item.kind } : item) }); const addMediaToTimeline = (media: Media) => returns.place(media, clampFrame(frameStore.get()), true);
+        item.id, kind: item.kind } : item) }); const addMediaToTimeline = (media: Media) => {
+        const mediaTrackKind = media.kind === 'audio' ? 'audio' : 'video';
+        const preferred = targetTrackId && timeline.tracks.some(track => track.id === targetTrackId && track.kind === mediaTrackKind) ? targetTrackId : undefined;
+        const result = insertMedia(media, clampFrame(frameStore.get()), true, undefined, preferred);
+        if (result === 'placed') setTargetTrackId(null);
+        return result;
+    };
     const importLibrary = async (choice: LibraryChoice, kind: SlotKind) => { const token = beginImport(); if (!token) return; setLibraryKind(null); setLibraryPending(true); setProblem(null);
         try { if (kind === 'audio') { const stems = await libraryStems(api, choice.jobId);
                 if (!mounted.current || !readiness.current || liveProject.current !== projectId || !token.valid()) return; if (stems.length) { setStemChoice({ choice, stems }); return; } }
@@ -389,7 +434,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
                 preferredAssetRepresentationMode: ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Current,
                 videoExportPreset: ImagePicker.VideoExportPreset.Passthrough,
             }); if (!result.canceled && result.assets[0]) await importPicked(result.assets[0]);
-        } catch { setProblem(t('editor.couldnotopenPhotosCheckVeyrnoxaccess')); } };
+        } catch { setProblem(t('editor.couldnotopenPhotosCheckVeyrnoxaccess')); } finally { setTargetTrackId(null); } };
     const prepareFilesAsset = async (asset: PickedEditorAsset) => {
         const ticket = ++fileWaitTicket.current, owner = getCacheUser();
         const live = () => ticket === fileWaitTicket.current && mounted.current && readiness.current && liveProject.current === projectId && owner === getCacheUser() && sync.live();
@@ -403,7 +448,8 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     };
     const chooseFiles = async () => { if (fileImport.status === 'waiting') return; setProblem(null); try {
             const result = await DocumentPicker.getDocumentAsync({ type: ['video/*', 'audio/*', 'image/jpeg', 'image/png', 'image/webp'], copyToCacheDirectory: true });
-            if (!result.canceled && result.assets[0]) await prepareFilesAsset(result.assets[0]); } catch { setProblem(t('editor.couldnotopenFilesTryagain')); } };
+            if (!result.canceled && result.assets[0]) await prepareFilesAsset(result.assets[0]); } catch { setProblem(t('editor.couldnotopenFilesTryagain')); }
+        finally { setTargetTrackId(null); } };
     const shareProjectFile = async () => {
         const current = currentDocument(), expected = editFreshness(); if (!current || projectFileBusy) return;
         setProjectFileBusy(true); setProblem(null);
@@ -440,7 +486,10 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
             if (seconds === null) { await editorDeviceMedia.remove(projectId, id); return isReady() ? 'invalidFile' as const : 'changed' as const; }
             progress('placing'); const media: Media = { id, name: asset.name, kind: asset.kind, frames: Math.max(1, Math.floor(seconds * timeline.fps)),
                 hasAudio: asset.kind !== 'image', width: 0, height: 0, ...packMediaDetails(pack, asset) };
-            const result = insertMedia(media, assetPackAt ?? clampFrame(frameStore.get()), true);
+            const mediaTrackKind = media.kind === 'audio' ? 'audio' : 'video';
+            const liveTimeline = timelineOf(currentDocument()?.timeline);
+            const preferred = targetTrackId && liveTimeline.tracks.some(track => track.id === targetTrackId && track.kind === mediaTrackKind) ? targetTrackId : undefined;
+            const result = insertMedia(media, assetPackAt ?? clampFrame(frameStore.get()), true, undefined, preferred);
             if (result !== 'placed') {
                 await editorDeviceMedia.remove(projectId, id); session.setLocalMediaUris(current => { const next = { ...current }; delete next[id]; return next; });
                 if (!token.valid() || !operationLive() || result === 'dropped' || typeof result === 'object' && result.status === 'not-live') return 'changed' as const;
@@ -449,15 +498,80 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
                 return 'cannotAdd' as const;
             }
             return 'placed' as const;
-        } finally { token.end(); }
+        } finally { token.end(); setTargetTrackId(null); }
     };
     const openWorkflow = async (path: string) => { const saved = await save(); if (saved) router.push(path as never); };
+    const openSimpleEditorTool = (next: SimpleSheetName) => {
+        setTargetTrackId(null);
+        if (next !== 'ai') { setSheet(next); return; }
+        setPlaying(false);
+        setSheet(null);
+        bestCut.launch();
+    };
+    const confirmManualCredits = (credits: number, action: 'save' | 'export') => credits === 0 ? Promise.resolve(true) : new Promise<boolean>(resolve => Alert.alert(
+        t(action === 'save' ? 'editorManualCommit.saveTitle' : 'editorManualCommit.exportTitle'),
+        t('editorManualCommit.body', { credits }), [
+            { text: t('common.cancel'), style: 'cancel', onPress: () => resolve(false) },
+            { text: t('editorManualCommit.continue', { credits }), onPress: () => resolve(true) },
+        ], { cancelable: true, onDismiss: () => resolve(false) }));
+    const prepareManualEdit = async (action: 'save' | 'export'): Promise<number | null | 'failed'> => {
+        if (!manualCommitEnabled) return 0;
+        try {
+            setProblem(null);
+            const credits = await sync.quotePaid();
+            return await confirmManualCredits(credits, action) ? credits : null;
+        } catch {
+            setProblem(t('editorManualCommit.connectionFailed')); return 'failed';
+        }
+    };
+    const commitPreparedManualEdit = async (credits: number): Promise<number | null> => {
+        if (!manualCommitEnabled) return getEditRevision();
+        try {
+            const result = await sync.savePaid(credits);
+            if (!result.committed) {
+                setProblem(t(sync.failureCode === 'price_changed' ? 'editorManualCommit.priceChanged' : 'editorManualCommit.failed'));
+                return null;
+            }
+            // Covered source sets cost zero, so settle their bookkeeping
+            // immediately. They must keep the existing Expo share fallback
+            // instead of requiring the paid native completion controller.
+            if (credits === 0) {
+                if (await sync.beginPaidDelivery() === null) return null;
+                if (await sync.finalizePaid() === null) return null;
+            }
+            // LocalExportSheet tracks local edit freshness, not the server's
+            // document revision. A paid save advances only the latter.
+            return getEditRevision();
+        } catch {
+            setProblem(t('editorManualCommit.connectionFailed')); return null;
+        }
+    };
+    const commitManualEdit = async (action: 'save' | 'export'): Promise<number | null> => {
+        const credits = await prepareManualEdit(action);
+        if (credits === null || credits === 'failed') return null;
+        const reserved = await commitPreparedManualEdit(credits);
+        if (reserved === null) return null;
+        if (credits === 0) return reserved;
+        try {
+            const authorized = await sync.beginPaidDelivery();
+            if (authorized === null) return null;
+            return await sync.finalizePaid();
+        }
+        catch { setProblem(t('editorManualCommit.connectionFailed')); return null; }
+    };
     const openCloudExport = async () => { const rawFonts = (timeline as unknown as { fonts?: unknown }).fonts, declaredFonts = validCustomFonts(timeline);
         if (rawFonts !== undefined && (!Array.isArray(rawFonts) || rawFonts.length !== declaredFonts.length)) { setProblem(t('editorEditGate.invalid')); return; }
         if (declaredFonts.length) { setProblem(t('editorFont.exportNote')); return; }
         if (!exportGate.available) { if (await save()) setProblem(t(exportGate.messageKey)); return; } try { requireOnline(); } catch {
-        setProblem(OFFLINE_PAID_MESSAGE); return; } if (exportUnavailable()) { setProblem(t('handoff.exportUnavailable')); return; } if (await savedDocument()) setExportVisible(true); };
-    const openExport = () => { setPlaying(false); setLocalExportVisible(true); };
+        setProblem(OFFLINE_PAID_MESSAGE); return; } if (exportUnavailable()) { setProblem(t('handoff.exportUnavailable')); return; }
+        // Cloud rendering owns its own admission price. The manual-edit fee
+        // rollout must not hide the existing cloud-export entry point.
+        if (dirty && !(await save())) return;
+        setExportVisible(true); };
+    const openExport = () => {
+        setPlaying(false);
+        setLocalExportVisible(true);
+    };
     const openCover = () => { setPlaying(false); setSheet(null); setCoverRestoreFrame(clampFrame(frameStore.get())); };
     const closeCover = () => { if (coverRestoreFrame !== null) setFrame(coverRestoreFrame); setCoverRestoreFrame(null); };
     const saveCover = (cover: EditorCover) => {
@@ -486,7 +600,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         { id: 'make-clip', icon: 'play', label: t('editorSimple.makeClip'), hint: t('editorSimple.makeClipHint'), onPress: () => { showPanel('generate'); openGenerate('video'); } },
         { id: 'make-audio', icon: 'audio', label: t('editorSimple.makeAudio'), hint: t('editorSimple.makeAudioHint'), onPress: () => { showPanel('generate'); openGenerate('audio'); } },
         { id: 'captions', icon: 'chatText', label: t('editor.captions'), hint: t('editorSimple.captionsHint'), onPress: () => showPanel('captions') }, ]; const moreRows: SheetRow[] = [
-        { id: 'canvas', icon: 'sliders', label: t('editor.shape'), hint: t('editor.projectSettings'), onPress: () => showPanel('canvas') },
+        { id: 'canvas', icon: 'sliders', label: t('editor.shape'), hint: t('editor.projectSettings'), onPress: () => { setPanelOpen(false); setCanvasVisible(true); } },
         { id: 'text', icon: 'textSize', label: t('editor.addText'), hint: t('editorSimple.textHint'), onPress: () => { addText(); setPanelOpen(true); } },
         { id: 'scenes', icon: 'filmReel', label: t('editor.scenes'), hint: t('editorScenes.private'), onPress: () => showPanel('scenes') },
         { id: 'clips', icon: 'film', label: t('editorClips.find'), hint: t('editorClips.private'), onPress: () => showPanel('clips') },
@@ -499,31 +613,35 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         { id: 'all-tools', icon: 'squares', label: t('editorSimple.allTools'), hint: t('editorSimple.allToolsHint'), onPress: () => setAdvanced(true) }, ];
     const cutRows: SheetRow[] = [
         { id: 'insert', icon: 'folderPlus', label: t('editorSimple.add'), hint: t('editorSimple.addTitle'), onPress: () => setSheet('add') },
-        { id: 'filters', icon: 'contrast', label: t('editor.filters'), onPress: () => showPanel('filters') },
+        { id: 'filters', icon: 'contrast', label: t('editor.filters'), onPress: () => { setPanelOpen(false); setFiltersVisible(true); } },
         { id: 'transitions', icon: 'arrowsHorizontal', label: t('editor.transitions'), onPress: () => showPanel('transitions') },
-        { id: 'polish', icon: 'magicWand', label: t('editorSimple.polish'), onPress: () => showPanel('adjust') },
+        { id: 'polish', icon: 'magicWand', label: t('editorSimple.polish'), onPress: () => { setPanelOpen(false); setPolishVisible(true); } },
     ];
     const selectedCutRows: SheetRow[] = [
         { id: 'split', icon: 'scissors', label: t('editor.split'), onPress: splitSelection },
-        { id: 'trim', icon: 'sliders', label: t('editorSimple.trim'), onPress: () => showPanel('adjust') },
-        { id: 'volume', icon: 'speaker', label: t('editor.volume'), disabled: selection?.track === 'text', onPress: () => showPanel('adjust') },
-        { id: 'fade', icon: 'contrast', label: t('editorSimple.fade'), disabled: selection?.track === 'text', onPress: () => showPanel('adjust') },
-        { id: 'clip-ai', icon: 'sparkle', label: t('editorSimple.aiEdit'), onPress: () => { setPlaying(false); setAiAnnouncement(null); setAiEditOpen(true); } },
+        { id: 'trim', icon: 'sliders', label: t('editorSimple.trim'), onPress: () => { setPanelOpen(false); setTrimVisible(true); } },
+        { id: 'flip-x', icon: 'arrowsHorizontal', label: t('editorMotion.flipX'), disabled: selection?.track !== 'video',
+            onPress: () => motionActions.transform('flipX', !((selected as Clip | undefined)?.transform?.flipX ?? false)) },
+        { id: 'flip-y', icon: 'seekForward', label: t('editorMotion.flipY'), disabled: selection?.track !== 'video',
+            onPress: () => motionActions.transform('flipY', !((selected as Clip | undefined)?.transform?.flipY ?? false)) },
+        { id: 'volume', icon: 'speaker', label: t('editor.volume'), disabled: selection?.track === 'text', onPress: () => { setPanelOpen(false); setClipAudioVisible('volume'); } },
+        { id: 'fade', icon: 'contrast', label: t('editorSimple.fade'), disabled: selection?.track === 'text', onPress: () => { setPanelOpen(false); setClipAudioVisible('fade'); } },
+        { id: 'clip-ai', icon: 'sparkle', label: t('editorSimple.aiEdit'), onPress: () => { setPlaying(false); setAiAnnouncement(null); setSheet('ai'); } },
         { id: 'clip-transitions', icon: 'arrowsHorizontal', label: t('editor.transitions'), onPress: () => showPanel('transitions') },
         { id: 'delete', icon: 'close', label: t('editor.delete'), onPress: removeSelection },
         { id: 'done', icon: 'check', label: t('editorSimple.done'), onPress: () => { setSelection(null); setSelections([]); setPanelOpen(false); } },
     ];
     const soundRows: SheetRow[] = [
+        { id: 'new-audio-track', icon: 'plus', label: t('editorParity.newAudioTrack'), onPress: () => { setTargetTrackId(null); addTimelineTrack('audio'); } },
+        { id: 'add-sound', icon: 'audio', label: t('studioSkills.addsound'), disabled: libraryPending || replacing, onPress: () => setLibraryKind('audio') },
         { id: 'music', icon: 'audio', label: t('editorSimple.music'), hint: t('editorSimple.musicHint'), disabled: replacing, onPress: () => setLibraryKind('audio') },
         ...(VOICEOVER_AVAILABLE ? [{ id: 'voiceover', icon: 'microphone', label: t('editorVoiceover.open'), hint: t('editorSimple.voiceoverHint'), disabled: replacing,
             onPress: () => { setPlaying(false); setVoiceoverAt(clampFrame(frameStore.get())); setVoiceoverMessage(null); } }] : []),
         { id: 'clean-voice', icon: 'waveform', label: t('editorSimple.cleanVoice'), hint: selection && (selection.track === 'audio' || selectedMedia?.hasAudio)
-            ? t('editorSimple.cleanVoiceHint') : t('editorSimple.cleanVoiceSelect'), onPress: () => {
-                if (selection && (selection.track === 'audio' || selectedMedia?.hasAudio)) showPanel('adjust');
-                else showPanel('audio');
-            } },
+            ? t('editorSimple.cleanVoiceHint') : t('editorSimple.cleanVoiceSelect'), onPress: () => { setPanelOpen(false); setCleanVoiceVisible(true); } },
     ];
     const textRows: SheetRow[] = [
+        { id: 'new-text-layer', icon: 'plus', label: t('editorParity.newTextLayer'), onPress: () => { addText(); setPanelOpen(true); } },
         { id: 'edit-text', icon: 'penNib', label: t('editorSimple.editText'), onPress: () => showPanel('text') },
         { id: 'title', icon: 'textSize', label: t('editorSimple.title'), onPress: () => { addText(); setPanelOpen(true); } },
         { id: 'captions', icon: 'chatText', label: t('editor.captions'), onPress: () => showPanel('captions') },
@@ -531,6 +649,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         { id: 'settings', icon: 'gear', label: t('editorSimple.openSettings'), onPress: () => void Linking.openSettings() },
     ];
     const layerRows: SheetRow[] = [
+        { id: 'new-layer', icon: 'plus', label: t('editorParity.newLayer'), onPress: () => { setTargetTrackId(null); addTimelineTrack('video'); } },
         { id: 'photo', icon: 'image', label: t('editorSimple.photo'), disabled: libraryPending || replacing, onPress: () => setLibraryKind('image') },
         { id: 'video', icon: 'video', label: t('editorSimple.video'), disabled: libraryPending || replacing, onPress: () => setLibraryKind('video') },
         { id: 'all-layers', icon: 'squares', label: t('editorSimple.allLayers'), onPress: () => showPanel('media') },
@@ -541,6 +660,15 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     const simpleTrayRows = sheet === 'add' ? addRows : sheet === 'sound' ? soundRows : sheet === 'text' ? textRows : sheet === 'layers' ? layerRows
         : sheet === 'cut' || sheet === null ? selection ? selectedCutRows : cutRows : null;
     const openVoiceover = () => { setPlaying(false); setVoiceoverAt(clampFrame(frameStore.get())); setVoiceoverMessage(null); };
+    const addFromTimeline = (kind: TrackKind, trackId: string) => {
+        setPlaying(false);
+        const target = timeline.tracks.find(track => track.id === trackId && track.kind === kind && !track.locked);
+        if (!target) { setProblem(t('editor.unlockoraddatrackfirst', { value1: kind })); return; }
+        if (kind === 'text') { addTextToTrack(trackId); setPanelOpen(true); return; }
+        setTargetTrackId(trackId);
+        if (advanced) { setLibraryKind(kind); return; }
+        setPanelOpen(false); setSheet(kind === 'audio' ? 'sound' : 'add');
+    };
     const brandProps = { title: t('editor.brandkit'), body: t('editor.managelogosfontscoloursandapprovedassets'),
         action: t('editor.openBrandkit'), onPress: () => void openWorkflow('/brand-kit') };
     const panelProps: ToolPanelProps = { lookActions, motionActions, maskActions, fontActions, speechCaptionActions, motionProcessingActions, personMaskActions,
@@ -548,10 +676,25 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         setLibraryKind, choosePhotos, chooseFiles, filesPending: fileImport.status === 'waiting', openAssetPacks, selections, selectClip, openVoiceover, openGenerate, addTimelineTrack,
         addText, updateSelectedText, addCaption, setFrame, addTimelineMarker, setPlaying, currentDocument, selectedMedia, selectedTrack,
         canMove, moveSelection, removeSelection, adjustStart, adjustLength, speedActions, document, markDocument, canvas, updateCanvas, updateTrack, };
-    return <View style={[styles.screen, { paddingLeft: insets?.left ?? 0, paddingRight: insets?.right ?? 0 }]}>
+    return <View style={[styles.screen, {
+        paddingTop: topInset,
+        paddingLeft: insets?.left ?? 0,
+        paddingRight: insets?.right ?? 0,
+    }]}>
         <StatusBar style="light" />
         <LocalExportSheet visible={localExportVisible} api={api} account={getCacheUser() ?? ''} projectId={projectId} revision={getEditRevision()} timeline={timeline} canvas={canvas} localMediaUris={localMediaUris}
-            onClose={() => setLocalExportVisible(false)} onCloud={() => { setLocalExportVisible(false); void openCloudExport(); }} />
+            onClose={() => setLocalExportVisible(false)} onCloud={() => { setLocalExportVisible(false); void openCloudExport(); }}
+            onPrepare={() => prepareManualEdit('export')} onCommit={commitPreparedManualEdit}
+            onBeginDelivery={() => sync.beginPaidDelivery()} onFinalize={() => sync.finalizePaid()} onCancel={() => sync.cancelPaid()} />
+        <EditorCanvasSheet visible={canvasVisible} canvas={canvas} timeline={timeline} onClose={() => setCanvasVisible(false)} onCanvas={updateCanvas} onTimeline={applyTimeline} />
+        <EditorPolishSheet visible={polishVisible} timeline={timeline} onClose={() => setPolishVisible(false)} onApply={applyTimeline} />
+        <EditorTrimSheet visible={trimVisible} timeline={timeline} selection={selection} playhead={frameStore.get()} onClose={() => setTrimVisible(false)} onApply={applyTimeline}
+            canMove={canMove} onMove={moveSelection} />
+        <EditorCleanVoiceSheet visible={cleanVoiceVisible} clip={selected && selection?.track !== 'text' ? selected as Clip : null}
+            available={!!selection && selection.track !== 'text' && (selection.track === 'audio' || !!selectedMedia?.hasAudio)} actions={audioActions} onClose={() => setCleanVoiceVisible(false)} />
+        <EditorClipAudioSheet visible={clipAudioVisible !== null} clip={selected && selection?.track !== 'text' ? selected as Clip : null} fps={timeline.fps}
+            focus={clipAudioVisible ?? 'volume'} onClose={() => setClipAudioVisible(null)} onPatch={patchSelected} />
+        <EditorFiltersSheet visible={filtersVisible} clip={selected && selection?.track === 'video' ? selected as Clip : null} onClose={() => setFiltersVisible(false)} onPatch={patchSelected} />
         {EDITOR_SERVER_EXPORT_ENABLED ? <ServerExportSheet api={api} router={router} now={Date.now} projectId={projectId} name={displayName} document={document} localMediaUris={localMediaUris} dirty={dirty} visible={exportVisible}
             onOpen={() => setExportVisible(true)} onClose={() => setExportVisible(false)} onFallback={() => { setExportVisible(false); setProblem(t('handoff.exportUnavailable')); }} /> : null}
         <Stack.Screen options={{ headerShown: false, gestureEnabled: !timelineTouch && !selection /* a selected clip is about to be dragged: swipe-back must not steal that drag; Done and the leave guard still exit */ }} />
@@ -568,6 +711,10 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
                 {advanced ? <StatusText variant="inherit" maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} accessibilityLiveRegion={Platform.OS === 'android' ? 'polite' : undefined} style={styles.status}>{saveStatus}</StatusText> : null}
             </Pressable>
             {advanced ? <Button label={t('editorSave.versions')} variant="tertiary" size="sm" containerStyle={{ marginVertical: -2 }} onPress={sync.openVersions} /> : null}
+            {!advanced ? <Pressable accessibilityRole="button" accessibilityLabel={dirty ? t('projects.save') : saveStatus} accessibilityLiveRegion={Platform.OS === 'android' ? 'polite' : undefined}
+                onPress={() => void (manualCommitEnabled ? commitManualEdit('save') : save())} style={({ pressed }) => [styles.simpleSaveButton, !dirty && !sync.saving && styles.simpleSaveIdle, pressed && styles.pressed]}>
+                <Text numberOfLines={1} maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.simpleSaveText}>{sync.saving ? t('editor.saving') : dirty ? t('projects.save') : t('editor.saved')}</Text>
+            </Pressable> : null}
             <Pressable accessibilityRole="button" accessibilityLabel={advanced ? t('editor.done') : t('editor.export')} onPress={advanced ? guard.done : openExport}
                 style={({ pressed }) => [styles.headerAction, !advanced && styles.simpleHeaderAction, pressed && styles.pressed]}>{advanced ? <Text maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.headerActionText}>{t('editor.done')}</Text> : <Icon name="arrowUp" size={28} tint={styles.headerActionText.color} />}</Pressable>
         </View>
@@ -631,12 +778,14 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
             </ScrollView> : null}
             {safeGuideFrame ? <Text maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.safeAreaHelp}>{t('editor.safeArea.help')}</Text> : null}
             <View testID="editor-preview-frame" style={[styles.previewFrame, advanced || panelOpen ? { height: previewHeight } : [styles.simpleFill, styles.simplePreviewFrame]]}>
-                <View style={[styles.canvas, { aspectRatio: safeGuideSize.width / safeGuideSize.height }]}>
+                <View style={[styles.canvas, { aspectRatio: previewTurned ? safeGuideSize.height / safeGuideSize.width : safeGuideSize.width / safeGuideSize.height }]}>
+                    <View style={previewTurned ? styles.previewTurned : styles.previewUpright}>
                     <PlaybackPreview frameStore={frameStore} timeline={timeline} api={api} playing={playing} localMediaUris={localMediaUris} fontReady={fontActions.has} staticPreview
                         nativeIdentity={{ account: getCacheUser() ?? '', project: projectId }}
                         compositionFrame={safeGuideFrame === null}
                         motionHandle={(advanced || panelOpen) && tool === 'motion' ? { selection, actions: motionActions } : undefined} />
                     <EditorSafeAreaOverlay id={safeAreaGuideId} width={safeGuideSize.width} height={safeGuideSize.height} />
+                    </View>
                 </View>
                 {!advanced && !panelOpen ? <View testID="editor-preview-quick-actions" style={styles.previewQuickActions}>
                     <Pressable accessibilityRole="button" accessibilityLabel={`${t('editor.rotation')} +90°`} accessibilityState={{ disabled: selection?.track !== 'video' || !selected }} hitSlop={4}
@@ -651,7 +800,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
             </View>
             {!advanced && !panelOpen ? <View style={styles.simplePreviewFooter}>
                 <Text maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.eyebrow}>{t('editor.pREVIEW')}</Text>
-                <Pressable accessibilityRole="button" accessibilityLabel={`${t('editor.shape')} · ${canvas.aspect_ratio}`} onPress={() => showPanel('canvas')}
+                <Pressable accessibilityRole="button" accessibilityLabel={`${t('editor.shape')} · ${canvas.aspect_ratio}`} onPress={() => setCanvasVisible(true)}
                     style={({ pressed }) => [styles.previewAspect, pressed && styles.pressed]}><Text maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.previewAspectText}>{String.fromCodePoint(9635)} {canvas.aspect_ratio}</Text></Pressable>
             </View> : null}
             <PlaybackTransport frameStore={frameStore} total={total} fps={timeline.fps} playing={playing} simple={!advanced} canUndo={history.canUndo} canRedo={history.canRedo}
@@ -665,24 +814,24 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
                     ? t('editor.tapacommandtoeditselection') : t('editor.tapacliptoselect')}</Text> : <View style={styles.simpleTimelineTools}>
                     <Pressable accessibilityRole="button" accessibilityLabel={t('editorCore.zoomOut')} accessibilityState={{ disabled: zoom <= PPF_MIN }} disabled={zoom <= PPF_MIN}
                         onPress={() => setZoom(value => Math.max(PPF_MIN, value / 2))} style={({ pressed }) => [styles.timelineQuickButton, zoom <= PPF_MIN && styles.disabled, pressed && styles.pressed]}><Text style={styles.timelineQuickIcon}>−</Text></Pressable>
-                    <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={styles.timelineZoomTrack}><View style={styles.timelineZoomProgress} /><View style={styles.timelineZoomThumb} /></View>
+                    <EditorZoomSlider value={zoom} min={PPF_MIN} max={PPF_MAX} onChange={setZoom} />
                     <Pressable accessibilityRole="button" accessibilityLabel={t('editorCore.zoomIn')} accessibilityState={{ disabled: zoom >= PPF_MAX }} disabled={zoom >= PPF_MAX}
                         onPress={() => setZoom(value => Math.min(PPF_MAX, value * 2))} style={({ pressed }) => [styles.timelineQuickButton, zoom >= PPF_MAX && styles.disabled, pressed && styles.pressed]}><Text style={styles.timelineQuickIcon}>+</Text></Pressable>
                 </View>}
             </View>
             {advanced ? <ScrollView testID="editor-timeline-scroll" nestedScrollEnabled scrollEnabled={!timelineTouch} style={{ maxHeight: budget.timelineScrollMax }}
                 showsVerticalScrollIndicator>
-                <PlaybackTimeline waveforms={timelineWaveforms} clipThumb={mediaId => mediaId.startsWith('j-') ? <JobThumb links={thumbLinks} jobId={mediaId.slice(2)} size={36} /> : null} onGestureActive={(active:
+                <PlaybackTimeline waveforms={timelineWaveforms} clipThumb={clipThumb} onGestureActive={(active:
                     boolean) => { setTimelineTouch(active); returns.gestureActive(active); }} timeline={timeline} selections={selections} ppf={zoom} total={total} frameStore={frameStore}
                     playing={playing} snap={snap} ripple={advanced ? ripple : 'lane'} analysisMarks={tool === 'scenes' ? sceneMarks : []}
                     clipRanges={tool === 'clips' ? clipRows.map(row => ({ id: row.id, startFrame: row.startFrame, endFrame: row.endFrame, rank: row.rank, selected: row.ticked })) : []}
-                    onTrackPress={trackActions.pressTrack} onViewport={setViewport} onSeek={value => { setPlaying(false);
+                    onTrackPress={trackActions.pressTrack} onToggleTrackMute={toggleTrackMute} onAddToTrack={addFromTimeline} onViewport={setViewport} onSeek={value => { setPlaying(false);
                     setFrame(value); }} onSelect={selectClip} onApply={applyTimeline} />
-            </ScrollView> : <PlaybackTimeline waveforms={timelineWaveforms} clipThumb={mediaId => mediaId.startsWith('j-') ? <JobThumb links={thumbLinks} jobId={mediaId.slice(2)} size={36} /> : null}
+            </ScrollView> : <PlaybackTimeline waveforms={timelineWaveforms} clipThumb={clipThumb}
                 onGestureActive={(active: boolean) => { setTimelineTouch(active); returns.gestureActive(active); }} timeline={timeline} selections={selections} ppf={zoom} total={total}
                 frameStore={frameStore} playing={playing} snap={snap} ripple={advanced ? ripple : 'lane'} analysisMarks={tool === 'scenes' ? sceneMarks : []}
                 clipRanges={tool === 'clips' ? clipRows.map(row => ({ id: row.id, startFrame: row.startFrame, endFrame: row.endFrame, rank: row.rank, selected: row.ticked })) : []}
-                onTrackPress={trackActions.pressTrack} onViewport={setViewport} onSeek={value => {
+                onTrackPress={trackActions.pressTrack} onToggleTrackMute={toggleTrackMute} onAddToTrack={addFromTimeline} onViewport={setViewport} onSeek={value => {
                 setPlaying(false); setFrame(value); }} onSelect={selectClip} onApply={applyTimeline} />}
         </View>
         {advanced || panelOpen ? <EditorToolSheet inline={advanced} wide={advanced && budget.wideShort} minHeight={budget.wideShort ? undefined : budget.panelMin}
@@ -716,11 +865,23 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         </ScrollView>
         </EditorToolSheet> : null}
         </View>
-        {advanced ? null : <SimpleEditorBar active={simpleDockTab} trayOpen={!!simpleTrayRows} onOpen={setSheet} />}
+        {advanced ? null : <SimpleEditorBar active={simpleDockTab} trayOpen={!!simpleTrayRows} onOpen={openSimpleEditorTool} />}
         {advanced || !simpleTrayRows ? null : <SimpleEditorTray rows={simpleTrayRows} />}
         {coverRestoreFrame !== null ? <EditorCoverSheet initial={document.cover ?? { frame: coverRestoreFrame, text: '', text_color: '#FFFFFF' }} frameStore={frameStore} total={total}
             timeline={timeline} aspectRatio={safeGuideSize.width / safeGuideSize.height} api={api} localMediaUris={localMediaUris} fontReady={fontActions.has}
             onFrame={value => { setPlaying(false); setFrame(value); }} onCancel={closeCover} onSave={saveCover} /> : null}
+        <Modal visible={previewFullscreen} animationType="fade" presentationStyle="fullScreen" onRequestClose={() => setPreviewFullscreen(false)}>
+            <View style={[styles.fullscreenPreview, { paddingTop: topInset, paddingBottom: insets?.bottom ?? 0 }]}>
+                <Pressable accessibilityRole="button" accessibilityLabel={t('editorParity.closeFullscreenPreview')} onPress={() => setPreviewFullscreen(false)} style={styles.fullscreenClose}><Icon name="close" size={28} tint={styles.headerButtonIcon.color} /></Pressable>
+                <View style={[styles.fullscreenCanvas, { aspectRatio: safeGuideSize.width / safeGuideSize.height }]}>
+                    <PlaybackPreview frameStore={frameStore} timeline={timeline} api={api} playing={playing} localMediaUris={localMediaUris} fontReady={fontActions.has} staticPreview
+                        nativeIdentity={{ account: getCacheUser() ?? '', project: projectId }} compositionFrame={safeGuideFrame === null} />
+                    <EditorSafeAreaOverlay id={safeAreaGuideId} width={safeGuideSize.width} height={safeGuideSize.height} />
+                </View>
+                <PlaybackTransport frameStore={frameStore} total={total} fps={timeline.fps} playing={playing} simple canUndo={history.canUndo} canRedo={history.canRedo}
+                    onUndo={() => travel('undo')} onRedo={() => travel('redo')} onSeek={setFrame} onPlaying={setPlaying} />
+            </View>
+        </Modal>
         {bestCut.sheet}
         {speechMode && speechQuote ? <EditorSpeechCutSheet api={api} quote={speechQuote} mode={speechMode} snapshot={() => ({ timeline: timelineOf(currentDocument()?.timeline), freshness:
             editFreshness(), selection })}
@@ -746,12 +907,12 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
             void addPending(projectId, { jobId: id, kind, frame: generate.frame, name: model.name, createdAt: Date.now() }).then(() => { if (mounted.current && liveProject.current === projectId
                 && generate.owner === getCacheUser() && currentDocument()?.project_id === projectId) void returns.refresh(); });
         }} /> : null}
-        {stemChoice ? <EditorStemSheet api={api} {...stemChoice} ready={ready} beginImport={beginImport} onAdd={addMediaToTimeline} onClose={() => setStemChoice(null)} /> : null}
+        {stemChoice ? <EditorStemSheet api={api} {...stemChoice} ready={ready} beginImport={beginImport} onAdd={addMediaToTimeline} onClose={() => { setStemChoice(null); setTargetTrackId(null); }} /> : null}
         {voiceoverAt !== null ? <VoiceoverSheet key={projectId} projectId={projectId} startFrame={voiceoverAt} fps={timeline.fps} ready={ready} beginImport={beginImport}
-            preparePicked={preparePicked} insert={placeVoiceover} onAdded={onVoiceoverAdded} onClose={() => setVoiceoverAt(null)} /> : null}
-        <AssetPackLibrarySheet key={`asset-pack-${projectId}`} visible={assetPackAt !== null && ready} playhead={timecode(assetPackAt ?? 0, timeline.fps)} onClose={() => setAssetPackAt(null)} onAdd={addPackAsset} />
+            preparePicked={preparePicked} insert={placeVoiceover} onAdded={onVoiceoverAdded} onClose={() => { setVoiceoverAt(null); setTargetTrackId(null); }} /> : null}
+        <AssetPackLibrarySheet key={`asset-pack-${projectId}`} visible={assetPackAt !== null && ready} playhead={timecode(assetPackAt ?? 0, timeline.fps)} onClose={() => { setAssetPackAt(null); setTargetTrackId(null); }} onAdd={addPackAsset} />
         <EditorSaveSheets sync={sync} /><EditorVersionsSheet sync={sync} api={api} projectId={projectId} />
-        {libraryKind ? <LibraryChooser api={api} kind={libraryKind} onClose={() => setLibraryKind(null)} onPick={(choice) => importLibrary(choice, libraryKind)} /> : null}
+        {libraryKind ? <LibraryChooser api={api} kind={libraryKind} onClose={() => { setLibraryKind(null); setTargetTrackId(null); }} onPick={(choice) => importLibrary(choice, libraryKind)} /> : null}
         <Modal visible={renameOpen} transparent animationType="fade" onRequestClose={() => { if (!renameBusy) setRenameOpen(false); }} accessibilityViewIsModal>
             <View style={styles.noticeBackdrop}><View style={styles.renameCard}>
                 <Text accessibilityRole="header" style={styles.noticeTitle}>{t('projects.rename')}</Text>

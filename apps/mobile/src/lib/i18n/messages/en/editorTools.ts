@@ -3,6 +3,7 @@ export default {
     'editorTools.positionValue': '{value}%',
     'editorTools.secondsValue': '{value} seconds',
     'editorTools.colourHex': '{label} hex colour',
+    'editorTools.colourPicker': 'Open {label} picker',
     'editorTools.colourSwatch': 'Colour {hex}',
     'editorTools.colourError': 'Use a colour like #1a2b3c.',
     'editorTools.speed': 'Speed',

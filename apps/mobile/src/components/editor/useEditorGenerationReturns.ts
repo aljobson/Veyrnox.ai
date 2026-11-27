@@ -13,7 +13,7 @@ import { timelineOf, type Media } from '../../lib/nativeEditorModel';
 import { useAnnouncement } from '../../lib/useAnnouncement';
 
 export type InsertFailure = 'dropped' | DocumentCommitFailure;
-export type InsertResult = 'placed' | 'queued' | 'track' | 'full' | 'dropped' | DocumentCommitFailure;
+export type InsertResult = 'placed' | 'queued' | 'track' | 'full' | 'occupied' | 'dropped' | DocumentCommitFailure;
 export type GenerationRow = PendingGeneration & { status: 'queued' | 'running' | 'notAdded' | 'removed' | 'placed' };
 type Token = { valid(): boolean; end(): void };
 type Options = {

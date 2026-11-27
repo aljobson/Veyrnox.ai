@@ -1,7 +1,9 @@
 // Production Worker builds use webpack (ADR-0353).
 // 2026-11-18: the host measured one production-environment webpack build on this
-// checkout (not CI): 47,373.23 KiB upload, 47,373.34 KiB on disk. The 48,500 KiB
-// budget leaves 1,126.66 KiB headroom; CI must confirm these results.
+// checkout (not CI): 47,373.23 KiB upload, 47,373.34 KiB on disk.
+// 2026-11-27: CI measured the Music Voice production Worker at 48,594.30 KiB.
+// The 49,000 KiB budget leaves about 406 KiB project headroom and about 2.15 MiB
+// below Cloudflare's 50 MiB paid-Worker upload limit.
 // The following describes the earlier Turbopack-era 60,500-60,700 KiB budgets and is kept as history.
 // On 2026-10-31 upload was 60,490 KiB / 12,290 KiB gzip against a 65,536 KiB limit.
 // Cold requests spent 1.1–1.3 s before fetch; the separate wrapper added 6.9 MB.
@@ -25,7 +27,7 @@ import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 
-export const WORKER_SIZE_BUDGET_KIB = 48500;
+export const WORKER_SIZE_BUDGET_KIB = 49000;
 const execFileAsync = promisify(execFile);
 const print = (line) => process.stdout.write(`${line}\n`);
 

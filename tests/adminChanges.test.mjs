@@ -31,11 +31,11 @@ test('bad filter shapes, dates, limits and duplicate parameters are refused', ()
 });
 
 test('shell hides unbuilt and unauthorized tabs and leaves existing admin pages accessible', () => {
-  assert.equal(ADMIN_TABS.length, 10);
+  assert.equal(ADMIN_TABS.length, 11);
   assert.deepEqual(visibleAdminTabs(), []);
   assert.deepEqual(visibleAdminTabs({ permissions: ['*'] }), []);
   const all = visibleAdminTabs({ isAdmin: true, permissions: ADMIN_PERMISSIONS.owner }).map(t => t.id);
-  assert.deepEqual(all, ['users', 'payments', 'changes', 'affiliates', 'endpoints', 'roles', 'switches', 'plans', 'traffic', 'support', 'violations', 'appeals', 'reports', 'webhooks', 'security', 'cinema']);
+  assert.deepEqual(all, ['users', 'payments', 'changes', 'affiliates', 'endpoints', 'roles', 'switches', 'plans', 'traffic', 'support', 'music-voices', 'violations', 'appeals', 'reports', 'webhooks', 'security', 'cinema']);
   const limited = visibleAdminTabs({ isAdmin: true, permissions: ['changes.read'] }).map(t => t.id);
   assert.ok(limited.includes('changes'));
   assert.ok(!limited.includes('users'));

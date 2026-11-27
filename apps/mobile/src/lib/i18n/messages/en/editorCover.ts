@@ -4,8 +4,6 @@ export default {
     'editorCover.save': 'Save',
     'editorCover.open': 'Choose cover',
     'editorCover.openHint': 'Pick the project frame and optional cover text',
-    'editorCover.frames': 'Cover frame choices',
-    'editorCover.frameAt': 'Frame at {value1}',
     'editorCover.scrub': 'Cover frame',
     'editorCover.help': 'Drag to pick the frame shown on this project.',
     'editorCover.text': 'Cover text',
@@ -13,5 +11,4 @@ export default {
     'editorCover.textColor': 'Text Color',
     'editorCover.color': 'Text color {value1}',
     'editorCover.hideText': 'Hide Cover Text',
-    'editorCover.frameReadout': 'Frame {value1} · {value2}',
 } as const;

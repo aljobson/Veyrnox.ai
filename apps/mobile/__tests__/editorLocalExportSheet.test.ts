@@ -1,4 +1,4 @@
-import { estimatedLocalExportBytes, fittedLocalExportDimensions, LOCAL_EXPORT_QUALITY, localExportDimensions, localExportInterruptedState, saveLocalExportToPhotos } from '../src/components/editor/LocalExportSheet';
+import { estimatedLocalExportBytes, fittedLocalExportDimensions, LOCAL_EXPORT_QUALITY, localExportDimensions, localExportInterruptedState, saveLocalExportToPhotos, selectedLocalExportDimensions } from '../src/components/editor/LocalExportSheet';
 import { validateBeginEncodeRequest } from '../src/lib/editorMedia/protocol';
 
 jest.mock('../src/auth/sessionTask', () => ({ useSessionTask: () => () => ({ current: () => true }) }));
@@ -14,6 +14,8 @@ test('uses bounded native export dimensions for every editor canvas', () => {
         const size = fittedLocalExportDimensions({ aspect_ratio, frame_rate: 30 });
         expect(size.width % 2).toBe(0); expect(size.height % 2).toBe(0); expect(size.width * size.height).toBeLessThanOrEqual(1280 * 720);
     }
+    expect(selectedLocalExportDimensions({ aspect_ratio: '16:9', frame_rate: 30 }, '1080p')).toEqual({ width: 1920, height: 1080 });
+    expect(selectedLocalExportDimensions({ aspect_ratio: '9:16', frame_rate: 30 }, '1080p')).toEqual({ width: 1080, height: 1920 });
 });
 
 test('a stale session exits the exporting state so close and retry are not left disabled', () => {

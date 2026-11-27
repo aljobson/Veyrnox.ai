@@ -3,9 +3,9 @@ import { directionalStyle } from '../../../lib/rtl';
 import { Button, Card, Text, themedStyles, useThemedStyles, useAppearance } from '../../../components/ui';
 import { LoadingSkeleton } from '../../../components/LoadingSkeleton';
 import { Image } from 'expo-image';
-import { Stack, useFocusEffect, useRouter } from 'expo-router';
+import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { useAssetLinks } from '../../../components/JobThumb';
@@ -15,6 +15,7 @@ import { formatLocale, t } from '../../../lib/i18n';
 import { MENU_ICONS } from '../../../lib/menuIcons';
 import { fetchProjects, fetchWorkspaces, projectSavedAt, projectsErrorMessage, projectVersion, type Project, type Workspace } from '../../../lib/projects';
 import { projectsChangedGeneration, subscribeProjectsChanged } from '../../../lib/projectsChanged';
+import { SmartCutBatchSheet } from '../../../components/projects/SmartCutBatchSheet';
 import { ds } from '../../../theme';
 
 const newestFirst = (items: readonly Project[]): Project[] => [...items].sort((a, b) => {
@@ -31,6 +32,8 @@ export default function EditorHome() {
     const { api } = useAuth();
     const links = useAssetLinks(api);
     const router = useRouter();
+    const params = useLocalSearchParams<{ batch?: string }>();
+    const openedBatchParam = useRef(false);
     const selectedWorkspace = useRef<string | null>(null);
     const request = useRef(0);
     const loadedOnce = useRef(false);
@@ -38,6 +41,14 @@ export default function EditorHome() {
     const [workspaceId, setWorkspaceId] = useState<string | null>(null);
     const [projects, setProjects] = useState<Project[] | null>(null);
     const [problem, setProblem] = useState<string | null>(null);
+    const [batchOpen, setBatchOpen] = useState(false);
+
+    useEffect(() => {
+        if (params.batch === '1' && !openedBatchParam.current) {
+            openedBatchParam.current = true;
+            setBatchOpen(true);
+        }
+    }, [params.batch]);
 
     const load = useCallback(async (requestedWorkspace?: string, keepRows = false) => {
         const currentRequest = ++request.current;
@@ -133,9 +144,10 @@ export default function EditorHome() {
                         ) : null}
                         {EDITOR_ENABLED ? <View style={styles.sectionTop}>
                             <Text variant="footnote" accessibilityRole="header" style={styles.sectionTitle}>{t('editor.home.recent')}</Text>
-                            <Button label={t('editor.home.allProjects')} variant="tertiary" accessibilityRole="button" onPress={() => router.push('/projects')}>
-                                <Text variant="bodyStrong" style={styles.allProjects}>{t('editor.home.allProjects')}</Text>
-                            </Button>
+                            <View style={styles.sectionActions}>
+                                <Button label={t('editorParity.batchAiEdit')} variant="tertiary" accessibilityRole="button" onPress={() => setBatchOpen(true)}><Text variant="bodyStrong" style={styles.allProjects}>{t('editorParity.batchAiEdit')}</Text></Button>
+                                <Button label={t('editor.home.allProjects')} variant="tertiary" accessibilityRole="button" onPress={() => router.push('/projects')}><Text variant="bodyStrong" style={styles.allProjects}>{t('editor.home.allProjects')}</Text></Button>
+                            </View>
                         </View> : null}
                         {EDITOR_ENABLED && problem ? (
                             <Button label={t('editor.home.retry')} variant="tertiary" accessibilityRole="button" accessibilityLabel={t('editor.home.retry')} style={styles.problem} onPress={() => { void load(workspaceId ?? undefined); }}>
@@ -168,6 +180,7 @@ export default function EditorHome() {
                     </Card>
                 )}
             />
+            {EDITOR_ENABLED && workspaceId && projects ? <SmartCutBatchSheet visible={batchOpen} workspaceId={workspaceId} projects={projects} router={router} onClose={() => setBatchOpen(false)} /> : null}
         </View>
     );
 }
@@ -194,6 +207,7 @@ const sheets = themedStyles((p) => ({
     chipText: { color: p.textSecondary },
     chipTextOn: { color: p.accent },
     sectionTop: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 },
+    sectionActions: { flexDirection: 'row', alignItems: 'center', gap: 4 },
     sectionTitle: { color: p.textSecondary },
     allProjects: { color: p.accent },
     project: { minHeight: 70, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: ds.radius.md, backgroundColor: p.surface, borderColor: p.borderSubtle, borderWidth: 1 },

@@ -94,9 +94,11 @@ import area_editorExportRefusal from './en/editorExportRefusal';
 import area_editorFont from './en/editorFont';
 import area_editorLocalExport from './en/editorLocalExport';
 import area_editorLook from './en/editorLook';
+import area_editorManualCommit from './en/editorManualCommit';
 import area_editorMotion from './en/editorMotion';
 import area_editorNativeMotion from './en/editorNativeMotion';
 import area_editorPack from './en/editorPack';
+import area_editorParity from './en/editorParity';
 import area_editorPersonMask from './en/editorPersonMask';
 import area_editorProjects from './en/editorProjects';
 import area_editorSave from './en/editorSave';
@@ -171,6 +173,7 @@ import area_musicSectionActions from './en/musicSectionActions';
 import area_musicSources from './en/musicSources';
 import area_musicTargetStems from './en/musicTargetStems';
 import area_musicTrackAdd from './en/musicTrackAdd';
+import area_musicVoices from './en/musicVoices';
 import area_nativeEditorModel from './en/nativeEditorModel';
 import area_net from './en/net';
 import area_network from './en/network';
@@ -360,9 +363,11 @@ const catalog = {
     ...area_editorFont,
     ...area_editorLocalExport,
     ...area_editorLook,
+    ...area_editorManualCommit,
     ...area_editorMotion,
     ...area_editorNativeMotion,
     ...area_editorPack,
+    ...area_editorParity,
     ...area_editorPersonMask,
     ...area_editorProjects,
     ...area_editorSave,
@@ -437,6 +442,7 @@ const catalog = {
     ...area_musicSources,
     ...area_musicTargetStems,
     ...area_musicTrackAdd,
+    ...area_musicVoices,
     ...area_nativeEditorModel,
     ...area_net,
     ...area_network,

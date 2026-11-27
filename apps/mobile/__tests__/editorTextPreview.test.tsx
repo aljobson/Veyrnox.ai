@@ -8,6 +8,10 @@ import { TEXT_FONTS } from '../../../app/veyrnox/_lib/editorTextStyle.mjs';
 import { TITLE_STYLES } from '../../../app/veyrnox/_lib/editorPresets.mjs';
 import { webSequenceV3 } from './fixtures/webSequenceV3';
 jest.mock('../src/components/editor/EditorMediaPreview', () => ({ EditorMediaPreview: () => null }));
+jest.mock('../src/components/editor/EditorNativePreviewSurface', () => ({
+    EditorNativePreviewSurface: (props: any) => require('react').createElement(require('react-native').View,
+        { testID: 'mock-native-preview', enabled: props.enabled }),
+}));
 void [Text, View];
 const fonts = [
     ['sans-serif', 'Helvetica', 'sans-serif'], ['serif', 'Times New Roman', 'serif'], ['monospace', 'Courier', 'monospace'],
@@ -74,5 +78,18 @@ test('PlaybackPreview applies a verified custom family to the text overlay', asy
         const textContent = (node: TestNode): string => typeof node === 'string' ? node : node.children.map(textContent).join('');
         const caption = root.container.queryAll(node => textContent(node) === 'Hello world' && !!node.props.style, { matchDeepestOnly: true })[0];
         expect(StyleSheet.flatten(caption.props.style).fontFamily).toBe(customFamily);
+    } finally { await act(async () => root.unmount()); }
+});
+test('PlaybackPreview removes the compositor snapshot while live video is playing', async () => {
+    (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+    const root = createRoot(), timeline = webSequenceV3(), store = createFrameStore(10);
+    const render = (playing: boolean) => root.render(<PlaybackPreview frameStore={store} timeline={timeline}
+        api={{ request: jest.fn() }} playing={playing} localMediaUris={{}} staticPreview
+        nativeIdentity={{ account: 'account', project: 'project' }} />);
+    try {
+        await act(async () => render(false));
+        expect(root.container.queryAll(node => node.props.testID === 'mock-native-preview')[0].props.enabled).toBe(true);
+        await act(async () => render(true));
+        expect(root.container.queryAll(node => node.props.testID === 'mock-native-preview')[0].props.enabled).toBe(false);
     } finally { await act(async () => root.unmount()); }
 });

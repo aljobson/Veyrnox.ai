@@ -1,6 +1,6 @@
 export default {
     'editorLocalExport.title': 'Export on this device',
-    'editorLocalExport.help': 'Makes a private MP4 on this device for supported projects up to 30 seconds. No upload or credits.',
+    'editorLocalExport.help': 'Makes a private MP4 on this device for supported projects up to 30 seconds. Saving or exporting an imported edit uses a one-time 5-credit manual-edit fee.',
     'editorLocalExport.start': 'Export on this device',
     'editorLocalExport.quality': 'Quality',
     'editorLocalExport.quality.compact': 'Compact',
@@ -21,6 +21,7 @@ export default {
     'editorLocalExport.compositing': 'Building video frames…',
     'editorLocalExport.encoding': 'Encoding video…',
     'editorLocalExport.finishing': 'Finishing MP4…',
+    'editorLocalExport.verifying': 'Verifying credits and finalizing export…',
     'editorLocalExport.progress': '{percent}% · frame {frame} of {total}',
     'editorLocalExport.done': 'MP4 ready · {size} MB',
     'editorLocalExport.cancelled': 'Export was cancelled.',
@@ -40,4 +41,6 @@ export default {
     'editorLocalExport.save-permission': 'Allow Veyrnox.ai to add videos to your photo library, then try again.',
     'editorLocalExport.save-failed': 'The MP4 is ready, but it could not be saved to your photo library. Check free storage and try again.',
     'editorLocalExport.share-unavailable': 'Sharing is not available on this device.',
+    'editorLocalExport.credit-check-failed': 'The manual-edit credit check could not start. Nothing was rendered or exported. Check your connection and try again.',
+    'editorLocalExport.credit-failed': 'The edit was rendered, but it could not be saved because the manual-edit credit check did not complete. Nothing was exported.',
 } as const;

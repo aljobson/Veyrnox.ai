@@ -6,7 +6,7 @@ const keys = (Object.keys(en) as Array<keyof typeof en>)
 const placeholders = (value: string) => (value.match(/\{\w+\}/g) ?? []).sort();
 
 test.each(Object.entries(APP_CATALOGS))('%s owns the production editor actions with exact placeholders', (_locale, catalog) => {
-    expect(keys).toHaveLength(93);
+    expect(keys).toHaveLength(96);
     for (const key of keys) {
         expect({ key, present: Object.hasOwn(catalog, key) }).toEqual({ key, present: true });
         expect({ key, placeholders: placeholders(catalog[key]) }).toEqual({ key, placeholders: placeholders(en[key]) });

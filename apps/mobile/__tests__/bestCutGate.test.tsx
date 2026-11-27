@@ -9,6 +9,8 @@ import { probeDuration } from '../src/lib/editorMediaDuration';
 import { t } from '../src/lib/i18n';
 void [ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View];
 const mockRun = jest.fn(), mockApply = jest.fn(), mockClose = jest.fn(), mockBuildPlanResult = jest.fn(), mockCopy = jest.fn();
+const mockOpenBatch = jest.fn();
+const mockCreateProject = jest.fn(), mockGetDocument = jest.fn(), mockPutDocument = jest.fn(), mockFetchProject = jest.fn();
 let mockPick: (value: any) => void, mockTail = false;
 const mockMedia = { id: 'j-33333333-3333-4333-8333-333333333333', kind: 'video', name: 'Take', frames: 300, hasAudio: true, width: 640, height: 360 };
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 47, bottom: 34, left: 0, right: 0 }) }));
@@ -19,6 +21,12 @@ jest.mock('expo-secure-store', () => ({ getItemAsync: jest.fn().mockResolvedValu
 jest.mock('../src/lib/appCache', () => ({ getCacheUser: () => 'owner', subscribeCacheUser: () => () => {} }));
 jest.mock('../src/lib/editorDeviceMedia', () => ({ editorDeviceMedia: { copy: (...args: unknown[]) => mockCopy(...args) } }));
 jest.mock('../src/lib/editorMediaDuration', () => ({ probeDuration: jest.fn() }));
+jest.mock('../src/lib/editorProjects', () => ({
+    createProject: (...args: unknown[]) => mockCreateProject(...args),
+    getDocument: (...args: unknown[]) => mockGetDocument(...args),
+    putDocument: (...args: unknown[]) => mockPutDocument(...args),
+}));
+jest.mock('../src/lib/projects', () => ({ fetchProject: (...args: unknown[]) => mockFetchProject(...args) }));
 jest.mock('../src/lib/editorLibraryLength', () => ({ libraryMedia: async () => mockMedia }));
 jest.mock('../src/lib/aiConsent', () => ({ createConsentGate: () => ({ setUser: jest.fn(), hasAgreed: async () => true, setPrompter: jest.fn(), ensure: async () => {} }) }));
 jest.mock('../src/lib/bestCutFlow', () => ({ ...jest.requireActual('../src/lib/bestCutFlow'), createBestCutFlow: () => ({ run: mockRun }) }));
@@ -44,6 +52,10 @@ beforeEach(() => {
     jest.mocked(DocumentPicker.getDocumentAsync).mockResolvedValue({ canceled: true, assets: null });
     jest.mocked(ImagePicker.launchImageLibraryAsync).mockResolvedValue({ canceled: true, assets: null });
     mockCopy.mockResolvedValue({ file: 'file:///project/clip.mp4', type: 'video/mp4', size: 1000, seconds: 8, verified: true });
+    mockFetchProject.mockResolvedValue({ id: 'project', workspaceId: 'workspace' });
+    mockCreateProject.mockResolvedValue({ id: 'reel-2' });
+    mockGetDocument.mockResolvedValue({ revision: 0, document: { schema_version: 3, project_id: 'reel-2' } });
+    mockPutDocument.mockResolvedValue({ revision: 1 });
     mockRun.mockResolvedValue({ inputs: [{ mediaId: mockMedia.id, analysis: { language: 'en' } }], silent: [], refunded: 0 });
     mockBuildPlanResult.mockImplementation(() => ({ ok: true, plan: {
         fps: 30, ranges: [], removedPauses: 1, removedRetakes: 0, removedRepeats: 0,
@@ -61,6 +73,47 @@ test('Best Cut requests camera-roll video passthrough instead of a quality-losin
         mediaTypes: ['videos'], allowsMultipleSelection: true, selectionLimit: 10,
         videoExportPreset: ImagePicker.VideoExportPreset.Passthrough,
     }));
+});
+test('Best Cut exposes the reference Batch AI Edit action in its header', async () => {
+    const api = { getBalance: jest.fn().mockResolvedValue({ balance: 100 }) } as unknown as ApiClient;
+    await act(async () => root.render(<BestCutSheet api={api} projectId="project" quote={{ credits: 1, max_seconds: 60, languages: ['en'] }} onClose={mockClose} onOpenBatch={mockOpenBatch} onApply={mockApply} />));
+    await press('Batch AI Edit');
+    expect(mockOpenBatch).toHaveBeenCalledTimes(1);
+});
+test('advanced settings expose Music Video, Multiple Reels, output count and Original shape', async () => {
+    const api = { getBalance: jest.fn().mockResolvedValue({ balance: 100 }) } as unknown as ApiClient;
+    await act(async () => root.render(<BestCutSheet api={api} projectId="project" quote={{ credits: 1, max_seconds: 60, languages: ['en'] }} onClose={mockClose} onApply={mockApply} />));
+    await press('More AI Edit settings');
+    const music = root.container.queryAll(node => node.props.accessibilityLabel === 'Music Video');
+    const reels = root.container.queryAll(node => node.props.accessibilityLabel === 'Multiple Reels');
+    expect(music).toHaveLength(1);
+    expect(reels).toHaveLength(1);
+    await act(async () => reels[0].props.onChange({ nativeEvent: { value: true } }));
+    expect(visible('Videos from this recording')).toBe(true);
+    expect(nodes('2')).toHaveLength(1);
+    expect(nodes('5')).toHaveLength(1);
+    expect(nodes('Original')).toHaveLength(1);
+});
+test('Multiple Reels saves each additional validated output as a separate project', async () => {
+    const analysis = { version: 1 as const, assetId: mockMedia.id, duration: 130, provider: 'fal-scribe-v2' as const, transcript: 'first second', language: 'en', chunks: [
+        { start: 0, end: 59, text: 'first' }, { start: 60, end: 120, text: 'second' },
+    ] };
+    mockRun.mockResolvedValueOnce({ inputs: [{ mediaId: mockMedia.id, analysis }], silent: [], refunded: 0 });
+    mockBuildPlanResult.mockReturnValueOnce({ ok: true, plan: {
+        fps: 30, ranges: [{ mediaId: mockMedia.id, from: 0, to: 1800, start: 0, label: 'first' }],
+        removedPauses: 0, removedRetakes: 0, removedRepeats: 0, matchedLines: 0, missingLines: [], droppedClips: 0,
+        warnings: ['output_limit_reached'], warningDetails: [{ code: 'output_limit_reached', parameters: { count: 1, omitted: [{ mediaId: mockMedia.id, from: 1800, to: 3600, start: 0, label: 'second' }] } }],
+    } });
+    const api = { getBalance: jest.fn().mockResolvedValue({ balance: 100 }) } as unknown as ApiClient;
+    await act(async () => root.render(<BestCutSheet api={api} projectId="project" quote={{ credits: 1, max_seconds: 60, languages: ['en'] }} onClose={mockClose} onApply={mockApply} />));
+    await press(t('bestCut.library'));
+    await act(async () => mockPick({ jobId: mockMedia.id.slice(2), name: 'Take' }));
+    await press('More AI Edit settings');
+    const reels = root.container.queryAll(node => node.props.accessibilityLabel === 'Multiple Reels');
+    await act(async () => reels[0].props.onChange({ nativeEvent: { value: true } }));
+    await press(t('bestCut.title'));
+    expect(mockCreateProject).toHaveBeenCalledWith(api, 'workspace', 'Best Cut Reel 2', 'test-key');
+    expect(mockPutDocument).toHaveBeenCalledWith(api, 'reel-2', 0, expect.objectContaining({ project_id: 'reel-2', schema_version: 3 }), 'test-key');
 });
 test('Best Cut imports multiple video files through the bounded copy-only path', async () => {
     jest.mocked(DocumentPicker.getDocumentAsync).mockResolvedValue({ canceled: false, assets: [{ uri: 'file:///provider/take.mp4', name: 'take.mp4', size: 1000, mimeType: 'video/mp4' }] } as never);
@@ -127,6 +180,7 @@ test('Best Cut sends the selected language to paid analysis without relabelling 
     await act(async () => root.render(<BestCutSheet api={api} projectId="project" quote={{ credits: 1, max_seconds: 60, languages: ['en'] }} onClose={mockClose} onApply={mockApply} />));
     await press(t('bestCut.library'));
     await act(async () => mockPick({ jobId: mockMedia.id.slice(2), name: 'Take' }));
+    await press('More AI Edit settings');
     await press('Use Spanish');
     await press(t('bestCut.title'));
     expect(mockBuildPlanResult).toHaveBeenCalledTimes(1);
