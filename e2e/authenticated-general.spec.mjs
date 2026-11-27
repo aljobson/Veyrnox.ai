@@ -1,4 +1,4 @@
-import { test, expect, installProductFixtures } from './fixtures/authenticated-product.mjs';
+import { test, expect, installProductFixtures, SYNTHETIC_READY_TEMPLATE_CATALOG } from './fixtures/authenticated-product.mjs';
 
 const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64');
 async function fixtureFor(page, options = {}) {
@@ -34,21 +34,25 @@ async function open(fixture, page, path, heading) {
   await expect(title).toBeVisible();
 }
 
-test('Dashboard authenticated balance and unified template catalogue remain read-only', async ({ page }) => {
+test('Dashboard authenticated balance and the unified template catalogue remain read-only', async ({ page }) => {
   const fixture = await fixtureFor(page);
-  await open(fixture, page, '/app', 'Templates');
+  await open(fixture, page, '/app', 'Kling templates');
   await expect(page.getByTestId('app-credit-balance')).toBeVisible();
   const catalog = page.getByTestId('template-catalog');
-  await expect(catalog).toBeVisible();
-  await expect(page.getByTestId('crun-template-count')).toHaveText('1,088 templates across Kling, Seedance and Vidu');
-  await expect(catalog.getByRole('tab', { name: 'Kling', exact: true })).toHaveAttribute('aria-selected', 'true');
-  await expect(catalog.getByRole('heading', { name: /Kling templates/, exact: true })).toBeVisible();
-  await catalog.getByRole('tab', { name: 'ByteDance / Seedance', exact: true }).click();
-  await expect(catalog.getByRole('tab', { name: 'ByteDance / Seedance', exact: true })).toHaveAttribute('aria-selected', 'true');
-  await expect(catalog.getByRole('heading', { name: 'ByteDance / Seedance templates', exact: true })).toBeVisible();
+  const readyCount = SYNTHETIC_READY_TEMPLATE_CATALOG.kling.length;
+  await expect(catalog.getByTestId('crun-template-count')).toHaveText('1,088 templates across Kling, Seedance and Vidu');
+  await expect(catalog.getByRole('heading', { name: `Ready in Veyrnox · ${readyCount}`, exact: true })).toBeVisible();
+  await expect(catalog.locator('ul').first().locator(':scope > li')).toHaveCount(readyCount);
+  const firstTemplate = SYNTHETIC_READY_TEMPLATE_CATALOG.kling[0];
+  const search = catalog.getByRole('searchbox', { name: 'Search Kling templates', exact: true });
+  await search.fill(firstTemplate.name);
+  await expect(catalog.getByRole('heading', { name: 'Ready in Veyrnox · 1', exact: true })).toBeVisible();
+  await expect(catalog.getByRole('heading', { name: firstTemplate.name, exact: true })).toBeVisible();
+  await search.clear();
+  await expect(catalog.getByRole('heading', { name: `Ready in Veyrnox · ${readyCount}`, exact: true })).toBeVisible();
   await catalog.getByRole('tab', { name: 'Veo', exact: true }).click();
-  await expect(catalog.getByRole('tab', { name: 'Veo', exact: true })).toHaveAttribute('aria-selected', 'true');
   await expect(catalog.getByRole('heading', { name: 'Veo templates', exact: true })).toBeVisible();
+  await expect(catalog.getByRole('heading', { name: SYNTHETIC_READY_TEMPLATE_CATALOG.veo[0].name, exact: true })).toBeVisible();
   expect(writes(fixture)).toEqual([]);
 });
 
