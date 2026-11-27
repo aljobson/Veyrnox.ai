@@ -216,11 +216,8 @@ test('choosing a replacement challenge recording invalidates the cached upload a
 });
 
 test('route replay branches never disclose a freshly generated unstored phrase', async () => {
-  const [enroll, reissue, submit] = await Promise.all([
-    readFile(new URL('../app/api/v1/music/voices/route.js', import.meta.url), 'utf8'),
-    readFile(new URL('../app/api/v1/music/voices/[id]/challenge/route.js', import.meta.url), 'utf8'),
-    readFile(new URL('../app/api/v1/music/voices/[id]/verify/route.js', import.meta.url), 'utf8'),
-  ]);
+  const route = await readFile(new URL('../app/api/v1/music/voices/[[...voicePath]]/route.js', import.meta.url), 'utf8');
+  const enroll = route, reissue = route, submit = route;
   for (const source of [enroll, reissue]) {
     assert.match(source, /result\.idempotent !== true/);
     assert.match(source, /challenge_reissue_required: true/);
@@ -233,30 +230,22 @@ test('route replay branches never disclose a freshly generated unstored phrase',
 });
 
 test('owner read and revoke routes use the kill-switch-safe context and header idempotency', async () => {
-  const [collection, profile, page, library] = await Promise.all([
-    readFile(new URL('../app/api/v1/music/voices/route.js', import.meta.url), 'utf8'),
-    readFile(new URL('../app/api/v1/music/voices/[id]/route.js', import.meta.url), 'utf8'),
+  const [collection, page, library] = await Promise.all([
+    readFile(new URL('../app/api/v1/music/voices/[[...voicePath]]/route.js', import.meta.url), 'utf8'),
     readFile(new URL('../app/veyrnox/app/music/voices/page.js', import.meta.url), 'utf8'),
     readFile(new URL('../app/veyrnox/app/music/library/page.js', import.meta.url), 'utf8'),
   ]);
-  assert.match(collection, /export async function GET[\s\S]*musicVoiceReadContext\(request\)/);
+  assert.match(collection, /listVoices[\s\S]*musicVoiceReadContext\(request\)/);
   assert.match(collection, /enrollment_available:\s*musicVoicesReady\(ctx\.env\)/);
-  assert.match(profile, /musicVoiceReadContext\(request\)/);
-  assert.match(profile, /headers\.get\('idempotency-key'\)/);
-  assert.doesNotMatch(profile, /requireMfa:\s*true/);
+  assert.match(collection, /revokeVoice[\s\S]*musicVoiceReadContext\(request\)/);
+  assert.match(collection, /headers\.get\('idempotency-key'\)/);
+  assert.doesNotMatch(collection, /revokeVoice[\s\S]*requireMfa:\s*true/);
   assert.match(page, /musicVoicesSchemaReady\(\)/);
   assert.match(library, /voicesEnabled=\{musicVoicesSchemaReady\(\)\}/);
 });
 
 test('every admin voice route is bound to the same default-off readiness gate', async () => {
-  const routes = await Promise.all([
-    readFile(new URL('../app/api/v1/admin/music/voices/route.js', import.meta.url), 'utf8'),
-    readFile(new URL('../app/api/v1/admin/music/voices/[id]/evidence/route.js', import.meta.url), 'utf8'),
-    readFile(new URL('../app/api/v1/admin/music/voices/[id]/evidence/ack/route.js', import.meta.url), 'utf8'),
-    readFile(new URL('../app/api/v1/admin/music/voices/[id]/review/route.js', import.meta.url), 'utf8'),
-  ]);
-  for (const source of routes) {
-    assert.match(source, /musicVoicesReady\(\)/);
-    assert.match(source, /error: 'not_found'[^\n]*404/);
-  }
+  const route = await readFile(new URL('../app/api/v1/admin/music/voices/[[...voicePath]]/route.js', import.meta.url), 'utf8');
+  assert.match(route, /adminContext[\s\S]*musicVoicesReady\(\)/);
+  assert.match(route, /error: 'not_found'[^\n]*404/);
 });

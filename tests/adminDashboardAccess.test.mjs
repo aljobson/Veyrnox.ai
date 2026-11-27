@@ -102,19 +102,20 @@ const ROUTES = [
     ['webhooks GET', '../app/api/v1/admin/webhooks/route.js', 'GET', '/api/v1/admin/webhooks', undefined],
     ['music-comments GET', '../app/api/v1/admin/music-comments/route.js', 'GET', '/api/v1/admin/music-comments', undefined],
     ['music-comments POST', '../app/api/v1/admin/music-comments/route.js', 'POST', '/api/v1/admin/music-comments', { action: 'resolve_report', id: USER, reason: 'test' }],
-    ['music-voices GET', '../app/api/v1/admin/music/voices/route.js', 'GET', '/api/v1/admin/music/voices', undefined],
-    ['music-voices evidence POST', '../app/api/v1/admin/music/voices/[id]/evidence/route.js', 'POST', `/api/v1/admin/music/voices/${USER}/evidence`, { submission_revision: 1 }],
-    ['music-voices evidence ack POST', '../app/api/v1/admin/music/voices/[id]/evidence/ack/route.js', 'POST', `/api/v1/admin/music/voices/${USER}/evidence/ack`, { submission_revision: 1 }],
-    ['music-voices review POST', '../app/api/v1/admin/music/voices/[id]/review/route.js', 'POST', `/api/v1/admin/music/voices/${USER}/review`, { submission_revision: 1, decision: 'approve', reason_code: 'evidence_consistent', checklist: { phrase_exact: true, reference_consistent: true, no_synthetic_concerns: true, policy_acknowledged: true } }],
+    ['music-voices GET', '../app/api/v1/admin/music/voices/[[...voicePath]]/route.js', 'GET', '/api/v1/admin/music/voices', undefined],
+    ['music-voices evidence POST', '../app/api/v1/admin/music/voices/[[...voicePath]]/route.js', 'POST', `/api/v1/admin/music/voices/${USER}/evidence`, { submission_revision: 1 }],
+    ['music-voices evidence ack POST', '../app/api/v1/admin/music/voices/[[...voicePath]]/route.js', 'POST', `/api/v1/admin/music/voices/${USER}/evidence/ack`, { submission_revision: 1 }],
+    ['music-voices review POST', '../app/api/v1/admin/music/voices/[[...voicePath]]/route.js', 'POST', `/api/v1/admin/music/voices/${USER}/review`, { submission_revision: 1, decision: 'approve', reason_code: 'evidence_consistent', checklist: { phrase_exact: true, reference_consistent: true, no_synthetic_concerns: true, policy_acknowledged: true } }],
     ['security GET', '../app/api/v1/admin/security/route.js', 'GET', '/api/v1/admin/security', undefined],
     ['security alert POST', '../app/api/v1/admin/security/route.js', 'POST', '/api/v1/admin/security', { alert_id: USER, status: 'resolved' }],
 ];
 async function call([, file, method, path, body], headers) {
     const mod = await import(`${new URL(file, import.meta.url).href}?t=${Math.random()}`);
+    const voiceTail = path.match(/^\/api\/v1\/admin\/music\/voices(?:\/(.*))?(?:\?.*)?$/)?.[1];
     return mod[method](new Request(`https://veyrnox.test${path}`, {
         method, headers: { ...(body ? { 'content-type': 'application/json' } : {}), ...headers },
         ...(body ? { body: JSON.stringify(body) } : {}),
-    }), { params: Promise.resolve({ id: USER }) });
+    }), { params: Promise.resolve({ id: USER, voicePath: voiceTail ? voiceTail.split('/') : undefined }) });
 }
 
 test.beforeEach(() => _resetCertsCache());
