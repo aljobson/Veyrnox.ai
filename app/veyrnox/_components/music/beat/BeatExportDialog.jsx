@@ -12,7 +12,7 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { action, button, input } from './beatStyles';
 
-export default function BeatExportDialog({ doc, editTrackId, announce, finalize, librarySave = false }) {
+export default function BeatExportDialog({ doc, editTrackId, announce, finalize, librarySave = false, compact = false }) {
   const { t } = useI18n();
   const dialog = useRef(null), mounted = useRef(true), running = useRef(false), controller = useRef(null);
   const snapshot = useRef(null), modules = useRef(null), prepared = useRef(null), rendered = useRef(null), saveAttempt = useRef(null);
@@ -126,7 +126,10 @@ export default function BeatExportDialog({ doc, editTrackId, announce, finalize,
   const tracks = opened ? displayed.tracks.map(t => ({ ...t,
     audible: trackContributes(displayed, t.id, 'song') })) : [];
   return <>
-    <button data-beat-tip="export" className={action} onClick={open}>{t('app.music.beat.ui.download.wav')}</button>
+    <button data-beat-tip="export" className={compact ? `${button} grid place-items-center px-0` : action}
+      aria-label={t('app.music.beat.ui.download.wav')} title={compact ? t('app.music.beat.ui.download.wav') : undefined} onClick={open}>
+      {compact ? <svg aria-hidden="true" viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v12 M7 10l5 5 5-5 M5 20h14" /></svg> : t('app.music.beat.ui.download.wav')}
+    </button>
     <dialog ref={dialog} aria-labelledby="export-title" className="m-auto max-h-full w-full max-w-md overflow-y-auto rounded-2xl border border-vx-border bg-vx-panel p-5 text-vx-fg backdrop:bg-vx-base/80"
       onCancel={e => { if (busy) e.preventDefault(); }} onClose={() => { prepared.current = null; rendered.current = null; setOpened(false); }}>
       <h2 id="export-title" className="text-xl font-bold">{t('app.music.beat.ui.export.beat')}</h2>
