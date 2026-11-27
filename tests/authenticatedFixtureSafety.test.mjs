@@ -24,8 +24,8 @@ test('staging account smoke excludes synthetic fixture specs and preserves its p
 
 async function installedRouting(controls = {}) {
   const source = read('e2e/fixtures/authenticated-product.mjs').split('export async function installProductFixtures')[1];
-  const factory = new Function('base', 'publicFiles', 'PAGE_TEMPLATES', 'templateMatches', 'installed', 'SYNTHETIC_USER', 'SYNTHETIC_MODELS', 'SESSION_KEY', 'COMPLETED_TOUR_IDS', 'readyTemplateCatalog', `return async function installProductFixtures${source}`);
-  const install = factory({}, new Set(['/favicon.ico']), [{ route: '/app/create' }, { route: '/app/publish/queues' }], (template, path) => template === path, new WeakMap(), { id: 'synthetic' }, [], 'synthetic-session', ['create', 'page:publish/queues'], readyTemplateCatalog);
+  const factory = new Function('base', 'publicFiles', 'PAGE_TEMPLATES', 'templateMatches', 'installed', 'SYNTHETIC_USER', 'SYNTHETIC_MODELS', 'SESSION_KEY', 'COMPLETED_TOUR_IDS', 'SYNTHETIC_READY_TEMPLATE_CATALOG', `return async function installProductFixtures${source}`);
+  const install = factory({}, new Set(['/favicon.ico']), [{ route: '/app/create' }, { route: '/app/publish/queues' }], (template, path) => template === path, new WeakMap(), { id: 'synthetic' }, [], 'synthetic-session', ['create', 'page:publish/queues'], readyTemplateCatalog());
   let handler, fulfilled, fixture;
   const events = [], initScripts = [], pages = [], listeners = new Map();
   const context = {
@@ -208,8 +208,8 @@ test('actual fixture serves the unified ready catalogue and fail-closed live ind
   assert.ok(ready.kling.length > 0);
   assert.ok(ready.veo.length > 0);
   assert.ok(ready.suno.length > 0);
-  assert.equal(await request('http://localhost:3100/api/template-catalog?provider=seedance&page=2&page_size=50'), 'fulfill');
-  assert.deepEqual(JSON.parse(response().body), { provider: 'seedance', page: 2, pageSize: 50, total: 0, templates: [] });
+  assert.equal(await request('http://localhost:3100/api/template-catalog?provider=seedance&page=1&page_size=50'), 'fulfill');
+  assert.deepEqual(JSON.parse(response().body), { provider: 'seedance', page: 1, pageSize: 50, total: 0, templates: [] });
   assert.equal(fixture.unhandled.length, 0);
 });
 

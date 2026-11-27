@@ -1,7 +1,6 @@
 import { test as base, expect } from '@playwright/test';
 import { capabilityFor, publicCapabilities, lengthsFor } from '../../lib/modelCapabilities.js';
 import { searchTemplateIds, templateCards, templateCategories, templateDetail } from '../../lib/clientTemplates.js';
-import { readyTemplateCatalog } from '../../app/veyrnox/_lib/templateCatalogReady.js';
 import { readdirSync } from 'node:fs';
 import { PAGE_TEMPLATES, templateMatches } from '../page-manifest.mjs';
 import { settleStreamedPage } from './streamed-page.mjs';
