@@ -14,6 +14,10 @@ const routePath = async ({ params }) => {
     return Array.isArray(value) ? value : [];
 };
 const notFound = () => voiceReply({ error: 'not_found' }, 404);
+const authenticatedNotFound = (request) => {
+    const ctx = musicVoiceReadContext(request);
+    return ctx.error || notFound();
+};
 
 async function listVoices(request) {
     const ctx = musicVoiceReadContext(request);
@@ -161,7 +165,7 @@ async function submitChallenge(request, id) {
 }
 
 export async function GET(request, context) {
-    return (await routePath(context)).length === 0 ? listVoices(request) : notFound();
+    return (await routePath(context)).length === 0 ? listVoices(request) : authenticatedNotFound(request);
 }
 
 export async function POST(request, context) {
@@ -169,10 +173,10 @@ export async function POST(request, context) {
     if (path.length === 0) return enrollVoice(request);
     if (path.length === 2 && path[1] === 'challenge') return reissueChallenge(request, path[0]);
     if (path.length === 2 && path[1] === 'verify') return submitChallenge(request, path[0]);
-    return notFound();
+    return authenticatedNotFound(request);
 }
 
 export async function DELETE(request, context) {
     const path = await routePath(context);
-    return path.length === 1 ? revokeVoice(request, path[0]) : notFound();
+    return path.length === 1 ? revokeVoice(request, path[0]) : authenticatedNotFound(request);
 }
