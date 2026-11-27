@@ -2,6 +2,7 @@ var mockExportMp4 = jest.fn();
 var mockRelease = jest.fn().mockResolvedValue(undefined);
 var mockCreateAsset = jest.fn().mockResolvedValue({});
 var mockNativeShare = jest.fn().mockResolvedValue({ ok: true, completed: true });
+var mockExpoShare = jest.fn().mockResolvedValue(undefined);
 
 jest.mock('../src/lib/editorLocalExport', () => {
     const actual = jest.requireActual('../src/lib/editorLocalExport');
@@ -18,7 +19,7 @@ jest.mock('../src/lib/editorMedia/native', () => ({ optionalEditorMediaModule: (
 jest.mock('../src/lib/editorFontFiles', () => ({ editorFontStore: { exportSources: () => ({}) } }));
 jest.mock('../src/auth/sessionTask', () => ({ useSessionTask: () => () => ({ current: () => true }) }));
 jest.mock('../src/components/editor/ExportFootagePreview', () => ({ ExportFootagePreview: () => null }));
-jest.mock('expo-sharing', () => ({ isAvailableAsync: jest.fn().mockResolvedValue(true), shareAsync: jest.fn().mockResolvedValue(undefined) }));
+jest.mock('expo-sharing', () => ({ isAvailableAsync: jest.fn().mockResolvedValue(true), shareAsync: (...args: unknown[]) => mockExpoShare(...args) }));
 jest.mock('expo-media-library', () => ({ Asset: { create: (...args: unknown[]) => mockCreateAsset(...args) }, requestPermissionsAsync: jest.fn().mockResolvedValue({ granted: true }) }));
 
 import { act } from 'react';
@@ -59,14 +60,16 @@ test('1080p is handed to the cloud encoder without reserving a local-export char
 test('a successful paid local export keeps its artifact and exposes Save and Share', async () => {
     const onPrepare = jest.fn().mockResolvedValue(5);
     const onCommit = jest.fn().mockResolvedValue(7);
-    const onFinalize = jest.fn().mockResolvedValue(7), onCancel = jest.fn().mockResolvedValue(true);
+    const onBeginDelivery = jest.fn().mockResolvedValue(7), onFinalize = jest.fn().mockResolvedValue(7), onCancel = jest.fn().mockResolvedValue(true);
     await act(async () => root.render(<LocalExportSheet visible api={{ request: jest.fn() } as never} account="owner" projectId={projectId} revision={7}
-        timeline={timeline} canvas={canvas} localMediaUris={{}} onClose={jest.fn()} onCloud={jest.fn()} onPrepare={onPrepare} onCommit={onCommit} onFinalize={onFinalize} onCancel={onCancel} />));
+        timeline={timeline} canvas={canvas} localMediaUris={{}} onClose={jest.fn()} onCloud={jest.fn()} onPrepare={onPrepare} onCommit={onCommit}
+        onBeginDelivery={onBeginDelivery} onFinalize={onFinalize} onCancel={onCancel} />));
     await startLocalExport();
     expect(onPrepare).toHaveBeenCalledTimes(1);
     expect(onCommit).toHaveBeenCalledWith(5);
     expect(onFinalize).toHaveBeenCalledTimes(1); expect(onCancel).not.toHaveBeenCalled();
     expect(onCommit.mock.invocationCallOrder[0]).toBeLessThan(mockCreateAsset.mock.invocationCallOrder[0]);
+    expect(mockCreateAsset.mock.invocationCallOrder[0]).toBeLessThan(onBeginDelivery.mock.invocationCallOrder[0]);
     expect(root.container.queryAll(node => node.children.includes('Saved to your photo library.'))).not.toHaveLength(0);
     expect(labelled('Share export')).toHaveLength(1);
     expect(labelled('Export on this device')).toHaveLength(0);
@@ -119,10 +122,10 @@ test('reserves credits before rendering or delivering the finished file', async 
 
 test('with automatic Photos delivery off, reserve happens first and Share finalizes it', async () => {
     const onCommit = jest.fn().mockResolvedValue(7);
-    const onFinalize = jest.fn().mockResolvedValue(7);
+    const onBeginDelivery = jest.fn().mockResolvedValue(7), onFinalize = jest.fn().mockResolvedValue(7);
     await act(async () => root.render(<LocalExportSheet visible api={{ request: jest.fn() } as never} account="owner" projectId={projectId} revision={7}
         timeline={timeline} canvas={canvas} localMediaUris={{}} onClose={jest.fn()} onCloud={jest.fn()} onPrepare={jest.fn().mockResolvedValue(5)}
-        onCommit={onCommit} onFinalize={onFinalize} onCancel={jest.fn().mockResolvedValue(true)} />));
+        onCommit={onCommit} onBeginDelivery={onBeginDelivery} onFinalize={onFinalize} onCancel={jest.fn().mockResolvedValue(true)} />));
     const autoSaveSwitch = labelled('Save to your photo library automatically')[0];
     expect(autoSaveSwitch).toBeDefined();
     await act(async () => autoSaveSwitch.props.onChange({ nativeEvent: { value: false } }));
@@ -130,23 +133,38 @@ test('with automatic Photos delivery off, reserve happens first and Share finali
     expect(onCommit).toHaveBeenCalledWith(5); expect(mockCreateAsset).not.toHaveBeenCalled(); expect(onFinalize).not.toHaveBeenCalled();
     expect(labelled('Share export')).toHaveLength(1);
     await press('Share export');
-    expect(onFinalize).toHaveBeenCalledTimes(1);
+    expect(onBeginDelivery).toHaveBeenCalledTimes(1); expect(onFinalize).toHaveBeenCalledTimes(1);
+    expect(mockNativeShare.mock.invocationCallOrder[0]).toBeLessThan(onBeginDelivery.mock.invocationCallOrder[0]);
+    expect(onBeginDelivery.mock.invocationCallOrder[0]).toBeLessThan(onFinalize.mock.invocationCallOrder[0]);
 });
 
 test('canceling the native share sheet refunds instead of finalizing the reserved charge', async () => {
     mockNativeShare.mockResolvedValue({ ok: true, completed: false });
-    const onFinalize = jest.fn().mockResolvedValue(7), onCancel = jest.fn().mockResolvedValue(true);
+    const onBeginDelivery = jest.fn().mockResolvedValue(7), onFinalize = jest.fn().mockResolvedValue(7), onCancel = jest.fn().mockResolvedValue(true);
     await act(async () => root.render(<LocalExportSheet visible api={{ request: jest.fn() } as never} account="owner" projectId={projectId} revision={7}
         timeline={timeline} canvas={canvas} localMediaUris={{}} onClose={jest.fn()} onCloud={jest.fn()} onPrepare={jest.fn().mockResolvedValue(5)}
-        onCommit={jest.fn().mockResolvedValue(7)} onBeginDelivery={jest.fn().mockResolvedValue(7)} onFinalize={onFinalize} onCancel={onCancel} />));
+        onCommit={jest.fn().mockResolvedValue(7)} onBeginDelivery={onBeginDelivery} onFinalize={onFinalize} onCancel={onCancel} />));
     await act(async () => labelled('Save to your photo library automatically')[0].props.onChange({ nativeEvent: { value: false } }));
     await startLocalExport();
     await press('Share export');
     expect(mockNativeShare).toHaveBeenCalledWith(artifact.uri, 'video/mp4');
-    expect(onFinalize).not.toHaveBeenCalled();
+    expect(onBeginDelivery).not.toHaveBeenCalled(); expect(onFinalize).not.toHaveBeenCalled();
     expect(onCancel).toHaveBeenCalledTimes(1);
     expect(mockRelease).toHaveBeenCalledTimes(1);
     expect(labelled('Export on this device')).toHaveLength(1);
+});
+
+test('a zero-credit export keeps the existing Expo share fallback', async () => {
+    const onBeginDelivery = jest.fn(), onFinalize = jest.fn(), onCancel = jest.fn();
+    await act(async () => root.render(<LocalExportSheet visible api={{ request: jest.fn() } as never} account="owner" projectId={projectId} revision={7}
+        timeline={timeline} canvas={canvas} localMediaUris={{}} onClose={jest.fn()} onCloud={jest.fn()} onPrepare={jest.fn().mockResolvedValue(0)}
+        onCommit={jest.fn().mockResolvedValue(7)} onBeginDelivery={onBeginDelivery} onFinalize={onFinalize} onCancel={onCancel} />));
+    await act(async () => labelled('Save to your photo library automatically')[0].props.onChange({ nativeEvent: { value: false } }));
+    await startLocalExport();
+    await press('Share export');
+    expect(mockExpoShare).toHaveBeenCalledWith(artifact.uri, { mimeType: 'video/mp4' });
+    expect(mockNativeShare).not.toHaveBeenCalled();
+    expect(onBeginDelivery).not.toHaveBeenCalled(); expect(onFinalize).not.toHaveBeenCalled(); expect(onCancel).not.toHaveBeenCalled();
 });
 
 test('cancelling the credit confirmation does not render or show a false export error', async () => {

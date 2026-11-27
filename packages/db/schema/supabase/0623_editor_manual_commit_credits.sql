@@ -237,13 +237,13 @@ BEGIN
     'pending',true,'committed',false,'canceled',false);
 END $$;
 
--- Claim the external-delivery window before exposing the rendered file to
--- Photos or the share sheet. The one-day lease protects the debit from the
--- generic stuck-job refund while the native controller is open; a crashed
--- client is still recovered by that sweep after the lease expires.
+-- Acknowledge a completed external delivery and settle its reservation in the
+-- same transaction. Once delivery is acknowledged the charge is irreversible:
+-- a client cannot expose the file, skip finalize and later collect a timeout
+-- refund. Cancel remains available while the reservation is still PENDING.
 CREATE OR REPLACE FUNCTION private.begin_manual_editor_delivery(p_project uuid,p_request_key text) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
-DECLARE actor uuid:=auth.uid(); op public.editor_manual_commit_operations%ROWTYPE; job_state text;
+DECLARE actor uuid:=auth.uid(); op public.editor_manual_commit_operations%ROWTYPE; job_state text; settled jsonb;
 BEGIN
   IF actor IS NULL THEN RAISE EXCEPTION 'UNAUTHORIZED' USING ERRCODE='PT401'; END IF;
   IF NOT private.editor_manual_mfa_satisfied(actor)
@@ -261,6 +261,10 @@ BEGIN
   IF op.id IS NULL THEN RETURN jsonb_build_object('ok',false,'code','COMMIT_NOT_FOUND'); END IF;
   IF op.state='COMMITTED' THEN RETURN jsonb_build_object('ok',true,'authorized',true,'revision',op.revision); END IF;
   IF op.state='REFUNDED' THEN RETURN jsonb_build_object('ok',false,'code','COMMIT_CANCELED','revision',op.revision); END IF;
+  -- A replay is a no-op. New transactions cannot persist DELIVERING because
+  -- settlement below is atomic, but retain this guard for interrupted legacy
+  -- rows and migration safety.
+  IF op.state='DELIVERING' THEN RETURN jsonb_build_object('ok',true,'authorized',true,'revision',op.revision); END IF;
   IF op.credits=5 THEN
     SELECT state INTO job_state FROM public.jobs WHERE id=op.job_id FOR UPDATE;
     IF job_state='REFUNDED' THEN
@@ -268,12 +272,13 @@ BEGIN
       RETURN jsonb_build_object('ok',false,'code','COMMIT_CANCELED','revision',op.revision);
     END IF;
     IF job_state<>'DEBITED' THEN RETURN jsonb_build_object('ok',false,'code','COMMIT_STATE_INVALID'); END IF;
-    UPDATE public.jobs SET updated_at=now() WHERE id=op.job_id AND state='DEBITED';
   END IF;
   UPDATE public.editor_manual_commit_operations
-     SET state='DELIVERING',delivery_expires_at=now()+interval '1 day',updated_at=now()
+     SET state='DELIVERING',delivery_expires_at=NULL,updated_at=now()
    WHERE id=op.id;
-  RETURN jsonb_build_object('ok',true,'authorized',true,'revision',op.revision);
+  settled:=private.finalize_manual_editor_commit(p_project,p_request_key);
+  IF settled->>'ok' IS DISTINCT FROM 'true' OR settled->>'committed' IS DISTINCT FROM 'true' THEN RETURN settled; END IF;
+  RETURN jsonb_build_object('ok',true,'authorized',true,'committed',true,'revision',op.revision);
 END $$;
 
 CREATE OR REPLACE FUNCTION private.finalize_manual_editor_commit(p_project uuid,p_request_key text) RETURNS jsonb
@@ -342,6 +347,7 @@ BEGIN
   IF op.id IS NULL THEN RETURN jsonb_build_object('ok',true,'canceled',false,'revision',NULL); END IF;
   IF op.state='COMMITTED' THEN RETURN jsonb_build_object('ok',false,'code','ALREADY_COMMITTED','revision',op.revision); END IF;
   IF op.state='REFUNDED' THEN RETURN jsonb_build_object('ok',true,'canceled',true,'revision',op.revision); END IF;
+  IF op.state='DELIVERING' THEN RETURN jsonb_build_object('ok',false,'code','DELIVERY_ALREADY_ACKNOWLEDGED','revision',op.revision); END IF;
   IF op.credits=5 THEN
     SELECT state INTO job_state FROM public.jobs WHERE id=op.job_id FOR UPDATE;
     IF job_state='DEBITED' THEN
@@ -361,6 +367,8 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
 DECLARE actor uuid:=auth.uid(); op public.editor_manual_commit_operations%ROWTYPE; job_state text; effective_state text;
 BEGIN
   IF actor IS NULL THEN RAISE EXCEPTION 'UNAUTHORIZED' USING ERRCODE='PT401'; END IF;
+  IF NOT private.editor_manual_mfa_satisfied(actor)
+    THEN RAISE EXCEPTION 'MFA_REQUIRED' USING ERRCODE='PT403'; END IF;
   IF NOT EXISTS(SELECT 1 FROM public.editor_manual_commit_config WHERE singleton AND enabled)
     THEN RAISE EXCEPTION 'FEATURE_DISABLED' USING ERRCODE='PT404'; END IF;
   IF p_request_key IS NULL OR p_request_key!~'^[A-Za-z0-9._-]{8,128}$'
@@ -595,9 +603,9 @@ DROP TRIGGER IF EXISTS jobs_provider_spend_guard ON public.jobs;
 CREATE TRIGGER jobs_provider_spend_guard BEFORE INSERT ON public.jobs
   FOR EACH ROW WHEN (NEW.model_id<>'editor-manual-commit') EXECUTE FUNCTION private.enforce_provider_spend_on_job();
 
--- Preserve 0601's sweep behavior while an OS delivery controller owns a
--- live lease. If the app disappears, the lease expires and the ordinary
--- DEBITED timeout refunds the charge without a special worker path.
+-- DELIVERING is an irreversible acknowledgement and must never enter the
+-- generic refund path. begin_manual_editor_delivery normally settles it in
+-- the same transaction; this exclusion protects interrupted legacy rows.
 CREATE OR REPLACE FUNCTION public.sweep_stuck_jobs(
  p_debited_minutes INTEGER DEFAULT 15,p_submitted_minutes INTEGER DEFAULT 120,
  p_limit INTEGER DEFAULT 200,p_succeeded_minutes INTEGER DEFAULT 60
@@ -609,7 +617,7 @@ BEGIN
    AND NOT EXISTS(SELECT 1 FROM public.crun_dispatch d WHERE d.job_id=j.id
     AND d.state IN('READY','STARTED','ACCEPTED','UNKNOWN','DEFERRED'))
    AND NOT EXISTS(SELECT 1 FROM public.editor_manual_commit_operations o WHERE o.job_id=j.id
-    AND o.state='DELIVERING' AND o.delivery_expires_at>now())
+    AND o.state='DELIVERING')
    AND ((j.state='DEBITED' AND j.updated_at<now()-make_interval(mins=>p_debited_minutes)
       AND NOT(j.error_code IS NOT DISTINCT FROM 'provider_outcome_unknown' AND EXISTS(
        SELECT 1 FROM public.provider_spend_reservations r WHERE r.user_id=j.user_id

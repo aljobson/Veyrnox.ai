@@ -124,6 +124,13 @@ export function LocalExportSheet({ visible, api, account, projectId, revision, t
     };
     const commitDeliveredArtifact = async (target: ExportArtifact, credits: number, sessionCurrent: () => boolean = () => true) => {
         setCommitAttempted(true); setConfirming(true); setError(null); setPhase('verifying');
+        const authorizedRevision = await onBeginDelivery().catch(() => null);
+        if (!mounted.current || latestArtifact.current?.artifactId !== target.artifactId) return;
+        if (!sessionCurrent()) {
+            setConfirming(false); await releaseArtifact(target); latestArtifact.current = null; setArtifact(null); setPendingCredits(null);
+            setError('stale'); setPhase('error'); return;
+        }
+        if (authorizedRevision === null) { setConfirming(false); setError('credit-failed'); setPhase('error'); return; }
         const committedRevision = await onFinalize().catch(() => null);
         if (!mounted.current || latestArtifact.current?.artifactId !== target.artifactId) return;
         setConfirming(false);
@@ -137,17 +144,6 @@ export function LocalExportSheet({ visible, api, account, projectId, revision, t
     const saveAndCommit = async (target: Extract<ExportArtifact, { kind: 'mp4' }>, credits: number | null, sessionCurrent: () => boolean = () => true) => {
         const token = ++saveToken.current; setSaving(true);
         const stillCurrent = () => mounted.current && sessionCurrent() && latestArtifact.current?.artifactId === target.artifactId;
-        if (credits !== null) {
-            const authorizedRevision = await onBeginDelivery().catch(() => null);
-            if (!mounted.current || saveToken.current !== token) return;
-            if (authorizedRevision === null || !stillCurrent()) {
-                setSaving(false); await cancelReservation();
-                if (latestArtifact.current?.artifactId === target.artifactId) {
-                    await releaseArtifact(target); latestArtifact.current = null; setArtifact(null); setError('credit-failed'); setPhase('error');
-                }
-                return;
-            }
-        }
         const outcome = await saveLocalExportToPhotos(target.uri, stillCurrent);
         if (!mounted.current || saveToken.current !== token) return;
         if (stillCurrent()) {
@@ -180,7 +176,8 @@ export function LocalExportSheet({ visible, api, account, projectId, revision, t
         const reservedRevision = await onCommit(expectedCredits).catch(() => null);
         if (!mounted.current) return;
         if (reservedRevision === null) { setError('credit-failed'); setPhase('error'); return; }
-        reserved.current = true; setPendingCredits(expectedCredits); setCommitAttempted(true);
+        const requiresSettlement = expectedCredits > 0;
+        reserved.current = requiresSettlement; setPendingCredits(requiresSettlement ? expectedCredits : null); setCommitAttempted(requiresSettlement);
         const frozen = JSON.parse(JSON.stringify(timeline)) as Timeline, abort = new AbortController(), task = beginSessionTask(); controller.current = abort;
         if (artifact) await releaseArtifact(artifact).catch(() => undefined);
         setArtifact(null); setError(null); setProgress(null); setSaved(false); setSaving(false); setPhase('exporting');
@@ -222,11 +219,14 @@ export function LocalExportSheet({ visible, api, account, projectId, revision, t
         }
         const result = prepared.value;
         if (result.ok) {
-            // Credits are reserved before rendering. Delivery finalizes the
-            // reservation; abandonment and failure refund it.
-            latestArtifact.current = result.artifact; setArtifact(result.artifact); setPendingCredits(expectedCredits);
-            setCommitAttempted(true); setPhase('done'); setProgress(null);
-            if (autoSave && result.artifact.kind === 'mp4') await saveAndCommit(result.artifact, expectedCredits, task.current);
+            // Paid credits are reserved before rendering. Only paid delivery
+            // needs the completion handshake; covered and rollout-disabled
+            // exports retain the ordinary Photos/share behavior.
+            latestArtifact.current = result.artifact; setArtifact(result.artifact);
+            setPendingCredits(requiresSettlement ? expectedCredits : null); setCommitAttempted(requiresSettlement);
+            setPhase('done'); setProgress(null);
+            if (autoSave && result.artifact.kind === 'mp4')
+                await saveAndCommit(result.artifact, requiresSettlement ? expectedCredits : null, task.current);
         }
         else if (result.code === 'cancelled') { setPhase('idle'); setProgress(null); await cancelReservation(); }
         else { setError(result.code === 'invalid-timeline' ? 'invalid-timeline' : result.code === 'unsupported-frame' ? 'unsupported-frame'
@@ -235,12 +235,7 @@ export function LocalExportSheet({ visible, api, account, projectId, revision, t
     const retryCommit = async () => {
         const retained = latestArtifact.current;
         if (!retained || pendingCredits === null || !commitAttempted || confirming) return;
-        setConfirming(true); setError(null); setPhase('verifying');
-        const committedRevision = await onFinalize().catch(() => null);
-        if (!mounted.current || latestArtifact.current?.artifactId !== retained.artifactId) return;
-        setConfirming(false);
-        if (committedRevision === null) { setError('credit-failed'); setPhase('error'); return; }
-        await completeCommittedArtifact(retained, committedRevision);
+        await commitDeliveredArtifact(retained, pendingCredits);
     };
     const save = async () => { if (!artifact || artifact.kind !== 'mp4' || saving) return; setError(null);
         await saveAndCommit(artifact, pendingCredits !== null && commitAttempted ? pendingCredits : null); };
@@ -253,9 +248,6 @@ export function LocalExportSheet({ visible, api, account, projectId, revision, t
     const share = async () => { if (!artifact) return; const mimeType = artifact.kind === 'wav' ? 'audio/wav' : 'video/mp4';
         if (pendingCredits !== null && commitAttempted) {
             setSaving(true);
-            const authorizedRevision = await onBeginDelivery().catch(() => null);
-            if (!mounted.current || latestArtifact.current?.artifactId !== artifact.artifactId) return;
-            if (authorizedRevision === null) { setSaving(false); await abandonArtifact(artifact, 'credit-failed'); return; }
             const outcome = await shareLocalExportWithCompletion(artifact.uri, mimeType);
             if (!mounted.current || latestArtifact.current?.artifactId !== artifact.artifactId) return;
             setSaving(false);

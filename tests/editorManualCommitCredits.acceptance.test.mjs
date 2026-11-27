@@ -146,6 +146,8 @@ test('manual editor debit migration is atomic, idempotent and invisible', { skip
   await t.test('an enrolled account cannot bypass AAL2 through the granted PostgREST functions', async () => {
     await psql(`INSERT INTO auth.mfa_factors(user_id,factor_type,status) VALUES('${actor}','totp','verified');`);
     await assert.rejects(psql(saveSql(projectMfa, 0, doc(['mfa-source']), 'mfa-save-key', 5)), /MFA_REQUIRED/);
+    await assert.rejects(psql(`BEGIN; SELECT set_config('request.jwt.claim.sub','${actor}',true);
+      SELECT public.manual_editor_commit_status('${projectMfa}','mfa-save-key'); COMMIT;`), /MFA_REQUIRED/);
     assert.match(await psql(`BEGIN; SELECT set_config('request.jwt.claim.sub','${actor}',true);
       SELECT set_config('request.jwt.claims','{"aal":"aal2"}',true);
       SELECT public.save_paid_project_document('${projectMfa}',0,'${doc(['mfa-source'])}'::jsonb,'mfa-save-key',5); COMMIT;`), /"pending": true/);
@@ -207,14 +209,21 @@ test('manual editor debit migration is atomic, idempotent and invisible', { skip
       (SELECT count(*) FROM public.jobs WHERE inputs->>'project_id'='${projectTwo}');`), '0|0|0');
   });
 
-  await t.test('an active native delivery lease cannot be refunded by the generic stuck-job sweep', async () => {
+  await t.test('acknowledged delivery settles immediately and cannot be canceled or swept', async () => {
     await psql(`UPDATE public.credit_balances SET balance=20,free_balance=20 WHERE user_id='${user}';`);
     assert.match(await psql(saveSql(projectTwo, 0, doc(['camera-lease']), 'delivery-lease', 5)), /"pending": true/);
     assert.match(await psql(beginSql(projectTwo, 'delivery-lease')), /"authorized": true/);
-    await psql(`UPDATE public.jobs SET updated_at=now()-interval '2 days' WHERE inputs->>'project_id'='${projectTwo}';`);
+    const settledAt = await psql(`SELECT updated_at::text FROM public.editor_manual_commit_operations WHERE project_id='${projectTwo}';`);
+    await new Promise(resolve => setTimeout(resolve, 20));
+    assert.match(await psql(beginSql(projectTwo, 'delivery-lease')), /"authorized": true/);
+    assert.equal(await psql(`SELECT updated_at::text FROM public.editor_manual_commit_operations WHERE project_id='${projectTwo}';`), settledAt);
+    assert.match(await psql(cancelSql(projectTwo, 'delivery-lease')), /ALREADY_COMMITTED/);
+    await psql(`UPDATE public.jobs j SET updated_at=now()-interval '2 days' FROM public.editor_manual_commit_operations o
+      WHERE o.job_id=j.id AND o.project_id='${projectTwo}';`);
     assert.match(await psql(`SELECT public.sweep_stuck_jobs(0,0,200,0);`), /"refunded": 0/);
-    assert.equal(await psql(`SELECT j.state||'|'||o.state FROM public.jobs j JOIN public.editor_manual_commit_operations o ON o.job_id=j.id
-      WHERE o.project_id='${projectTwo}';`), 'DEBITED|DELIVERING');
+    assert.equal(await psql(`SELECT j.state||'|'||o.state||'|'||(j.deleted_at IS NOT NULL) FROM public.jobs j
+      JOIN public.editor_manual_commit_operations o ON o.job_id=j.id WHERE o.project_id='${projectTwo}';`), 'STORED|COMMITTED|true');
+    assert.equal(await psql(`SELECT balance FROM public.credit_balances WHERE user_id='${user}';`), '15');
     assert.match(await psql(`BEGIN; SELECT set_config('request.jwt.claim.sub','${actor}',true); SELECT public.finalize_manual_editor_commit('${projectTwo}','delivery-lease'); COMMIT;`), /"committed": true/);
   });
 

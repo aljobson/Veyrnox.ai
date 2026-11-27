@@ -532,6 +532,13 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
                 setProblem(t(sync.failureCode === 'price_changed' ? 'editorManualCommit.priceChanged' : 'editorManualCommit.failed'));
                 return null;
             }
+            // Covered source sets cost zero, so settle their bookkeeping
+            // immediately. They must keep the existing Expo share fallback
+            // instead of requiring the paid native completion controller.
+            if (credits === 0) {
+                if (await sync.beginPaidDelivery() === null) return null;
+                if (await sync.finalizePaid() === null) return null;
+            }
             // LocalExportSheet tracks local edit freshness, not the server's
             // document revision. A paid save advances only the latter.
             return getEditRevision();
@@ -544,6 +551,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         if (credits === null || credits === 'failed') return null;
         const reserved = await commitPreparedManualEdit(credits);
         if (reserved === null) return null;
+        if (credits === 0) return reserved;
         try {
             const authorized = await sync.beginPaidDelivery();
             if (authorized === null) return null;

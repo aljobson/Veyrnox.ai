@@ -35,8 +35,10 @@ test('manual editor reserves atomically before delivery and bypasses supplier-on
   assert.match(sql, /editor_manual_commit_one_pending_project_idx[\s\S]*\(user_id,project_id\)[\s\S]*state IN \('PENDING','DELIVERING'\)/);
   assert.match(sql, /UPDATE public\.editor_manual_commit_operations o SET state='REFUNDED'[\s\S]*j\.state='REFUNDED'/);
   assert.match(sql, /o\.project_id=p_project AND o\.credits=5 AND o\.state IN \('PENDING','DELIVERING'\)/);
-  assert.match(sql, /private\.begin_manual_editor_delivery[\s\S]*state='DELIVERING'[\s\S]*delivery_expires_at=now\(\)\+interval '1 day'/);
-  assert.match(sql, /o\.state='DELIVERING' AND o\.delivery_expires_at>now\(\)/);
+  assert.match(sql, /private\.begin_manual_editor_delivery[\s\S]*state='DELIVERING'[\s\S]*settled:=private\.finalize_manual_editor_commit/);
+  assert.match(sql, /op\.state='DELIVERING' THEN RETURN jsonb_build_object\('ok',false,'code','DELIVERY_ALREADY_ACKNOWLEDGED'/);
+  assert.match(sql, /NOT EXISTS\(SELECT 1 FROM public\.editor_manual_commit_operations o WHERE o\.job_id=j\.id[\s\S]*o\.state='DELIVERING'\)/);
+  assert.doesNotMatch(sql, /delivery_expires_at=now\(\)\+interval '1 day'/);
   assert.doesNotMatch(sql, /UPDATE public\.project_document_versions/);
 });
 
@@ -44,7 +46,7 @@ test('manual editor charge is disabled by default and exact job identity is enfo
   assert.match(sql, /editor_manual_commit_config[\s\S]*enabled boolean NOT NULL DEFAULT false/);
   assert.equal((sql.match(/FEATURE_DISABLED/g) ?? []).length, 6);
   assert.match(sql, /private\.editor_manual_mfa_satisfied[\s\S]*request\.jwt\.claims[\s\S]*auth\.mfa_factors/);
-  assert.equal((sql.match(/MFA_REQUIRED/g) ?? []).length, 5);
+  assert.equal((sql.match(/MFA_REQUIRED/g) ?? []).length, 6);
   assert.match(sql, /j\.credits IS DISTINCT FROM p_credits OR j\.inputs IS DISTINCT FROM p_inputs/);
   assert.match(sql, /j\.inputs=charge_inputs/);
 });
