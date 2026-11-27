@@ -38,7 +38,9 @@ test('generic Create entry points contain image and video, not audio', () => {
   assert.doesNotMatch(mobileCreate.match(/const MAKE:[\s\S]*?\];/)?.[0] ?? '', /audio/);
   assert.doesNotMatch(mobileCreate, /params: \{ kind: 'audio' \}/);
   assert.doesNotMatch(mobileTemplates.match(/const KINDS:[\s\S]*?;/)?.[0] ?? '', /audio/);
-  assert.match(mobileHome, /presetKind\(p\) === 'audio'\)[\s\S]*?router\.push\('\/audio'\)/);
+  assert.match(mobileHome, /presetKind\(p\) === 'audio'\)[\s\S]*?audioTemplateHref/);
+  assert.match(mobileTemplates, /legacyAudio[\s\S]*?router\.replace\('\/audio'\)/);
+  assert.match(mobileTemplates, /openAudio = \(a: AudioTemplate\) => router\.push\(audioTemplateHref\(a\)\)/);
 });
 
 test('the Create brief keeps files, aspect, count, dictation, prompt help and templates', () => {

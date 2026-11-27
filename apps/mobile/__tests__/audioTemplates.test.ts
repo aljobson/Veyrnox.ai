@@ -1,4 +1,4 @@
-import { audioCategoriesOf, audioTemplatesIn, parseAudioTemplates } from '../src/lib/audioTemplates';
+import { audioCategoriesOf, audioTemplateHref, audioTemplatesIn, parseAudioTemplates } from '../src/lib/audioTemplates';
 const body = { templates: [
     { id: 'audio-a', name: 'A', category: 'MUSIC', modelId: 'm', prompt: 'p' },
     { id: 'audio-b', name: 'B', category: 'SOUND FX', modelId: 'm', prompt: 'p', negativePrompt: 'music' },
@@ -31,4 +31,12 @@ test('parse keeps the track credit line the licence asks for', () => {
         { id: 'b', name: 'B', category: 'MUSIC', modelId: 'm', prompt: 'p', previewAttribution: 7 },
     ] });
     expect(list.map(t => t.attribution)).toEqual(['Music by cdk — CC BY 3.0', undefined]);
+});
+test('selected ideas enter the owning audio workspace without losing their prompt', () => {
+    expect(audioTemplateHref({ category: 'MUSIC', modelId: 'suno', name: ' Midnight Soul ', prompt: ' Soulful ' })).toEqual({
+        pathname: '/music/create', params: { templatePrompt: 'Soulful', templateTitle: 'Midnight Soul' },
+    });
+    expect(audioTemplateHref({ category: 'SOUND FX', modelId: 'foley', name: ' Rain ', prompt: ' Soft rain ' })).toEqual({
+        pathname: '/audio', params: { templateModelId: 'foley', templatePrompt: 'Soft rain', templateTitle: 'Rain' },
+    });
 });

@@ -56,10 +56,10 @@ test('Images lists the image templates and Audio lists the audio templates', asy
 test('All is a mix of video, image and audio, not video only', async () => {
     expect(titles()).toEqual(expect.arrayContaining(['Video 0', 'Forest Light', 'Midnight Soul']));
 });
-test('an audio card opens the dedicated Audio workspace instead of generic Create', async () => {
+test('a music template opens Music with the selected idea intact', async () => {
     await click(t('explore.type.audio'));
     await act(async () => buttons().find(n => n.props.accessibilityLabel === 'Audio, Midnight Soul, 3 credits')!.props.onClick(event));
-    expect(mockPush).toHaveBeenCalledWith('/audio');
+    expect(mockPush).toHaveBeenCalledWith({ pathname: '/music/create', params: { templatePrompt: 'Soulful', templateTitle: 'Midnight Soul' } });
 });
 test('an audio template in Explore plays its sample from the list, like the web', async () => {
     mockAudio.mockResolvedValue([{ ...audio[0], previewUrl: 'https://veyrnox.ai/a.jpg', previewAudioUrl: 'https://veyrnox.ai/a.mp3' }]);

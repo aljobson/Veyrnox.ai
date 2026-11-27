@@ -9,6 +9,8 @@ type Translate = (key: string) => string;
 export function resolveMusicCreateHandoff(options: {
     sampleId?: string;
     challengeId?: string;
+    templatePrompt?: string;
+    templateTitle?: string;
     entitlements: MusicEntitlements | null;
     input: Input;
     rights: boolean;
@@ -18,11 +20,13 @@ export function resolveMusicCreateHandoff(options: {
     now?: number;
 }): { prompt: string; title: string } | null {
     const sample = DISCOVER_SEEDS.find(seed => seed.id === options.sampleId);
-    if (!sample && !options.challengeId) return null;
+    const templatePrompt = options.templatePrompt?.trim();
+    if (!sample && !options.challengeId && !templatePrompt) return null;
     const input = options.input;
     if (options.touched || options.pending || input.mode !== 'simple' || input.prompt || input.title
         || input.lyrics || input.styles || options.rights) return null;
     if (sample) return { prompt: buildSamplePrompt(sample), title: sample.title };
+    if (templatePrompt) return { prompt: templatePrompt.slice(0, 500), title: options.templateTitle?.trim().slice(0, 120) ?? '' };
     const daily = options.entitlements?.features.dailyChallenge ? options.entitlements.daily_challenge : undefined;
     if (!daily || daily.id !== options.challengeId || !isCurrentMusicDailyChallenge(daily, options.now)) return null;
     return { prompt: options.translate(daily.prompt_key), title: options.translate(daily.title_key) };

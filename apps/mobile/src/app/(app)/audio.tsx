@@ -1,5 +1,5 @@
 import { useMusicAvailable } from '../../lib/music/useMusicAvailable';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { rawText } from '../../lib/i18n/translate';
@@ -29,6 +29,13 @@ const copy = (): Record<AudioHubId, { title: string; blurb: string }> => ({
 export default function AudioHub() {
     const styles = useThemedStyles(sheets);
     const router = useRouter();
+    const params = useLocalSearchParams<{ templateModelId?: string | string[]; templatePrompt?: string | string[] }>();
+    const templateModelId = Array.isArray(params.templateModelId) ? params.templateModelId[0] : params.templateModelId;
+    const templatePrompt = Array.isArray(params.templatePrompt) ? params.templatePrompt[0] : params.templatePrompt;
+    useEffect(() => {
+        if (!templateModelId?.trim() || !templatePrompt?.trim()) return;
+        router.replace({ pathname: '/create/[modelId]', params: { modelId: templateModelId.trim(), prompt: templatePrompt.trim() } } as never);
+    }, [router, templateModelId, templatePrompt]);
     const text = copy();
     const musicEditor = mobileFeature('beats');
     const musicAvailable = useMusicAvailable();

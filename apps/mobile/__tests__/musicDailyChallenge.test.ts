@@ -60,6 +60,10 @@ test('Create gives a listed sample precedence and a late challenge cannot overwr
         rights: false, touched: false, pending: false, translate, now: Date.parse('2026-11-24T12:00:00.000Z') })).toBeNull();
     expect(resolveMusicCreateHandoff({ challengeId: challenge.id, entitlements: enabled, input: empty,
         rights: false, touched: false, pending: false, translate, now: Date.parse(challenge.reset_at) })).toBeNull();
+    expect(resolveMusicCreateHandoff({ templatePrompt: '  soulful rain  ', templateTitle: '  Midnight Soul  ', entitlements: enabled,
+        input: empty, rights: false, touched: false, pending: false, translate })).toEqual({ prompt: 'soulful rain', title: 'Midnight Soul' });
+    expect(resolveMusicCreateHandoff({ templatePrompt: 'soulful rain', templateTitle: 'Midnight Soul', entitlements: enabled,
+        input: { ...empty, prompt: 'my edit' }, rights: false, touched: false, pending: false, translate })).toBeNull();
 
     const source = readFileSync(resolve(__dirname, '../src/app/(app)/music/create.tsx'), 'utf8');
     expect(source).toMatch(/resolveMusicCreateHandoff\(/);

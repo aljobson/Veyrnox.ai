@@ -24,7 +24,7 @@ import { cheapestCredits, isLowBalance } from '../../../lib/lowBalance';
 import { useBalance } from '../../../lib/useBalance';
 import { fetchPresets, type Preset } from '../../../lib/presets';
 import { fetchImageTemplates, type ImageTemplate } from '../../../lib/imageTemplates';
-import { fetchAudioTemplates, type AudioTemplate } from '../../../lib/audioTemplates';
+import { audioTemplateHref, fetchAudioTemplates, type AudioTemplate } from '../../../lib/audioTemplates';
 import { fetchCrunTemplateSummary } from '../../../lib/crunTemplateSummary';
 import { isDirectTemplate, listedTemplates, mixKinds } from '../../../lib/exploreTemplates';
 import { fetchPopularIds, templateChips, templatesFor, templatePageHref } from '../../../lib/templateFilters';
@@ -184,7 +184,10 @@ export default function Explore() {
 
     function openPreset(p: Preset) {
         // Audio discovery belongs to the Audio/Music workspaces; generic Create owns only visual template prompts.
-        if (presetKind(p) === 'audio') { router.push('/audio'); return; }
+        if (presetKind(p) === 'audio') {
+            router.push(audioTemplateHref({ category: p.category, modelId: p.modelId, name: p.title, prompt: p.prompt }));
+            return;
+        }
         // Direct image templates have no template page, so they open Create with their prompt.
         if (!isDirectTemplate(p.id)) { router.push(templatePageHref(p)); return; }
         const href = promptHref(p.modelId, p.prompt);

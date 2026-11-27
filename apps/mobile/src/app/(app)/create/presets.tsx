@@ -9,7 +9,7 @@ import { AudioTemplateCard } from '../../../components/templates/AudioTemplateCa
 import { ImageTemplateCard } from '../../../components/templates/ImageTemplateCard';
 import { CrunTemplateCard } from '../../../components/templates/CrunTemplateCard';
 import { fetchImageTemplates, imageCategoriesOf, imageTemplatesIn, type ImageTemplate } from '../../../lib/imageTemplates';
-import { audioCategoriesOf, audioTemplatesIn, fetchAudioTemplates, type AudioTemplate } from '../../../lib/audioTemplates';
+import { audioCategoriesOf, audioTemplateHref, audioTemplatesIn, fetchAudioTemplates, type AudioTemplate } from '../../../lib/audioTemplates';
 import { promptHref } from '../../../lib/explore';
 import { templatesWithCatalogModel } from '../../../lib/exploreTemplates';
 import { priceLines } from '../../../lib/catalogPages';
@@ -53,6 +53,8 @@ export default function Templates() {
     const [crunFailed, setCrunFailed] = useState(false);
     const [crunLoadingMore, setCrunLoadingMore] = useState(false);
     const [catalog, setCatalog] = useState<CatalogModel[] | null>(null);
+    const legacyAudio = (Array.isArray(params.kind) ? params.kind[0] : params.kind) === 'audio';
+    useEffect(() => { if (legacyAudio) router.replace('/audio'); }, [legacyAudio, router]);
     // A saved copy older than its freshness window gives prices but does not decide what is listed (the network has not confirmed it).
     const [catalogConfirmed, setCatalogConfirmed] = useState(false);
     const vibe = useVibeAnswers(attempt);
@@ -111,7 +113,7 @@ export default function Templates() {
     const imagesShown = useMemo(() => imageTemplatesIn(imagesListed, imageCategory, query), [imagesListed, imageCategory, query]);
     const audioCredits = useMemo(() => new Map((catalog ?? []).map(m => [m.id, priceLines(m)[0]?.credits])), [catalog]);
     const imageCredits = audioCredits;
-    const openAudio = (a: AudioTemplate) => router.push(promptHref(a.modelId, a.prompt));
+    const openAudio = (a: AudioTemplate) => router.push(audioTemplateHref(a));
     const openImage = (i: ImageTemplate) => { const href = promptHref(i.modelId, i.prompt); router.push({ ...href, params: { ...href.params, photoGuide: 'scene' } }); };
     const retry = <View><Text tone="danger">{t('presets.couldnotloadtemplatesCheckyourconnection')}</Text><Button label={t('recovery.retry')} onPress={() => setAttempt(n => n + 1)} /></View>;
     const empty = <Text tone="secondary">{t(query ? 'presets.nomatchingeffects' : 'presets.notemplatesavailablerightnow')}</Text>;
@@ -138,6 +140,7 @@ export default function Templates() {
     const crunProviderTabs = <ScrollView horizontal contentContainerStyle={styles.chips} accessibilityRole="tablist" accessibilityLabel={t('crunTemplates.providerLabel')}>
         {CRUN_TEMPLATE_PROVIDERS.map(item => <Chip key={item} selected={crunProvider === item} accessibilityRole="tab" accessibilityState={{ selected: crunProvider === item }} label={CRUN_TEMPLATE_PROVIDER_NAMES[item]} onPress={() => { crunProviderRef.current = item; setCrunProvider(item); }} />)}
     </ScrollView>;
+    if (legacyAudio) return <View style={styles.screen}><ActivityIndicator /></View>;
     return <View style={styles.screen}>
         <Stack.Screen options={{ title: t('presets.templates') }} />
         <Text variant="title1" accessibilityRole="header">{t('presets.templates')}</Text>

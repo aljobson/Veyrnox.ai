@@ -79,6 +79,16 @@ describe('where the welcome shows', () => {
         expect(explore).not.toContain('image, video or audio asset');
         expect(edit).toContain('No sounds yet. Make one in Audio first.');
         expect(edit).not.toContain('Make audio in Create first.');
+        const catalogs = ['ar', 'de', 'es', 'fr', 'hi', 'ja', 'ko', 'pt', 'ru', 'zh']
+            .map(locale => read('lib', 'i18n', 'messages', 'app', `${locale}.ts`));
+        for (const catalog of catalogs) {
+            const intro = catalog.match(/"create\.intro": "([^"]+)"/)?.[1] ?? '';
+            const help = catalog.match(/"helpGuides\.mobile\.firstGeneration\.model": "([^"]+)"/)?.[1] ?? '';
+            const welcome = catalog.match(/"welcome\.hello\.body": "([^"]+)"/)?.[1] ?? '';
+            expect(intro).not.toMatch(/audio|audiomodel|音频|音声|오디오|ऑडियो|الصوت|аудио/i);
+            expect(help).toMatch(/Music|Musik|Música|Musique|Музык|音乐|音楽|음악|संगीत|الموسيقى/);
+            expect(welcome).toMatch(/Audio|Áudio|Аудио|音频|オーディオ|오디오|ऑडियो|الصوت/);
+        }
     });
 
     test('the shared consent and provider controls introduce creation on sign-in', () => {
