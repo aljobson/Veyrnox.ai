@@ -133,7 +133,7 @@ test('owner projection cannot leak evidence, phrase or reviewer identity', () =>
 
 test('the migration preserves evidence accountability without retaining content in receipts', async () => {
   const [sql, accountDeletion, privacyExport] = await Promise.all([
-    readFile(new URL('../packages/db/schema/supabase/0622_music_voice_verification.sql', import.meta.url), 'utf8'),
+    readFile(new URL('../packages/db/schema/supabase/0623_music_voice_verification.sql', import.meta.url), 'utf8'),
     readFile(new URL('../scripts/test-account-deletion.mjs', import.meta.url), 'utf8'),
     readFile(new URL('../scripts/test-privacy-export.mjs', import.meta.url), 'utf8'),
   ]);

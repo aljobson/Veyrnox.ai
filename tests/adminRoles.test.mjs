@@ -8,7 +8,7 @@ register('data:text/javascript,'+encodeURIComponent("export async function resol
 const { freshAdminMfa } = await import('../lib/adminPanelApi.js');
 const { POST } = await import('../app/api/v1/admin/roles/route.js');
 test('the one SQL permission matrix agrees exactly with the JS mirror', async () => {
-  const sql=await readFile(new URL('../packages/db/schema/supabase/0622_music_voice_verification.sql',import.meta.url),'utf8');
+  const sql=await readFile(new URL('../packages/db/schema/supabase/0623_music_voice_verification.sql',import.meta.url),'utf8');
   const matrix=JSON.parse(sql.match(/'(\{"owner":.+?\})'::jsonb/)[1]);
   assert.deepEqual(matrix,ADMIN_PERMISSIONS);
   assert.equal(adminCan('owner','roles.write',false),false);
