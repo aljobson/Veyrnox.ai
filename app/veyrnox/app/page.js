@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { AppNav } from '../_components/NavBar';
 import { Main } from '../_components/Main';
 import { SwapRow } from '../_components/SwapRow';
-import { ExploreTemplates } from '../_components/ExploreTemplates';
+import { HomeTemplateCatalog } from '../_components/HomeTemplateCatalog';
 import { VibeOffer } from '../_components/VibeOffer';
 import { YourWinsCard } from '../_components/YourWinsCard';
 import { useVibe } from '../_lib/creatorProfile';
@@ -113,9 +113,9 @@ export default function Explore() {
         </Link>
         <SwapRow />
         <section aria-labelledby="explore-presets-title">
-          <h2 id="explore-presets-title" className="vx-display text-balance text-[30px] sm:text-[38px]">{t('app.explore.presets')}</h2>
-          <p className="mb-7 mt-2 max-w-[60ch] text-pretty leading-[1.6] text-vx-fg-body">{t('app.explore.intro')}</p>
-          <ExploreTemplates taste={vibe.answers} />
+          <h2 id="explore-presets-title" className="vx-display text-balance text-[30px] sm:text-[38px]">{t.label('Templates')}</h2>
+          <p className="mb-7 mt-2 max-w-[72ch] text-pretty leading-[1.6] text-vx-fg-body">{t('app.templates.intro')}</p>
+          <HomeTemplateCatalog />
         </section>
       </Main>
     </div>

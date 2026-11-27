@@ -11,6 +11,7 @@ import {
   MUSIC_SAMPLE_PREVIEW_SECONDS,
   scheduleMusicSamplePreview,
 } from '../_lib/music/samplePreview.js';
+import { templateCatalogCredits } from '../_lib/templateCatalogPrice.js';
 
 const PROVIDERS = [
   { id: 'kling', labelKey: 'app.templates.provider.kling', detailKey: 'app.templates.provider.klingDetail' },
@@ -300,7 +301,7 @@ export function TemplateCatalog({ kling, seedance, veo, suno }) {
   const local = provider === 'kling' ? kling : provider === 'seedance' ? seedance : provider === 'veo' ? veo : provider === 'suno' ? suno : EMPTY_TEMPLATES;
   const visibleLocal = useMemo(() => local.filter(item => includesQuery(item, needle)), [local, needle]);
   const visibleRemote = (remote[provider]?.templates || []).filter(item => includesQuery(item, needle));
-  const creditsFor = item => modelPrices[item.model] ?? validCreditPrice(item.credits);
+  const creditsFor = item => templateCatalogCredits(item, modelPrices);
 
   const useVeo = item => {
     const written = writeStudioDraft(window.sessionStorage, item);

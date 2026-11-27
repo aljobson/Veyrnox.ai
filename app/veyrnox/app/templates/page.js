@@ -1,9 +1,7 @@
 import { AppNav } from '../../_components/NavBar';
 import { Main } from '../../_components/Main';
 import { TemplateCatalog } from '../../_components/TemplateCatalog';
-import { publicTemplateCards } from '../../../../lib/clientTemplates.js';
-import { MUSIC_DISCOVER_BEATS } from '../../../../lib/musicDiscover.js';
-import { VEO_TEMPLATE_RECIPES } from '../../_lib/veoTemplateRecipes.js';
+import { readyTemplateCatalog } from '../../_lib/templateCatalogReady.js';
 import { getT } from '../../../../lib/i18n/server';
 
 export async function generateMetadata() {
@@ -13,31 +11,7 @@ export async function generateMetadata() {
 
 export default async function TemplatesPage() {
   const { t } = await getT();
-  const kling = publicTemplateCards().filter(card => card.kind !== 'image').map(card => ({
-    id: card.id,
-    name: card.name,
-    category: card.category,
-    model: card.model,
-    credits: card.credits,
-    poster: card.clip?.poster || null,
-    video: card.clip?.video || null,
-    durationSeconds: card.durationSeconds,
-  }));
-  const suno = MUSIC_DISCOVER_BEATS.map(beat => ({
-    id: beat.id,
-    name: beat.title,
-    category: beat.mood,
-    artwork: beat.artwork,
-    bpm: beat.bpm,
-    musicalKey: beat.musicalKey,
-    mood: beat.mood,
-    root: beat.root,
-    wave: beat.wave,
-    bass: beat.bass,
-    lead: beat.lead,
-    model: 'ace-step',
-    credits: 4,
-  }));
+  const catalog = readyTemplateCatalog();
 
   return (
     <div className="min-h-dvh bg-vx-base text-vx-fg">
@@ -50,7 +24,7 @@ export default async function TemplatesPage() {
             {t('app.templates.intro')}
           </p>
         </header>
-        <TemplateCatalog kling={kling} seedance={[]} veo={VEO_TEMPLATE_RECIPES} suno={suno} />
+        <TemplateCatalog {...catalog} />
       </Main>
     </div>
   );

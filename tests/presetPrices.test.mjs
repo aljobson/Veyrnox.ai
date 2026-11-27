@@ -12,12 +12,16 @@ const read = (rel) => readFileSync(new URL(`../${rel}`, import.meta.url), 'utf8'
 // explanation, not the code.
 const code = (rel) => read(rel).split('\n').filter((l) => !l.trim().startsWith('//')).join('\n');
 
-test('/presets and Explore render through the shared gallery', () => {
-    // Explore wraps the gallery in ExploreTemplates (the All/Image/Video/Audio filter).
-    for (const page of ['app/veyrnox/presets/page.js', 'app/veyrnox/_components/ExploreTemplates.js']) {
-        assert.match(code(page), /<PresetGallery\b/, page);
-    }
-    assert.match(code('app/veyrnox/app/page.js'), /<ExploreTemplates\b/, 'Explore uses ExploreTemplates');
+test('/presets keeps its gallery while Explore uses the unified Templates catalogue', () => {
+    assert.match(code('app/veyrnox/presets/page.js'), /<PresetGallery\b/);
+    assert.match(code('app/veyrnox/app/page.js'), /<HomeTemplateCatalog\b/, 'Explore uses the unified catalogue');
+    assert.match(code('app/veyrnox/_components/HomeTemplateCatalog.js'), /<TemplateCatalog\b/);
+});
+
+test('Create links its quick video starts to the unified Templates catalogue', () => {
+    const src = code('app/veyrnox/_components/TemplatePicker.js');
+    assert.match(src, /href="\/app\/templates"/);
+    assert.doesNotMatch(src, /href="\/presets"/);
 });
 
 test('PresetCard prints the catalog price, not the preset constant', () => {
@@ -26,8 +30,8 @@ test('PresetCard prints the catalog price, not the preset constant', () => {
     assert.ok(!/\{preset\.credits\}/.test(src), 'must not print preset.credits directly');
 });
 
-// /presets and the studio's Explore tab share PresetGallery, which owns the
-// catalog read for both.
+// /presets and the mobile Explore tab still use PresetGallery, which owns the
+// catalog read for those surfaces.
 for (const page of [
     'app/veyrnox/_components/PresetGallery.js',
     'app/veyrnox/m/explore/page.js',
