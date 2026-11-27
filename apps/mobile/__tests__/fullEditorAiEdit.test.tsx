@@ -14,7 +14,11 @@ const mockRequest = jest.fn(), mockApi = { request: mockRequest }, mockRouter = 
 var mockListeners: Set<() => void>;
 let mockRefuse = false;
 let mockSession: ReturnType<typeof useFullEditorSession>, mockOwner = 'owner';
-jest.mock('../src/lib/editorFlag', () => ({ EDITOR_AI_EDIT_ENABLED: true, EDITOR_SPEECH_CUT_ENABLED: true }));
+jest.mock('../src/lib/editorFlag', () => ({
+    ...jest.requireActual('../src/lib/editorFlag'),
+    EDITOR_AI_EDIT_ENABLED: true,
+    EDITOR_SPEECH_CUT_ENABLED: true,
+}));
 jest.mock('../src/lib/voiceoverRecorder', () => ({ VOICEOVER_AVAILABLE: false }));
 jest.mock('../src/lib/appCache', () => {
     mockListeners = new Set<() => void>();

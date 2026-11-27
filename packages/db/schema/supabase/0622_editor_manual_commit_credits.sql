@@ -33,6 +33,8 @@ ALTER TABLE public.project_document_versions
       AND ((manual_commit_credits=0 AND manual_commit_job_id IS NULL)
         OR (manual_commit_credits=5 AND manual_commit_job_id IS NOT NULL)))
   );
+CREATE INDEX IF NOT EXISTS project_document_versions_manual_commit_job_idx
+  ON public.project_document_versions(manual_commit_job_id);
 
 CREATE TABLE IF NOT EXISTS public.editor_manual_commit_receipts (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
