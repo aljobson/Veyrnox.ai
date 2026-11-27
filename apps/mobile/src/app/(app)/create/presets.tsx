@@ -114,6 +114,11 @@ export default function Templates() {
     const retry = <View><Text tone="danger">{t('presets.couldnotloadtemplatesCheckyourconnection')}</Text><Button label={t('recovery.retry')} onPress={() => setAttempt(n => n + 1)} /></View>;
     const empty = <Text tone="secondary">{t(query ? 'presets.nomatchingeffects' : 'presets.notemplatesavailablerightnow')}</Text>;
     const open = (p: Preset) => { setPlaying(null); router.push(templatePageHref(p)); };
+    const openCrun = (item: CrunTemplateCatalog['templates'][number]) => router.push({ pathname: '/create/catalog-template', params: {
+        provider: crunProvider, catalogId: item.catalogId, name: item.name,
+        min: String(item.minInputCount), max: String(item.maxInputCount), credits: String(item.credits ?? ''), prices: JSON.stringify(item.prices),
+        guidance: JSON.stringify([item.inputRequirement, ...item.requirements.filter(part => /recommended image types|image count|attention/i.test(part.label)).map(part => `${part.label}: ${part.value}`)].filter(Boolean).slice(0, 3)),
+    } } as never);
     const loadMoreCrun = async () => {
         if (!crun || crun.templates.length >= crun.total || crunLoadingMore) return;
         const selectedProvider = crunProvider;
@@ -144,7 +149,7 @@ export default function Templates() {
                 ListFooterComponent={<View style={styles.footer}>{crunFailed ? <Text tone="danger">{t('presets.couldnotloadtemplatesCheckyourconnection')}</Text> : null}{crun.templates.length < crun.total ? <Button disabled={crunLoadingMore} label={crunLoadingMore ? t('common.loading') : t('crunTemplates.loadMore')} onPress={() => void loadMoreCrun()} /> : null}</View>}
                 onEndReachedThreshold={0.4}
                 onEndReached={() => void loadMoreCrun()}
-                renderItem={({ item }) => <CrunTemplateCard template={item} playing={playing === item.catalogId} onPlay={() => setPlaying(id => id === item.catalogId ? null : item.catalogId)} />} />)
+                renderItem={({ item }) => <CrunTemplateCard template={item} playing={playing === item.catalogId} onPlay={() => setPlaying(id => id === item.catalogId ? null : item.catalogId)} onUse={() => openCrun(item)} />} />)
         : kind === 'image' ? (imagesFailed ? retry
             : images === null ? <ActivityIndicator /> : <FlatList key="image" data={imagesShown} numColumns={2} keyExtractor={i => i.id} contentContainerStyle={styles.list}
                 ListHeaderComponent={<View style={styles.header}>

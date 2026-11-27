@@ -2,17 +2,21 @@ import { Image } from 'expo-image';
 import { View } from 'react-native';
 import { t } from '../../lib/i18n';
 import type { CrunTemplatePreview } from '../../lib/crunTemplateSummary';
-import { Card, Text, themedStyles, useThemedStyles } from '../ui';
+import { Button, Card, Text, themedStyles, useThemedStyles } from '../ui';
 import { TemplatePlayButton, TemplateVideoLayer } from './TemplatePreviewControls';
 
-export function CrunTemplateCard({ template, playing, onPlay }: {
+export function CrunTemplateCard({ template, playing, onPlay, onUse }: {
     readonly template: CrunTemplatePreview;
     readonly playing: boolean;
     onPlay(): void;
+    onUse(): void;
 }) {
     const styles = useThemedStyles(sheets);
     const still = template.coverUrl ?? (template.previewKind === 'image' ? template.previewUrl : null);
     const video = template.previewKind === 'video' ? template.previewUrl : null;
+    const inputs = template.maxInputCount === 0 ? t('crunTemplates.inputNone')
+        : template.minInputCount !== template.maxInputCount ? t('crunTemplates.inputRange', { min: template.minInputCount, max: template.maxInputCount })
+            : t('crunTemplates.inputCount', { count: template.maxInputCount });
     return <Card style={styles.card}>
         <View style={styles.preview} accessibilityLabel={t('crunTemplates.previewLabel', { name: template.name })}>
             {still ? <Image source={{ uri: still }} contentFit="cover" cachePolicy="memory" style={styles.fill} /> : <View style={styles.empty}><Text variant="caption" tone="secondary">{t('crunTemplates.previewUnavailable')}</Text></View>}
@@ -21,10 +25,11 @@ export function CrunTemplateCard({ template, playing, onPlay }: {
         </View>
         <Text variant="bodyStrong">{template.name}</Text>
         {template.category ? <Text variant="caption" tone="secondary">{template.category}</Text> : null}
-        {template.inputCount ? <Text variant="caption" tone="secondary">{t('crunTemplates.inputCount', { count: template.inputCount })}</Text> : template.inputRequirement ? <Text variant="caption" tone="secondary">{t('crunTemplates.input', { input: template.inputRequirement })}</Text> : null}
-        {template.providerCredits !== null ? <Text variant="caption" tone="secondary">{t('crunTemplates.providerCredits', { credits: template.providerCredits })}</Text> : null}
-        <Text variant="caption" tone="secondary">{t('crunTemplates.previewOnly')}</Text>
+        <Text variant="caption" tone="secondary">{inputs}</Text>
+        {template.prices.length ? <Text variant="caption" tone="accent">{template.prices.map(price => `${price.resolution} · ${price.credits}`).join(' / ')} {t('crunTemplates.credits')}</Text>
+            : template.credits !== null ? <Text variant="caption" tone="accent">{t('crunTemplates.price', { credits: template.credits })}</Text> : null}
         {video ? <TemplatePlayButton title={template.name} playing={playing} style={styles.play} onPress={onPlay} /> : null}
+        <Button label={t('crunTemplates.use')} size="md" onPress={onUse} />
     </Card>;
 }
 

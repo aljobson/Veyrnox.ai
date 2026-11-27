@@ -46,10 +46,12 @@ test('every catalog family has an in-card preview surface', () => {
   assert.match(component, /listenPreview/);
 });
 
-test('provider effects are catalog-only until pricing and paid proof exist', () => {
+test('provider effects show customer prices and a runnable generation action', () => {
   assert.match(component, /app\.templates\.liveHelp/);
-  assert.match(appEnglish['app.templates.liveHelp'], /Generation stays disabled until each effect has Veyrnox pricing and a paid proof/);
-  assert.doesNotMatch(component, /CreateTask/);
+  assert.match(appEnglish['app.templates.liveHelp'], /generate it directly/);
+  assert.match(component, /app\.templates\.customerCredits/);
+  assert.match(component, /model_id: 'catalog-template'/);
+  assert.match(component, /confirmed_credits: credits/);
 });
 
 test('the catalog requests and displays the combined template count without supplier language', () => {
