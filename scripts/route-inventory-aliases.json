@@ -1,0 +1,14 @@
+{
+  "/api/v1/admin/music/voices/:voicePath*": [
+    { "path": "/api/v1/admin/music/voices", "methods": ["GET"], "gate": "admin" },
+    { "path": "/api/v1/admin/music/voices/:id/evidence", "methods": ["POST"], "gate": "admin" },
+    { "path": "/api/v1/admin/music/voices/:id/evidence/ack", "methods": ["POST"], "gate": "admin" },
+    { "path": "/api/v1/admin/music/voices/:id/review", "methods": ["POST"], "gate": "admin" }
+  ],
+  "/api/v1/music/voices/:voicePath*": [
+    { "path": "/api/v1/music/voices", "methods": ["GET", "POST"], "gate": "v1" },
+    { "path": "/api/v1/music/voices/:id", "methods": ["DELETE"], "gate": "v1" },
+    { "path": "/api/v1/music/voices/:id/challenge", "methods": ["POST"], "gate": "v1" },
+    { "path": "/api/v1/music/voices/:id/verify", "methods": ["POST"], "gate": "v1" }
+  ]
+}

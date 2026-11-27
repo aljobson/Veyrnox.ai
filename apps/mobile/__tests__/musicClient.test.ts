@@ -4,6 +4,9 @@ import {
     analyzeMusicInspiration, createQuote, getEntitlements, getLibraryTab, getSong, isMusicOff, listSongs, probeMusic, recordListen,
     setSongLifecycle, startGeneration, listMusicSources, normalizeMusicSourceFile, reserveMusicSource, removeMusicSource, uploadMusicSource,
 } from '../src/lib/music';
+import {
+    enrollMusicVoice, listMusicVoices, reissueMusicVoiceChallenge, revokeMusicVoice, submitMusicVoiceChallenge,
+} from '../src/lib/music/voices';
 // @ts-ignore server parsers, used to prove the phone sends bodies the routes accept
 import { parseMusicGeneration, parseMusicQuote } from '../../../lib/musicBackend.js';
 
@@ -41,8 +44,12 @@ describe('entitlements', () => {
         const { features: _features, ...legacyEntitlements } = entitlements;
         request.mockResolvedValue(legacyEntitlements);
         expect((await getEntitlements(api)).features).toEqual({
-            albums: false, inspiration: false, studioChat: false, dailyChallenge: false, persistentQueue: false, sources: false,
+            albums: false, inspiration: false, studioChat: false, dailyChallenge: false, persistentQueue: false, voices: false, sources: false,
         });
+    });
+    test('normalizes a pre-voices feature projection without hiding known capabilities', async () => {
+        request.mockResolvedValue({ ...entitlements, features: { ...entitlements.features, albums: true } });
+        await expect(getEntitlements(api)).resolves.toMatchObject({ features: { albums: true, voices: false } });
     });
     test('shows inspiration only for a valid, unique server source contract', async () => {
         request.mockResolvedValueOnce({ ...entitlements,
@@ -157,6 +164,49 @@ describe('audio inspiration', () => {
     test.each([{ ...result, brief: '' }, { ...result, tags: ['x', 'x'] }, { ...result, idempotent: 'no' }])('rejects malformed %j', async value => {
         request.mockResolvedValue(value);
         await expect(analyzeMusicInspiration(api, 'image', 'uploads/key.jpg', KEY)).rejects.toMatchObject({ code: 'bad_response' });
+    });
+});
+
+describe('verified voices', () => {
+    const profile = { id: UUID, name: 'My voice', status: 'challenge_issued', submission_revision: 0,
+        challenge_expires_at: '2026-11-24T12:00:00Z', review_expires_at: null, verified_at: null,
+        verification_expires_at: null, reason_code: null, created_at: '2026-11-24T11:00:00Z',
+        updated_at: '2026-11-24T11:00:00Z' };
+    const challenge = { phrase: 'amber river 123456', expires_at: profile.challenge_expires_at };
+
+    test('uses narrow contracts and header idempotency for consent withdrawal', async () => {
+        request.mockResolvedValueOnce({ profiles: [profile], policy: { enrollment_available: false } });
+        await expect(listMusicVoices(api)).resolves.toEqual({ profiles: [profile], enrollmentAvailable: false });
+        expect(request).toHaveBeenLastCalledWith('/api/v1/music/voices');
+
+        request.mockResolvedValueOnce({ profile, challenge });
+        await enrollMusicVoice(api, { name: 'My voice', referenceKey: 'uploads/ref.wav', idempotencyKey: KEY });
+        expect(sentBody()).toMatchObject({ owner_attestation: true, adult_attestation: true,
+            eligible_region_attestation: true, idempotency_key: KEY });
+
+        request.mockResolvedValueOnce({ profile, challenge });
+        await reissueMusicVoiceChallenge(api, UUID, KEY);
+        expect(sentBody()).toEqual({ idempotency_key: KEY });
+
+        request.mockResolvedValueOnce({ profile, challenge_reissue_required: true, idempotent: true });
+        await expect(reissueMusicVoiceChallenge(api, UUID, KEY)).resolves.toBeNull();
+
+        request.mockResolvedValueOnce({ profile });
+        await submitMusicVoiceChallenge(api, UUID, { challengeKey: 'uploads/live.wav', phrase: challenge.phrase,
+            idempotencyKey: KEY });
+        expect(sentBody()).toEqual({ challenge_source_key: 'uploads/live.wav', phrase: challenge.phrase,
+            live_recording_attestation: true, idempotency_key: KEY });
+
+        request.mockResolvedValueOnce({ profile: { ...profile, status: 'revoked' } });
+        await revokeMusicVoice(api, UUID, KEY);
+        expect(request).toHaveBeenLastCalledWith(`/api/v1/music/voices/${UUID}`, {
+            method: 'DELETE', headers: { 'Idempotency-Key': KEY },
+        });
+    });
+
+    test('rejects malformed profile projections', async () => {
+        request.mockResolvedValueOnce({ profiles: [{ ...profile, status: 'approved' }], policy: { enrollment_available: true } });
+        await expect(listMusicVoices(api)).rejects.toMatchObject({ code: 'bad_response' });
     });
 });
 

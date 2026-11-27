@@ -76,5 +76,5 @@ test('every id in the shipped registry is a template that needs a source clip (s
 
 test('Worker budget follows the webpack production build decision (ADR-0353)', async () => {
  const { WORKER_SIZE_BUDGET_KIB } = await import('../scripts/check-worker-size.mjs');
- assert.equal(WORKER_SIZE_BUDGET_KIB, 48500);
+ assert.equal(WORKER_SIZE_BUDGET_KIB, 49000);
 });

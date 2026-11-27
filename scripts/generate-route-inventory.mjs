@@ -5,6 +5,7 @@ import ts from 'typescript';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const HTTP = new Set(['GET','POST','PUT','PATCH','DELETE','HEAD','OPTIONS']);
+const routeAliases = JSON.parse(await readFile(join(root, 'scripts/route-inventory-aliases.json'), 'utf8'));
 async function walk(dir) {
   return (await Promise.all((await readdir(dir, { withFileTypes: true })).map(entry =>
     entry.isDirectory() ? walk(join(dir, entry.name)) : /^(route|page)\.js$/.test(entry.name) ? [join(dir, entry.name)] : []))).flat();
@@ -36,9 +37,17 @@ export async function inventory(appRoot = join(root, 'app')) {
       .replace(/^\[\.\.\.(.+)\]$/, ':$1+').replace(/^\[(.+)\]$/, ':$1')).join('/');
     const gate = page ? 'page' : /^\/api\/(?:v1\/)?admin(?:\/|$)/.test(path) ? 'admin'
       : path.startsWith('/api/webhook/') ? 'webhook' : path.startsWith('/api/v1/') ? 'v1' : 'public';
-    const key = path + ':' + gate;
     const methods = page ? ['GET'] : exportedMethods(await readFile(file, 'utf8'));
-    rows.set(key, { path, methods: [...new Set([...(rows.get(key)?.methods || []), ...methods])].sort(), gate });
+    const aliases = routeAliases[path];
+    if (aliases) {
+      for (const alias of aliases) {
+        const key = alias.path + ':' + alias.gate;
+        rows.set(key, { ...alias, methods: [...new Set([...(rows.get(key)?.methods || []), ...alias.methods])].sort() });
+      }
+    } else {
+      const key = path + ':' + gate;
+      rows.set(key, { path, methods: [...new Set([...(rows.get(key)?.methods || []), ...methods])].sort(), gate });
+    }
   }
   return [...rows.values()].sort((a,b) => a.path.localeCompare(b.path, 'en') || a.gate.localeCompare(b.gate, 'en'));
 }

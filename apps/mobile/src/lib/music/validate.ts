@@ -68,7 +68,7 @@ export const isMusicEntitlements = (v: unknown): v is MusicEntitlements => isRec
     && all(v.custom_drafts, ['lyrics_max', 'styles_max', 'title_max'], isFiniteNumber)
     && (v.custom_drafts.provider_contract === undefined || isContract(v.custom_drafts.provider_contract))
     && isRecord(v.features)
-    && all(v.features, ['albums', 'inspiration', 'studioChat', 'dailyChallenge', 'persistentQueue', 'sources'], bool)
+    && all(v.features, ['albums', 'inspiration', 'studioChat', 'dailyChallenge', 'persistentQueue', 'voices', 'sources'], bool)
     && Array.isArray(v.inspiration_sources)
     && v.inspiration_sources.every(x => str(x) && inspirationSources.includes(x))
     && new Set(v.inspiration_sources).size === v.inspiration_sources.length

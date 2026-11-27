@@ -40,12 +40,13 @@ export async function uploadSource(
     onProgress: (fraction: number) => void,
     signal: AbortSignal,
     put: PutFile = putFile,
+    purpose?: 'music_voice_evidence',
 ): Promise<string> {
     if (signal.aborted) throw new ApiError(0, 'upload_cancelled');
     const grant = await api.request<UploadGrant>('/api/v1/uploads', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content_type: contentType, size_bytes: file.size }),
+        body: JSON.stringify({ content_type: contentType, size_bytes: file.size, ...(purpose ? { purpose } : {}) }),
         signal,
     });
     try {
