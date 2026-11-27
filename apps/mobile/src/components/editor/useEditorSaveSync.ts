@@ -7,7 +7,7 @@ import { getCacheUser, subscribeCacheUser } from '../../lib/appCache';
 import { ApiError, type ApiClient } from '../../lib/api';
 import { documentIdentity, validDocument, type ProjectDocument } from '../../lib/editorBridge';
 import { readDraft, writeDraft, removeDraft, type EditorDraft } from '../../lib/editorDrafts';
-import { createProject, conflictCopyName, getDocument, getManualEditorCommitStatus, putDocument, putPaidDocument, quoteManualEditorCommit, editorErrorKey, type DocumentHead } from '../../lib/editorProjects';
+import { cancelManualEditorCommit, createProject, conflictCopyName, finalizeManualEditorCommit, getDocument, getManualEditorCommitStatus, putDocument, putPaidDocument, quoteManualEditorCommit, editorErrorKey, type DocumentHead } from '../../lib/editorProjects';
 import { ambiguous, refused, canStart, canRetry, owns, retryDelay, decideDraft, createDraftQueue, type Operation } from '../../lib/editorSaveSafety';
 import { editorDeviceMedia } from '../../lib/editorDeviceMedia';
 import { restoreVersion, projectsErrorMessage } from '../../lib/projects';
@@ -39,7 +39,7 @@ export function useEditorSaveSync(options: Options) {
         const owner = getCacheUser(), session = sessionFactory.current();
         let mounted = true, stopped = false, epoch = 0, watchGen = 0, imports = 0, localOnly = false;
         let saving: Operation | null = null, replacing: Operation | null = null;
-        let pending: Save | null = null, paidReconcile: Save | null = null, restoreOp: Restore | null = null, copy: Copy | null = null;
+        let pending: Save | null = null, paidReconcile: Save | null = null, paidDelivery: Save | null = null, restoreOp: Restore | null = null, copy: Copy | null = null;
         let remote: DocumentHead | null = null, recovery: EditorDraft | null = null;
         let sheet: 'conflict' | 'recovery' | 'versions' | null = null;
         let gate: 'loading' | 'pending' | 'open' = 'loading', workspaceId: string | null = null;
@@ -57,7 +57,7 @@ export function useEditorSaveSync(options: Options) {
         const clear = (...names: (keyof typeof timers)[]) => names.forEach(name => { clearTimeout(timers[name]); delete timers[name]; });
         const queue = createDraftQueue({ write: writeDraft, remove: () => removeDraft(o().projectId) });
         function drop() {
-            stopped = true; pending = null; paidReconcile = null; restoreOp = null; copy = null; saving = replacing = null;
+            stopped = true; pending = null; paidReconcile = null; paidDelivery = null; restoreOp = null; copy = null; saving = replacing = null;
             failure = null; failureCode = null; sheet = null; remote = null;
             clear('auto', 'retry', 'draft', 'watch'); watchGen++; notify();
         }
@@ -147,7 +147,8 @@ export function useEditorSaveSync(options: Options) {
             try {
                 const status = await getManualEditorCommitStatus(o().api, o().projectId, op.key);
                 if (!live() || epoch !== op.epoch || paidReconcile !== op) return { committed: false, clean: false, revision: null, credits: null };
-                if (status.committed && status.revision !== null) {
+                if ((status.pending || status.committed) && status.revision !== null) {
+                    if (status.pending) paidDelivery = op;
                     const clean = await acknowledgeSave(op, status.revision);
                     return { committed: true, clean, revision: status.revision, credits: op.expectedCredits ?? null };
                 }
@@ -176,6 +177,9 @@ export function useEditorSaveSync(options: Options) {
                 return saveRun.then(() => pending || imports > 0
                     ? { committed: false, clean: false, revision: null, credits: null }
                     : runSave(expectedCredits));
+            }
+            if (expectedCredits !== undefined && paidDelivery) {
+                return Promise.resolve({ committed: false, clean: false, revision: null, credits: null });
             }
             if (expectedCredits !== undefined && paidReconcile) {
                 const op = paidReconcile;
@@ -238,6 +242,7 @@ export function useEditorSaveSync(options: Options) {
                         result = await putPaidDocument(o().api, o().projectId, op.expectedRevision, op.document, op.key, op.expectedCredits);
                     }
                     if (!holds(op)) return { committed: false, clean: false, revision: null, credits: null };
+                    if (op.expectedCredits !== undefined) paidDelivery = op;
                     const clean = await acknowledgeSave(op, result.revision);
                     return { committed: op.expectedCredits !== undefined, clean, revision: result.revision, credits: op.expectedCredits ?? null };
                 } catch (error) {
@@ -484,6 +489,22 @@ export function useEditorSaveSync(options: Options) {
         return {
             live, changed, loaded, beginImport, flushDraft, save: () => runSave().then(result => result.clean),
             savePaid: (credits: number): Promise<PaidSaveResult> => runSave(credits).then(({ committed, revision, credits: charged }) => ({ committed, revision, credits: charged })),
+            finalizePaid: async (): Promise<number | null> => {
+                const op = paidDelivery;
+                if (!live()) return null;
+                if (!op) return o().revisionRef.current;
+                const revision = await finalizeManualEditorCommit(o().api, o().projectId, op.key);
+                if (paidDelivery === op) paidDelivery = null;
+                return revision;
+            },
+            cancelPaid: async (): Promise<boolean> => {
+                const op = paidDelivery;
+                if (!live()) return false;
+                if (!op) return true;
+                await cancelManualEditorCommit(o().api, o().projectId, op.key);
+                if (paidDelivery === op) paidDelivery = null;
+                return true;
+            },
             quotePaid: () => {
                 const document = o().documentRef.current;
                 if (!live() || gate !== 'open' || localOnly || imports > 0 || paidReconcile || !document) return Promise.reject(new ApiError(0, 'offline'));

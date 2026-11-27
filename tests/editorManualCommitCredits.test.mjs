@@ -20,29 +20,32 @@ test('manual editor Save and Export share one server-derived five-credit receipt
   assert.match(sql, /jsonb_array_length\(sources\)=0 OR covered THEN 0 ELSE 5/);
 });
 
-test('manual editor charge is atomic with document save and bypasses supplier-only admission', () => {
+test('manual editor reserves atomically before delivery and bypasses supplier-only admission', () => {
   const debit = sql.indexOf('debit:=public.ledger_debit');
   const save = sql.indexOf('saved:=private.save_project_document', debit);
-  const receipt = sql.indexOf('INSERT INTO public.editor_manual_commit_receipts');
-  assert.ok(debit > 0 && save > debit && receipt > save);
+  const reservation = sql.indexOf('INSERT INTO public.editor_manual_commit_operations', save);
+  const finalize = sql.indexOf('CREATE OR REPLACE FUNCTION private.finalize_manual_editor_commit');
+  const receipt = sql.indexOf('INSERT INTO public.editor_manual_commit_receipts', finalize);
+  assert.ok(debit > 0 && save > debit && reservation > save && finalize > reservation && receipt > finalize);
   assert.match(sql, /WHEN \(NEW\.model_id<>'editor-manual-commit'\).*enforce_user_inflight_on_job/s);
   assert.match(sql, /WHEN \(NEW\.model_id<>'editor-manual-commit'\).*enforce_provider_spend_on_job/s);
   assert.match(sql, /user_id=p_user_id AND model_id<>'editor-manual-commit'/);
   assert.match(sql, /p_expected_credits IS NULL OR p_expected_credits NOT IN \(0,5\)/);
-  assert.doesNotMatch(sql, /ledger_refund/);
+  assert.match(sql, /public\.ledger_refund\(op\.job_id,op\.user_id,op\.credits,'refund:editor_manual_delivery_failed'\)/);
+  assert.doesNotMatch(sql, /UPDATE public\.project_document_versions/);
 });
 
 test('manual editor charge is disabled by default and exact job identity is enforced', () => {
   assert.match(sql, /editor_manual_commit_config[\s\S]*enabled boolean NOT NULL DEFAULT false/);
-  assert.equal((sql.match(/FEATURE_DISABLED/g) ?? []).length, 3);
+  assert.equal((sql.match(/FEATURE_DISABLED/g) ?? []).length, 5);
   assert.match(sql, /j\.credits IS DISTINCT FROM p_credits OR j\.inputs IS DISTINCT FROM p_inputs/);
   assert.match(sql, /j\.inputs=charge_inputs/);
 });
 
 test('ambiguous paid responses reconcile by exact idempotency key', () => {
   assert.match(sql, /private\.manual_editor_commit_status\(p_project uuid,p_request_key text\)/);
-  assert.match(sql, /v\.project_id=p_project AND v\.actor_id=actor AND v\.request_key=p_request_key/);
-  assert.match(sql, /v\.manual_commit_credits IS NOT NULL/);
+  assert.match(sql, /o\.actor_id=actor AND o\.project_id=p_project AND o\.request_key=p_request_key/);
+  assert.match(sql, /'pending',op\.state='PENDING'/);
 });
 
 test('the synchronous debit job is hidden from Library and push completion', () => {
@@ -54,15 +57,20 @@ test('authenticated manual editor wrappers and checked implementations are expli
     'public.quote_manual_editor_commit(uuid,jsonb)',
     'public.save_paid_project_document(uuid,integer,jsonb,text,integer)',
     'public.manual_editor_commit_status(uuid,text)',
+    'public.finalize_manual_editor_commit(uuid,text)',
+    'public.cancel_manual_editor_commit(uuid,text)',
     'private.quote_manual_editor_commit(uuid,jsonb)',
     'private.save_paid_project_document(uuid,integer,jsonb,text,integer)',
     'private.manual_editor_commit_status(uuid,text)',
+    'private.finalize_manual_editor_commit(uuid,text)',
+    'private.cancel_manual_editor_commit(uuid,text)',
   ]) assert.match(privilegeGuard, new RegExp(signature.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
 });
 
 test('manual editor receipts retain only hashed source coverage and are classified for erasure policy', () => {
   assert.doesNotMatch(sql, /source_ids/);
   assert.match(sql, /source_hashes jsonb NOT NULL/);
+  assert.match(sql, /editor_manual_commit_operations[\s\S]*source_hashes jsonb NOT NULL/);
   assert.match(accountDeletionGuard, /'editor_manual_commit_receipts'.*source identifiers are retained only as SHA-256 hashes/);
   assert.match(privacyExportGuard, /Content-free manual-editor debit\/coverage tombstone; imported source identities are retained only as SHA-256 hashes\.[\s\S]*'editor_manual_commit_receipts'/);
 });

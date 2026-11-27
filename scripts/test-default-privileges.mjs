@@ -53,14 +53,18 @@ const BROWSER_CALLABLE = new Set([
     'public.create_project(uuid,text,text)',    // 0135+, authenticated: tenant wrappers (ADR-0051)
     'public.mutate_project(uuid,integer,text,boolean)',
     'public.save_project_document(uuid,integer,jsonb,text,integer)',
-    // 0622: authenticated manual-editor quote/save/status wrappers. Their
+    // 0622: authenticated manual-editor reserve/finalize/cancel/status wrappers. Their
     // private implementations repeat the same actor/project role checks.
     'public.quote_manual_editor_commit(uuid,jsonb)',
     'public.save_paid_project_document(uuid,integer,jsonb,text,integer)',
     'public.manual_editor_commit_status(uuid,text)',
+    'public.finalize_manual_editor_commit(uuid,text)',
+    'public.cancel_manual_editor_commit(uuid,text)',
     'private.quote_manual_editor_commit(uuid,jsonb)',
     'private.save_paid_project_document(uuid,integer,jsonb,text,integer)',
     'private.manual_editor_commit_status(uuid,text)',
+    'private.finalize_manual_editor_commit(uuid,text)',
+    'private.cancel_manual_editor_commit(uuid,text)',
     'public.reserve_project_asset(uuid,text,bigint,text)',
     'public.consume_project_asset_inspection(uuid,uuid)',
     'private.create_project(uuid,text,text)',

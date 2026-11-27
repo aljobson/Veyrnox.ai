@@ -60,7 +60,7 @@ beforeEach(() => {
             return { revision: body.expected_revision + 1, ...(body.manual_commit ? { credits: body.manual_commit.expected_credits } : {}) };
         }
         if (init?.method === 'POST') return { project: { id: copyId } };
-        if (path.includes('manual_commit_status=1')) return { ok: true, committed: false, revision: null };
+        if (path.includes('manual_commit_status=1')) return { ok: true, committed: false, pending: false, canceled: false, revision: null };
         if (path.endsWith('/document')) return head;
         if (path.endsWith('/media-info')) return { seconds: 4 };
         return { project: { id, workspace_id: 'workspace', name: 'Cut' } };
@@ -163,7 +163,7 @@ test('a lost paid response reconciles the committed head without replaying a cha
     mockRequest.mockImplementationOnce(async () => { throw new ApiError(0, 'network'); });
     mockRequest.mockImplementationOnce(async (path: string) => {
         expect(path).toContain('manual_commit_status=1');
-        return { ok: true, committed: true, revision: 5 };
+        return { ok: true, committed: false, pending: true, canceled: false, revision: 5 };
     });
     let result!: Awaited<ReturnType<typeof session.sync.savePaid>>;
     await act(async () => { result = await session.sync.savePaid(5); });

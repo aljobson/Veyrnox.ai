@@ -20,31 +20,35 @@ ALTER TABLE public.editor_manual_commit_config ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.editor_manual_commit_config FORCE ROW LEVEL SECURITY;
 REVOKE ALL ON TABLE public.editor_manual_commit_config FROM PUBLIC,anon,authenticated,service_role;
 
--- Mark the exact document version written by the paid endpoint. Reconciliation
--- must never mistake an ordinary save that reused the request key for payment.
-ALTER TABLE public.project_document_versions
-  ADD COLUMN IF NOT EXISTS manual_commit_credits integer,
-  ADD COLUMN IF NOT EXISTS manual_commit_job_id uuid,
-  ADD COLUMN IF NOT EXISTS manual_commit_fingerprint text;
-DO $$ BEGIN
-  IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.project_document_versions'::regclass
-      AND conname='project_document_versions_manual_commit_job_id_fkey') THEN
-    ALTER TABLE public.project_document_versions ADD CONSTRAINT project_document_versions_manual_commit_job_id_fkey
-      FOREIGN KEY(manual_commit_job_id) REFERENCES public.jobs(id) ON DELETE RESTRICT;
-  END IF;
-  IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.project_document_versions'::regclass
-      AND conname='project_document_versions_manual_commit_check') THEN
-    ALTER TABLE public.project_document_versions ADD CONSTRAINT project_document_versions_manual_commit_check CHECK (
-      (manual_commit_credits IS NULL AND manual_commit_job_id IS NULL AND manual_commit_fingerprint IS NULL)
-      OR (manual_commit_credits IN (0,5)
-        AND manual_commit_fingerprint ~ '^[0-9a-f]{64}$'
-        AND ((manual_commit_credits=0 AND manual_commit_job_id IS NULL)
-          OR (manual_commit_credits=5 AND manual_commit_job_id IS NOT NULL)))
-    );
-  END IF;
-END $$;
-CREATE INDEX IF NOT EXISTS project_document_versions_manual_commit_job_idx
-  ON public.project_document_versions(manual_commit_job_id);
+-- Payment state lives outside immutable document versions. A reservation is
+-- created before device delivery, then finalized after Photos/share succeeds
+-- or refunded when delivery fails. The ordinary stuck-job sweeper is the crash
+-- fallback for reservations which never receive either acknowledgement.
+CREATE TABLE IF NOT EXISTS public.editor_manual_commit_operations (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  actor_id uuid NOT NULL,
+  user_id uuid NOT NULL REFERENCES public.users(id) ON DELETE RESTRICT,
+  project_id uuid NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
+  request_key text NOT NULL CHECK (request_key ~ '^[A-Za-z0-9._-]{8,128}$'),
+  revision integer NOT NULL CHECK (revision > 0),
+  source_fingerprint text NOT NULL CHECK (source_fingerprint ~ '^[0-9a-f]{64}$'),
+  source_hashes jsonb NOT NULL CHECK (jsonb_typeof(source_hashes) = 'array'),
+  job_id uuid UNIQUE REFERENCES public.jobs(id) ON DELETE RESTRICT,
+  credits integer NOT NULL CHECK (credits IN (0,5)),
+  state text NOT NULL DEFAULT 'PENDING' CHECK (state IN ('PENDING','COMMITTED','REFUNDED')),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE(actor_id, project_id, request_key),
+  CHECK ((credits=0 AND job_id IS NULL) OR (credits=5 AND job_id IS NOT NULL))
+);
+CREATE INDEX IF NOT EXISTS editor_manual_commit_operations_project_idx
+  ON public.editor_manual_commit_operations(project_id,actor_id,created_at DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS editor_manual_commit_one_pending_charge_idx
+  ON public.editor_manual_commit_operations(user_id,project_id,source_fingerprint)
+  WHERE credits=5 AND state='PENDING';
+ALTER TABLE public.editor_manual_commit_operations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.editor_manual_commit_operations FORCE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public.editor_manual_commit_operations FROM PUBLIC,anon,authenticated,service_role;
 
 CREATE TABLE IF NOT EXISTS public.editor_manual_commit_receipts (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -119,8 +123,8 @@ CREATE OR REPLACE FUNCTION private.save_paid_project_document(
 LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
 DECLARE
   actor uuid:=auth.uid(); v_user_id uuid; sources jsonb; fingerprint text; charge_key text;
-  amount integer; covered boolean; replay boolean; debit jsonb; saved jsonb; charged_job uuid;
-  saved_revision integer; charge_inputs jsonb;
+  amount integer; covered boolean; debit jsonb; saved jsonb; charged_job uuid;
+  saved_revision integer; charge_inputs jsonb; existing public.editor_manual_commit_operations%ROWTYPE;
 BEGIN
   IF actor IS NULL THEN RAISE EXCEPTION 'UNAUTHORIZED' USING ERRCODE='PT401'; END IF;
   IF NOT EXISTS(SELECT 1 FROM public.editor_manual_commit_config WHERE singleton AND enabled)
@@ -139,22 +143,22 @@ BEGIN
     THEN RAISE EXCEPTION 'INVALID_DOCUMENT' USING ERRCODE='PT400'; END IF;
   SELECT id INTO v_user_id FROM public.users WHERE auth_id=actor::text;
   IF v_user_id IS NULL THEN RAISE EXCEPTION 'UNAUTHORIZED' USING ERRCODE='PT401'; END IF;
-  SELECT EXISTS(SELECT 1 FROM public.project_document_versions v
-    WHERE v.project_id=p_project AND v.actor_id=actor AND v.request_key=p_request_key) INTO replay;
-  IF replay THEN
-    -- Re-run the canonical document save first so the existing key is still
-    -- checked against the expected revision and exact document payload.
+  SELECT * INTO existing FROM public.editor_manual_commit_operations o
+    WHERE o.actor_id=actor AND o.project_id=p_project AND o.request_key=p_request_key;
+  IF existing.id IS NOT NULL THEN
+    -- Re-run the canonical save so a same-key replay must still match the exact
+    -- expected revision and document payload. Payment state is never inferred
+    -- from, or written back into, the immutable version row.
     saved:=private.save_project_document(p_project,p_expected,p_content,p_request_key,NULL);
-    SELECT v.revision,v.manual_commit_credits INTO saved_revision,amount
-      FROM public.project_document_versions v
-      WHERE v.project_id=p_project AND v.actor_id=actor AND v.request_key=p_request_key;
-    IF amount IS NULL THEN
-      RETURN jsonb_build_object('ok',false,'code','IDEMPOTENCY_CONFLICT');
+    IF p_expected_credits IS DISTINCT FROM existing.credits THEN
+      RETURN jsonb_build_object('ok',false,'code','PRICE_CHANGED','expected_credits',existing.credits);
     END IF;
-    IF p_expected_credits IS DISTINCT FROM amount THEN
-      RETURN jsonb_build_object('ok',false,'code','PRICE_CHANGED','expected_credits',amount);
-    END IF;
-    RETURN saved||jsonb_build_object('ok',true,'credits',amount,'covered',amount=0);
+    RETURN saved||jsonb_build_object('ok',true,'credits',existing.credits,'covered',existing.credits=0,
+      'pending',existing.state='PENDING','committed',existing.state='COMMITTED','canceled',existing.state='REFUNDED');
+  END IF;
+  IF EXISTS(SELECT 1 FROM public.project_document_versions v
+    WHERE v.project_id=p_project AND v.actor_id=actor AND v.request_key=p_request_key) THEN
+    RETURN jsonb_build_object('ok',false,'code','IDEMPOTENCY_CONFLICT');
   END IF;
   sources:=private.editor_manual_source_hashes(p_content);
   fingerprint:=encode(sha256(convert_to(sources::text,'UTF8')),'hex');
@@ -172,7 +176,11 @@ BEGIN
     RETURN jsonb_build_object('ok',false,'code','PRICE_CHANGED','expected_credits',amount);
   END IF;
   IF amount=5 THEN
-    charge_key:='editor-manual.'||encode(sha256(convert_to(actor::text||':'||p_project::text||':'||fingerprint,'UTF8')),'hex');
+    IF EXISTS(SELECT 1 FROM public.editor_manual_commit_operations o WHERE o.user_id=v_user_id
+      AND o.project_id=p_project AND o.source_fingerprint=fingerprint AND o.credits=5 AND o.state='PENDING') THEN
+      RETURN jsonb_build_object('ok',false,'code','COMMIT_PENDING');
+    END IF;
+    charge_key:='editor-manual.'||encode(sha256(convert_to(actor::text||':'||p_project::text||':'||p_request_key||':'||fingerprint,'UTF8')),'hex');
     charge_inputs:=jsonb_build_object('kind','manual_editor_commit','project_id',p_project,
       'source_fingerprint',fingerprint,'request_key',p_request_key);
     debit:=public.ledger_debit(v_user_id,charge_key,5,'debit:editor_manual_commit','editor-manual-commit',
@@ -187,33 +195,84 @@ BEGIN
   END IF;
   saved:=private.save_project_document(p_project,p_expected,p_content,p_request_key,NULL);
   saved_revision:=(saved->>'revision')::integer;
-  IF amount=5 THEN
-    INSERT INTO public.editor_manual_commit_receipts(user_id,project_id,source_fingerprint,source_hashes,job_id,credits)
-      VALUES(v_user_id,p_project,fingerprint,sources,charged_job,5)
-      ON CONFLICT(user_id,project_id,source_fingerprint) DO NOTHING;
-    -- This synchronous accounting row backs the ledger but is not generated
-    -- content. Reuse the existing local/deleted convention so it cannot appear
-    -- as a blank Library item or enqueue a false job-complete notification.
-    UPDATE public.jobs SET state='STORED',provider='local',deleted_at=now(),updated_at=now()
-      WHERE id=charged_job AND state='DEBITED';
-  END IF;
-  UPDATE public.project_document_versions v SET manual_commit_credits=amount,
-      manual_commit_job_id=charged_job,manual_commit_fingerprint=fingerprint
-    WHERE v.project_id=p_project AND v.actor_id=actor AND v.request_key=p_request_key
-      AND v.revision=saved_revision
-      AND (v.manual_commit_credits IS NULL OR (v.manual_commit_credits=amount
-        AND v.manual_commit_job_id IS NOT DISTINCT FROM charged_job
-        AND v.manual_commit_fingerprint=fingerprint));
-  IF NOT FOUND THEN RAISE EXCEPTION 'IDEMPOTENCY_CONFLICT' USING ERRCODE='PT409'; END IF;
-  RETURN saved||jsonb_build_object('ok',true,'credits',amount,'covered',amount=0);
+  INSERT INTO public.editor_manual_commit_operations(
+      actor_id,user_id,project_id,request_key,revision,source_fingerprint,source_hashes,job_id,credits)
+    VALUES(actor,v_user_id,p_project,p_request_key,saved_revision,fingerprint,sources,charged_job,amount);
+  RETURN saved||jsonb_build_object('ok',true,'credits',amount,'covered',amount=0,
+    'pending',true,'committed',false,'canceled',false);
 END $$;
 
--- Authoritative read-only reconciliation for an ambiguous paid HTTP response.
--- The mutable latest document head is deliberately not used as evidence: only
--- the exact actor/project/idempotency-key version can acknowledge a charge.
+CREATE OR REPLACE FUNCTION private.finalize_manual_editor_commit(p_project uuid,p_request_key text) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+DECLARE actor uuid:=auth.uid(); op public.editor_manual_commit_operations%ROWTYPE; job_state text;
+BEGIN
+  IF actor IS NULL THEN RAISE EXCEPTION 'UNAUTHORIZED' USING ERRCODE='PT401'; END IF;
+  IF NOT EXISTS(SELECT 1 FROM public.editor_manual_commit_config WHERE singleton AND enabled)
+    THEN RAISE EXCEPTION 'FEATURE_DISABLED' USING ERRCODE='PT404'; END IF;
+  IF p_request_key IS NULL OR p_request_key!~'^[A-Za-z0-9._-]{8,128}$'
+    THEN RAISE EXCEPTION 'INVALID_IDEMPOTENCY_KEY' USING ERRCODE='PT400'; END IF;
+  PERFORM pg_advisory_xact_lock(hashtextextended(actor::text,34));
+  PERFORM 1 FROM public.projects WHERE id=p_project FOR UPDATE;
+  IF coalesce(private.project_role(p_project),'') NOT IN ('OWNER','ADMIN','CREATOR','EDITOR')
+    THEN RAISE EXCEPTION 'NOT_FOUND' USING ERRCODE='PT404'; END IF;
+  SELECT * INTO op FROM public.editor_manual_commit_operations o
+   WHERE o.actor_id=actor AND o.project_id=p_project AND o.request_key=p_request_key FOR UPDATE;
+  IF op.id IS NULL THEN RETURN jsonb_build_object('ok',false,'code','COMMIT_NOT_FOUND'); END IF;
+  IF op.state='COMMITTED' THEN RETURN jsonb_build_object('ok',true,'committed',true,'revision',op.revision); END IF;
+  IF op.state='REFUNDED' THEN RETURN jsonb_build_object('ok',false,'code','COMMIT_CANCELED','revision',op.revision); END IF;
+  IF op.credits=5 THEN
+    SELECT state INTO job_state FROM public.jobs WHERE id=op.job_id FOR UPDATE;
+    IF job_state='REFUNDED' THEN
+      UPDATE public.editor_manual_commit_operations SET state='REFUNDED',updated_at=now() WHERE id=op.id;
+      RETURN jsonb_build_object('ok',false,'code','COMMIT_CANCELED','revision',op.revision);
+    END IF;
+    IF job_state<>'DEBITED' THEN RETURN jsonb_build_object('ok',false,'code','COMMIT_STATE_INVALID'); END IF;
+    INSERT INTO public.editor_manual_commit_receipts(user_id,project_id,source_fingerprint,source_hashes,job_id,credits)
+      VALUES(op.user_id,p_project,op.source_fingerprint,op.source_hashes,op.job_id,5)
+      ON CONFLICT(user_id,project_id,source_fingerprint) DO NOTHING;
+    UPDATE public.jobs SET state='STORED',provider='local',deleted_at=now(),updated_at=now()
+      WHERE id=op.job_id AND state='DEBITED';
+    IF NOT FOUND THEN RAISE EXCEPTION 'COMMIT_STATE_INVALID' USING ERRCODE='PT409'; END IF;
+  END IF;
+  UPDATE public.editor_manual_commit_operations SET state='COMMITTED',updated_at=now() WHERE id=op.id;
+  RETURN jsonb_build_object('ok',true,'committed',true,'revision',op.revision);
+END $$;
+
+CREATE OR REPLACE FUNCTION private.cancel_manual_editor_commit(p_project uuid,p_request_key text) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+DECLARE actor uuid:=auth.uid(); op public.editor_manual_commit_operations%ROWTYPE; job_state text; refunded jsonb;
+BEGIN
+  IF actor IS NULL THEN RAISE EXCEPTION 'UNAUTHORIZED' USING ERRCODE='PT401'; END IF;
+  IF NOT EXISTS(SELECT 1 FROM public.editor_manual_commit_config WHERE singleton AND enabled)
+    THEN RAISE EXCEPTION 'FEATURE_DISABLED' USING ERRCODE='PT404'; END IF;
+  IF p_request_key IS NULL OR p_request_key!~'^[A-Za-z0-9._-]{8,128}$'
+    THEN RAISE EXCEPTION 'INVALID_IDEMPOTENCY_KEY' USING ERRCODE='PT400'; END IF;
+  PERFORM pg_advisory_xact_lock(hashtextextended(actor::text,34));
+  PERFORM 1 FROM public.projects WHERE id=p_project FOR UPDATE;
+  IF coalesce(private.project_role(p_project),'') NOT IN ('OWNER','ADMIN','CREATOR','EDITOR')
+    THEN RAISE EXCEPTION 'NOT_FOUND' USING ERRCODE='PT404'; END IF;
+  SELECT * INTO op FROM public.editor_manual_commit_operations o
+   WHERE o.actor_id=actor AND o.project_id=p_project AND o.request_key=p_request_key FOR UPDATE;
+  IF op.id IS NULL THEN RETURN jsonb_build_object('ok',true,'canceled',false,'revision',NULL); END IF;
+  IF op.state='COMMITTED' THEN RETURN jsonb_build_object('ok',false,'code','ALREADY_COMMITTED','revision',op.revision); END IF;
+  IF op.state='REFUNDED' THEN RETURN jsonb_build_object('ok',true,'canceled',true,'revision',op.revision); END IF;
+  IF op.credits=5 THEN
+    SELECT state INTO job_state FROM public.jobs WHERE id=op.job_id FOR UPDATE;
+    IF job_state='DEBITED' THEN
+      refunded:=public.ledger_refund(op.job_id,op.user_id,op.credits,'refund:editor_manual_delivery_failed');
+      IF refunded->>'ok' IS DISTINCT FROM 'true' THEN RETURN refunded; END IF;
+    ELSIF job_state<>'REFUNDED' THEN
+      RETURN jsonb_build_object('ok',false,'code','COMMIT_STATE_INVALID');
+    END IF;
+  END IF;
+  UPDATE public.editor_manual_commit_operations SET state='REFUNDED',updated_at=now() WHERE id=op.id;
+  RETURN jsonb_build_object('ok',true,'canceled',true,'revision',op.revision);
+END $$;
+
+-- Authoritative reconciliation for ambiguous reserve/finalize responses.
 CREATE OR REPLACE FUNCTION private.manual_editor_commit_status(p_project uuid,p_request_key text) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
-DECLARE actor uuid:=auth.uid(); saved_revision integer;
+DECLARE actor uuid:=auth.uid(); op public.editor_manual_commit_operations%ROWTYPE; job_state text;
 BEGIN
   IF actor IS NULL THEN RAISE EXCEPTION 'UNAUTHORIZED' USING ERRCODE='PT401'; END IF;
   IF NOT EXISTS(SELECT 1 FROM public.editor_manual_commit_config WHERE singleton AND enabled)
@@ -227,16 +286,20 @@ BEGIN
   -- rollback/non-arrival result rather than a snapshot taken mid-transaction.
   PERFORM pg_advisory_xact_lock(hashtextextended(actor::text,34));
   PERFORM 1 FROM public.projects WHERE id=p_project FOR UPDATE;
-  SELECT v.revision INTO saved_revision FROM public.project_document_versions v
-   WHERE v.project_id=p_project AND v.actor_id=actor AND v.request_key=p_request_key
-     AND v.manual_commit_credits IS NOT NULL
-     AND (v.manual_commit_credits=0 OR EXISTS(
-       SELECT 1 FROM public.editor_manual_commit_receipts r JOIN public.jobs j ON j.id=r.job_id
-        WHERE r.user_id=j.user_id AND r.project_id=p_project
-          AND r.job_id=v.manual_commit_job_id AND r.source_fingerprint=v.manual_commit_fingerprint
-          AND j.model_id='editor-manual-commit' AND j.credits=5
-          AND j.inputs->>'request_key'=p_request_key));
-  RETURN jsonb_build_object('ok',true,'committed',saved_revision IS NOT NULL,'revision',saved_revision);
+  SELECT * INTO op FROM public.editor_manual_commit_operations o
+   WHERE o.actor_id=actor AND o.project_id=p_project AND o.request_key=p_request_key FOR UPDATE;
+  IF op.id IS NULL THEN
+    RETURN jsonb_build_object('ok',true,'committed',false,'pending',false,'canceled',false,'revision',NULL);
+  END IF;
+  IF op.state='PENDING' AND op.credits=5 THEN
+    SELECT state INTO job_state FROM public.jobs WHERE id=op.job_id;
+    IF job_state='REFUNDED' THEN
+      UPDATE public.editor_manual_commit_operations SET state='REFUNDED',updated_at=now() WHERE id=op.id;
+      op.state:='REFUNDED';
+    END IF;
+  END IF;
+  RETURN jsonb_build_object('ok',true,'committed',op.state='COMMITTED','pending',op.state='PENDING',
+    'canceled',op.state='REFUNDED','revision',op.revision);
 END $$;
 
 CREATE OR REPLACE FUNCTION public.quote_manual_editor_commit(p_project_id uuid,p_document jsonb) RETURNS jsonb
@@ -252,14 +315,26 @@ CREATE OR REPLACE FUNCTION public.manual_editor_commit_status(p_project_id uuid,
 LANGUAGE sql SECURITY INVOKER SET search_path='' AS $$
   SELECT private.manual_editor_commit_status(p_project_id,p_idempotency_key);
 $$;
+CREATE OR REPLACE FUNCTION public.finalize_manual_editor_commit(p_project_id uuid,p_idempotency_key text) RETURNS jsonb
+LANGUAGE sql SECURITY INVOKER SET search_path='' AS $$
+  SELECT private.finalize_manual_editor_commit(p_project_id,p_idempotency_key);
+$$;
+CREATE OR REPLACE FUNCTION public.cancel_manual_editor_commit(p_project_id uuid,p_idempotency_key text) RETURNS jsonb
+LANGUAGE sql SECURITY INVOKER SET search_path='' AS $$
+  SELECT private.cancel_manual_editor_commit(p_project_id,p_idempotency_key);
+$$;
 
 REVOKE ALL ON FUNCTION private.editor_manual_source_hashes(jsonb),private.quote_manual_editor_commit(uuid,jsonb),
   private.save_paid_project_document(uuid,integer,jsonb,text,integer),private.manual_editor_commit_status(uuid,text),
+  private.finalize_manual_editor_commit(uuid,text),private.cancel_manual_editor_commit(uuid,text),
   public.quote_manual_editor_commit(uuid,jsonb),public.save_paid_project_document(uuid,integer,jsonb,text,integer),
-  public.manual_editor_commit_status(uuid,text) FROM PUBLIC,anon,service_role;
+  public.manual_editor_commit_status(uuid,text),public.finalize_manual_editor_commit(uuid,text),
+  public.cancel_manual_editor_commit(uuid,text) FROM PUBLIC,anon,service_role;
 GRANT EXECUTE ON FUNCTION private.quote_manual_editor_commit(uuid,jsonb),private.save_paid_project_document(uuid,integer,jsonb,text,integer),
-  private.manual_editor_commit_status(uuid,text),public.quote_manual_editor_commit(uuid,jsonb),
-  public.save_paid_project_document(uuid,integer,jsonb,text,integer),public.manual_editor_commit_status(uuid,text) TO authenticated;
+  private.manual_editor_commit_status(uuid,text),private.finalize_manual_editor_commit(uuid,text),private.cancel_manual_editor_commit(uuid,text),
+  public.quote_manual_editor_commit(uuid,jsonb),public.save_paid_project_document(uuid,integer,jsonb,text,integer),
+  public.manual_editor_commit_status(uuid,text),public.finalize_manual_editor_commit(uuid,text),
+  public.cancel_manual_editor_commit(uuid,text) TO authenticated;
 
 -- Manual accounting rows are not generation attempts. Exclude only this
 -- model from the rolling limiter; deleted generation jobs must keep counting

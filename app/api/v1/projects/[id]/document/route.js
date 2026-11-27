@@ -80,10 +80,33 @@ export async function PUT(request, { params }) {
       const code = String(result.code || 'MANUAL_COMMIT_FAILED').toUpperCase();
       const status = code === 'INSUFFICIENT_BALANCE' || code === 'NO_BALANCE_ROW' ? 402
         : code === 'ACCOUNT_FROZEN' || code === 'ACCOUNT_ON_HOLD' ? 403
-        : code === 'PRICE_CHANGED' || code === 'IDEMPOTENCY_CONFLICT' ? 409
+        : code === 'PRICE_CHANGED' || code === 'IDEMPOTENCY_CONFLICT' || code === 'COMMIT_PENDING' ? 409
         : code === 'RATE_LIMITED' ? 429 : code === 'INVALID_CREDITS' ? 400 : 503;
       throw new ApiError(status, code, code, result);
     }
     return Response.json(result);
   });
 }
+
+async function settleManualCommit(request, params, action) {
+  return protectedRoute(request, async context => {
+    if (!editorFeatureEnabled('EDITOR_MANUAL_COMMIT_ENABLED'))
+      throw new ApiError(404, 'NOT_FOUND', 'Manual editor commits are not available here yet.');
+    const id = uuid((await params).id).toLowerCase();
+    const projects = await tenantRequest(request, context, `projects?id=eq.${id}&select=id&limit=1`);
+    if (!projects[0]) throw new ApiError(404, 'NOT_FOUND', 'The project was not found.');
+    const result = await tenantRequest(request, context, `rpc/${action}_manual_editor_commit`, { method: 'POST', body: {
+      p_project_id: id, p_idempotency_key: idempotencyKey(request),
+    }, limitAware: true });
+    if (result?.ok === false) {
+      const code = String(result.code || 'MANUAL_COMMIT_FAILED').toUpperCase();
+      const status = code === 'COMMIT_NOT_FOUND' ? 404
+        : ['COMMIT_CANCELED', 'ALREADY_COMMITTED', 'COMMIT_STATE_INVALID'].includes(code) ? 409 : 503;
+      throw new ApiError(status, code, code, result);
+    }
+    return Response.json(result);
+  });
+}
+
+export async function POST(request, { params }) { return settleManualCommit(request, params, 'finalize'); }
+export async function DELETE(request, { params }) { return settleManualCommit(request, params, 'cancel'); }

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { GET, PUT } from '../app/api/v1/projects/[id]/document/route.js';
+import { DELETE, GET, POST, PUT } from '../app/api/v1/projects/[id]/document/route.js';
 import { GET as history } from '../app/api/v1/projects/[id]/history/route.js';
 import { emptyProjectDocument, equalProjectDocuments, validProjectDocument } from '../lib/projectDocument.js';
 const id=crypto.randomUUID(), other=crypto.randomUUID();
@@ -8,6 +8,7 @@ Object.assign(process.env,{APP_ENV:'development',PUBLIC_HOST:'http://localhost:3
 const original=globalThis.fetch;
 test.after(()=>{globalThis.fetch=original;});
 const req=(body,query='')=>new Request('http://localhost:3000/api/v1/projects/'+id+'/document'+query,{method:body?'PUT':'GET',headers:{authorization:'Bearer test-user','x-veyrnox-auth-id':other,'x-request-id':crypto.randomUUID(),'content-type':'application/json','idempotency-key':'document-test-key'},...(body?{body:JSON.stringify(body)}:{})});
+const settleReq=method=>new Request('http://localhost:3000/api/v1/projects/'+id+'/document',{method,headers:{authorization:'Bearer test-user','x-veyrnox-auth-id':other,'x-request-id':crypto.randomUUID(),'idempotency-key':'document-test-key'}});
 const params={params:Promise.resolve({id})};
 test('autosave equality ignores JSONB key ordering but detects edits',()=>{
  const doc=emptyProjectDocument(id);
@@ -46,15 +47,23 @@ test('manual editor quote and commit use the dedicated atomic credit RPCs',async
  assert.deepEqual(calls[1].body,{p_project_id:id,p_expected_revision:1,p_document:doc,p_idempotency_key:'document-test-key',p_expected_credits:5});
 });
 test('manual editor ambiguity status is bound to the exact idempotency key',async()=>{
- const calls=[];globalThis.fetch=async(url,init)=>{calls.push({url:String(url),body:init?.body?JSON.parse(init.body):null});return Response.json(calls.length===1?[{id}]:{ok:true,committed:true,revision:7});};
+ const calls=[];globalThis.fetch=async(url,init)=>{calls.push({url:String(url),body:init?.body?JSON.parse(init.body):null});return Response.json(calls.length===1?[{id}]:{ok:true,committed:true,pending:false,canceled:false,revision:7});};
  const response=await GET(req(undefined,'?manual_commit_status=1'),params);
  assert.equal(response.status,200);assert.match(calls[1].url,/rpc\/manual_editor_commit_status$/);
  assert.deepEqual(calls[1].body,{p_project_id:id,p_idempotency_key:'document-test-key'});
- assert.deepEqual(await response.json(),{ok:true,committed:true,revision:7});
+ assert.deepEqual(await response.json(),{ok:true,committed:true,pending:false,canceled:false,revision:7});
+});
+test('manual editor delivery finalization and cancellation use the exact reservation key',async()=>{
+ for(const [handler,method,rpc,payload] of [[POST,'POST','finalize',{ok:true,committed:true,revision:7}],[DELETE,'DELETE','cancel',{ok:true,canceled:true,revision:7}]]){
+  const calls=[];globalThis.fetch=async(url,init)=>{calls.push({url:String(url),body:init?.body?JSON.parse(init.body):null});return Response.json(calls.length===1?[{id}]:payload);};
+  const response=await handler(settleReq(method),params);assert.equal(response.status,200);
+  assert.match(calls[1].url,new RegExp(`rpc/${rpc}_manual_editor_commit$`));
+  assert.deepEqual(calls[1].body,{p_project_id:id,p_idempotency_key:'document-test-key'});
+ }
 });
 test('manual editor debit failures preserve price, balance and availability semantics',async()=>{
  const doc=emptyProjectDocument(id);
- for(const [code,status] of [['NO_BALANCE_ROW',402],['INSUFFICIENT_BALANCE',402],['ACCOUNT_FROZEN',403],['ACCOUNT_ON_HOLD',403],['PRICE_CHANGED',409],['IDEMPOTENCY_CONFLICT',409],['RATE_LIMITED',429],['INVALID_CREDITS',400],['PROVIDER_ADMISSION_PAUSED',503],['UNKNOWN',503]]){
+ for(const [code,status] of [['NO_BALANCE_ROW',402],['INSUFFICIENT_BALANCE',402],['ACCOUNT_FROZEN',403],['ACCOUNT_ON_HOLD',403],['PRICE_CHANGED',409],['IDEMPOTENCY_CONFLICT',409],['COMMIT_PENDING',409],['RATE_LIMITED',429],['INVALID_CREDITS',400],['PROVIDER_ADMISSION_PAUSED',503],['UNKNOWN',503]]){
   globalThis.fetch=async()=>Response.json({ok:false,code});
   const response=await PUT(req({expected_revision:1,document:doc,manual_commit:{mode:'commit',expected_credits:5}}),params);
   assert.equal(response.status,status,code);

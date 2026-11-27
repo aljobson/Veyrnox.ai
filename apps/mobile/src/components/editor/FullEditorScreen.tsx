@@ -541,7 +541,11 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     };
     const commitManualEdit = async (action: 'save' | 'export'): Promise<number | null> => {
         const credits = await prepareManualEdit(action);
-        return credits === null || credits === 'failed' ? null : commitPreparedManualEdit(credits);
+        if (credits === null || credits === 'failed') return null;
+        const reserved = await commitPreparedManualEdit(credits);
+        if (reserved === null) return null;
+        try { return await sync.finalizePaid(); }
+        catch { setProblem(t('editorManualCommit.connectionFailed')); return null; }
     };
     const openCloudExport = async () => { const rawFonts = (timeline as unknown as { fonts?: unknown }).fonts, declaredFonts = validCustomFonts(timeline);
         if (rawFonts !== undefined && (!Array.isArray(rawFonts) || rawFonts.length !== declaredFonts.length)) { setProblem(t('editorEditGate.invalid')); return; }
@@ -668,7 +672,8 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         <StatusBar style="light" />
         <LocalExportSheet visible={localExportVisible} api={api} account={getCacheUser() ?? ''} projectId={projectId} revision={getEditRevision()} timeline={timeline} canvas={canvas} localMediaUris={localMediaUris}
             onClose={() => setLocalExportVisible(false)} onCloud={() => { setLocalExportVisible(false); void openCloudExport(); }}
-            onPrepare={() => prepareManualEdit('export')} onCommit={commitPreparedManualEdit} />
+            onPrepare={() => prepareManualEdit('export')} onCommit={commitPreparedManualEdit}
+            onFinalize={() => sync.finalizePaid()} onCancel={() => sync.cancelPaid()} />
         <EditorCanvasSheet visible={canvasVisible} canvas={canvas} timeline={timeline} onClose={() => setCanvasVisible(false)} onCanvas={updateCanvas} onTimeline={applyTimeline} />
         <EditorPolishSheet visible={polishVisible} timeline={timeline} onClose={() => setPolishVisible(false)} onApply={applyTimeline} />
         <EditorTrimSheet visible={trimVisible} timeline={timeline} selection={selection} playhead={frameStore.get()} onClose={() => setTrimVisible(false)} onApply={applyTimeline}
