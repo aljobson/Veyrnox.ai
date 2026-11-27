@@ -14,6 +14,7 @@ import { creditValueRange } from '../../_lib/creditValue';
 import { getT } from '../../../../lib/i18n/server';
 import { pageAlternates, openGraphLocale } from '../../../../lib/i18n/metadata.mjs';
 import { localizedHref } from '../../../../lib/i18n/locales.mjs';
+import { modelWorkspaceHref } from '../../_lib/tokens';
 
 // Per request, like /models: an inactive or delisted model 404s within the
 // 5-minute catalog cache instead of living on in a prerendered page.
@@ -46,6 +47,7 @@ export default async function ModelPage({ params }) {
   const facts = modelFacts(model, t);
   const range = creditValueRange(model.credits, await readPublicCreditPacks());
   const modelPath = localizedHref(locale, `/models/${model.id}`);
+  const studioHref = modelWorkspaceHref(model);
 
   return (
     <div className="min-h-dvh">
@@ -76,7 +78,7 @@ export default async function ModelPage({ params }) {
             button comes before the facts: on a phone it sat below the fold. */}
         <div className="mt-8 flex flex-wrap items-center gap-4">
           <Link
-            href={`/app/create?model=${encodeURIComponent(model.id)}`}
+            href={studioHref}
             className="vx-press inline-flex items-center gap-4 rounded-full bg-vx-accent px-6 py-3.5 font-extrabold text-vx-accent-ink hover:bg-vx-accent-hover"
           >
             <span>{t('model.generate', { title: model.title })}</span>

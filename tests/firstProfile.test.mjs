@@ -179,6 +179,8 @@ test('web hand-off: one creation goal, once, in this tab only', async () => {
     assert.equal(takeFirstRunHandoff(), null, 'taken once');
     setFirstRunHandoff('edit');
     assert.equal(takeFirstRunHandoff(), null, 'only creation goals are handed over');
+    setFirstRunHandoff('audio');
+    assert.equal(takeFirstRunHandoff(), null, 'audio opens its dedicated workspace instead of Create');
   } finally { delete globalThis.window; }
 });
 

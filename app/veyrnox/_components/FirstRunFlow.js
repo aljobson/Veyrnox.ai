@@ -92,7 +92,7 @@ export function FirstRunFlow() {
     const goal = answers.current.goal;
     const target = goal ? firstGoalTarget(goal) : null;
     if (target?.href) router.push(target.href);
-    else if (target?.createGoal === 'image' || target?.createGoal === 'video' || target?.createGoal === 'audio') {
+    else if (target?.createGoal === 'image' || target?.createGoal === 'video') {
       setFirstRunHandoff(target.createGoal);
       router.push('/app/create');
     }

@@ -30,11 +30,10 @@ export function EntryTile({ icon, label, hue = 'blue', accessibilityLabel, onPre
     return <VividCard hue={hue} icon={icon} title={label} accessibilityLabel={rawText(accessibilityLabel ?? label)} onPress={onPress} style={[styles.entry, { width: single ? '100%' : '48.7%' }]} />;
 }
 
-// Goal cards, in the colour of what they make: blue for images, violet for video, pink for sound (featureIcons).
+// Create is for visual generation. Music, speech and sound have their own workspaces from Home and Audio.
 const MAKE: readonly { readonly kind: Kind; readonly label: string; readonly badge: FeatureIcon }[] = [
     { kind: 'image', label: 'create.goal.image', badge: { icon: 'image', hue: 'sky' } },
     { kind: 'video', label: 'create.goal.video', badge: { icon: 'video', hue: 'iris' } },
-    { kind: 'audio', label: 'create.goal.audio', badge: { icon: 'headphones', hue: 'rose' } },
 ];
 
 // Create starts from what you want to make, not from a list of models. Each goal opens the form with its starter
@@ -60,8 +59,8 @@ export default function Create() {
     }, [loadCatalog]);
 
     const starters = useMemo(() => MAKE
-        .map((goal) => ({ ...goal, model: goal.kind === 'audio' ? null : starterModel(models ?? [], goal.kind) }))
-        .filter((goal) => goal.kind === 'audio' || goal.model), [models]);
+        .map((goal) => ({ ...goal, model: starterModel(models ?? [], goal.kind) }))
+        .filter((goal) => goal.model), [models]);
 
     // The first-goal question is asked once per account. The account's own answer wins when the server has one (so a
     // second phone, or a second account on this phone, is right); only when it cannot be asked does this phone's copy decide.
@@ -118,7 +117,7 @@ export default function Create() {
                     <View style={styles.goals}>
                         {starters.map((goal) => (
                             <EntryTile key={goal.kind} hue={vividFromFeatureHue(goal.badge.hue)} icon={goal.badge.icon} label={t(goal.label)}
-                                onPress={() => goal.kind === 'audio' ? router.push('/audio') : goal.model && router.push({ pathname: '/create/[modelId]', params: { modelId: goal.model.id } })} />
+                                onPress={() => goal.model && router.push({ pathname: '/create/[modelId]', params: { modelId: goal.model.id } })} />
                         ))}
                         {starters.length === 0 ? <Text variant="body" tone="tertiary">{t('create.noModels', { kind: t('library.type.all') })}</Text> : null}
                     </View>
@@ -128,7 +127,6 @@ export default function Create() {
                     <View style={styles.entries}>
                         <EntryTile hue="purple" icon="squares" label={`${t('templates.kind.video')} ${t('label.Templates')}`} onPress={() => router.push('/create/presets')} />
                         <EntryTile hue="pink" icon="squares" label={`${t('templates.kind.image')} ${t('label.Templates')}`} onPress={() => router.push({ pathname: '/create/presets', params: { kind: 'image' } })} />
-                        <EntryTile hue="teal" icon="audio" label={`${t('templates.kind.audio')} ${t('label.Templates')}`} onPress={() => router.push({ pathname: '/create/presets', params: { kind: 'audio' } })} />
                         <EntryTile hue="green" icon="squares" label={t('label.Templates')} onPress={() => router.push({ pathname: '/create/presets', params: { kind: 'crun' } })} />
                         <EntryTile hue="orange" icon="wrench" label={t('menu.tools')} accessibilityLabel={t('toolsDir.entry')} onPress={() => router.push('/create/tools')} />
                         {models.some(m => m.id === 'wan-2.5-kie' && !m.gated) ? <EntryTile hue="green" icon="film" label={t('facelessReel.chip')} onPress={() => router.push('/faceless-reel')} /> : null}

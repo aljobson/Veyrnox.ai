@@ -1,7 +1,7 @@
 [
   {"area": "camera", "text": "CINEMA CAMERAOFF", "labels": []},
   {"area": "camera", "text": "CINEMA CAMERAONCameraModular 8K DigitalFull-Frame Cine DigitalGrand Format 70mm FilmStudio Digital S35Classic 16mm FilmPremium Large Format DigitalLensPremium Modern PrimeClassic AnamorphicCompact Anamorphic70s Cinema PrimeWarm Cinema PrimeVintage PrimeSwirl Bokeh PortraitClinical Sharp PrimeExtreme MacroCreative Tilt LensHalation DiffusionFocal length8mm14mm24mm35mm50mm85mmAperturef/1.4f/4f/11", "labels": []},
-  {"area": "goal", "text": "WHAT DO YOU WANT TO MAKE?Make an imageMake a videoMake audioAll modelsFree to use — this only narrows the model list and picks its lowest-cost open option.", "labels": ["aria-label=\"Creation goal\""]},
+  {"area": "goal", "text": "WHAT DO YOU WANT TO MAKE?Make an imageMake a videoFree to use — this only narrows the model list and picks its lowest-cost open option.", "labels": ["aria-label=\"Creation goal\""]},
   {"area": "settings", "text": "SETTINGSSeedRollThe same seed and prompt give a similar result. Leave blank for a new one each time.Leave out", "labels": ["placeholder=\"Random\"", "placeholder=\"e.g. text, watermark, blur-sm\""]},
   {"area": "settings", "text": "SETTINGSSeedRollA whole number from 0 to 2147483647.Leave out", "labels": ["placeholder=\"Random\"", "placeholder=\"e.g. text, watermark, blur-sm\""]},
   {"area": "download", "text": "Audio stemvocalsdrumsbassotherguitarpianoDownload", "labels": ["aria-label=\"Library audio stem\""]},

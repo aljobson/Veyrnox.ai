@@ -13,6 +13,7 @@ import {
   presetCredits,
   presetTitle,
   distinctShelfNames,
+  modelWorkspaceHref,
 } from '../_lib/tokens';
 import { rich } from '../../../lib/i18n/rich';
 import { getT } from '../../../lib/i18n/server';
@@ -129,7 +130,7 @@ export async function ModelShelf({ catalog }) {
                 {representativeRows.map((m, i) => (
                   <li key={m.id} className="vx-feed-line" style={{ '--vx-i': i }}>
                     <Link
-                      href={`/app/create?model=${encodeURIComponent(m.id)}`}
+                      href={modelWorkspaceHref(m)}
                       className="group block py-2 text-vx-fg-body hover:text-vx-fg"
                     >
                       <span className="flex items-baseline gap-2">

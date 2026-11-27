@@ -8,6 +8,9 @@ import { fetchRemoteFirstGoal, homeStartRecorded, pushFirstGoal } from '../_lib/
 import { exampleSetFor } from '../_lib/firstProfile';
 import { readDeviceAnswers } from '../_lib/firstProfileSync';
 
+const CREATE_FIRST_GOALS = FIRST_GOALS.filter(({ id }) => id !== 'audio');
+const CREATE_FIRST_GOAL_EXAMPLES = FIRST_GOAL_EXAMPLES.filter((goal) => goal !== 'audio');
+
 function readStored() {
   try { return parseFirstGoal(window.localStorage.getItem(FIRST_GOAL_SLOT)); } catch { return null; }
 }
@@ -63,7 +66,7 @@ export function FirstGoalCard({ hidden, onPick, onExample }) {
       <div data-testid="first-goal-examples" className="rounded-2xl border border-vx-accent/40 bg-vx-accent/[0.06] p-5">
         <h2 className="text-lg font-extrabold text-vx-fg">{t('app.create.firstGoal.title')}</h2>
         <div className="mt-3 flex flex-col gap-2">
-          {FIRST_GOAL_EXAMPLES.map((goal) => (
+          {CREATE_FIRST_GOAL_EXAMPLES.map((goal) => (
             <button
               key={goal}
               type="button"
@@ -107,7 +110,7 @@ export function FirstGoalCard({ hidden, onPick, onExample }) {
     <div data-testid="first-goal-card" className="rounded-2xl border border-vx-accent/40 bg-vx-accent/[0.06] p-5">
       <h2 className="text-lg font-extrabold text-vx-fg">{t('app.create.firstGoal.title')}</h2>
       <div className="mt-3 grid grid-cols-2 gap-2" role="group" aria-label={t('app.create.firstGoal.title')}>
-        {FIRST_GOALS.map((option) => (
+        {CREATE_FIRST_GOALS.map((option) => (
           <button
             key={option.id}
             type="button"

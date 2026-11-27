@@ -72,7 +72,7 @@ test('the landing tiles take their price from the catalog, not the constant', ()
     // The feature tiles under the hero replaced ProductTilesRow; they quote
     // the catalog row their link opens.
     const src = readFileSync(new URL('../app/veyrnox/_sections/hero.js', import.meta.url), 'utf8');
-    assert.match(src, /const row = rowOf\(modelOf\(f\.href\)\);/, 'tile price must resolve through the live catalog');
+    assert.match(src, /const row = rowOf\(f\.modelId \|\| modelOf\(f\.href\)\);/, 'tile price must resolve through the live catalog');
     assert.match(src, /`\$\{row\.credits\} cr`/);
     assert.ok(!/\{f\.credits\}/.test(src), 'must not print a hardcoded tile price');
 });

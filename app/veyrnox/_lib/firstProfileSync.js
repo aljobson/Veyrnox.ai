@@ -176,7 +176,7 @@ export function takeFirstRunHandoff() {
   try {
     const goal = window.sessionStorage.getItem(HANDOFF_SLOT);
     window.sessionStorage.removeItem(HANDOFF_SLOT);
-    return goal === 'image' || goal === 'video' || goal === 'audio' ? goal : null;
+    return goal === 'image' || goal === 'video' ? goal : null;
   } catch {
     return null;
   }

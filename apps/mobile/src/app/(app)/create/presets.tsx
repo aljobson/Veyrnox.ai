@@ -24,7 +24,8 @@ import { useVibeAnswers } from '../../../lib/useVibeAnswers';
 import { CRUN_TEMPLATE_PROVIDERS, CRUN_TEMPLATE_PROVIDER_NAMES, fetchCrunTemplateCatalog, type CrunTemplateCatalog, type CrunTemplateProvider } from '../../../lib/crunTemplateSummary';
 
 type TemplateKind = 'video' | 'image' | 'audio' | 'crun';
-const KINDS: readonly TemplateKind[] = ['video', 'image', 'audio', 'crun'];
+const KINDS: readonly TemplateKind[] = ['video', 'image', 'crun'];
+const ROUTABLE_KINDS: readonly TemplateKind[] = [...KINDS, 'audio'];
 
 export default function Templates() {
     const styles = useThemedStyles(sheets);
@@ -39,7 +40,7 @@ export default function Templates() {
     const [playing, setPlaying] = useState<string | null>(null);
     const [attempt, setAttempt] = useState(0);
     // Video, image and audio templates are separate lists behind a switch, never mixed in one grid.
-    const [kind, setKind] = useState<TemplateKind>(KINDS.includes(params.kind as TemplateKind) ? params.kind as TemplateKind : 'video');
+    const [kind, setKind] = useState<TemplateKind>(ROUTABLE_KINDS.includes(params.kind as TemplateKind) ? params.kind as TemplateKind : 'video');
     const [images, setImages] = useState<ImageTemplate[] | null>(null);
     const [imagesFailed, setImagesFailed] = useState(false);
     const [imageChip, setImageChip] = useState('ALL');

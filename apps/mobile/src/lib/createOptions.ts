@@ -15,12 +15,13 @@ export type Goal = Kind | 'all';
 export const GOALS: readonly { readonly goal: Goal; readonly label: string }[] = [
     { goal: 'image', label: 'create.goal.image' },
     { goal: 'video', label: 'create.goal.video' },
-    { goal: 'audio', label: 'create.goal.audio' },
-    { goal: 'all', label: 'create.goal.all' },
 ];
 
 export function modelsForGoal(models: readonly CatalogModel[], goal: Goal): CatalogModel[] {
-    return models.filter((m) => goal === 'all' || kindOf(m.modality) === goal);
+    return models.filter((m) => {
+        const kind = kindOf(m.modality);
+        return goal === 'all' ? kind === 'image' || kind === 'video' : kind === goal;
+    });
 }
 
 const needsUpload = (m: CatalogModel): boolean => Object.values(m.capabilities?.media ?? {}).some((slot) => slot?.required);

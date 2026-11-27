@@ -69,6 +69,18 @@ describe('the credits card under the hard paywall', () => {
 });
 
 describe('where the welcome shows', () => {
+    test('welcome separates visual Create from Music and Audio', () => {
+        const copy = read('lib', 'i18n', 'messages', 'en', 'welcome.ts');
+        const explore = read('lib', 'i18n', 'messages', 'en', 'explore.ts');
+        const edit = read('lib', 'i18n', 'messages', 'en', 'edit.ts');
+        expect(copy).toContain('Make images and video in Create. Songs start in Music, with speech and sound in Audio.');
+        expect(copy).not.toContain('Make images, video and audio from a few words.');
+        expect(explore).toContain('Generate one image or video asset. Songs start in Music; speech and sound start in Audio.');
+        expect(explore).not.toContain('image, video or audio asset');
+        expect(edit).toContain('No sounds yet. Make one in Audio first.');
+        expect(edit).not.toContain('Make audio in Create first.');
+    });
+
     test('the shared consent and provider controls introduce creation on sign-in', () => {
         const signIn = read('app', 'sign-in.tsx');
         const copy = read('lib', 'i18n', 'messages', 'en', 'signIn.ts');

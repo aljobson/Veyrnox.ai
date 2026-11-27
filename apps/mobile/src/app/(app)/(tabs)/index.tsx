@@ -7,7 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { celebrateFinished } from '../../../lib/celebrate';
-import { ALL_CATEGORIES, ALL_TYPES, filterPresets, pickUp, promptHref, recentCreations, type TypeFilter } from '../../../lib/explore';
+import { ALL_CATEGORIES, ALL_TYPES, filterPresets, pickUp, presetKind, promptHref, recentCreations, type TypeFilter } from '../../../lib/explore';
 import { formatNumber, plural, t } from '../../../lib/i18n';
 import { templateCountLabel } from '../../../lib/templateCountLabel';
 import { rawText } from '../../../lib/i18n/translate';
@@ -183,7 +183,9 @@ export default function Explore() {
     const recent = useMemo(() => recentCreations(jobs, RECENT), [jobs]);
 
     function openPreset(p: Preset) {
-        // Image and audio templates have no template page; like Create > Templates they open Create with their prompt.
+        // Audio discovery belongs to the Audio/Music workspaces; generic Create owns only visual template prompts.
+        if (presetKind(p) === 'audio') { router.push('/audio'); return; }
+        // Direct image templates have no template page, so they open Create with their prompt.
         if (!isDirectTemplate(p.id)) { router.push(templatePageHref(p)); return; }
         const href = promptHref(p.modelId, p.prompt);
         router.push(p.modality.endsWith('-to-image') ? { ...href, params: { ...href.params, photoGuide: 'scene' } } : href);

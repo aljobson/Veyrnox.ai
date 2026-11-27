@@ -1,12 +1,10 @@
 export const CREATE_GOALS = [
   { id: 'image', label: 'Make an image' },
   { id: 'video', label: 'Make a video' },
-  { id: 'audio', label: 'Make audio' },
-  { id: 'all', label: 'All models' },
 ];
 
 export function modelsForGoal(models, goal) {
-  if (goal === 'all') return models;
+  if (goal === 'all') return models.filter((model) => model.kind === 'image' || model.kind === 'video');
   return models.filter((model) => model.kind === goal);
 }
 

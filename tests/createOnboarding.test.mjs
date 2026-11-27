@@ -27,10 +27,11 @@ const models = [
   { id: 'audio-open', name: 'Audio open', kind: 'audio', credits: 2, media: {}, takesPrompt: true },
 ];
 
-test('Create goals cover image, video, audio and the complete catalog', () => {
-  assert.deepEqual(CREATE_GOALS.map(({ id }) => id), ['image', 'video', 'audio', 'all']);
+test('Create goals expose image and video while the internal audio filter remains available to dedicated tools', () => {
+  assert.deepEqual(CREATE_GOALS.map(({ id }) => id), ['image', 'video']);
   assert.deepEqual(modelsForGoal(models, 'video').map(({ id }) => id), ['video-cheap']);
-  assert.equal(modelsForGoal(models, 'all'), models, 'all keeps the original catalog order and identity');
+  assert.deepEqual(modelsForGoal(models, 'all').map(({ id }) => id), ['video-cheap', 'image-expensive', 'image-cheap', 'image-upload', 'image-no-prompt']);
+  assert.deepEqual(modelsForGoal(models, 'audio').map(({ id }) => id), ['audio-gated', 'audio-open']);
 });
 
 test('starter selection chooses the cheapest open prompt-only model without mutating the catalog', () => {

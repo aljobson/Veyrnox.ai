@@ -24,12 +24,13 @@ import { GENERATION_PROMPT_MAX } from '../../../lib/generationPromptLimits.js';
 const FEATURED = ['wan-2.5-kie', 'kling-2.6-pro-kie', 'seedance-2.0-fast', 'flux-2-pro'];
 const SIGNUP_CREDITS = 10;
 
-const KIND_KEY = { video: 'home.models.video', image: 'home.models.image', audio: 'home.models.audio' };
+const KIND_KEY = { video: 'home.models.video', image: 'home.models.image' };
 
 export function PriceSlip({ models }) {
   const router = useRouter();
   const { t } = useI18n();
-  const open = useMemo(() => models.filter((m) => !m.gated), [models]);
+  const creationModels = useMemo(() => models.filter((m) => m.kind === 'image' || m.kind === 'video'), [models]);
+  const open = useMemo(() => creationModels.filter((m) => !m.gated), [creationModels]);
   const starter = useMemo(
     () => affordableStarterModel(open, AFFORDABLE_START_MODEL_ID, SIGNUP_CREDITS),
     [open],
@@ -45,12 +46,12 @@ export function PriceSlip({ models }) {
   );
   // One naming function for the chips, the select and the slip line, so the
   // picker never prints the same name for two models.
-  const nameOf = useMemo(() => distinctShelfNames(models), [models]);
-  const [modelId, setModelId] = useState(starter?.id || open[0]?.id || models[0]?.id);
+  const nameOf = useMemo(() => distinctShelfNames(creationModels), [creationModels]);
+  const [modelId, setModelId] = useState(starter?.id || open[0]?.id || creationModels[0]?.id);
   const [wanted, setSeconds] = useState(5);
   const [prompt, setPrompt] = useState('');
 
-  const model = models.find((m) => m.id === modelId) || null;
+  const model = creationModels.find((m) => m.id === modelId) || null;
   const lengths = model && model.kind === 'video' && model.durations?.length ? model.durations : [5];
   // A 10 s pick must not outlive a switch to a model that only sells 5 s.
   const seconds = lengths.includes(wanted) ? wanted : lengths[0];
@@ -123,9 +124,9 @@ export function PriceSlip({ models }) {
               onChange={(e) => e.target.value && pickModel(e.target.value)}
               className={`min-w-0 max-w-full rounded-full border bg-transparent px-3 py-1.5 text-[13px] font-semibold pointer-coarse:min-h-11 ${inChips ? 'border-vx-border text-vx-fg-muted' : 'border-vx-fg text-vx-fg'}`}
             >
-              <option value="">{t('slip.more', { n: models.length - chips.length })}</option>
-              {['video', 'image', 'audio'].map((kind) => {
-                const rows = models.filter((m) => m.kind === kind && !chips.includes(m));
+              <option value="">{t('slip.more', { n: creationModels.length - chips.length })}</option>
+              {['video', 'image'].map((kind) => {
+                const rows = creationModels.filter((m) => m.kind === kind && !chips.includes(m));
                 if (!rows.length) return null;
                 return (
                   <optgroup key={kind} label={t(KIND_KEY[kind])}>

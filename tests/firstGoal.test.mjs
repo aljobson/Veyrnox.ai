@@ -14,10 +14,10 @@ test('first-goal choices cover every creation area plus "not sure"', () => {
   assert.deepEqual(FIRST_GOALS.map(({ id }) => id), ['image', 'video', 'audio', 'edit', 'publish', 'unsure']);
 });
 
-test('creation goals stay on Create with the matching model filter; others route away', () => {
+test('image and video stay on Create while audio routes to its dedicated workspace', () => {
   assert.deepEqual(firstGoalTarget('image'), { createGoal: 'image', href: null });
   assert.deepEqual(firstGoalTarget('video'), { createGoal: 'video', href: null });
-  assert.deepEqual(firstGoalTarget('audio'), { createGoal: 'audio', href: null });
+  assert.deepEqual(firstGoalTarget('audio'), { createGoal: null, href: '/app/audio' });
   assert.deepEqual(firstGoalTarget('unsure'), { createGoal: 'all', href: null });
   assert.deepEqual(firstGoalTarget('edit'), { createGoal: null, href: '/app/editor' });
   assert.deepEqual(firstGoalTarget('publish'), { createGoal: null, href: '/app/publish' });
@@ -39,7 +39,8 @@ test('serialising an unknown goal is refused instead of storing it', () => {
 
 test('"not sure" offers one example for each creation area, in the same order as the goals', () => {
   assert.deepEqual(FIRST_GOAL_EXAMPLES, ['image', 'video', 'audio']);
-  for (const goal of FIRST_GOAL_EXAMPLES) assert.equal(firstGoalTarget(goal).href, null);
+  for (const goal of ['image', 'video']) assert.equal(firstGoalTarget(goal).href, null);
+  assert.equal(firstGoalTarget('audio').href, '/app/audio');
 });
 
 test('the server reply is read strictly: a listed word, none yet, or unavailable', () => {

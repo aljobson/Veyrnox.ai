@@ -8,7 +8,7 @@ export default {
     'helpGuides.unavailable': 'Not available yet',
     'helpGuides.mobile.credits.buying': 'Buy credit packs on the Credits screen through the App Store or Google Play. The store shows the price before you confirm. Purchased credits never expire.',
     'helpGuides.mobile.library.favourites': 'The star on a card adds it to Favourites. Favourites are saved for your account on this phone; they do not sync with the website or other devices.',
-    'helpGuides.mobile.firstGeneration.model': 'Choose a model in Create. Each model shows its price in credits. Image, video and audio models all spend from the same balance.',
+    'helpGuides.mobile.firstGeneration.model': 'Choose an image or video model in Create. Each model shows its price in credits. To start a song, open Music; speech and sound start in Audio.',
     // BEGIN GENERATED GUIDE COPY
     "helpGuides.content.first-generation.title": "Make your first image or video",
     "helpGuides.content.first-generation.summary": "Pick a model, see the price, generate.",

@@ -124,6 +124,18 @@ export function modelNameForId(id) {
   return MODELS.find((model) => model.id === id)?.name || null;
 }
 
+/** Route public model links to the workspace that owns that type of creation. */
+export function modelWorkspaceHref(model) {
+  const id = internalModelId(model?.id) || model?.id;
+  const kind = model?.kind || kindOf(model?.modality);
+  if (kind !== 'audio') return `/app/create?model=${encodeURIComponent(id)}`;
+  if (id === 'ace-step' || id === 'ace-step-1.5') return '/app/music/create';
+  if (id === 'suno-sounds') return '/app/music/sounds';
+  if (id === 'elevenlabs-dialogue' || id === 'elevenlabs-dialogue-kie') return '/app/dialogue';
+  if (id === 'qwen3-tts' || id === 'minimax-speech-2.6-hd') return '/app/text-to-speech';
+  return '/app/audio';
+}
+
 /**
  * Studio link for a preset: the model it is wired to (when that model is still
  * in the catalog) plus the preset id, so Create records which card sent the
@@ -248,11 +260,12 @@ export const FEATURE_CARDS = [
     href: '/app/create?model=nano-banana-a1',
     bg: 'linear-gradient(160deg,#2b1a0a 0%,#7a4a1e 60%,#f0b060 100%)' },
   { key: 'ace-step',
+    modelId: 'ace-step',
     kicker: 'ACE STEP',
-    title: 'Music and voice, priced up front.',
-    body: 'Audio generation on the same credit balance. 2 credits per clip. See it before you spend.',
-    cta: 'Open ACE Step',
-    href: '/app/create?model=ace-step',
+    title: 'Music, priced up front.',
+    body: 'Start a song in Music on the same credit balance. See the price before you spend.',
+    cta: 'Open Music',
+    href: '/app/music/create',
     bg: 'linear-gradient(135deg,#08120b 0%,#0e3a1e 55%,#2ea258 100%)' },
   { key: 'wan-2.5-kie',
     kicker: 'WAN 2.5',
@@ -337,8 +350,9 @@ export const MORE_FEATURES = [
     { label: 'Image Generator', href: '/app/create?model=nano-banana-a1' },
     { label: 'Video Generator', href: '/app/create?model=wan-2.5-a1' },
     { label: 'Image-to-Video',  href: '/app/create?model=kling-3.0-i2v' },
-    { label: 'Audio',           href: '/app/create?model=ace-step' },
-    { label: 'Text to Speech',  href: '/app/create?model=qwen3-tts' },
+    { label: 'Music',           href: '/app/music/create' },
+    { label: 'Sound Effects',   href: '/app/music/sounds' },
+    { label: 'Text to Speech',  href: '/app/text-to-speech' },
     { label: 'Upscale',         href: '/app/create?model=topaz-upscale' },
     { label: 'Background Removal', href: '/app/create?model=bria-bg-remove' },
   ] },
