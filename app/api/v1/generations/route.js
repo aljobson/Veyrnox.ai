@@ -57,6 +57,7 @@ import { tieredCredits } from '../../../../lib/resolutionTiers.js';
 // Constrain idempotency keys to a safe printable range, shared with job lookup.
 import { IDEMPOTENCY_RE } from '../../../../lib/validate.js';
 import { internalModelId } from '../../../../lib/publicModelIds.js';
+import { loadCrunTemplateGeneration, crunTemplateProviderInputs } from '../../../../lib/crunTemplateGeneration.js';
 
 // The wording version an upload consent attests to (ADR-0330: the Terms and AUP, no tick). Bump when the wording
 // at /legal/aup or on the create page changes; users re-attest under the new
@@ -142,7 +143,7 @@ export async function POST(req) {
     try { body = JSON.parse(new TextDecoder().decode(await readBoundedBody(req.body, MAX_REQUEST_BYTES, req.signal))); }
     catch (error) { return NextResponse.json({ error: error.status === 413 ? 'body_too_large' : 'invalid_json' }, { status: error.status === 413 ? 413 : 400 }); }
     // A supplier-neutral public id (lib/publicModelIds.js) resolves to the catalog key; any other id passes through.
-    const modelId = internalModelId(body && body.model_id);
+    let modelId = internalModelId(body && body.model_id);
     const idempotencyKey = body && body.idempotency_key;
     const confirmedCredits = body && body.confirmed_credits;
     const requestedMaxCharge = body?.max_charge_credits;
@@ -306,6 +307,12 @@ export async function POST(req) {
         if (!ownerProof && !seedance25Open(modelId)) return NextResponse.json({ error: 'model_not_found' }, { status: 404 });
     }
 
+    const catalogTemplate = Object.hasOwn(body, 'catalog_template') ? await loadCrunTemplateGeneration(body) : null;
+    if (Object.hasOwn(body, 'catalog_template') && (!catalogTemplate || catalogTemplate.error)) {
+        return NextResponse.json({ error: catalogTemplate?.error || 'catalog_template_not_found' }, { status: catalogTemplate?.status || 404 });
+    }
+    if (catalogTemplate) modelId = catalogTemplate.modelId;
+
     if (hasTemplateSwap && (!templateSwapSwitchOn(process.env) || typeof body.template_swap !== 'string'
         || !/^[a-z0-9][a-z0-9-]{0,127}$/.test(body.template_swap))) return NextResponse.json({ error: 'template_swap_not_found' }, { status: 404 });
     const swapClipReplay = hasTemplateSwap ? await replayTemplateSwapClip(authId, body, cfg, { r2cfg: r2EnvConfig() }) : null;
@@ -334,6 +341,10 @@ export async function POST(req) {
     const consent = body && body.consent === true;
     const references = readGenerationSources(body);
     if (!references.ok) return NextResponse.json({ error: references.error }, { status: 400 });
+    if (catalogTemplate && (references.references.length < catalogTemplate.minInputs || references.references.length > catalogTemplate.maxInputs
+        || references.references.some(reference => reference.slot !== 'image'))) {
+        return NextResponse.json({ error: 'catalog_template_image_count' }, { status: 400 });
+    }
     // Images in this admission: 2 per person, or 3 for a one-person full-body photo (amendment 18). Checked below before any debit.
     const swapImages = templateSwap ? references.references.length : 0;
     const swapError = swap && checkSwapRequest(swap, body, references.references);
@@ -444,6 +455,7 @@ export async function POST(req) {
     }
     const { sources } = resolved;
     Object.assign(inputs,resolved.inputs);
+    if (catalogTemplate) inputs = { ...inputs, ...crunTemplateProviderInputs(catalogTemplate, resolved.inputs.image_url) };
     if (templateSwap) {
         const imageCheck = checkTemplateSwapImages(sources, swapPeople, swapImages);
         if (!imageCheck.ok) return NextResponse.json({ error: imageCheck.error }, { status: 400 });
@@ -461,7 +473,7 @@ export async function POST(req) {
     const defaultPrompt = hasVeoSource ? DEFAULT_MOTION_PROMPT : record.defaultPrompt;
     if (defaultPrompt && !(typeof inputs.prompt === 'string' && inputs.prompt.trim())) inputs = { ...inputs, prompt: defaultPrompt };
     // A record that needs a frame shape (Crun Kling O1 reference) gets it from the uploaded video's own size, never from the client.
-    const modelInputs = withDerivedAspect(record, record.strictInputs ? inputs : declaredInputs(record, inputs, { serverMedia: !!(templateClip || templateSwap) }), sources);
+    const modelInputs = withDerivedAspect(record, record.strictInputs ? inputs : declaredInputs(record, inputs, { serverMedia: !!(templateClip || templateSwap || catalogTemplate) }), sources);
     // Refuse before the debit anything the provider request cannot express at
     // the priced unit (a longer clip, an aspect ratio the model lacks, ...).
     const providerCheck = provider.check(record, modelRow, modelInputs);
@@ -524,8 +536,10 @@ export async function POST(req) {
         const { ok: _ok, ...billing } = seedance25Billing;
         storedInputs = { ...storedInputs, seedance25_billing: { ...billing, request_hash: seedance25Hash } };
     }
-    const quotedCredits = seedance25Billing ? seedance25Billing.credits : priceFor(modelRow, pricedInputs, record);
-    if ((maxCharge === undefined || seedance25Billing) && confirmedCredits !== undefined && confirmedCredits !== quotedCredits) {
+    if (catalogTemplate) storedInputs = { ...storedInputs, catalog_template_billing: catalogTemplate.billing };
+    const quotedCredits = catalogTemplate?.credits ?? (seedance25Billing ? seedance25Billing.credits : priceFor(modelRow, pricedInputs, record));
+    if (catalogTemplate && confirmedCredits === undefined) return NextResponse.json({ error: 'confirmed_credits_required' }, { status: 400 });
+    if ((maxCharge === undefined || seedance25Billing || catalogTemplate) && confirmedCredits !== undefined && confirmedCredits !== quotedCredits) {
         return NextResponse.json({
             error: 'credit_confirmation_mismatch',
             confirmed_credits: confirmedCredits,

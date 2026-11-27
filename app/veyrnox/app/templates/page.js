@@ -18,6 +18,7 @@ export default async function TemplatesPage() {
     name: card.name,
     category: card.category,
     model: card.model,
+    credits: card.credits,
     poster: card.clip?.poster || null,
     video: card.clip?.video || null,
     durationSeconds: card.durationSeconds,
@@ -34,6 +35,8 @@ export default async function TemplatesPage() {
     wave: beat.wave,
     bass: beat.bass,
     lead: beat.lead,
+    model: 'ace-step',
+    credits: 4,
   }));
 
   return (

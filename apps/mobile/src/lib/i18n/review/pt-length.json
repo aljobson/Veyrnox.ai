@@ -1,5 +1,11 @@
 [
   {
+    "id": "crunTemplates.inputNone",
+    "english": "No input image required",
+    "translation": "Não é necessária uma imagem de entrada",
+    "ratio": 1.65
+  },
+  {
     "id": "videoShape.all",
     "english": "All shapes",
     "translation": "Todos os formatos",

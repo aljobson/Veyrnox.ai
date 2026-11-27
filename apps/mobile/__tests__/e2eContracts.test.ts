@@ -71,6 +71,7 @@ describe('mobile E2E route inventory', () => {
             'beats/new',
             'create',
             'create/agent',
+            'create/catalog-template',
             'credits',
             'delete-account',
             'dialogue',

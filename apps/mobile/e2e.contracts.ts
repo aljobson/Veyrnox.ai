@@ -27,6 +27,7 @@ export const INTERACTION_CRAWL_ROUTE_EXCLUSIONS: Readonly<Record<string, string>
     'beats/new': 'Opening this route creates a seed Beat project before any control is tapped.',
     create: 'Generation controls can spend credits and require a purpose-built test.',
     'create/agent': 'Agent generation controls can spend credits and require a purpose-built test.',
+    'create/catalog-template': 'Template generation controls can spend credits and require a purpose-built test.',
     credits: 'Credit purchase controls can initiate a transaction.',
     'delete-account': 'Account deletion must only be exercised by a purpose-built destructive test.',
     dialogue: 'Dialogue generation controls can spend credits and require a purpose-built test.',

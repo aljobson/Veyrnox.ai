@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { readCrunTemplateCatalog, readCrunTemplateSummary } from '../../../lib/crunTemplateCatalog.js';
+import { publicCrunTemplateCatalog, readCrunTemplateCatalog, readCrunTemplateSummary } from '../../../lib/crunTemplateCatalog.js';
 
 const CACHE = 'public, max-age=30, s-maxage=300, stale-while-revalidate=300';
 
@@ -26,5 +26,5 @@ export async function GET(request) {
       headers: { 'Cache-Control': result.status === 503 ? 'no-store' : 'public, max-age=15, s-maxage=30' },
     });
   }
-  return NextResponse.json(result.catalog, { headers: { 'Cache-Control': CACHE } });
+  return NextResponse.json(publicCrunTemplateCatalog(result.catalog), { headers: { 'Cache-Control': CACHE } });
 }
