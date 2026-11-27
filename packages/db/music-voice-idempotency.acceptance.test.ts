@@ -45,11 +45,15 @@ describe('music voice state-change idempotency', { skip: !DATABASE_URL && 'DATAB
     await client.query('BEGIN');
     if (!(await one("SELECT to_regclass('public.music_voice_profiles') IS NOT NULL AS ready")).ready) {
       // The shared acceptance fixture intentionally omits the moderation-only
-      // evidence table. Supply the narrow dependency inside this transaction
-      // so the branch migration can be exercised without weakening production
-      // migration semantics; ROLLBACK removes it with the rest of the fixture.
+      // evidence table and the owned-source table installed by migration 0462.
+      // Supply only the columns referenced by the Voice migration inside this
+      // transaction; production still receives the complete earlier migrations,
+      // and ROLLBACK removes these fixture-only dependencies.
       if (!(await one("SELECT to_regclass('public.evidence_holds') IS NOT NULL AS ready")).ready) {
         await client.query('CREATE TABLE public.evidence_holds (r2_key TEXT, released_at TIMESTAMPTZ)');
+      }
+      if (!(await one("SELECT to_regclass('public.music_source_assets') IS NOT NULL AS ready")).ready) {
+        await client.query('CREATE TABLE public.music_source_assets (r2_key TEXT, status TEXT)');
       }
       const sql = (await readFile(new URL('./schema/supabase/0623_music_voice_verification.sql', import.meta.url), 'utf8'))
         .replace(/^BEGIN;\s*$/m, '').replace(/^COMMIT;\s*$/m, '');
