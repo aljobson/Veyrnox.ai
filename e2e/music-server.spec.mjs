@@ -64,6 +64,15 @@ const entitlements = () => ({
   policy: { version: 'music-prompt-v1', pre_debit: true },
 });
 
+const freeEntitlements = () => {
+  const result = entitlements();
+  result.models = result.models.map((model) => model.id === 'ace-step-1.5'
+    ? { ...model, available: false }
+    : model);
+  result.custom_drafts = { ...result.custom_drafts, generation_supported: false };
+  return result;
+};
+
 function wav(seconds = 2, sampleRate = 8000) {
   const samples = Math.floor(seconds * sampleRate); const out = Buffer.alloc(44 + samples * 2);
   out.write('RIFF', 0); out.writeUInt32LE(out.length - 8, 4); out.write('WAVEfmt ', 8);
@@ -375,6 +384,88 @@ test('F02-H3 paid model selection produces the ACE-Step 1.5 live-catalog quote',
   await expect(page.getByRole('button', { name: 'Create two versions · 6 cr' })).toBeVisible();
   const accessibility = await new AxeBuilder({ page }).include('#main').analyze();
   expect(accessibility.violations, accessibility.violations.map((item) => `${item.id}: ${item.help}`).join('\n')).toEqual([]);
+});
+
+test('F03-H1 Custom stays a complete private writing workspace before plan upgrade', async ({ page }) => {
+  await installMockSession(page);
+  const saves = [];
+  let releaseLastSecondSave = null;
+  const draft = {
+    id: null, model_id: 'ace-step', lyrics: '', styles: '', title: '',
+    revision: 0, updated_at: null,
+  };
+  await page.route('**/api/v1/music/**', async (route) => {
+    const request = route.request();
+    const path = new URL(request.url()).pathname;
+    if (request.method() === 'GET' && path.endsWith('/music/entitlements')) return route.fulfill({ json: freeEntitlements() });
+    if (request.method() === 'GET' && path.endsWith('/music/sources')) return route.fulfill({ json: { sources: [] } });
+    if (request.method() === 'GET' && path.endsWith('/music/drafts/custom')) return route.fulfill({ json: { draft } });
+    if (request.method() === 'PUT' && path.endsWith('/music/drafts/custom')) {
+      const body = request.postDataJSON();
+      saves.push(body);
+      if (body.title === 'Last-second title') await new Promise((resolve) => { releaseLastSecondSave = resolve; });
+      return route.fulfill({ json: { draft: { ...draft, ...body, id: 'acfd2d0d-8276-4fbb-9c4f-39f401a31589', revision: 1, updated_at: new Date().toISOString() } } });
+    }
+    return route.abort('failed');
+  });
+
+  await page.goto('/app/music/create?mode=custom');
+  const lyrics = page.getByRole('textbox', { name: /original lyrics or structure/i });
+  const styles = page.getByRole('textbox', { name: /style direction/i });
+  const title = page.getByRole('textbox', { name: /working title/i });
+  await expect(lyrics).toBeVisible();
+  await expect(styles).toBeVisible();
+  await expect(title).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Focus lyrics' })).toBeEnabled();
+  await expect(page.getByRole('region', { name: 'Custom generation availability' })).toContainText('Custom generation is unavailable right now.');
+  await expect(page.getByRole('link', { name: 'View plans and availability' })).toHaveAttribute('href', '/app/credits#credit-subscriptions');
+
+  await lyrics.fill('[Verse]\nA private first line');
+  await styles.fill('Warm piano, restrained percussion, 84 bpm');
+  await title.fill('Still Writing');
+  await expect.poll(() => saves.length).toBeGreaterThan(0);
+  expect(saves.at(-1)).toEqual({
+    revision: 0,
+    model_id: 'ace-step',
+    lyrics: '[Verse]\nA private first line',
+    styles: 'Warm piano, restrained percussion, 84 bpm',
+    title: 'Still Writing',
+  });
+  await expect(page.getByText('Saved privately · revision 1')).toBeVisible();
+  await expect(page.getByRole('button', { name: /Review Custom quote/i })).toHaveCount(0);
+  await page.screenshot({ path: '/tmp/veyrnox-music-custom-free-complete.png', fullPage: true });
+  const accessibility = await new AxeBuilder({ page }).include('#main').analyze();
+  expect(accessibility.violations, accessibility.violations.map((item) => `${item.id}: ${item.help}`).join('\n')).toEqual([]);
+
+  await title.fill('Last-second title');
+  await page.getByRole('link', { name: 'View plans and availability' }).evaluate((node) => node.click());
+  await expect.poll(() => typeof releaseLastSecondSave).toBe('function');
+  await title.fill('Typed during save');
+  releaseLastSecondSave();
+  await expect(page.getByRole('alert')).toContainText('Save the private draft before comparing plans. Your text remains here.');
+  await expect(page).toHaveURL(/\/app\/music\/create/);
+  await page.getByRole('link', { name: 'View plans and availability' }).click();
+  await expect(page).toHaveURL(/\/app\/credits#credit-subscriptions$/);
+  expect(saves.at(-1)?.title).toBe('Typed during save');
+});
+
+test('F03-H1b paid access offers the available Custom model instead of an upgrade', async ({ page }) => {
+  await installMockSession(page);
+  await page.route('**/api/v1/music/**', async (route) => {
+    const request = route.request();
+    const path = new URL(request.url()).pathname;
+    if (request.method() === 'GET' && path.endsWith('/music/entitlements')) return route.fulfill({ json: entitlements() });
+    if (request.method() === 'GET' && path.endsWith('/music/sources')) return route.fulfill({ json: { sources: [] } });
+    if (request.method() === 'GET' && path.endsWith('/music/drafts/custom')) return route.fulfill({ json: { draft: { id: 'acfd2d0d-8276-4fbb-9c4f-39f401a31589', model_id: 'ace-step', lyrics: '', styles: '', title: '', revision: 0 } } });
+    if (request.method() === 'PUT' && path.endsWith('/music/drafts/custom')) return route.fulfill({ json: { draft: { ...request.postDataJSON(), id: 'acfd2d0d-8276-4fbb-9c4f-39f401a31589', revision: 1, updated_at: new Date().toISOString() } } });
+    return route.abort('failed');
+  });
+
+  await page.goto('/app/music/create?mode=custom');
+  await expect(page.getByRole('region', { name: 'Custom generation availability' })).toContainText('Custom generation is already available.');
+  await expect(page.getByRole('link', { name: 'View plans and availability' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Use ACE-Step 1.5' }).click();
+  await expect(page.getByRole('region', { name: 'Custom generation' })).toBeVisible();
 });
 
 test('F03-H9 saved owned lyrics quote and generate through the Custom-ready paid model', async ({ page }) => {
@@ -836,7 +927,9 @@ test('F03-H2 Custom lyrics autosave privately, survive reload and never request 
   expect(serverDraft.styles).toBe('Warm piano, restrained percussion, 84 bpm; wide stereo space with a close, intimate centre');
   expect(serverDraft.title).toBe('Harbour Frame');
   expect(generationCalls).toBe(0);
-  await expect(page.getByRole('button', { name: 'Custom generation unavailable for this model' })).toBeDisabled();
+  await expect(page.getByRole('region', { name: 'Custom generation availability' })).toContainText('Custom generation is already available.');
+  await expect(page.getByRole('button', { name: 'Use ACE-Step 1.5' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'View plans and availability' })).toHaveCount(0);
   await page.screenshot({ path: 'replica/suno/clone-screens/S06-server-mobile.png', fullPage: true });
 
   await page.reload();
