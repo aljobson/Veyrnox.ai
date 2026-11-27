@@ -8,6 +8,15 @@ import { clampLocator, moveLocator, snapTick, formatPosition } from '../../../_l
 import { setCycle } from '../../../_lib/music/beat/beatOps.mjs';
 
 const cycleFields = ['start', 'end'];
+const positionPaths = {
+  start: 'M5 5v14 M19 6l-9 6 9 6z',
+  previousBar: 'M7 6v12 M18 6l-8 6 8 6z',
+  nextBar: 'M17 6v12 M6 6l8 6-8 6z',
+  end: 'M19 5v14 M5 6l9 6-9 6z',
+};
+function PositionIcon({ name }) {
+  return <svg aria-hidden="true" viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d={positionPaths[name]} /></svg>;
+}
 export default function BeatRuler({ onHeight, bars, zoom, snap, locator, end, setLocator, cycle, edit, announce }) {
   const { t } = useI18n();
   const root = useRef(null);
@@ -32,9 +41,9 @@ export default function BeatRuler({ onHeight, bars, zoom, snap, locator, end, se
   const bandWidth = (band.end - band.start) / 3840 * zoom;
   function tick(event) { return snapTick((event.clientX - root.current.getBoundingClientRect().left) / zoom * 3840, snap); }
   const positionControls = [['start', 0], ['previousBar', Math.max(0, locator - 3840)], ['nextBar', Math.min(end, locator + 3840)], ['end', end]];
-  return <div ref={root} dir="ltr" className="relative min-h-40 border-b border-vx-border bg-vx-panel">
-    <div className="sticky start-0 flex min-h-16 w-fit max-w-[calc(100vw-6rem)] flex-wrap gap-1">
-      {positionControls.map(([label, at]) => <button data-beat-read key={label} className={button} onClick={() => setLocator(at)}>{t(`app.music.beat.control.${label}`)}</button>)}
+  return <div ref={root} dir="ltr" className="relative min-h-28 border-b border-vx-border bg-vx-panel">
+    <div className="sticky start-0 flex min-h-10 w-fit max-w-[calc(100vw-6rem)] gap-1 p-1">
+      {positionControls.map(([label, at]) => <button data-beat-read key={label} className={`${button} grid min-h-9 min-w-9 place-items-center rounded-lg px-0 py-1`} aria-label={t(`app.music.beat.control.${label}`)} title={t(`app.music.beat.control.${label}`)} onClick={() => setLocator(at)}><PositionIcon name={label} /></button>)}
       {preview && <button className={button} onClick={() => { drag.current = null; setPreview(null); announce(t('app.music.beat.status.s48')); }}>{t('app.music.beat.control.cancelDrag')}</button>}
     </div>
     <div data-beat-read data-beat-ruler-position role="slider" tabIndex={0} aria-label={t('app.music.beat.ui.playhead.position')} aria-valuemin={0}

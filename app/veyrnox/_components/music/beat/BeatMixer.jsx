@@ -4,7 +4,6 @@ import { useI18n } from '../../../../../components/I18nProvider';
 import { useEffect, useRef, useSyncExternalStore } from 'react';
 import BeatChannelStrip from './BeatChannelStrip';
 import BeatMasterStrip from './BeatMasterStrip';
-import { button } from './beatStyles';
 const query = '(max-width: 767px)';
 const subscribe = callback => { const media = matchMedia(query); media.addEventListener('change', callback); return () => media.removeEventListener('change', callback); };
 export default function BeatMixer({ doc, edit, engine, close, onAutomation, recording = false }) {
@@ -16,7 +15,7 @@ export default function BeatMixer({ doc, edit, engine, close, onAutomation, reco
   }, []);
   useEffect(() => { const sheet = dialog.current; if (mobile && sheet && !sheet.open) sheet.showModal(); return () => sheet?.close(); }, [mobile]);
   const contents = <>
-    <div className="flex items-center justify-between gap-3 p-3"><h2 id="beat-mixer-title" className="text-xl font-bold">{t('app.music.beat.ui.mixer')}</h2><button data-beat-read data-beat-live className={button} onClick={close}>{t('app.music.beat.ui.close.mixer')}</button></div>
+    <div className="flex items-center justify-between gap-3 border-b border-vx-border px-3 py-2"><h2 id="beat-mixer-title" className="text-lg font-bold">{t('app.music.beat.ui.mixer')}</h2><button data-beat-read data-beat-live aria-label={t('app.music.beat.ui.close.mixer')} title={t('app.music.beat.ui.close.mixer')} className="grid min-h-11 min-w-11 place-items-center rounded-xl border border-vx-border focus-visible:outline focus-visible:outline-2 focus-visible:outline-vx-accent" onClick={close}><svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5 fill-none stroke-current stroke-2"><path d="m6 6 12 12M18 6 6 18" /></svg><span className="sr-only">{t('app.music.beat.ui.close.mixer')}</span></button></div>
     <div role="region" aria-label={t('app.music.beat.ui.mixer.channels')} tabIndex={0} className="flex min-w-0 max-w-full items-start gap-3 overflow-x-auto p-3 focus-visible:outline-vx-accent">
       {doc.tracks.map(track => <BeatChannelStrip key={track.id} doc={doc} track={track} recording={recording} edit={edit} engine={engine}
         onAutomation={(id, lane) => { onAutomation(id, lane); if (mobile) close(); }} />)}
