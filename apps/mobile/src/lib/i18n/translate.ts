@@ -22,12 +22,50 @@ export interface Translator {
     plural(key: string, count: number, vars?: Vars): string;
 }
 
+export function fallbackPluralCategory(locale: LocaleCode, count: number): string {
+    if (!Number.isFinite(count)) return 'other';
+    const n = Math.abs(count);
+    const i = Math.floor(n);
+    const integer = Number.isInteger(n);
+    if (locale === 'ja' || locale === 'ko' || locale === 'zh') return 'other';
+    if (locale === 'en' || locale === 'de') return n === 1 ? 'one' : 'other';
+    if (locale === 'es') {
+        if (n === 1) return 'one';
+        return integer && i !== 0 && i % 1_000_000 === 0 ? 'many' : 'other';
+    }
+    if (locale === 'fr' || locale === 'pt') {
+        if (i === 0 || i === 1) return 'one';
+        return integer && i !== 0 && i % 1_000_000 === 0 ? 'many' : 'other';
+    }
+    if (locale === 'hi') return i === 0 || n === 1 ? 'one' : 'other';
+    if (locale === 'ru') {
+        if (!integer) return 'other';
+        const mod10 = i % 10, mod100 = i % 100;
+        if (mod10 === 1 && mod100 !== 11) return 'one';
+        if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return 'few';
+        return mod10 === 0 || mod10 >= 5 || (mod100 >= 11 && mod100 <= 14) ? 'many' : 'other';
+    }
+    if (locale === 'ar') {
+        if (!integer) return 'other';
+        if (i === 0) return 'zero';
+        if (i === 1) return 'one';
+        if (i === 2) return 'two';
+        const mod100 = i % 100;
+        if (mod100 >= 3 && mod100 <= 10) return 'few';
+        if (mod100 >= 11 && mod100 <= 99) return 'many';
+    }
+    return 'other';
+}
+
 function pluralCategory(locale: LocaleCode, count: number): string {
     try {
-        return new Intl.PluralRules(locale).select(count);
+        if (typeof Intl !== 'undefined' && typeof Intl.PluralRules === 'function') {
+            return new Intl.PluralRules(locale).select(count);
+        }
     } catch {
-        return count === 1 ? 'one' : 'other';
+        // Fall through to the deterministic native implementation.
     }
+    return fallbackPluralCategory(locale, count);
 }
 
 export function createTranslator(locale: LocaleCode, catalogs: Catalogs): Translator {

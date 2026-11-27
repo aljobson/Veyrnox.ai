@@ -32,6 +32,7 @@ export type MusicModelControls = {
     readonly title?: boolean;
     readonly vocal_gender?: readonly MusicVocalGender[];
     readonly suno_model?: readonly MusicSunoModel[];
+    readonly suno_model_labels?: Readonly<Partial<Record<MusicSunoModel, string>>>;
     readonly weirdness?: boolean;
     readonly instrumental: 'optional' | 'required';
 };

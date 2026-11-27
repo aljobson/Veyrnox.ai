@@ -220,7 +220,7 @@ export default {
     "music.create.lyrics_required": "Add lyrics for a custom vocal song, or choose Instrumental.",
     "music.create.contract_stale": "The music provider changed. Your draft was refreshed; review the price again.",
     "music.create.suno.offer": "Music model",
-    "music.create.suno.model": "Suno model",
+    "music.create.suno.model": "Generation style",
     "music.create.suno.style": "Style",
     "music.create.suno.exclude": "Exclude styles",
     "music.create.suno.selectStyles": "Select styles",
