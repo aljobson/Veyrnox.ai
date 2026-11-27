@@ -1,5 +1,11 @@
 [
   {
+    "id": "crunTemplates.run.library",
+    "english": "View in Library",
+    "translation": "In der Bibliothek ansehen",
+    "ratio": 1.67
+  },
+  {
     "id": "music.queue.add",
     "english": "Add to listening queue",
     "translation": "Zur Wiedergabewarteschlange hinzufügen",

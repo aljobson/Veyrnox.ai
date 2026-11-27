@@ -54,6 +54,8 @@ const CATALOG = [
     'crun:google/nano-banana', 'crun:bytedance/seedream-4',
     // Crun Kling, staged standby (2026-11-03).
     'crun:kling/v3', 'crun:kling/v3-std', 'crun:kling/v2-6', 'crun:kling/o1-r2v', 'crun:kling/o1-r2v-1080', 'crun:kling/o1-r2v-ref', 'crun:image-background-remove', 'crun:image-upscale',
+    // Private dispatch rows for the customer-facing template catalogue (0622).
+    'crun:kling/template', 'crun:bytedance/template', 'crun:vidu/template',
     // Crun first for FLUX.2 Pro and Kling Avatar (0581).
     'crun:flux-2-pro', 'crun:kling/avatar',
     // Staged on no route until a paid audio-on proof (ADR-0256 amendment 2026-11-22).

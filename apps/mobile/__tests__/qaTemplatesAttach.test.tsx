@@ -2,6 +2,7 @@ import { act } from 'react';
 import * as RN from 'react-native';
 import { createRoot, type Root } from 'test-renderer';
 import { AudioTemplateCard } from '../src/components/templates/AudioTemplateCard';
+import { ImageTemplateCard } from '../src/components/templates/ImageTemplateCard';
 import { UploadLimitNote } from '../src/components/create/AttachMore';
 import { chooseLocale } from '../src/lib/i18n';
 import type { CatalogModel } from '../src/lib/media';
@@ -34,9 +35,19 @@ test('an audio template card shows its catalog price, like a video card', async 
     expect(root.container.queryAll(n => n.props.accessibilityLabel === 'Audio, Lo-fi loop, 3 credits').length).toBeGreaterThan(0);
 });
 
-test('an audio template whose model is not in the catalog shows no price', async () => {
+test('an audio template whose model is not in the catalog shows price unavailable and is disabled', async () => {
     await act(async () => root.render(<AudioTemplateCard template={template} onOpen={jest.fn()} />));
-    expect(text()).not.toContain('credit');
+    expect(text()).toContain('Price unavailable');
+    expect(root.container.queryAll(n => n.props.accessibilityState?.disabled === true).length).toBeGreaterThan(0);
+});
+
+test('an image template shows its catalog price and fails closed without one', async () => {
+    const image = { id: 'i1', name: 'Portrait', category: 'photo', modelId: 'image-model', prompt: 'A portrait', previewUrl: null, previewAspect: 1, photoRequired: false };
+    await act(async () => root.render(<ImageTemplateCard template={image} credits={3} onOpen={jest.fn()} />));
+    expect(text()).toContain('3 credits');
+    await act(async () => root.render(<ImageTemplateCard template={image} onOpen={jest.fn()} />));
+    expect(text()).toContain('Price unavailable');
+    expect(root.container.queryAll(n => n.props.accessibilityState?.disabled === true).length).toBeGreaterThan(0);
 });
 
 test.each([[1, 'Up to 1 file.'], [2, 'Up to 2 files.']])('the upload limit for %i reads %s', async (n, words) => {
@@ -60,16 +71,16 @@ test('an audio template card plays its sample from its play control and opens fr
     const onPlay = jest.fn(), onOpen = jest.fn();
     const withSample = { ...template, previewUrl: 'https://veyrnox.ai/a.jpg', previewAudioUrl: 'https://veyrnox.ai/a.mp3' };
     mockPlay.mockClear(); mockFinished = false;
-    await act(async () => root.render(<AudioTemplateCard template={withSample} onPlay={onPlay} onOpen={onOpen} />));
+    await act(async () => root.render(<AudioTemplateCard template={withSample} credits={3} onPlay={onPlay} onOpen={onOpen} />));
     const play = root.container.queryAll(n => n.props.accessibilityLabel === 'Play, Lo-fi loop' && typeof n.props.onClick === 'function')[0];
     await act(async () => play.props.onClick());
     expect(onPlay).toHaveBeenCalledTimes(1);
     expect(onOpen).not.toHaveBeenCalled();
     expect(mockPlay).not.toHaveBeenCalled();
-    await act(async () => root.render(<AudioTemplateCard template={withSample} playing onPlay={onPlay} onOpen={onOpen} />));
+    await act(async () => root.render(<AudioTemplateCard template={withSample} credits={3} playing onPlay={onPlay} onOpen={onOpen} />));
     expect(root.container.queryAll(n => n.props.accessibilityLabel === 'Pause, Lo-fi loop').length).toBeGreaterThan(0);
     expect(mockPlay).toHaveBeenCalledTimes(1);
-    const openRow = root.container.queryAll(n => n.props.accessibilityLabel === 'Audio, Lo-fi loop' && typeof n.props.onClick === 'function')[0];
+    const openRow = root.container.queryAll(n => n.props.accessibilityLabel === 'Audio, Lo-fi loop, 3 credits' && typeof n.props.onClick === 'function')[0];
     await act(async () => openRow.props.onClick());
     expect(onOpen).toHaveBeenCalledTimes(1);
 });
@@ -84,9 +95,9 @@ test('a finished sample stops its card', async () => {
 
 test('an audio template row keeps the track credit line and opens from the row', async () => {
     const onOpen = jest.fn();
-    await act(async () => root.render(<AudioTemplateCard template={{ ...template, attribution: 'Music by cdk, CC BY 3.0' }} onOpen={onOpen} />));
+    await act(async () => root.render(<AudioTemplateCard template={{ ...template, attribution: 'Music by cdk, CC BY 3.0' }} credits={3} onOpen={onOpen} />));
     expect(text()).toContain('Music by cdk, CC BY 3.0');
-    const row = root.container.queryAll(n => n.props.accessibilityLabel === 'Audio, Lo-fi loop' && typeof n.props.onClick === 'function')[0];
+    const row = root.container.queryAll(n => n.props.accessibilityLabel === 'Audio, Lo-fi loop, 3 credits' && typeof n.props.onClick === 'function')[0];
     await act(async () => row.props.onClick());
     expect(onOpen).toHaveBeenCalledTimes(1);
 });

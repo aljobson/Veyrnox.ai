@@ -26,6 +26,7 @@
 "cinema/report-comment",
 "create",
 "create/agent",
+  "create/catalog-template",
 "create/presets",
 "create/tools",
 "credits",
