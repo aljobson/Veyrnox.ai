@@ -8,12 +8,12 @@
  *
  * Exit 0 when every routed row is within 1%, 1 on drift or a missing price, so a scheduled run can
  * open an issue. With --db the recorded cost comes from model_routes; otherwise from the value the
- * catalog carried when this was written (0.4536).
+ * route carried after the 2026-11-23 price change (0.6048).
  */
 import { select, envConfig } from '../packages/db/supabase-client.js';
 import { OPENROUTER_ROWS, checkOpenRouterRow } from '../lib/openrouterPriceCheck.js';
 
-const FALLBACK_RECORDED = { 'seedance-2.0-fast': 0.4536 };
+const FALLBACK_RECORDED = { 'seedance-2.0-fast': 0.6048 };
 
 async function main() {
     const res = await fetch('https://openrouter.ai/api/v1/videos/models', { signal: AbortSignal.timeout(20000) });
