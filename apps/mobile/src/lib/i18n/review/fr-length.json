@@ -7734,6 +7734,12 @@
     "ratio": 1.8
   },
   {
+    "id": "musicRemix.sample.longer",
+    "english": "Longer sample",
+    "translation": "Échantillon plus long",
+    "ratio": 1.62
+  },
+  {
     "id": "musicSources.title",
     "english": "Owned audio",
     "translation": "Audio dont vous détenez les droits",

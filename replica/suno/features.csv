@@ -45,12 +45,12 @@ Exact Speech script,speech,should,yes,yes,Existing Veyrnox stock-voice studio pr
 Speech tone pacing mood and setting,speech,should,yes,yes,Existing stock-voice studio provides language emotion speed pitch volume pauses interjections and reusable delivery palettes
 Speech backing music toggle,speech,could,yes,no,Advanced control
 Speech Variety and vocal gender,speech,could,yes,partial,Existing stock-voice studio filters female male and neutral voices and supports multi-voice auditions; a dedicated Variety control is absent
-Sample an owned audio range,remix,should,yes,no,Select a slice from song upload or recording
+Sample an owned audio range,remix,should,yes,partial,Web and React Native iOS select a bounded 5–30 second range from an existing owner-current WAV song preserve the original prepare the exact crop server-side and require rights attestation plus an exact two-result credit quote; direct recording or pre-song upload selection waveform audition and client-side duration bounds remain absent
 Sample Chop mode,remix,could,yes,no,Slices and rearranges the sample
 Sample As-is mode,remix,could,yes,no,Places sample without added instrumentation on top
 Sample Blend mode,remix,could,yes,no,Mixes sample with new instruments
 Keep sample pitch and speed,remix,could,yes,no,Optional preservation toggle
-Mashup exactly two owned songs,remix,should,yes,no,Explicit two-source workflow
+Mashup exactly two owned songs,remix,should,yes,partial,The billed server and web path accepts exactly one other owner-current WAV song prepares a bounded two-source mix preserves both originals and requires rights attestation plus an exact two-result quote; React Native iOS reaches the same quote flow against a deterministic local mock but still lacks live server acceptance and client-side source-duration bounds
 Prompt-driven cover art editor,visuals,could,yes,no,Available for songs playlists profiles and banners
 Upload an image as cover-art reference,visuals,could,yes,no,Iterate with text
 Generate image or video artwork,visuals,could,yes,no,Independent licensed visual model required

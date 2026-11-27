@@ -165,6 +165,7 @@ import area_musicLyricist from './en/musicLyricist';
 import area_musicPlaylists from './en/musicPlaylists';
 import area_musicPublic from './en/musicPublic';
 import area_musicPublication from './en/musicPublication';
+import area_musicRemix from './en/musicRemix';
 import area_musicRender from './en/musicRender';
 import area_musicSectionActions from './en/musicSectionActions';
 import area_musicSources from './en/musicSources';
@@ -431,6 +432,7 @@ const catalog = {
     ...area_musicPlaylists,
     ...area_musicPublic,
     ...area_musicPublication,
+    ...area_musicRemix,
     ...area_musicRender,
     ...area_musicSectionActions,
     ...area_musicSources,
