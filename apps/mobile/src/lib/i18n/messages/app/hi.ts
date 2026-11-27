@@ -14,6 +14,7 @@ export default {
   "crunTemplates.input": "इनपुट: {input}",
   "crunTemplates.credits": "क्रेडिट",
   "crunTemplates.price": "{credits} क्रेडिट",
+  "crunTemplates.priceUnavailable": "कीमत उपलब्ध नहीं है",
   "crunTemplates.use": "टेम्पलेट इस्तेमाल करें",
   "crunTemplates.run.images": "इमेज चुनें",
   "crunTemplates.run.imageOrder": "इस टेम्पलेट में बताए गए क्रम में इमेज जोड़ें।",

@@ -14,6 +14,7 @@ export default {
   "crunTemplates.input": "الإدخال: {input}",
   "crunTemplates.credits": "الرصيد",
   "crunTemplates.price": "{credits} رصيدًا",
+  "crunTemplates.priceUnavailable": "السعر غير متاح",
   "crunTemplates.use": "استخدام القالب",
   "crunTemplates.run.images": "اختيار الصور",
   "crunTemplates.run.imageOrder": "أضف الصور بالترتيب الموضح في هذا القالب.",

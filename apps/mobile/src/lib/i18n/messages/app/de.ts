@@ -14,6 +14,7 @@ export default {
   "crunTemplates.input": "Eingabe: {input}",
   "crunTemplates.credits": "Guthaben",
   "crunTemplates.price": "{credits} Guthaben",
+  "crunTemplates.priceUnavailable": "Preis nicht verfügbar",
   "crunTemplates.use": "Vorlage verwenden",
   "crunTemplates.run.images": "Bilder auswählen",
   "crunTemplates.run.imageOrder": "Füge die Bilder in der für diese Vorlage beschriebenen Reihenfolge hinzu.",

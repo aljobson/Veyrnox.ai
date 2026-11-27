@@ -24,6 +24,7 @@ test('template action is disabled without a valid price and enabled with one', a
     await act(async () => root.render(<CrunTemplateCard template={template(null)} playing={false} onPlay={() => {}} onUse={() => {}} />));
     let use = root.container.queryAll(node => node.props.accessibilityLabel === t('crunTemplates.use'))[0];
     expect(use.props.accessibilityState.disabled).toBe(true);
+    expect(root.container.queryAll(node => node.props.children === t('crunTemplates.priceUnavailable')).length).toBeGreaterThan(0);
     await act(async () => root.render(<CrunTemplateCard template={template(12)} playing={false} onPlay={() => {}} onUse={() => {}} />));
     use = root.container.queryAll(node => node.props.accessibilityLabel === t('crunTemplates.use'))[0];
     expect(use.props.accessibilityState.disabled).toBe(false);

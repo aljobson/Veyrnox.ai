@@ -14,6 +14,7 @@ export default {
   "crunTemplates.input": "Ввод: {input}",
   "crunTemplates.credits": "Кредиты",
   "crunTemplates.price": "{credits} кредитов",
+  "crunTemplates.priceUnavailable": "Цена недоступна",
   "crunTemplates.use": "Использовать шаблон",
   "crunTemplates.run.images": "Выбрать изображения",
   "crunTemplates.run.imageOrder": "Добавьте изображения в порядке, указанном для этого шаблона.",

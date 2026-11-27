@@ -30,7 +30,8 @@ export function CrunTemplateCard({ template, playing, onPlay, onUse }: {
         {template.category ? <Text variant="caption" tone="secondary">{template.category}</Text> : null}
         <Text variant="caption" tone="secondary">{inputs}</Text>
         {validPrices.length ? <Text variant="caption" tone="accent">{validPrices.map(price => `${price.resolution} · ${price.credits}`).join(' / ')} {t('crunTemplates.credits')}</Text>
-            : template.credits !== null ? <Text variant="caption" tone="accent">{t('crunTemplates.price', { credits: template.credits })}</Text> : null}
+            : template.credits !== null ? <Text variant="caption" tone="accent">{t('crunTemplates.price', { credits: template.credits })}</Text>
+                : <Text variant="caption" tone="secondary">{t('crunTemplates.priceUnavailable')}</Text>}
         {video ? <TemplatePlayButton title={template.name} playing={playing} style={styles.play} onPress={onPlay} /> : null}
         <Button label={t('crunTemplates.use')} size="md" disabled={!hasPrice} onPress={onUse} />
     </Card>;

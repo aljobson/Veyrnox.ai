@@ -14,6 +14,7 @@ export default {
   "crunTemplates.input": "Entrée : {input}",
   "crunTemplates.credits": "Crédits",
   "crunTemplates.price": "{credits} crédits",
+  "crunTemplates.priceUnavailable": "Prix indisponible",
   "crunTemplates.use": "Utiliser le modèle",
   "crunTemplates.run.images": "Choisir des images",
   "crunTemplates.run.imageOrder": "Ajoutez les images dans l’ordre indiqué par ce modèle.",

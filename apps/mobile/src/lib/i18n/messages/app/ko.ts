@@ -14,6 +14,7 @@ export default {
   "crunTemplates.input": "입력: {input}",
   "crunTemplates.credits": "크레딧",
   "crunTemplates.price": "{credits} 크레딧",
+  "crunTemplates.priceUnavailable": "가격을 사용할 수 없습니다",
   "crunTemplates.use": "템플릿 사용",
   "crunTemplates.run.images": "이미지 선택",
   "crunTemplates.run.imageOrder": "이 템플릿에 설명된 순서대로 이미지를 추가하세요.",

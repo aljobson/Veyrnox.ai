@@ -10,6 +10,7 @@ export default {
     'crunTemplates.input': 'Input: {input}',
     'crunTemplates.credits': 'Credits',
     'crunTemplates.price': '{credits} Credits',
+    'crunTemplates.priceUnavailable': 'Price unavailable',
     'crunTemplates.use': 'Use template',
     'crunTemplates.run.images': 'Choose images',
     'crunTemplates.run.imageOrder': 'Add images in the order described by this template.',

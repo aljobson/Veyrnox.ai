@@ -14,6 +14,7 @@ export default {
   "crunTemplates.input": "输入：{input}",
   "crunTemplates.credits": "点数",
   "crunTemplates.price": "{credits} 点数",
+  "crunTemplates.priceUnavailable": "价格不可用",
   "crunTemplates.use": "使用模板",
   "crunTemplates.run.images": "选择图片",
   "crunTemplates.run.imageOrder": "请按此模板说明的顺序添加图片。",

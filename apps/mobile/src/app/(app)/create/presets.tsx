@@ -109,6 +109,7 @@ export default function Templates() {
     const imageCategory = imageChip === 'ALL' || imageCategoriesOf(imagesListed).includes(imageChip) ? imageChip : 'ALL';
     const imagesShown = useMemo(() => imageTemplatesIn(imagesListed, imageCategory, query), [imagesListed, imageCategory, query]);
     const audioCredits = useMemo(() => new Map((catalog ?? []).map(m => [m.id, priceLines(m)[0]?.credits])), [catalog]);
+    const imageCredits = audioCredits;
     const openAudio = (a: AudioTemplate) => router.push(promptHref(a.modelId, a.prompt));
     const openImage = (i: ImageTemplate) => { const href = promptHref(i.modelId, i.prompt); router.push({ ...href, params: { ...href.params, photoGuide: 'scene' } }); };
     const retry = <View><Text tone="danger">{t('presets.couldnotloadtemplatesCheckyourconnection')}</Text><Button label={t('recovery.retry')} onPress={() => setAttempt(n => n + 1)} /></View>;
@@ -157,7 +158,7 @@ export default function Templates() {
                     <ScrollView horizontal contentContainerStyle={styles.chips}>{['ALL', ...imageCategoriesOf(imagesListed)].map(c => <Chip key={c} selected={imageCategory === c} accessibilityState={{ selected: imageCategory === c }} label={c === 'ALL' ? t('explore.type.all') : themeTitle(c)} onPress={() => setImageChip(c)} />)}</ScrollView>
                 </View>}
                 ListEmptyComponent={empty}
-                renderItem={({ item }) => <ImageTemplateCard template={item} onOpen={() => openImage(item)} />} />)
+                renderItem={({ item }) => <ImageTemplateCard template={item} credits={imageCredits.get(item.modelId)} onOpen={() => openImage(item)} />} />)
         : kind === 'audio' ? (audioFailed ? <View><Text tone="danger">{t('presets.couldnotloadtemplatesCheckyourconnection')}</Text><Button label={t('recovery.retry')} onPress={() => setAttempt(n => n + 1)} /></View>
             : audio === null ? <ActivityIndicator /> : <FlatList key="audio" data={audioShown} keyExtractor={a => a.id} contentContainerStyle={styles.list}
                 ListHeaderComponent={<View style={styles.header}>

@@ -14,6 +14,7 @@ export default {
   "crunTemplates.input": "入力：{input}",
   "crunTemplates.credits": "クレジット",
   "crunTemplates.price": "{credits}クレジット",
+  "crunTemplates.priceUnavailable": "価格を利用できません",
   "crunTemplates.use": "テンプレートを使用",
   "crunTemplates.run.images": "画像を選択",
   "crunTemplates.run.imageOrder": "このテンプレートの説明どおりの順序で画像を追加してください。",
