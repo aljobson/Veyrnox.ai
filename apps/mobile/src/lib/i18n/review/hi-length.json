@@ -2778,6 +2778,60 @@
     "ratio": 2.8
   },
   {
+    "id": "editorParity.apply",
+    "english": "Apply",
+    "translation": "लागू करें",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorParity.heroBestCut",
+    "english": "best cut",
+    "translation": "सर्वश्रेष्ठ कट",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorParity.minutesApprox",
+    "english": "~{n} min",
+    "translation": "लगभग {n} मिनट",
+    "ratio": 1.63
+  },
+  {
+    "id": "editorParity.moveLeft",
+    "english": "Move left",
+    "translation": "बाईं ओर ले जाएं",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorParity.none",
+    "english": "None",
+    "translation": "कोई नहीं",
+    "ratio": 2
+  },
+  {
+    "id": "editorParity.polishVideo",
+    "english": "Polish Video",
+    "translation": "वीडियो परिष्कृत करें",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorParity.readyIn",
+    "english": "ready in",
+    "translation": "इसमें तैयार होगा",
+    "ratio": 2
+  },
+  {
+    "id": "editorParity.reviewAiEdit",
+    "english": "Review AI Edit",
+    "translation": "AI Edit की समीक्षा करें",
+    "ratio": 1.64
+  },
+  {
+    "id": "editorParity.tapPlusAddClip",
+    "english": "Tap + to add a clip",
+    "translation": "क्लिप जोड़ने के लिए + पर टैप करें",
+    "ratio": 1.74
+  },
+  {
     "id": "musicAlbums.addTrack",
     "english": "Add",
     "translation": "जोड़ें",

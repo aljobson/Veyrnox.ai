@@ -7,7 +7,7 @@ import { getCacheUser, subscribeCacheUser } from '../../lib/appCache';
 import { ApiError, type ApiClient } from '../../lib/api';
 import { documentIdentity, validDocument, type ProjectDocument } from '../../lib/editorBridge';
 import { readDraft, writeDraft, removeDraft, type EditorDraft } from '../../lib/editorDrafts';
-import { createProject, conflictCopyName, getDocument, putDocument, editorErrorKey, type DocumentHead } from '../../lib/editorProjects';
+import { createProject, conflictCopyName, getDocument, getManualEditorCommitStatus, putDocument, putPaidDocument, quoteManualEditorCommit, editorErrorKey, type DocumentHead } from '../../lib/editorProjects';
 import { ambiguous, refused, canStart, canRetry, owns, retryDelay, decideDraft, createDraftQueue, type Operation } from '../../lib/editorSaveSafety';
 import { editorDeviceMedia } from '../../lib/editorDeviceMedia';
 import { restoreVersion, projectsErrorMessage } from '../../lib/projects';
@@ -24,7 +24,9 @@ type Options = {
     mergeBackups(doc: ProjectDocument): ProjectDocument; problem: string | null; setProblem(message: string | null): void;
     onOwnerChange(): void; onCopy(id: string): void; clearDocument(): void; entryImport(): Promise<void>;
 };
-type Save = Operation & { key: string; expectedRevision: number; document: ProjectDocument };
+type Save = Operation & { key: string; expectedRevision: number; document: ProjectDocument; expectedCredits?: number; paidReplayAttempted?: boolean; reconcileChecks?: number };
+export type PaidSaveResult = { committed: boolean; revision: number | null; credits: number | null };
+type SaveOutcome = PaidSaveResult & { clean: boolean };
 type Restore = Operation & { key: string; current: number; restore: number; identity: string };
 type Copy = Operation & { createKey: string; saveKey: string; name: string; workspaceId: string; document: ProjectDocument; identity: string; id?: string };
 
@@ -37,13 +39,13 @@ export function useEditorSaveSync(options: Options) {
         const owner = getCacheUser(), session = sessionFactory.current();
         let mounted = true, stopped = false, epoch = 0, watchGen = 0, imports = 0, localOnly = false;
         let saving: Operation | null = null, replacing: Operation | null = null;
-        let pending: Save | null = null, restoreOp: Restore | null = null, copy: Copy | null = null;
+        let pending: Save | null = null, paidReconcile: Save | null = null, restoreOp: Restore | null = null, copy: Copy | null = null;
         let remote: DocumentHead | null = null, recovery: EditorDraft | null = null;
         let sheet: 'conflict' | 'recovery' | 'versions' | null = null;
         let gate: 'loading' | 'pending' | 'open' = 'loading', workspaceId: string | null = null;
-        let failure: number | null = null, recovered = false, attempt = 0;
+        let failure: number | null = null, failureCode: string | null = null, recovered = false, attempt = 0;
         let draftState = { identity: '', kept: 'pending' as 'pending' | 'kept' | 'failed' };
-        let saveRun: Promise<boolean> | null = null;
+        let saveRun: Promise<SaveOutcome> | null = null;
         const timers: Partial<Record<'auto' | 'retry' | 'draft' | 'watch', ReturnType<typeof setTimeout>>> = {};
         const o = () => latest.current;
         const live = () => mounted && !stopped && owner === getCacheUser() && session.current();
@@ -55,8 +57,8 @@ export function useEditorSaveSync(options: Options) {
         const clear = (...names: (keyof typeof timers)[]) => names.forEach(name => { clearTimeout(timers[name]); delete timers[name]; });
         const queue = createDraftQueue({ write: writeDraft, remove: () => removeDraft(o().projectId) });
         function drop() {
-            stopped = true; pending = null; restoreOp = null; copy = null; saving = replacing = null;
-            failure = null; sheet = null; remote = null;
+            stopped = true; pending = null; paidReconcile = null; restoreOp = null; copy = null; saving = replacing = null;
+            failure = null; failureCode = null; sheet = null; remote = null;
             clear('auto', 'retry', 'draft', 'watch'); watchGen++; notify();
         }
         async function flushDraft() {
@@ -77,7 +79,7 @@ export function useEditorSaveSync(options: Options) {
             clear('draft', 'auto');
             timers.draft = setTimeout(() => void flushDraft(), 400);
             if (!sheet && !restoreOp && (failure === null || !refused(failure))) {
-                clear('retry'); timers.auto = setTimeout(() => void save(), pending ? 0 : 900);
+                clear('retry'); timers.auto = setTimeout(() => void runSave(), pending ? 0 : 900);
             }
         }
         function retry(error: unknown, run: () => Promise<unknown>) {
@@ -111,7 +113,7 @@ export function useEditorSaveSync(options: Options) {
             if (!holds(op)) return;
             if (identity() !== expected) { conflict(head); return; }
             clear('auto', 'retry', 'draft'); watchGen++; epoch++; op.epoch = epoch;
-            pending = null; copy = null; failure = null; recovered = false; remote = null; recovery = null;
+            pending = null; paidReconcile = null; copy = null; failure = null; failureCode = null; recovered = false; remote = null; recovery = null;
             o().baseline(head);
             const baselineIdentity = identity(), captured = epoch;
             await queue.remove(() => live() && epoch === captured && identity() === baselineIdentity && !o().dirtyRef.current).catch(() => undefined);
@@ -127,53 +129,132 @@ export function useEditorSaveSync(options: Options) {
             }
             if (live()) notify();
         }
-        function save(): Promise<boolean> {
-            if (saveRun) return saveRun;
-            if (!live() || gate !== 'open' || sheet || restoreOp || (!pending && !canStart(locks())) || (pending && !canRetry(locks(), pending))) return Promise.resolve(false);
-            if (!o().dirtyRef.current || !o().documentRef.current) return Promise.resolve(true);
-            if (failure !== null && refused(failure)) return Promise.resolve(false);
-            const op: Save = pending ?? { ...start(), key: randomUUID(), expectedRevision: o().revisionRef.current, document: o().documentRef.current! };
-            op.token = {}; op.state = 'inflight'; pending = op; saving = op; watchGen++; clear('auto', 'retry'); notify();
+        async function acknowledgeSave(op: Save, revision: number) {
+            pending = null;
+            if (paidReconcile === op) paidReconcile = null;
+            failure = null; failureCode = null; attempt = 0; recovered = false;
+            o().revisionRef.current = revision;
+            o().saved(op.document);
+            if (identity() === documentIdentity(op.document)) {
+                o().dirtyRef.current = false;
+                const captured = epoch;
+                await queue.remove(() => live() && epoch === captured && identity() === documentIdentity(op.document) && !o().dirtyRef.current).catch(() => undefined);
+                if (!holds(op)) return false;
+            } else await flushDraft();
+            return !o().dirtyRef.current;
+        }
+        async function reconcilePaid(op: Save): Promise<SaveOutcome> {
+            try {
+                const status = await getManualEditorCommitStatus(o().api, o().projectId, op.key);
+                if (!live() || epoch !== op.epoch || paidReconcile !== op) return { committed: false, clean: false, revision: null, credits: null };
+                if (status.committed && status.revision !== null) {
+                    const clean = await acknowledgeSave(op, status.revision);
+                    return { committed: true, clean, revision: status.revision, credits: op.expectedCredits ?? null };
+                }
+                // The status RPC waits on the paid-save advisory lock, so a
+                // missing exact key is authoritative after all already-issued
+                // same-key transactions have committed or rolled back.
+                paidReconcile = null;
+                return { committed: false, clean: false, revision: null, credits: null };
+            } catch (error) {
+                if (isAccountChanged(error)) { drop(); return { committed: false, clean: false, revision: null, credits: null }; }
+                if (!live() || epoch !== op.epoch || paidReconcile !== op) return { committed: false, clean: false, revision: null, credits: null };
+                const checks = op.reconcileChecks = (op.reconcileChecks ?? 0) + 1;
+                if (checks < 6) {
+                    await new Promise(resolve => setTimeout(resolve, retryDelay(checks - 1, (error as ApiError).retryAfterSeconds)));
+                    return reconcilePaid(op);
+                }
+                paidReconcile = null;
+                return { committed: false, clean: false, revision: null, credits: null };
+            }
+        }
+        function runSave(expectedCredits?: number): Promise<SaveOutcome> {
+            if (saveRun) {
+                if (expectedCredits === undefined || (saving as Save | null)?.expectedCredits !== undefined) return saveRun;
+                return saveRun.then(() => pending || imports > 0
+                    ? { committed: false, clean: false, revision: null, credits: null }
+                    : runSave(expectedCredits));
+            }
+            if (expectedCredits !== undefined && pending) {
+                if (!canRetry(locks(), pending)) return Promise.resolve({ committed: false, clean: false, revision: null, credits: null });
+                return runSave().then(() => pending || imports > 0
+                    ? { committed: false, clean: false, revision: null, credits: null }
+                    : runSave(expectedCredits));
+            }
+            if (!live() || gate !== 'open' || sheet || restoreOp || (!pending && !canStart(locks())) || (pending && !canRetry(locks(), pending)))
+                return Promise.resolve({ committed: false, clean: false, revision: null, credits: null });
+            // Once this source set is covered, an explicit Save/Export must not
+            // consume another document revision when nothing changed.
+            if ((!o().dirtyRef.current && (expectedCredits === undefined || expectedCredits === 0)) || !o().documentRef.current)
+                return Promise.resolve({ committed: expectedCredits !== undefined, clean: true, revision: o().revisionRef.current, credits: expectedCredits ?? null });
+            if (failure !== null && refused(failure)) return Promise.resolve({ committed: false, clean: false, revision: null, credits: null });
+            const op: Save = expectedCredits === undefined && pending
+                ? pending : { ...start(), key: randomUUID(), expectedRevision: o().revisionRef.current, document: o().documentRef.current!, expectedCredits };
+            op.token = {}; op.state = 'inflight';
+            if (op.expectedCredits === undefined) pending = op;
+            saving = op; watchGen++; clear('auto', 'retry'); notify();
             saveRun = (async () => {
                 try {
                     await flushDraft();
-                    if (!holds(op)) return false;
+                    if (!holds(op)) return { committed: false, clean: false, revision: null, credits: null };
                     if (localOnly) {
-                        pending = null; failure = null; attempt = 0; recovered = false;
+                        if (op.expectedCredits !== undefined) throw new ApiError(0, 'offline');
+                        pending = null; failure = null; failureCode = null; attempt = 0; recovered = false;
                         o().saved(op.document);
                         if (identity() === documentIdentity(op.document)) o().dirtyRef.current = false;
-                        else timers.auto = setTimeout(() => void save(), 0);
-                        return !o().dirtyRef.current;
+                        else timers.auto = setTimeout(() => void runSave(), 0);
+                        return { committed: false, clean: !o().dirtyRef.current, revision: o().revisionRef.current, credits: null };
                     }
                     if (!validDocument(op.document, o().projectId)) throw new ApiError(400, 'invalid_document');
-                    const result = await putDocument(o().api, o().projectId, op.expectedRevision, op.document, op.key);
-                    if (!holds(op)) return false;
-                    pending = null; failure = null; attempt = 0; recovered = false;
-                    // A later edit derives from this saved snapshot, so its base advances too.
-                    o().revisionRef.current = result.revision;
-                    o().saved(op.document);
-                    if (identity() === documentIdentity(op.document)) {
-                        o().dirtyRef.current = false;
-                        const captured = epoch;
-                        await queue.remove(() => live() && epoch === captured && identity() === documentIdentity(op.document) && !o().dirtyRef.current).catch(() => undefined);
-                        if (!holds(op)) return false;
-                    } else await flushDraft();
-                    return !o().dirtyRef.current;
+                    let result;
+                    if (op.expectedCredits === undefined) result = await putDocument(o().api, o().projectId, op.expectedRevision, op.document, op.key);
+                    else try {
+                        result = await putPaidDocument(o().api, o().projectId, op.expectedRevision, op.document, op.key, op.expectedCredits);
+                    } catch (error) {
+                        const status = (error as ApiError).status ?? 500;
+                        if (!ambiguous(status) || op.paidReplayAttempted) throw error;
+                        // One same-key replay remains part of this explicit
+                        // action. The server serializes it and cannot debit it
+                        // twice; no charge request is ever replayed by a timer.
+                        op.paidReplayAttempted = true;
+                        result = await putPaidDocument(o().api, o().projectId, op.expectedRevision, op.document, op.key, op.expectedCredits);
+                    }
+                    if (!holds(op)) return { committed: false, clean: false, revision: null, credits: null };
+                    const clean = await acknowledgeSave(op, result.revision);
+                    return { committed: op.expectedCredits !== undefined, clean, revision: result.revision, credits: op.expectedCredits ?? null };
                 } catch (error) {
-                    if (isAccountChanged(error)) { drop(); return false; }
-                    if (!holds(op)) return false;
-                    const status = (error as ApiError).status ?? 500; failure = status;
-                    if (ambiguous(status)) { op.state = 'ambiguous'; retry(error, save); }
-                    else if (refused(status)) { pending = null; if (status === 409) await fetchConflict(op); }
+                    if (isAccountChanged(error)) { drop(); return { committed: false, clean: false, revision: null, credits: null }; }
+                    if (!holds(op)) return { committed: false, clean: false, revision: null, credits: null };
+                    const status = (error as ApiError).status ?? 500;
+                    const code = error instanceof ApiError ? error.code.toLowerCase() : '';
+                    failureCode = code || null;
+                    if (op.expectedCredits !== undefined && ambiguous(status)) {
+                        paidReconcile = op; op.state = 'ambiguous'; failure = null;
+                        return await reconcilePaid(op);
+                    }
+                    if (op.expectedCredits !== undefined) {
+                        // A paid action exists only while the person is explicitly
+                        // saving/exporting. Never retry it in the background, and
+                        // never let a declined or ambiguous charge stop the free
+                        // autosave path. The next explicit action quotes afresh.
+                        paidReconcile = null; failure = null;
+                        if (status === 409 && code === 'version_conflict') await fetchConflict(op);
+                    }
+                    else if (ambiguous(status)) { failure = status; op.state = 'ambiguous'; retry(error, runSave); }
+                    else if (refused(status)) {
+                        failure = status;
+                        pending = null;
+                        if (status === 409) await fetchConflict(op);
+                    }
                     // Any other definite refusal (413, 422, ...): the server kept nothing, so a later attempt saves afresh.
-                    else { pending = null; retry(error, save); }
-                    return false;
+                    else { failure = status; pending = null; retry(error, runSave); }
+                    return { committed: false, clean: false, revision: null, credits: null };
                 } finally {
                     if (saving === op) saving = null;
                     saveRun = null; watchGen++;
                     if (live()) {
                         notify();
-                        if (!pending && failure === null && o().dirtyRef.current && !sheet) timers.auto = setTimeout(() => void save(), 0);
+                        if (!pending && failure === null && o().dirtyRef.current && !sheet) timers.auto = setTimeout(() => void runSave(), 0);
                     }
                 }
             })();
@@ -329,7 +410,7 @@ export function useEditorSaveSync(options: Options) {
                     if (captured !== epoch) { o().setProblem(t('editorSave.importDropped')); return false; }
                     return true;
                 },
-                end() { if (!ended) { ended = true; imports--; if (live()) { notify(); if (!sheet && o().dirtyRef.current) timers.auto = setTimeout(() => void save(), 0); } } },
+                end() { if (!ended) { ended = true; imports--; if (live()) { notify(); if (!sheet && o().dirtyRef.current) timers.auto = setTimeout(() => void runSave(), 0); } } },
             };
         }
         async function loaded(head: DocumentHead, workspace: string | null) {
@@ -374,7 +455,7 @@ export function useEditorSaveSync(options: Options) {
             await flushDraft(); if (!live()) return false;
             if (saveRun) await saveRun;
             if (!live()) return false;
-            if (o().dirtyRef.current && failure !== 429 && !isOffline()) await save();
+            if (o().dirtyRef.current && failure !== 429 && !isOffline()) await runSave();
             if (!live()) return false;
             if (!o().dirtyRef.current) return true;
             return new Promise<boolean>(resolve => Alert.alert(t(draftState.identity === identity() && draftState.kept === 'kept' ? 'editor.leaveKept' : 'editor.leaveLost'), undefined, [
@@ -383,11 +464,19 @@ export function useEditorSaveSync(options: Options) {
             ], { cancelable: true, onDismiss: () => resolve(false) }));
         }
         return {
-            live, changed, loaded, beginImport, flushDraft, save, leaveEditor, restore, retryRestore: runRestore, accountChanged: drop,
+            live, changed, loaded, beginImport, flushDraft, save: () => runSave().then(result => result.clean),
+            savePaid: (credits: number): Promise<PaidSaveResult> => runSave(credits).then(({ committed, revision, credits: charged }) => ({ committed, revision, credits: charged })),
+            quotePaid: () => {
+                const document = o().documentRef.current;
+                if (!live() || gate !== 'open' || localOnly || imports > 0 || paidReconcile || !document) return Promise.reject(new ApiError(0, 'offline'));
+                return quoteManualEditorCommit(o().api, o().projectId, o().revisionRef.current, document);
+            },
+            leaveEditor, restore, retryRestore: runRestore, accountChanged: drop,
             observeHead(head: DocumentHead) {
                 if (live() && restoreOp?.state === 'ambiguous' && head.revision > restoreOp.current) { restoreOp = null; clear('retry'); conflict(head); }
             },
             get problem() { return o().problem; },
+            get failureCode() { return failureCode; },
             useSaved: () => confirmDiscard(useSavedNow), recover: () => void recover(false), discard: () => confirmDiscard(() => recover(true), true), keepCopy,
             openVersions() { if (live() && !sheet) { sheet = 'versions'; clear('auto'); notify(); } },
             closeVersions() { if (sheet === 'versions') { sheet = null; notify(); if (!settle() && !restoreOp && o().dirtyRef.current) changed(); } },

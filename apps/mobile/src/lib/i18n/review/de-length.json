@@ -5358,6 +5358,138 @@
     "ratio": 2
   },
   {
+    "id": "editorParity.addNotes",
+    "english": "Add notes",
+    "translation": "Notizen hinzufügen",
+    "ratio": 2
+  },
+  {
+    "id": "editorParity.applyCustomCanvas",
+    "english": "Apply custom canvas",
+    "translation": "Benutzerdefinierte Leinwand anwenden",
+    "ratio": 1.89
+  },
+  {
+    "id": "editorParity.applyTrim",
+    "english": "Apply Trim",
+    "translation": "Zuschnitt anwenden",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorParity.blur",
+    "english": "Blur",
+    "translation": "Unschärfe",
+    "ratio": 2.25
+  },
+  {
+    "id": "editorParity.bold",
+    "english": "Bold",
+    "translation": "Kräftig",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorParity.closePolish",
+    "english": "Close Polish",
+    "translation": "Verfeinern schließen",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorParity.closeTrim",
+    "english": "Close Trim",
+    "translation": "Zuschnitt schließen",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorParity.custom",
+    "english": "Custom",
+    "translation": "Benutzerdefiniert",
+    "ratio": 2.83
+  },
+  {
+    "id": "editorParity.customCanvasHeight",
+    "english": "Custom canvas height",
+    "translation": "Höhe der benutzerdefinierten Leinwand",
+    "ratio": 1.85
+  },
+  {
+    "id": "editorParity.customCanvasWidth",
+    "english": "Custom canvas width",
+    "translation": "Breite der benutzerdefinierten Leinwand",
+    "ratio": 2.05
+  },
+  {
+    "id": "editorParity.fit",
+    "english": "Fit",
+    "translation": "Einpassen",
+    "ratio": 3
+  },
+  {
+    "id": "editorParity.heroBestCut",
+    "english": "best cut",
+    "translation": "bester Schnitt",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorParity.keepThisCut",
+    "english": "Keep this cut",
+    "translation": "Diesen Schnitt behalten",
+    "ratio": 1.77
+  },
+  {
+    "id": "editorParity.moveLeft",
+    "english": "Move left",
+    "translation": "Nach links verschieben",
+    "ratio": 2.44
+  },
+  {
+    "id": "editorParity.moveRight",
+    "english": "Move right",
+    "translation": "Nach rechts verschieben",
+    "ratio": 2.3
+  },
+  {
+    "id": "editorParity.muteTrack",
+    "english": "Mute {name}",
+    "translation": "{name} stummschalten",
+    "ratio": 1.82
+  },
+  {
+    "id": "editorParity.pauseAddNotes",
+    "english": "Pause and add notes",
+    "translation": "Pausieren und Notizen hinzufügen",
+    "ratio": 1.68
+  },
+  {
+    "id": "editorParity.polishDescription",
+    "english": "Finish your edit in one step. Everything Polish adds is a single undo.",
+    "translation": "Schließe deinen Schnitt in einem Schritt ab. Alles, was Verfeinern hinzufügt, lässt sich mit einem Schritt rückgängig machen.",
+    "ratio": 1.79
+  },
+  {
+    "id": "editorParity.tenMax",
+    "english": "10 max",
+    "translation": "maximal 10",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorParity.tryDifferentCut",
+    "english": "Try a different cut",
+    "translation": "Einen anderen Schnitt versuchen",
+    "ratio": 1.63
+  },
+  {
+    "id": "editorParity.volume",
+    "english": "Volume",
+    "translation": "Lautstärke",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorParity.tapPlusAddClip",
+    "english": "Tap + to add a clip",
+    "translation": "Tippe auf +, um einen Clip hinzuzufügen",
+    "ratio": 2.05
+  },
+  {
     "id": "musicAlbums.addTrack",
     "english": "Add",
     "translation": "Hinzufügen",

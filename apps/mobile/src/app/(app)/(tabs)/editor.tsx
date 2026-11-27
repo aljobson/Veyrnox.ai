@@ -145,7 +145,7 @@ export default function EditorHome() {
                         {EDITOR_ENABLED ? <View style={styles.sectionTop}>
                             <Text variant="footnote" accessibilityRole="header" style={styles.sectionTitle}>{t('editor.home.recent')}</Text>
                             <View style={styles.sectionActions}>
-                                <Button label="Batch AI Edit" variant="tertiary" accessibilityRole="button" onPress={() => setBatchOpen(true)}><Text variant="bodyStrong" style={styles.allProjects}>Batch AI Edit</Text></Button>
+                                <Button label={t('editorParity.batchAiEdit')} variant="tertiary" accessibilityRole="button" onPress={() => setBatchOpen(true)}><Text variant="bodyStrong" style={styles.allProjects}>{t('editorParity.batchAiEdit')}</Text></Button>
                                 <Button label={t('editor.home.allProjects')} variant="tertiary" accessibilityRole="button" onPress={() => router.push('/projects')}><Text variant="bodyStrong" style={styles.allProjects}>{t('editor.home.allProjects')}</Text></Button>
                             </View>
                         </View> : null}

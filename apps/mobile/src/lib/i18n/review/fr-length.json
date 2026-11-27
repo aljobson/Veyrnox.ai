@@ -7680,6 +7680,150 @@
     "ratio": 1.71
   },
   {
+    "id": "editorParity.addNotes",
+    "english": "Add notes",
+    "translation": "Ajouter des notes",
+    "ratio": 1.89
+  },
+  {
+    "id": "editorParity.apply",
+    "english": "Apply",
+    "translation": "Appliquer",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorParity.applyCustomCanvas",
+    "english": "Apply custom canvas",
+    "translation": "Appliquer le cadre personnalisé",
+    "ratio": 1.63
+  },
+  {
+    "id": "editorParity.applyTrim",
+    "english": "Apply Trim",
+    "translation": "Appliquer le recadrage",
+    "ratio": 2.2
+  },
+  {
+    "id": "editorParity.bold",
+    "english": "Bold",
+    "translation": "Audacieux",
+    "ratio": 2.25
+  },
+  {
+    "id": "editorParity.closeTrim",
+    "english": "Close Trim",
+    "translation": "Fermer le recadrage",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorParity.createBestCut",
+    "english": "Create Best Cut",
+    "translation": "Créer le meilleur montage",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorParity.custom",
+    "english": "Custom",
+    "translation": "Personnalisé",
+    "ratio": 2
+  },
+  {
+    "id": "editorParity.fadeIn",
+    "english": "Fade in",
+    "translation": "Fondu d’entrée",
+    "ratio": 2
+  },
+  {
+    "id": "editorParity.fadeOut",
+    "english": "Fade out",
+    "translation": "Fondu de sortie",
+    "ratio": 1.88
+  },
+  {
+    "id": "editorParity.fill",
+    "english": "Fill",
+    "translation": "Remplir",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorParity.fit",
+    "english": "Fit",
+    "translation": "Ajuster",
+    "ratio": 2.33
+  },
+  {
+    "id": "editorParity.fitMode",
+    "english": "Fit Mode",
+    "translation": "Mode d’ajustement",
+    "ratio": 2.13
+  },
+  {
+    "id": "editorParity.frameRate",
+    "english": "Frame Rate",
+    "translation": "Fréquence d’images",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorParity.heroBestCut",
+    "english": "best cut",
+    "translation": "meilleur montage",
+    "ratio": 2
+  },
+  {
+    "id": "editorParity.inPoint",
+    "english": "In",
+    "translation": "Début",
+    "ratio": 2.5
+  },
+  {
+    "id": "editorParity.moveLeft",
+    "english": "Move left",
+    "translation": "Déplacer vers la gauche",
+    "ratio": 2.56
+  },
+  {
+    "id": "editorParity.moveRight",
+    "english": "Move right",
+    "translation": "Déplacer vers la droite",
+    "ratio": 2.3
+  },
+  {
+    "id": "editorParity.muteTrack",
+    "english": "Mute {name}",
+    "translation": "Couper le son de {name}",
+    "ratio": 2.09
+  },
+  {
+    "id": "editorParity.pauseAddNotes",
+    "english": "Pause and add notes",
+    "translation": "Mettre en pause et ajouter des notes",
+    "ratio": 1.89
+  },
+  {
+    "id": "editorParity.unmuteTrack",
+    "english": "Unmute {name}",
+    "translation": "Rétablir le son de {name}",
+    "ratio": 1.92
+  },
+  {
+    "id": "editorParity.warm",
+    "english": "Warm",
+    "translation": "Chaleureux",
+    "ratio": 2.5
+  },
+  {
+    "id": "editorParity.newTextLayer",
+    "english": "New text layer",
+    "translation": "Nouveau calque de texte",
+    "ratio": 1.64
+  },
+  {
+    "id": "editorParity.tapPlusAddClip",
+    "english": "Tap + to add a clip",
+    "translation": "Appuyez sur + pour ajouter un clip",
+    "ratio": 1.79
+  },
+  {
     "id": "musicAlbums.addTrack",
     "english": "Add",
     "translation": "Ajouter",

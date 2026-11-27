@@ -36,6 +36,30 @@ test('save and restore forward only validated intent and preserve user JWT',asyn
  assert.equal(sent.p_expected_revision,1);assert.equal(sent.p_idempotency_key,'document-test-key');
  await PUT(req({expected_revision:2,restore_revision:1}),params);assert.equal(sent.p_document,null);assert.equal(sent.p_restore_revision,1);
 });
+test('manual editor quote and commit use the dedicated atomic credit RPCs',async()=>{
+ const doc=emptyProjectDocument(id);const calls=[];
+ globalThis.fetch=async(url,init)=>{calls.push({url:String(url),body:JSON.parse(init.body)});return Response.json(calls.length===1?{ok:true,credits:5}:{revision:2,credits:5});};
+ let response=await PUT(req({expected_revision:1,document:doc,manual_commit:{mode:'quote'}}),params);
+ assert.equal(response.status,200);assert.match(calls[0].url,/rpc\/quote_manual_editor_commit$/);assert.deepEqual(calls[0].body,{p_project_id:id,p_document:doc});
+ response=await PUT(req({expected_revision:1,document:doc,manual_commit:{mode:'commit',expected_credits:5}}),params);
+ assert.equal(response.status,200);assert.match(calls[1].url,/rpc\/save_paid_project_document$/);
+ assert.deepEqual(calls[1].body,{p_project_id:id,p_expected_revision:1,p_document:doc,p_idempotency_key:'document-test-key',p_expected_credits:5});
+});
+test('manual editor ambiguity status is bound to the exact idempotency key',async()=>{
+ const calls=[];globalThis.fetch=async(url,init)=>{calls.push({url:String(url),body:init?.body?JSON.parse(init.body):null});return Response.json(calls.length===1?[{id}]:{ok:true,committed:true,revision:7});};
+ const response=await GET(req(undefined,'?manual_commit_status=1'),params);
+ assert.equal(response.status,200);assert.match(calls[1].url,/rpc\/manual_editor_commit_status$/);
+ assert.deepEqual(calls[1].body,{p_project_id:id,p_idempotency_key:'document-test-key'});
+ assert.deepEqual(await response.json(),{ok:true,committed:true,revision:7});
+});
+test('manual editor debit failures preserve price, balance and availability semantics',async()=>{
+ const doc=emptyProjectDocument(id);
+ for(const [code,status] of [['NO_BALANCE_ROW',402],['INSUFFICIENT_BALANCE',402],['ACCOUNT_FROZEN',403],['ACCOUNT_ON_HOLD',403],['PRICE_CHANGED',409],['IDEMPOTENCY_CONFLICT',409],['RATE_LIMITED',429],['INVALID_CREDITS',400],['PROVIDER_ADMISSION_PAUSED',503],['UNKNOWN',503]]){
+  globalThis.fetch=async()=>Response.json({ok:false,code});
+  const response=await PUT(req({expected_revision:1,document:doc,manual_commit:{mode:'commit',expected_credits:5}}),params);
+  assert.equal(response.status,status,code);
+ }
+});
 test('history pagination is bounded and excludes document content',async()=>{
  const urls=[];globalThis.fetch=async(url)=>{urls.push(String(url));return Response.json(urls.length===1?[{id}]:[]);};
  const r=await history(req(undefined,'?before=40'),params);assert.equal(r.status,200);

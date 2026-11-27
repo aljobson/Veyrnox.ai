@@ -28,10 +28,11 @@ jest.mock('../src/components/editor/editorFrameStore', () => {
     return { ...actual, createFrameStore: (...args: unknown[]) => (mockFrameStore = actual.createFrameStore(...args)) };
 });
 import { act } from 'react';
-import { AccessibilityInfo, ActivityIndicator, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { AccessibilityInfo, ActivityIndicator, Alert, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { createRoot, type Root } from 'test-renderer';
 import { FullEditorScreen } from '../src/components/editor/FullEditorScreen';
 import * as ImagePicker from 'expo-image-picker';
+import { ApiError } from '../src/lib/api';
 
 void [ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View];
 
@@ -85,7 +86,12 @@ beforeEach(() => {
         find: jest.fn(), cancel: jest.fn(), toggle: jest.fn(), clear: jest.fn(() => { mockClipState.status = 'idle'; mockClipState.rows = []; mockClipState.resultKey = undefined; }) };
     mockAppendFoundClips.mockReset();
     mockRequest.mockImplementation(async (path: string, init?: RequestInit) => {
-        if (init?.method === 'PUT') return { revision: JSON.parse(init.body as string).expected_revision + 1 };
+        if (init?.method === 'PUT') {
+            const body = JSON.parse(init.body as string);
+            if (body.manual_commit?.mode === 'quote') return { ok: true, credits: 5 };
+            if (body.manual_commit?.mode === 'commit') return { revision: body.expected_revision + 1, credits: body.manual_commit.expected_credits };
+            return { revision: body.expected_revision + 1 };
+        }
         if (init?.method === 'PATCH') return { project: { id: projectId, workspace_id: 'workspace', name: JSON.parse(init.body as string).name, version: 2 } };
         if (path.endsWith('/media-info')) return { seconds: 4 };
         if (path.endsWith('/document')) return { revision: 4, document: serverDocument };
@@ -547,9 +553,55 @@ test('B1: flag off Export opens the private on-device MP4 flow without a server 
     await render(); await press('Export');
     expect(mockRouter.push).not.toHaveBeenCalled();
     expect(visible('Export on this device')).toBe(true);
-    expect(visible('Makes a private MP4 on this device for supported projects up to 30 seconds. No upload or credits.')).toBe(true);
+    expect(visible('Makes a private MP4 on this device for supported projects up to 30 seconds. Saving or exporting an imported edit uses a one-time 5-credit manual-edit fee.')).toBe(true);
     expect(visible('Use cloud export instead')).toBe(true);
     expect(mockRequest.mock.calls.some(([path]) => path.includes('/editor/server-render'))).toBe(false);
+});
+
+test('explicit Save quotes and confirms the one-time 5-credit manual edit before committing', async () => {
+    serverDocument = { ...document, schema_version: 3, timeline: { schemaVersion: 3, fps: 30, seq: 1, aspect: '16:9', background: '#000000',
+        media: { media1: { id: 'media1', kind: 'video', name: 'Imported shot', frames: 60 } },
+        video: [{ id: 'v1', mediaId: 'media1', start: 0, in: 0, len: 60, trackId: 'video-0' }], audio: [], text: [], tracks: [
+            { id: 'video-0', kind: 'video', name: 'Video 1', locked: false, muted: false, hidden: false },
+            { id: 'audio-0', kind: 'audio', name: 'Audio 1', locked: false, muted: false, hidden: false },
+            { id: 'text-0', kind: 'text', name: 'Text 1', locked: false, muted: false, hidden: false }], markers: [] } };
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    try {
+        await renderSimple();
+        await press('Saved · v4');
+        expect(alert).toHaveBeenCalledWith('Save this edit?', expect.stringContaining('5 credits once'), expect.any(Array), expect.any(Object));
+        const confirm = alert.mock.calls.at(-1)![2]!.find(button => button.text === 'Continue · 5 credits')!;
+        await act(async () => confirm.onPress!());
+        const manual = puts().map(([, init]) => JSON.parse(init.body as string).manual_commit).filter(Boolean);
+        expect(manual).toEqual([{ mode: 'quote' }, { mode: 'commit', expected_credits: 5 }]);
+    } finally { alert.mockRestore(); }
+});
+
+test('a stale paid quote returns to explicit confirmation instead of opening a false document conflict', async () => {
+    const base = mockRequest.getMockImplementation()!;
+    let paidAttempts = 0;
+    mockRequest.mockImplementation(async (path: string, init?: RequestInit) => {
+        if (init?.method === 'PUT') {
+            const body = JSON.parse(init.body as string);
+            if (body.manual_commit?.mode === 'quote') return { ok: true, credits: 5 };
+            if (body.manual_commit?.mode === 'commit' && paidAttempts++ === 0) throw new ApiError(409, 'price_changed', { expected_credits: 5 });
+            if (body.manual_commit?.mode === 'commit') return { revision: body.expected_revision + 1, credits: 5 };
+        }
+        return base(path, init);
+    });
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    try {
+        await renderSimple();
+        const documentReads = () => mockRequest.mock.calls.filter(([path, init]) => String(path).endsWith('/document') && !init?.method).length;
+        await press('Saved · v4');
+        await act(async () => alert.mock.calls.at(-1)![2]!.find(button => button.text === 'Continue · 5 credits')!.onPress!());
+        expect(documentReads()).toBe(1);
+        expect(visible('The credit price changed. Review the new price and try Save or Export again.')).toBe(true);
+        await press('Saved · v4');
+        await act(async () => alert.mock.calls.at(-1)![2]!.find(button => button.text === 'Continue · 5 credits')!.onPress!());
+        expect(paidAttempts).toBe(2);
+        expect(documentReads()).toBe(1);
+    } finally { alert.mockRestore(); }
 });
 
 test('a backup completing after another edit survives undo and redo without inserting media into older snapshots', async () => {

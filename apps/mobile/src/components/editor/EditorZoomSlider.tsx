@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { PanResponder, StyleSheet, View } from 'react-native';
 import { studioColors as colors } from '../../theme';
+import { t } from '../../lib/i18n';
 
 export function EditorZoomSlider({ value, min, max, onChange }: { value: number; min: number; max: number; onChange(value: number): void }) {
     const width = useRef(96), latest = useRef({ value, min, max, onChange });
@@ -17,7 +18,7 @@ export function EditorZoomSlider({ value, min, max, onChange }: { value: number;
         onPanResponderMove: event => update(event.nativeEvent.locationX),
     }));
     const percent = Math.max(0, Math.min(100, Math.log(value / min) / Math.log(max / min) * 100));
-    return <View {...responder.panHandlers} accessible accessibilityRole="adjustable" accessibilityLabel="Timeline zoom"
+    return <View {...responder.panHandlers} accessible accessibilityRole="adjustable" accessibilityLabel={t('editorParity.timelineZoom')}
         accessibilityValue={{ min, max, now: value, text: `${Math.round(value * 100)}%` }}
         accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
         onAccessibilityAction={event => {

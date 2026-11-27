@@ -6,6 +6,7 @@ import { studioColors as colors, fonts } from '../../theme';
 import type { Clip } from '../../lib/nativeEditorModel';
 import type { AudioSettingsActions } from './tools/useAudioSettingsActions';
 import { Slider } from './tools/Slider';
+import { t } from '../../lib/i18n';
 
 export function EditorCleanVoiceSheet({ visible, clip, available, actions, onClose }: {
     visible: boolean;
@@ -34,24 +35,28 @@ export function EditorCleanVoiceSheet({ visible, clip, available, actions, onClo
         onClose();
     };
     return <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} accessibilityViewIsModal>
-        <Pressable accessible={false} style={styles.backdrop} onPress={onClose} />
-        <View style={[styles.sheet, { paddingBottom: Math.max(24, (insets?.bottom ?? 0) + 14) }]}>
+        <Pressable accessible={false} accessibilityRole="button" style={styles.backdrop} onPress={onClose} />
+        <View style={[styles.sheet, {
+            paddingBottom: Math.max(24, (insets?.bottom ?? 0) + 14),
+            paddingLeft: Math.max(20, (insets?.left ?? 0) + 12),
+            paddingRight: Math.max(20, (insets?.right ?? 0) + 12),
+        }]}>
             <View style={styles.grabber} />
             <View style={styles.header}>
-                <Pressable accessibilityRole="button" accessibilityLabel="Close Clean Voice" onPress={onClose} style={styles.close}><Text style={styles.closeText}>Close</Text></Pressable>
-                <Text accessibilityRole="header" style={styles.title}>Clean Voice</Text>
+                <Pressable accessibilityRole="button" accessibilityLabel={t('editorParity.closeCleanVoice')} onPress={onClose} style={styles.close}><Text style={styles.closeText}>{t('common.close')}</Text></Pressable>
+                <Text accessibilityRole="header" style={styles.title}>{t('editorSimple.cleanVoice')}</Text>
             </View>
-            <Text style={styles.copy}>Reduce room noise and make speech clearer without changing the speaker.</Text>
+            <Text style={styles.copy}>{t('editorParity.cleanVoiceDescription')}</Text>
             {available && clip ? <>
                 <View style={styles.toggleRow}>
-                    <View style={styles.toggleCopy}><Text style={styles.toggleTitle}>Clean up Voice</Text><Text style={styles.toggleHint}>Keeps the voice natural</Text></View>
-                    <Switch accessibilityLabel="Clean up Voice" value={enabled} onValueChange={setEnabled} trackColor={{ false: '#45454b', true: colors.accentSoft }} thumbColor={enabled ? colors.accent : '#d6d6da'} />
+                    <View style={styles.toggleCopy}><Text style={styles.toggleTitle}>{t('editorParity.cleanUpVoice')}</Text><Text style={styles.toggleHint}>{t('editorParity.keepsVoiceNatural')}</Text></View>
+                    <Switch accessibilityLabel={t('editorParity.cleanUpVoice')} value={enabled} onValueChange={setEnabled} trackColor={{ false: '#45454b', true: colors.accentSoft }} thumbColor={enabled ? colors.accent : '#d6d6da'} />
                 </View>
-                <Slider label="Strength" value={strength} min={.15} max={1} step={.05} disabled={!enabled} format={value => `${Math.round(value * 100)}%`} onChange={setStrength} />
-                <Pressable accessibilityRole="button" accessibilityLabel="Apply Clean Voice" onPress={apply} style={styles.primary}><Text style={styles.primaryText}>Apply Clean Voice</Text></Pressable>
+                <Slider label={t('editorParity.strength')} value={strength} min={.15} max={1} step={.05} disabled={!enabled} format={value => `${Math.round(value * 100)}%`} onChange={setStrength} />
+                <Pressable accessibilityRole="button" accessibilityLabel={t('editorParity.applyCleanVoice')} onPress={apply} style={styles.primary}><Text style={styles.primaryText}>{t('editorParity.applyCleanVoice')}</Text></Pressable>
             </> : <>
-                <View style={styles.empty}><Text style={styles.emptyTitle}>Select a clip with voice</Text><Text style={styles.emptyBody}>Choose a video or audio clip in the timeline, then open Clean Voice again.</Text></View>
-                <Pressable accessibilityRole="button" accessibilityLabel="Done" onPress={onClose} style={styles.primary}><Text style={styles.primaryText}>Done</Text></Pressable>
+                <View style={styles.empty}><Text style={styles.emptyTitle}>{t('editorParity.selectVoiceClip')}</Text><Text style={styles.emptyBody}>{t('editorParity.selectVoiceClipHelp')}</Text></View>
+                <Pressable accessibilityRole="button" accessibilityLabel={t('editorSimple.done')} onPress={onClose} style={styles.primary}><Text style={styles.primaryText}>{t('editorSimple.done')}</Text></Pressable>
             </>}
         </View>
     </Modal>;

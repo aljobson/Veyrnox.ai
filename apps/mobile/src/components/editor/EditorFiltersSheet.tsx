@@ -4,11 +4,12 @@ import { useOptionalSafeAreaInsets } from '../../lib/safeArea';
 import type { Clip } from '../../lib/nativeEditorModel';
 import { studioColors as colors, fonts } from '../../theme';
 import { Slider } from './tools/Slider';
+import { t } from '../../lib/i18n';
 
 type FilterPreset = 'none' | 'natural' | 'warm' | 'crisp' | 'mono';
-const PRESETS: readonly { id: FilterPreset; name: string; swatch: string }[] = [
-    { id: 'none', name: 'None', swatch: '#303034' }, { id: 'natural', name: 'Natural', swatch: '#8fa78a' },
-    { id: 'warm', name: 'Warm', swatch: '#c78655' }, { id: 'crisp', name: 'Crisp', swatch: '#77a3b7' }, { id: 'mono', name: 'Mono', swatch: '#8b8b8d' },
+const PRESETS: readonly { id: FilterPreset; nameKey: 'editorParity.none' | 'editorParity.natural' | 'editorParity.warm' | 'editorParity.crisp' | 'editorParity.mono'; swatch: string }[] = [
+    { id: 'none', nameKey: 'editorParity.none', swatch: '#303034' }, { id: 'natural', nameKey: 'editorParity.natural', swatch: '#8fa78a' },
+    { id: 'warm', nameKey: 'editorParity.warm', swatch: '#c78655' }, { id: 'crisp', nameKey: 'editorParity.crisp', swatch: '#77a3b7' }, { id: 'mono', nameKey: 'editorParity.mono', swatch: '#8b8b8d' },
 ];
 export function editorFilterPreset(id: FilterPreset, strength: number): NonNullable<Clip['filter']> {
     const amount = Math.max(0, Math.min(1, strength));
@@ -24,13 +25,17 @@ export function EditorFiltersSheet({ visible, clip, onClose, onPatch }: { visibl
     const [preset, setPreset] = useState<FilterPreset>('none'), [strength, setStrength] = useState(1);
     const apply = (nextPreset = preset, nextStrength = strength) => onPatch({ filter: editorFilterPreset(nextPreset, nextStrength) });
     return <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} accessibilityViewIsModal>
-        <Pressable accessible={false} style={styles.backdrop} onPress={onClose} />
-        <View style={[styles.sheet, { paddingBottom: Math.max(24, (insets?.bottom ?? 0) + 14) }]}>
-            <View style={styles.grabber} /><View style={styles.header}><Pressable accessibilityRole="button" accessibilityLabel="Close Filters" onPress={onClose} style={styles.close}><Text style={styles.closeText}>Close</Text></Pressable><Text accessibilityRole="header" style={styles.title}>Filters</Text></View>
-            {clip ? <><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.presets}>{PRESETS.map(item => <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={`${item.name} filter`} accessibilityState={{ selected: preset === item.id }} onPress={() => { setPreset(item.id); apply(item.id, strength); }} style={styles.preset}><View style={[styles.preview, { backgroundColor: item.swatch }, preset === item.id && styles.previewSelected]} /><Text style={[styles.presetText, preset === item.id && styles.presetTextSelected]}>{item.name}</Text></Pressable>)}</ScrollView>
-                <Slider label="Intensity" value={strength} min={0} max={1} step={.05} disabled={preset === 'none'} format={value => `${Math.round(value * 100)}%`} onChange={value => { setStrength(value); apply(preset, value); }} />
-                <Pressable accessibilityRole="button" accessibilityLabel="Done" onPress={onClose} style={styles.primary}><Text style={styles.primaryText}>Done</Text></Pressable></>
-                : <View style={styles.empty}><Text style={styles.emptyTitle}>Select a video clip</Text><Text style={styles.emptyBody}>Choose a clip in the timeline to apply a filter.</Text></View>}
+        <Pressable accessible={false} accessibilityRole="button" style={styles.backdrop} onPress={onClose} />
+        <View style={[styles.sheet, {
+            paddingBottom: Math.max(24, (insets?.bottom ?? 0) + 14),
+            paddingLeft: Math.max(18, (insets?.left ?? 0) + 12),
+            paddingRight: Math.max(18, (insets?.right ?? 0) + 12),
+        }]}>
+            <View style={styles.grabber} /><View style={styles.header}><Pressable accessibilityRole="button" accessibilityLabel={t('editorParity.closeFilters')} onPress={onClose} style={styles.close}><Text style={styles.closeText}>{t('common.close')}</Text></Pressable><Text accessibilityRole="header" style={styles.title}>{t('editorParity.filters')}</Text></View>
+            {clip ? <><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.presets}>{PRESETS.map(item => <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={t('editorParity.filterLabel', { name: t(item.nameKey) })} accessibilityState={{ selected: preset === item.id }} onPress={() => { setPreset(item.id); apply(item.id, strength); }} style={styles.preset}><View style={[styles.preview, { backgroundColor: item.swatch }, preset === item.id && styles.previewSelected]} /><Text style={[styles.presetText, preset === item.id && styles.presetTextSelected]}>{t(item.nameKey)}</Text></Pressable>)}</ScrollView>
+                <Slider label={t('editorParity.intensity')} value={strength} min={0} max={1} step={.05} disabled={preset === 'none'} format={value => `${Math.round(value * 100)}%`} onChange={value => { setStrength(value); apply(preset, value); }} />
+                <Pressable accessibilityRole="button" accessibilityLabel={t('editorSimple.done')} onPress={onClose} style={styles.primary}><Text style={styles.primaryText}>{t('editorSimple.done')}</Text></Pressable></>
+                : <View style={styles.empty}><Text style={styles.emptyTitle}>{t('editorParity.selectVideoClip')}</Text><Text style={styles.emptyBody}>{t('editorParity.selectVideoClipFilterHelp')}</Text></View>}
         </View>
     </Modal>;
 }

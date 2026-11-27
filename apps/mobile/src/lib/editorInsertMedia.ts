@@ -9,10 +9,11 @@ export function holdsClip(timeline: Timeline, mediaId: string): boolean {
     return [...timeline.video, ...timeline.audio].some(clip => clip.mediaId === mediaId);
 }
 
-export function insertMediaAt(timeline: Timeline, media: Media, at: number): { timeline: Timeline; selection: Selection; trimmed: boolean } | { error: 'track' | 'full' } {
+export function insertMediaAt(timeline: Timeline, media: Media, at: number, preferredTrackId?: string): { timeline: Timeline; selection: Selection; trimmed: boolean } | { error: 'track' | 'full' | 'occupied' } {
     const kind = media.kind === 'audio' ? 'audio' : 'video';
     const open = timeline.tracks.filter(track => track.kind === kind && !track.locked);
-    if (!open.length) return { error: 'track' };
+    const preferred = preferredTrackId ? open.find(track => track.id === preferredTrackId) : undefined;
+    if (!open.length || preferredTrackId && !preferred) return { error: 'track' };
     if ((!Object.hasOwn(timeline.media, media.id) && Object.keys(timeline.media).length >= 40) || timeline[kind].length >= 40) return { error: 'full' };
     const wanted = clampFrame(at);
     // QA build 52 (8.8): a song longer than the cut would stretch the project (a 60 s song made a 5 s edit 1:00:00,
@@ -28,10 +29,11 @@ export function insertMediaAt(timeline: Timeline, media: Media, at: number): { t
     // Non-overlapping clips can reuse the first unlocked gap; audio retains the same lane behaviour.
     const free = (trackId: string) => !timeline[kind].some(clip => clip.trackId === trackId && clip.start < start + len && start < clip.start + clip.len);
     const overlapsVisual = kind === 'video' && timeline.video.some(clip => clip.start < start + len && start < clip.start + clip.len);
-    const needsTrack = overlapsVisual || !open.some(track => free(track.id));
+    if (preferred && !free(preferred.id)) return { error: 'occupied' };
+    const needsTrack = !preferred && (overlapsVisual || !open.some(track => free(track.id)));
     if (needsTrack && timeline.tracks.length >= MAX_TRACKS) return { error: 'full' };
     const base = needsTrack ? addTrack(timeline, kind) : timeline;
-    const trackId = needsTrack ? base.tracks[base.tracks.length - 1].id : open.find(track => free(track.id))!.id;
+    const trackId = preferred?.id ?? (needsTrack ? base.tracks[base.tracks.length - 1].id : open.find(track => free(track.id))!.id);
     const seq = base.seq + 1;
     const clip = { id: `${kind[0]}${seq}`, mediaId: media.id, start, in: 0, len, trackId, volume: 1, transition: 0, rate: 1 };
     return {

@@ -4,6 +4,7 @@ import { useOptionalSafeAreaInsets } from '../../lib/safeArea';
 import type { Timeline } from '../../lib/nativeEditorModel';
 import { studioColors as colors, fonts } from '../../theme';
 import { Icon } from '../ui';
+import { t } from '../../lib/i18n';
 
 type PolishStyle = 'bold' | 'clean' | 'minimal';
 
@@ -22,16 +23,20 @@ export function EditorPolishSheet({ visible, timeline, onClose, onApply }: { vis
     const insets = useOptionalSafeAreaInsets();
     const [selected, setSelected] = useState<PolishStyle>('bold');
     const stylesList: readonly { id: PolishStyle; icon: 'lightning' | 'sparkle' | 'contrast'; title: string; description: string }[] = [
-        { id: 'bold', icon: 'lightning', title: 'Bold', description: 'Thick captions, coloured key words, punchy zooms' },
-        { id: 'clean', icon: 'sparkle', title: 'Clean', description: 'Classic captions, subtle zooms, calm title' },
-        { id: 'minimal', icon: 'contrast', title: 'Minimal', description: 'Small captions, no zooms, out of the way' },
+        { id: 'bold', icon: 'lightning', title: t('editorParity.bold'), description: t('editorParity.boldDescription') },
+        { id: 'clean', icon: 'sparkle', title: t('editorParity.clean'), description: t('editorParity.cleanDescription') },
+        { id: 'minimal', icon: 'contrast', title: t('editorParity.minimal'), description: t('editorParity.minimalDescription') },
     ];
     return <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} accessibilityViewIsModal>
-        <Pressable accessible={false} style={local.backdrop} onPress={onClose} />
-        <View style={[local.sheet, { paddingBottom: Math.max(22, (insets?.bottom ?? 0) + 12) }]}>
+        <Pressable accessible={false} accessibilityRole="button" style={local.backdrop} onPress={onClose} />
+        <View style={[local.sheet, {
+            paddingBottom: Math.max(22, (insets?.bottom ?? 0) + 12),
+            paddingLeft: Math.max(18, (insets?.left ?? 0) + 12),
+            paddingRight: Math.max(18, (insets?.right ?? 0) + 12),
+        }]}>
             <View style={local.grabber} />
-            <View style={local.header}><Pressable accessibilityRole="button" accessibilityLabel="Close Polish" onPress={onClose} style={local.close}><Text style={local.closeText}>Close</Text></Pressable><Text accessibilityRole="header" style={local.title}>Polish</Text></View>
-            <Text style={local.copy}>Finish your edit in one step. Everything Polish adds is a single undo.</Text>
+            <View style={local.header}><Pressable accessibilityRole="button" accessibilityLabel={t('editorParity.closePolish')} onPress={onClose} style={local.close}><Text style={local.closeText}>{t('common.close')}</Text></Pressable><Text accessibilityRole="header" style={local.title}>{t('editorSimple.polish')}</Text></View>
+            <Text style={local.copy}>{t('editorParity.polishDescription')}</Text>
             <View style={local.options}>{stylesList.map(item => {
                 const active = selected === item.id;
                 return <Pressable key={item.id} accessibilityRole="radio" accessibilityLabel={item.title} accessibilityState={{ checked: active }} onPress={() => setSelected(item.id)} style={[local.option, active && local.optionActive]}>
@@ -40,7 +45,7 @@ export function EditorPolishSheet({ visible, timeline, onClose, onApply }: { vis
                     <View style={[local.radio, active && local.radioActive]}>{active ? <Icon name="check" size={20} tint={colors.accentInk} /> : null}</View>
                 </Pressable>;
             })}</View>
-            <Pressable accessibilityRole="button" accessibilityLabel="Polish Video" onPress={() => { onApply(polishedTimeline(timeline, selected)); onClose(); }} style={local.primary}><Text style={local.primaryText}>Polish Video</Text></Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel={t('editorParity.polishVideo')} onPress={() => { onApply(polishedTimeline(timeline, selected)); onClose(); }} style={local.primary}><Text style={local.primaryText}>{t('editorParity.polishVideo')}</Text></Pressable>
         </View>
     </Modal>;
 }

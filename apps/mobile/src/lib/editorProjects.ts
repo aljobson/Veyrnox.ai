@@ -33,12 +33,39 @@ export async function getDocumentAt(api: ApiClient, id: string, revision: number
     if (!Number.isSafeInteger(head?.revision) || head.revision < 0 || !validDocument(head.document, id)) throw new ApiError(503, 'invalid_response');
     return head;
 }
+export async function getManualEditorCommitStatus(api: ApiClient, id: string, key: string): Promise<{ committed: boolean; revision: number | null }> {
+    const result = await observe(api.request<{ ok: boolean; committed: boolean; revision: number | null }>(`${path(id)}?manual_commit_status=1`, {
+        headers: { 'Idempotency-Key': key },
+    }));
+    if (result?.ok !== true || typeof result.committed !== 'boolean'
+        || (result.revision !== null && (!Number.isSafeInteger(result.revision) || result.revision < 1))
+        || result.committed !== (result.revision !== null)) throw new ApiError(503, 'invalid_response');
+    return { committed: result.committed, revision: result.revision };
+}
 export async function putDocument(api: ApiClient, id: string, expectedRevision: number, document: ProjectDocument, key: string) {
     const result = await observe(api.request<{ revision: number }>(path(id), {
         method: 'PUT', headers: { 'Content-Type': 'application/json', 'Idempotency-Key': key },
         body: JSON.stringify({ expected_revision: expectedRevision, document }),
     }));
     if (!Number.isSafeInteger(result?.revision) || result.revision <= expectedRevision) throw new ApiError(503, 'invalid_response');
+    notifyProjectsChanged();
+    return result;
+}
+export async function quoteManualEditorCommit(api: ApiClient, id: string, expectedRevision: number, document: ProjectDocument): Promise<number> {
+    const result = await observe(api.request<{ ok: boolean; credits: number }>(path(id), {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ expected_revision: expectedRevision, document, manual_commit: { mode: 'quote' } }),
+    }));
+    if (result?.ok !== true || ![0, 5].includes(result.credits)) throw new ApiError(503, 'invalid_response');
+    return result.credits;
+}
+export async function putPaidDocument(api: ApiClient, id: string, expectedRevision: number, document: ProjectDocument, key: string, expectedCredits: number) {
+    if (![0, 5].includes(expectedCredits)) throw new ApiError(400, 'invalid_credits');
+    const result = await observe(api.request<{ revision: number; credits: number }>(path(id), {
+        method: 'PUT', headers: { 'Content-Type': 'application/json', 'Idempotency-Key': key },
+        body: JSON.stringify({ expected_revision: expectedRevision, document, manual_commit: { mode: 'commit', expected_credits: expectedCredits } }),
+    }));
+    if (!Number.isSafeInteger(result?.revision) || result.revision <= expectedRevision || ![0, 5].includes(result.credits)) throw new ApiError(503, 'invalid_response');
     notifyProjectsChanged();
     return result;
 }

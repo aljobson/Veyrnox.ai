@@ -10,41 +10,43 @@ import { PlaybackPreview, PlaybackTransport } from './EditorPlayback';
 import { studioColors as colors } from '../../theme';
 import { useOptionalSafeAreaInsets } from '../../lib/safeArea';
 import { modalSafePadding } from '../../lib/modalLayout';
+import { useAnnouncement } from '../../lib/useAnnouncement';
 export function BestCutResult({ before, after, plan, api, uris, onOpen, onCreateAnother, captionsOmitted, refunded }: { onOpen(): void; onCreateAnother(instruction?: string): void; before: Timeline; after: Timeline; plan: BestCutPlan | null; api: ApiClient; uris: Record<string, string>; captionsOmitted?: boolean; refunded?: number }) {
     const insets = useOptionalSafeAreaInsets();
     const [open, setOpen] = useState(false), [view, setView] = useState<'before' | 'after'>('after');
     const [playing, setPlaying] = useState(false), [store] = useState(createFrameStore);
     const timeline = view === 'before' ? before : after, total = framesIn(timeline);
+    useAnnouncement(t('editorParity.aiEditApplied'), { onMount: true });
     useEffect(() => { if (!playing || !open) return; const timer = setInterval(() => { const next = store.get() + 1; if (next >= total) { setPlaying(false); store.set(0); } else store.set(next); }, 1000 / timeline.fps); return () => clearInterval(timer); }, [playing, open, total, timeline.fps, store]);
     const show = (next: 'before' | 'after' = 'after') => { onOpen(); setView(next); store.set(0); setOpen(true); };
-    return <><View accessibilityLiveRegion="polite" style={styles.applied}>
+    return <><View style={styles.applied}>
         <View style={styles.appliedIcon}><Icon name="check" size={20} tint={colors.accentInk} /></View>
-        <View style={styles.appliedCopy}><Text variant="bodyStrong">AI Edit applied</Text><Text variant="caption" tone="secondary">Review every section or keep editing on the timeline.</Text></View>
-        <Pressable accessibilityRole="button" accessibilityLabel="Review AI Edit" onPress={() => show('after')} style={styles.reviewButton}><Text variant="caption" tone="accent">Review</Text></Pressable>
+        <View style={styles.appliedCopy}><Text variant="bodyStrong">{t('editorParity.aiEditApplied')}</Text><Text variant="caption" tone="secondary">{t('editorParity.reviewEverySection')}</Text></View>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('editorParity.reviewAiEdit')} onPress={() => show('after')} style={styles.reviewButton}><Text variant="caption" tone="accent">{t('editorParity.review')}</Text></Pressable>
     </View>
-    <View style={styles.actions}><Button variant="secondary" label="Create Another AI Edit" onPress={() => onCreateAnother()} /><Button variant="tertiary" label={t('bestCut.before')} onPress={() => show('before')} /></View>
+    <View style={styles.actions}><Button variant="secondary" label={t('editorParity.createAnotherAiEdit')} onPress={() => onCreateAnother()} /><Button variant="tertiary" label={t('bestCut.before')} onPress={() => show('before')} /></View>
     <View style={{ gap: 8 }}>{plan?.warnings.map(w => <Text key={w}>{t(bestCutWarningKey(w))}</Text>)}
         {captionsOmitted ? <Text>{t('bestCut.captionsOmitted')}</Text> : null}
         {refunded ? <Text>{t('bestCut.refunded', { n: refunded })}</Text> : null}</View>
     <Modal visible={open} onRequestClose={() => { setOpen(false); setPlaying(false); }} animationType="slide">
         <ScrollView contentContainerStyle={[styles.modal, modalSafePadding(insets, 24)]}>
-            <View style={styles.modalHeader}><Pressable accessibilityRole="button" accessibilityLabel="Close AI Edit review" onPress={() => { setOpen(false); setPlaying(false); }} style={styles.close}><Icon name="close" size={24} tint={colors.text} /></Pressable><Text variant="title3">AI Edit review</Text><View style={styles.close} /></View>
+            <View style={styles.modalHeader}><Pressable accessibilityRole="button" accessibilityLabel={t('editorParity.closeAiEditReview')} onPress={() => { setOpen(false); setPlaying(false); }} style={styles.close}><Icon name="close" size={24} tint={colors.text} /></Pressable><Text variant="title3">{t('editorParity.aiEditReview')}</Text><View style={styles.close} /></View>
             <View style={styles.tabs}>{(['before', 'after'] as const).map(v => <Chip key={v} label={t(v === 'before' ? 'bestCut.before' : 'bestCut.afterView')} selected={v === view} onPress={() => { setView(v); setPlaying(false); store.set(0); }} />)}</View>
             <View style={styles.preview}><PlaybackPreview frameStore={store} timeline={timeline} api={api} playing={playing} localMediaUris={uris} /></View>
             <PlaybackTransport frameStore={store} total={total} fps={timeline.fps} playing={playing} onSeek={store.set} onPlaying={setPlaying} />
             {plan ? <View style={styles.summary}><Text variant="bodyStrong">{t('bestCut.changed')}</Text><Text tone="secondary">{t('bestCut.summary', { pauses: plan.removedPauses, retakes: plan.removedRetakes, matched: plan.matchedLines })}</Text><Text variant="caption" tone="secondary">{t('bestCut.dropped', { n: plan.droppedClips })}</Text></View> : null}
-            {plan?.ranges.map((range, index) => <Pressable key={`${range.mediaId}-${range.start}`} accessibilityRole="button" accessibilityLabel={`Review section ${index + 1}`} onPress={() => { setView('after'); setPlaying(false); store.set(range.start); }} style={styles.section}>
-                <View style={styles.sectionNumber}><Text variant="caption" tone="accent">{index + 1}</Text></View><View style={styles.sectionCopy}><Text variant="bodyStrong">Section {index + 1}</Text><Text numberOfLines={3} tone="secondary">{range.label}</Text><Text variant="caption" tone="secondary">{(range.from / plan.fps).toFixed(2)}–{(range.to / plan.fps).toFixed(2)}</Text></View><Icon name="play" size={20} tint={colors.accent} />
+            {plan?.ranges.map((range, index) => <Pressable key={`${range.mediaId}-${range.start}`} accessibilityRole="button" accessibilityLabel={t('editorParity.reviewSection', { n: index + 1 })} onPress={() => { setView('after'); setPlaying(false); store.set(range.start); }} style={styles.section}>
+                <View style={styles.sectionNumber}><Text variant="caption" tone="accent">{index + 1}</Text></View><View style={styles.sectionCopy}><Text variant="bodyStrong">{t('editorParity.section', { n: index + 1 })}</Text><Text numberOfLines={3} tone="secondary">{range.label}</Text><Text variant="caption" tone="secondary">{(range.from / plan.fps).toFixed(2)}–{(range.to / plan.fps).toFixed(2)}</Text></View><Icon name="play" size={20} tint={colors.accent} />
             </Pressable>)}
             {!!plan?.missingLines.length && <Text>{t('bestCut.missing', { lines: plan.missingLines.join(', ') })}</Text>}
-            <Text variant="bodyStrong">Try a different cut</Text>
+            <Text variant="bodyStrong">{t('editorParity.tryDifferentCut')}</Text>
             <View style={styles.redoGrid}>
-                <Button variant="secondary" label="Shorter" onPress={() => { setOpen(false); onCreateAnother('Make this cut shorter and keep only the strongest moments.'); }} />
-                <Button variant="secondary" label="Longer" onPress={() => { setOpen(false); onCreateAnother('Keep more context and make this cut longer.'); }} />
-                <Button variant="secondary" label="More visual" onPress={() => { setOpen(false); onCreateAnother('Prioritise visually strong moments and reactions.'); }} />
-                <Button variant="secondary" label="Less expressive" onPress={() => { setOpen(false); onCreateAnother('Use a calmer, less expressive edit.'); }} />
+                <Button variant="secondary" label={t('editorParity.shorter')} onPress={() => { setOpen(false); onCreateAnother('Make this cut shorter and keep only the strongest moments.'); }} />
+                <Button variant="secondary" label={t('editorParity.longer')} onPress={() => { setOpen(false); onCreateAnother('Keep more context and make this cut longer.'); }} />
+                <Button variant="secondary" label={t('editorParity.moreVisual')} onPress={() => { setOpen(false); onCreateAnother('Prioritise visually strong moments and reactions.'); }} />
+                <Button variant="secondary" label={t('editorParity.lessExpressive')} onPress={() => { setOpen(false); onCreateAnother('Use a calmer, less expressive edit.'); }} />
             </View>
-            <Button label="Keep this cut" onPress={() => { setOpen(false); setPlaying(false); }} />
+            <Button label={t('editorParity.keepThisCut')} onPress={() => { setOpen(false); setPlaying(false); }} />
         </ScrollView></Modal></>;
 }
 

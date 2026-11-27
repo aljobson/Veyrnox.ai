@@ -4944,6 +4944,90 @@
     "ratio": 1.74
   },
   {
+    "id": "editorParity.addNotes",
+    "english": "Add notes",
+    "translation": "Adicionar notas",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorParity.blur",
+    "english": "Blur",
+    "translation": "Desfoque",
+    "ratio": 2
+  },
+  {
+    "id": "editorParity.bold",
+    "english": "Bold",
+    "translation": "Negrito",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorParity.custom",
+    "english": "Custom",
+    "translation": "Personalizado",
+    "ratio": 2.17
+  },
+  {
+    "id": "editorParity.fill",
+    "english": "Fill",
+    "translation": "Preencher",
+    "ratio": 2.25
+  },
+  {
+    "id": "editorParity.fit",
+    "english": "Fit",
+    "translation": "Ajustar",
+    "ratio": 2.33
+  },
+  {
+    "id": "editorParity.fitMode",
+    "english": "Fit Mode",
+    "translation": "Modo de ajuste",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorParity.inPoint",
+    "english": "In",
+    "translation": "Entrada",
+    "ratio": 3.5
+  },
+  {
+    "id": "editorParity.longer",
+    "english": "Longer",
+    "translation": "Mais longo",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorParity.moveLeft",
+    "english": "Move left",
+    "translation": "Mover para a esquerda",
+    "ratio": 2.33
+  },
+  {
+    "id": "editorParity.moveRight",
+    "english": "Move right",
+    "translation": "Mover para a direita",
+    "ratio": 2
+  },
+  {
+    "id": "editorParity.outPoint",
+    "english": "Out",
+    "translation": "Saída",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorParity.timelineZoom",
+    "english": "Timeline zoom",
+    "translation": "Zoom da linha do tempo",
+    "ratio": 1.69
+  },
+  {
+    "id": "editorParity.tapPlusAddClip",
+    "english": "Tap + to add a clip",
+    "translation": "Toque em + para adicionar um clipe",
+    "ratio": 1.79
+  },
+  {
     "id": "musicAlbums.addTrack",
     "english": "Add",
     "translation": "Adicionar",

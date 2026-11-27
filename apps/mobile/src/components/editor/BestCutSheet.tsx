@@ -1,7 +1,6 @@
 import type { DocumentApplyResult } from '../../lib/editorDocumentGate';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, TextInput, View, Switch } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { randomUUID } from 'expo-crypto';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
@@ -37,6 +36,7 @@ import { KeyboardScreen } from '../KeyboardScreen';
 import { KeyboardFormScrollView } from '../KeyboardFormScrollView';
 import { PlaybackPreview } from './EditorPlayback';
 import { createFrameStore } from './editorFrameStore';
+import { useOptionalSafeAreaInsets } from '../../lib/safeArea';
 type Result = { timeline: Timeline; before: Timeline; plan: BestCutPlan | null; uris: Record<string, string>; captionsOmitted?: boolean; refunded?: number };
 type Props = { api: ApiClient; projectId: string; quote: SpeechQuote | null; timeline?: Timeline; localMediaUris?: Record<string, string>; initialNotes?: string; onClose(): void; onOpenBatch?(): void; onApply(result: Result): DocumentApplyResult };
 type LocalVideo = { uri: string; size?: number | null; durationSeconds?: number | null; mimeType?: string | null; name?: string | null; width?: number | null; height?: number | null };
@@ -46,7 +46,7 @@ const messageParameters = (parameters: Readonly<Record<string, unknown>>): Recor
     return values;
 };
 export function BestCutSheet({ api, projectId, quote: initialQuote, timeline, localMediaUris = {}, initialNotes = '', onClose, onOpenBatch, onApply }: Props) {
-    const insets = useSafeAreaInsets();
+    const insets = useOptionalSafeAreaInsets();
     const links = useAssetLinks(api);
     const [account] = useState(() => getCacheUser() || '');
     const [flow] = useState(() => createBestCutFlow(api, account, randomUUID));
@@ -160,12 +160,12 @@ export function BestCutSheet({ api, projectId, quote: initialQuote, timeline, lo
             const permission = await Notifications.requestPermissionsAsync();
             if (!live()) return;
             setNotifyWhenReady(permission.granted);
-            setNotificationMessage(permission.granted ? 'We’ll let you know when this AI Edit is ready.' : 'Notifications are off. You can enable them later in Settings.');
-        } catch { if (live()) setNotificationMessage('Notifications are unavailable on this device.'); }
+            setNotificationMessage(t(permission.granted ? 'editorParity.notificationReadyEnabled' : 'editorParity.notificationsOff'));
+        } catch { if (live()) setNotificationMessage(t('editorParity.notificationsUnavailable')); }
     };
     const notifyReady = async () => {
         if (!notifyWhenReady) return;
-        await Notifications.scheduleNotificationAsync({ content: { title: 'Your AI Edit is ready', body: 'Open Veyrnox to review your best cut.', data: { path: `/editor/${projectId}` } }, trigger: null }).catch(() => undefined);
+        await Notifications.scheduleNotificationAsync({ content: { title: t('editorParity.aiEditReady'), body: t('editorParity.aiEditReadyBody'), data: { path: `/editor/${projectId}` } }, trigger: null }).catch(() => undefined);
     };
     const saveAdditionalReels = async (timelines: readonly Timeline[]) => {
         if (!timelines.length) return;
@@ -201,7 +201,7 @@ export function BestCutSheet({ api, projectId, quote: initialQuote, timeline, lo
             if (!output.inputs.length && !musicVideo) return;
             const inputs = musicVideo ? clips.map(clip => output.inputs.find(input => input.mediaId === clip.media.id) ?? ({ mediaId: clip.media.id, analysis: {
                 version: 1 as const, assetId: clip.media.id, duration: clip.duration, provider: 'fal-scribe-v2' as const,
-                transcript: '', language: 'und', chunks: [{ start: 0, end: Math.min(.1, clip.duration), text: 'music' }],
+                transcript: '', language: 'und', chunks: [{ start: 0, end: Math.min(.1, clip.duration), text: t('editorParity.music') }],
             } })) : output.inputs;
             const musicPlan = musicVideo ? musicVideoPlan(inputs) : null;
             const planned = musicPlan ? { ok: true as const, plan: musicPlan } : buildBestCutPlanResult(inputs, script, effectivePreset());
@@ -250,30 +250,30 @@ export function BestCutSheet({ api, projectId, quote: initialQuote, timeline, lo
     return <Modal visible animationType="slide" onRequestClose={() => { abort.current.abort(); onClose(); }}><View style={{ flex: 1, paddingTop: insets.top, backgroundColor: colors.background }}><KeyboardScreen><KeyboardFormScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[{ gap: 16 }, contentInsets]}>
         <View style={styles.header}>
             <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('bestCut.close'))} onPress={closeSheet} style={styles.headerButton}><Icon name="close" size={24} tint={colors.text} /></Pressable>
-            <Text variant="title3">AI Edit</Text>
-            {onOpenBatch ? <Pressable accessibilityRole="button" accessibilityLabel="Batch AI Edit" onPress={() => { abort.current.abort(); onOpenBatch(); }} style={styles.batchAction}><Text variant="bodyStrong" tone="accent">Batch AI Edit</Text></Pressable> : <View style={styles.headerButton} />}
+            <Text variant="title3">{t('editorSimple.aiEdit')}</Text>
+            {onOpenBatch ? <Pressable accessibilityRole="button" accessibilityLabel={t('editorParity.batchAiEdit')} onPress={() => { abort.current.abort(); onOpenBatch(); }} style={styles.batchAction}><Text variant="bodyStrong" tone="accent">{t('editorParity.batchAiEdit')}</Text></Pressable> : <View style={styles.headerButton} />}
         </View>
         <View style={styles.heroPreview}>
             {timeline?.video.length ? <PlaybackPreview frameStore={previewStore} timeline={timeline} api={api} playing={false} localMediaUris={localMediaUris} staticPreview compositionFrame={false} />
                 : <View style={styles.emptyPreview}><Icon name="sparkle" size={40} tint={colors.accent} /><Text tone="secondary">{t('bestCut.intro')}</Text></View>}
         </View>
-        <View style={styles.heroCopy}><Text variant="title1" style={styles.heroTitle}>Your <Text variant="title1" tone="accent">best cut</Text>, in one tap</Text><Text tone="secondary">Cuts mistakes, silences and retakes.</Text></View>
+        <View style={styles.heroCopy}><Text variant="title1" style={styles.heroTitle}>{t('editorParity.heroPrefix')}<Text variant="title1" tone="accent">{t('editorParity.heroBestCut')}</Text>{t('editorParity.heroSuffix')}</Text><Text tone="secondary">{t('editorParity.heroDescription')}</Text></View>
 
         <View style={styles.statusCard}>
-            <View style={styles.balanceHero}><Text style={styles.balanceNumber}>{balance ?? '—'}</Text><Text variant="bodyStrong" tone="secondary">credits ready</Text></View>
+            <View style={styles.balanceHero}><Text style={styles.balanceNumber}>{balance ?? '—'}</Text><Text variant="bodyStrong" tone="secondary">{t('editorParity.creditsReady')}</Text></View>
             <View style={styles.statusRule} />
             <View style={styles.metrics}>
-                <View style={styles.metric}><Text variant="bodyStrong">{clips.length}</Text><Text variant="caption" tone="secondary">source{clips.length === 1 ? '' : 's'}</Text></View>
-                <View style={styles.metric}><Text variant="bodyStrong">{seconds ? `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}` : '0:00'}</Text><Text variant="caption" tone="secondary">length</Text></View>
-                <View style={styles.metric}><Text variant="bodyStrong">~{Math.max(1, Math.ceil(seconds / 120))} min</Text><Text variant="caption" tone="secondary">ready in</Text></View>
+                <View style={styles.metric}><Text variant="bodyStrong">{clips.length}</Text><Text variant="caption" tone="secondary">{t(clips.length === 1 ? 'editorParity.source' : 'editorParity.sources')}</Text></View>
+                <View style={styles.metric}><Text variant="bodyStrong">{seconds ? `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}` : '0:00'}</Text><Text variant="caption" tone="secondary">{t('editorParity.length')}</Text></View>
+                <View style={styles.metric}><Text variant="bodyStrong">{t('editorParity.minutesApprox', { n: Math.max(1, Math.ceil(seconds / 120)) })}</Text><Text variant="caption" tone="secondary">{t('editorParity.readyIn')}</Text></View>
             </View>
             {quote ? <Text variant="caption" tone="secondary">{price.maximum ? t('bestCut.priceMax', { n: clips.length, price: quote.credits, total: price.total }) : t('bestCut.priceExact', { total: price.total })}</Text> : null}
             {balance !== null && price.maximum && balance < price.total ? <Text accessibilityLiveRegion="polite" tone="warning">{t('editorAi.balance')}</Text> : null}
         </View>
 
         <View style={styles.sourceCard}>
-            <View style={styles.sectionHeading}><View><Text variant="bodyStrong">Source videos</Text><Text variant="caption" tone="secondary">{plural('bestCut.clips', clips.length)} · {t('bestCut.seconds', { n: seconds })}</Text></View><Text variant="caption" tone="secondary">10 max</Text></View>
-            {clips.length ? <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.clipStrip}>{clips.map((c, i) => <View key={c.media.id} style={styles.clipPill}>{c.media.id.startsWith('j-') ? <JobThumb links={links} jobId={c.media.id.slice(2)} /> : <Icon name="video" size={20} tint={colors.accent} />}<View style={{ flex: 1, minWidth: 0 }}><Text numberOfLines={1} variant="caption">{c.media.name || `Video ${i + 1}`}</Text>{progress.prices?.[i]?.cached ? <Text variant="caption" tone="secondary">{t('bestCut.cached')}</Text> : null}</View><Button iconOnly size="sm" variant="tertiary" icon="close" label={t('bestCut.remove')} onPress={() => editClips(clips.filter(v => v !== c))} disabled={locked} /></View>)}</ScrollView> : <Text variant="caption" tone="secondary">Add the raw takes you want AI Edit to compare.</Text>}
+            <View style={styles.sectionHeading}><View><Text variant="bodyStrong">{t('editorParity.sourceVideos')}</Text><Text variant="caption" tone="secondary">{plural('bestCut.clips', clips.length)} · {t('bestCut.seconds', { n: seconds })}</Text></View><Text variant="caption" tone="secondary">{t('editorParity.tenMax')}</Text></View>
+            {clips.length ? <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.clipStrip}>{clips.map((c, i) => <View key={c.media.id} style={styles.clipPill}>{c.media.id.startsWith('j-') ? <JobThumb links={links} jobId={c.media.id.slice(2)} /> : <Icon name="video" size={20} tint={colors.accent} />}<View style={{ flex: 1, minWidth: 0 }}><Text numberOfLines={1} variant="caption">{c.media.name || t('editorParity.videoNumber', { n: i + 1 })}</Text>{progress.prices?.[i]?.cached ? <Text variant="caption" tone="secondary">{t('bestCut.cached')}</Text> : null}</View><Button iconOnly size="sm" variant="tertiary" icon="close" label={t('bestCut.remove')} onPress={() => editClips(clips.filter(v => v !== c))} disabled={locked} /></View>)}</ScrollView> : <Text variant="caption" tone="secondary">{t('editorParity.addRawTakes')}</Text>}
             <View style={styles.iconActions}>
                 <SourceAction icon="image" label={t('bestCut.camera')} disabled={locked || clips.length >= 10} onPress={() => void pick()} />
                 <SourceAction icon="folder" label={t('bestCut.files')} disabled={locked || clips.length >= 10} onPress={() => void pickFiles()} />
@@ -285,31 +285,31 @@ export function BestCutSheet({ api, projectId, quote: initialQuote, timeline, lo
             <DisclosureAction icon="listChecks" label={t('bestCut.script')} active={scriptOpen || !!script} onPress={() => setScriptOpen(value => !value)} />
             <DisclosureAction icon="chatText" label={t('bestCut.notes')} active={notesOpen || !!notes} onPress={() => setNotesOpen(value => !value)} />
         </View>
-        {scriptOpen ? <View style={styles.inputCard}><Text variant="bodyStrong">{t('bestCut.script')}</Text><TextInput multiline editable={!locked} accessibilityLabel={t('bestCut.script')} placeholder="Paste what you intended to say" placeholderTextColor={colors.muted} style={styles.input} value={script} onChangeText={value => { setScript(value); setResult(null); }} maxLength={20000} /></View> : null}
-        {notesOpen ? <View style={styles.inputCard}><Text variant="bodyStrong">{t('bestCut.notes')}</Text><TextInput multiline editable={!locked} accessibilityLabel={t('bestCut.notes')} placeholder="Tell AI Edit what to keep or avoid" placeholderTextColor={colors.muted} style={styles.input} value={notes} onChangeText={setNotes} maxLength={2000} /><Text variant="caption" tone="secondary">{t('bestCut.localNotes')}</Text></View> : null}
+        {scriptOpen ? <View style={styles.inputCard}><Text variant="bodyStrong">{t('bestCut.script')}</Text><TextInput multiline editable={!locked} accessibilityLabel={t('bestCut.script')} placeholder={t('editorParity.scriptPlaceholder')} placeholderTextColor={colors.muted} style={styles.input} value={script} onChangeText={value => { setScript(value); setResult(null); }} maxLength={20000} /></View> : null}
+        {notesOpen ? <View style={styles.inputCard}><Text variant="bodyStrong">{t('bestCut.notes')}</Text><TextInput multiline editable={!locked} accessibilityLabel={t('bestCut.notes')} placeholder={t('editorParity.notesPlaceholder')} placeholderTextColor={colors.muted} style={styles.input} value={notes} onChangeText={setNotes} maxLength={2000} /><Text variant="caption" tone="secondary">{t('bestCut.localNotes')}</Text></View> : null}
 
-        <Pressable accessibilityRole="button" accessibilityLabel="More AI Edit settings" onPress={() => setSettingsOpen(value => !value)} style={styles.settingsToggle}><Icon name="sliders" size={24} tint={colors.accent} /><Text variant="bodyStrong" tone="accent">More AI Edit settings</Text><Icon name={settingsOpen ? 'caretDown' : 'caretRight'} size={20} tint={colors.accent} /></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('editorParity.moreAiEditSettings')} onPress={() => setSettingsOpen(value => !value)} style={styles.settingsToggle}><Icon name="sliders" size={24} tint={colors.accent} /><Text variant="bodyStrong" tone="accent">{t('editorParity.moreAiEditSettings')}</Text><Icon name={settingsOpen ? 'caretDown' : 'caretRight'} size={20} tint={colors.accent} /></Pressable>
         {settingsOpen ? <View style={styles.settingsCard}>
-            <View style={styles.settingSwitch}><View style={styles.settingCopy}><Text variant="bodyStrong">Music Video</Text><Text variant="caption" tone="secondary">Keep each imported performance as a complete musical section. Speech edits and captions are off.</Text></View><Switch accessibilityLabel="Music Video" disabled={locked} value={musicVideo} onValueChange={value => { setMusicVideo(value); setResult(null); }} /></View>
-            <View style={styles.settingSwitch}><View style={styles.settingCopy}><Text variant="bodyStrong">Multiple Reels</Text><Text variant="caption" tone="secondary">Turn the strongest moments into separate short-form projects.</Text></View><Switch accessibilityLabel="Multiple Reels" disabled={locked} value={multipleReels} onValueChange={value => { setMultipleReels(value); setResult(null); }} /></View>
-            {multipleReels ? <><Text variant="bodyStrong">Videos from this recording</Text><View style={styles.optionRow}>{([2, 3, 4, 5] as const).map(value => <Chip disabled={locked} key={value} label={String(value)} selected={outputCount === value} onPress={() => { setOutputCount(value); setResult(null); }} />)}</View></> : null}
-            <Text variant="bodyStrong">Editing style</Text><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>{(['balanced', 'vlog', 'educational', 'punchy', 'steps'] as const).map(p => <Chip disabled={locked} key={p} label={t(`bestCut.${p}`)} selected={p === preset} onPress={() => { if (!locked) { setPreset(p); setResult(null); } }} />)}</ScrollView>
-            <Text variant="bodyStrong">Video shape</Text><View style={styles.optionRow}>{(['source', '9:16', '16:9', '1:1', '4:5'] as const).map(value => <Chip disabled={locked} key={value} label={value === 'source' ? 'Original' : value} selected={shape === value} onPress={() => { setShape(value); setResult(null); }} />)}</View>
-            <Text variant="bodyStrong">Pauses between cuts</Text><View style={styles.optionRow}>
-                <Chip disabled={locked} label="Snappy" selected={preset === 'punchy'} onPress={() => { setPreset('punchy'); setResult(null); }} />
-                <Chip disabled={locked} label="Natural" selected={preset === 'balanced'} onPress={() => { setPreset('balanced'); setResult(null); }} />
-                <Chip disabled={locked} label="Relaxed" selected={preset === 'educational'} onPress={() => { setPreset('educational'); setResult(null); }} />
+            <View style={styles.settingSwitch}><View style={styles.settingCopy}><Text variant="bodyStrong">{t('editorParity.musicVideo')}</Text><Text variant="caption" tone="secondary">{t('editorParity.musicVideoDescription')}</Text></View><Switch accessibilityLabel={t('editorParity.musicVideo')} disabled={locked} value={musicVideo} onValueChange={value => { setMusicVideo(value); setResult(null); }} /></View>
+            <View style={styles.settingSwitch}><View style={styles.settingCopy}><Text variant="bodyStrong">{t('editorParity.multipleReels')}</Text><Text variant="caption" tone="secondary">{t('editorParity.multipleReelsDescription')}</Text></View><Switch accessibilityLabel={t('editorParity.multipleReels')} disabled={locked} value={multipleReels} onValueChange={value => { setMultipleReels(value); setResult(null); }} /></View>
+            {multipleReels ? <><Text variant="bodyStrong">{t('editorParity.videosFromRecording')}</Text><View style={styles.optionRow}>{([2, 3, 4, 5] as const).map(value => <Chip disabled={locked} key={value} label={String(value)} selected={outputCount === value} onPress={() => { setOutputCount(value); setResult(null); }} />)}</View></> : null}
+            <Text variant="bodyStrong">{t('editorParity.editingStyle')}</Text><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>{(['balanced', 'vlog', 'educational', 'punchy', 'steps'] as const).map(p => <Chip disabled={locked} key={p} label={t(`bestCut.${p}`)} selected={p === preset} onPress={() => { if (!locked) { setPreset(p); setResult(null); } }} />)}</ScrollView>
+            <Text variant="bodyStrong">{t('editorParity.videoShape')}</Text><View style={styles.optionRow}>{(['source', '9:16', '16:9', '1:1', '4:5'] as const).map(value => <Chip disabled={locked} key={value} label={value === 'source' ? t('editorParity.original') : value} selected={shape === value} onPress={() => { setShape(value); setResult(null); }} />)}</View>
+            <Text variant="bodyStrong">{t('editorParity.pausesBetweenCuts')}</Text><View style={styles.optionRow}>
+                <Chip disabled={locked} label={t('editorParity.snappy')} selected={preset === 'punchy'} onPress={() => { setPreset('punchy'); setResult(null); }} />
+                <Chip disabled={locked} label={t('editorParity.natural')} selected={preset === 'balanced'} onPress={() => { setPreset('balanced'); setResult(null); }} />
+                <Chip disabled={locked} label={t('editorParity.relaxed')} selected={preset === 'educational'} onPress={() => { setPreset('educational'); setResult(null); }} />
             </View>
             {!musicVideo ? <BestCutSettings disabled={locked} showTitle={false} onChange={onSettingsChange} /> : null}
-            <Text variant="caption" tone="secondary">The selected shape is applied to the editor canvas with the generated cut.</Text>
+            <Text variant="caption" tone="secondary">{t('editorParity.shapeAppliedHelp')}</Text>
         </View> : null}
 
         <View style={styles.consentCard}><View style={{ flex: 1, gap: 4 }}><Text variant="bodyStrong">{t('bestCut.agree')}</Text><Text variant="caption" tone="secondary">{brandText(t('bestCut.consent'))}</Text></View><Switch accessibilityLabel={rawText(t('bestCut.agree'))} disabled={locked} value={consent} onValueChange={setConsent} /></View>
-        {busy ? <View style={styles.progressCard}><View style={styles.progressRing}><ActivityIndicator color={colors.accent} size="large" /><Text style={styles.progressPercent}>{Math.round(progress.fraction * 100)}%</Text></View><Text variant="title3">Creating your best cut</Text><Text accessibilityLiveRegion="polite" tone="secondary">{t(`bestCut.${progress.phase}`, { n: progress.index + 1, percent: Math.round(progress.fraction * 100) })}</Text><View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${Math.max(8, Math.round(progress.fraction * 100))}%` }]} /></View>
-            <Button variant="secondary" label={notifyWhenReady ? 'Notification enabled' : 'Know When It’s Ready'} disabled={notifyWhenReady} onPress={() => void enableReadyNotification()} />
-            <Button variant="tertiary" label="Pause and add notes" onPress={() => { abort.current.abort(); setNotesOpen(true); }} />
+        {busy ? <View style={styles.progressCard}><View style={styles.progressRing}><ActivityIndicator color={colors.accent} size="large" /><Text style={styles.progressPercent}>{Math.round(progress.fraction * 100)}%</Text></View><Text variant="title3">{t('editorParity.creatingBestCut')}</Text><Text accessibilityLiveRegion="polite" tone="secondary">{t(`bestCut.${progress.phase}`, { n: progress.index + 1, percent: Math.round(progress.fraction * 100) })}</Text><View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${Math.max(8, Math.round(progress.fraction * 100))}%` }]} /></View>
+            <Button variant="secondary" label={t(notifyWhenReady ? 'editorParity.notificationEnabled' : 'editorParity.knowWhenReady')} disabled={notifyWhenReady} onPress={() => void enableReadyNotification()} />
+            <Button variant="tertiary" label={t('editorParity.pauseAddNotes')} onPress={() => { abort.current.abort(); setNotesOpen(true); }} />
             <Button variant="tertiary" label={t('bestCut.cancel')} onPress={() => abort.current.abort()} /></View> : null}
-        {!busy && interrupted === 'cancelled' ? <View style={styles.interruptedCard}><Text variant="bodyStrong">AI Edit paused</Text><Text variant="caption" tone="secondary">Restart with the same settings, add notes first, or discard this attempt. You won’t be charged again for cached analysis.</Text><Button label="Restart AI Edit" onPress={() => void run()} /><Button variant="secondary" label="Add notes" onPress={() => setNotesOpen(true)} /><Button variant="tertiary" label="Discard attempt" onPress={() => { setInterrupted(null); setProgress({ phase: 'ready', index: 0, fraction: 0, refunded: 0 }); setMessage(''); }} /></View> : null}
+        {!busy && interrupted === 'cancelled' ? <View style={styles.interruptedCard}><Text variant="bodyStrong">{t('editorParity.aiEditPaused')}</Text><Text variant="caption" tone="secondary">{t('editorParity.aiEditPausedDescription')}</Text><Button label={t('editorParity.restartAiEdit')} onPress={() => void run()} /><Button variant="secondary" label={t('editorParity.addNotes')} onPress={() => setNotesOpen(true)} /><Button variant="tertiary" label={t('editorParity.discardAttempt')} onPress={() => { setInterrupted(null); setProgress({ phase: 'ready', index: 0, fraction: 0, refunded: 0 }); setMessage(''); }} /></View> : null}
         {notificationMessage ? <Text variant="caption" tone="secondary" accessibilityLiveRegion="polite">{notificationMessage}</Text> : null}
         {progress.refunded > 0 ? <Text>{t('bestCut.refunded', { n: progress.refunded })}</Text> : null}
         {message ? <Text accessibilityLiveRegion="polite">{message}</Text> : null}
@@ -319,7 +319,7 @@ export function BestCutSheet({ api, projectId, quote: initialQuote, timeline, lo
         }} /></> : result ? <>{result.plan ? <><Text>{t('bestCut.summary', { pauses: result.plan.removedPauses, retakes: result.plan.removedRetakes, matched: result.plan.matchedLines })}</Text>
             {result.plan.warnings.map(w => <Text key={w}>{t(bestCutWarningKey(w))}</Text>)}
             {!!result.plan.missingLines.length && <Text>{t('bestCut.missing', { lines: result.plan.missingLines.join(', ') })}</Text>}
-            </> : null}<Button label={t('bestCut.apply')} onPress={() => apply(result)} /></> : <><Button label={t('bestCut.title')} accessibilityHint={!consent && !busy ? t('bestCut.needsAgree') : undefined} onPress={() => void run()} disabled={busy || !clips.length || !consent} style={styles.createButton}><Icon name="sparkle" size={24} tint={colors.accentInk} /><Text variant="bodyStrong" tone="onAccent">Create Best Cut</Text></Button>{!consent && !busy ? <Text variant="footnote" tone="secondary" accessibilityLiveRegion="polite">{t('bestCut.needsAgree')}</Text> : null}</>}
+            </> : null}<Button label={t('bestCut.apply')} onPress={() => apply(result)} /></> : <><Button label={t('bestCut.title')} accessibilityHint={!consent && !busy ? t('bestCut.needsAgree') : undefined} onPress={() => void run()} disabled={busy || !clips.length || !consent} style={styles.createButton}><Icon name="sparkle" size={24} tint={colors.accentInk} /><Text variant="bodyStrong" tone="onAccent">{t('editorParity.createBestCut')}</Text></Button>{!consent && !busy ? <Text variant="footnote" tone="secondary" accessibilityLiveRegion="polite">{t('bestCut.needsAgree')}</Text> : null}</>}
         <Button variant="tertiary" label={t('bestCut.notNow')} onPress={closeSheet} />
     </KeyboardFormScrollView></KeyboardScreen></View>{libraryOpen ? <LibraryChooser api={api} kind="video" onClose={() => setLibraryOpen(false)} onPick={choice => { setLibraryOpen(false); void select(choice); }} /> : null}</Modal>;
 }

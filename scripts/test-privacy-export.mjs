@@ -325,6 +325,8 @@ try {
         'speech_gate_daily',
         // Content-free first-edit entitlement tombstone; no media, prompt or transcript.
         'smart_cut_first_edits',
+        // Content-free manual-editor debit/coverage tombstone; imported source identities are retained only as SHA-256 hashes.
+        'editor_manual_commit_receipts',
         // Provider reference links contain public metadata only, are available in-app,
         // and are erased with the account. The generic export has no Music section yet.
         // Music actors and blocks (ADR-0367) follow the existing Music exclusion: no generic Music export section.

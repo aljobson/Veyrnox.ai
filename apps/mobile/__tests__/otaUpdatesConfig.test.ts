@@ -8,7 +8,7 @@ test('app points at this project\'s EAS Update endpoint', () => {
 });
 test('updates target the current native app release', () => {
     // Intentional cohort assertion: native dependency/plugin changes must advance this recorded release together.
-    expect(expo.version).toBe('1.0.20');
+    expect(expo.version).toBe('1.0.21');
     expect(expo.runtimeVersion).toEqual({ policy: 'appVersion' });
 });
 test('launch never waits on the network and nothing reloads the running app', () => {

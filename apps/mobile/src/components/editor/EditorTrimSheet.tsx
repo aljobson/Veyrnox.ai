@@ -3,6 +3,7 @@ import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useOptionalSafeAreaInsets } from '../../lib/safeArea';
 import { clipAt, splitClip, updateClip, type Clip, type Selection, type Timeline } from '../../lib/nativeEditorModel';
 import { studioColors as colors, fonts } from '../../theme';
+import { t } from '../../lib/i18n';
 
 export function EditorTrimSheet({ visible, timeline, selection, playhead, onClose, onApply, canMove, onMove }: {
     visible: boolean;
@@ -30,27 +31,31 @@ export function EditorTrimSheet({ visible, timeline, selection, playhead, onClos
     };
     const adjustOut = (delta: number) => setLength(current => Math.max(1, Math.min(maxLength, current + delta)));
     return <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} accessibilityViewIsModal>
-        <Pressable accessible={false} style={styles.backdrop} onPress={onClose} />
-        <View style={[styles.sheet, { paddingBottom: Math.max(22, (insets?.bottom ?? 0) + 12) }]}>
+        <Pressable accessible={false} accessibilityRole="button" style={styles.backdrop} onPress={onClose} />
+        <View style={[styles.sheet, {
+            paddingBottom: Math.max(22, (insets?.bottom ?? 0) + 12),
+            paddingLeft: Math.max(18, (insets?.left ?? 0) + 12),
+            paddingRight: Math.max(18, (insets?.right ?? 0) + 12),
+        }]}>
             <View style={styles.grabber} />
-            <View style={styles.header}><Pressable accessibilityRole="button" accessibilityLabel="Close Trim" onPress={onClose} style={styles.close}><Text style={styles.closeText}>Close</Text></Pressable><Text accessibilityRole="header" style={styles.title}>Trim</Text></View>
+            <View style={styles.header}><Pressable accessibilityRole="button" accessibilityLabel={t('editorParity.closeTrim')} onPress={onClose} style={styles.close}><Text style={styles.closeText}>{t('common.close')}</Text></Pressable><Text accessibilityRole="header" style={styles.title}>{t('editorSimple.trim')}</Text></View>
             {canMove && onMove ? <View style={styles.moveRow}>
-                <Pressable accessibilityRole="button" accessibilityLabel="Move left" accessibilityState={{ disabled: !canMove(-1) }} disabled={!canMove(-1)}
-                    onPress={() => onMove(-1)} style={({ pressed }) => [styles.moveButton, !canMove(-1) && styles.disabled, pressed && styles.pressed]}><Text style={styles.moveText}>Move left</Text></Pressable>
-                <Pressable accessibilityRole="button" accessibilityLabel="Move right" accessibilityState={{ disabled: !canMove(1) }} disabled={!canMove(1)}
-                    onPress={() => onMove(1)} style={({ pressed }) => [styles.moveButton, !canMove(1) && styles.disabled, pressed && styles.pressed]}><Text style={styles.moveText}>Move right</Text></Pressable>
+                <Pressable accessibilityRole="button" accessibilityLabel={t('editorParity.moveLeft')} accessibilityState={{ disabled: !canMove(-1) }} disabled={!canMove(-1)}
+                    onPress={() => onMove(-1)} style={({ pressed }) => [styles.moveButton, !canMove(-1) && styles.disabled, pressed && styles.pressed]}><Text style={styles.moveText}>{t('editorParity.moveLeft')}</Text></Pressable>
+                <Pressable accessibilityRole="button" accessibilityLabel={t('editorParity.moveRight')} accessibilityState={{ disabled: !canMove(1) }} disabled={!canMove(1)}
+                    onPress={() => onMove(1)} style={({ pressed }) => [styles.moveButton, !canMove(1) && styles.disabled, pressed && styles.pressed]}><Text style={styles.moveText}>{t('editorParity.moveRight')}</Text></Pressable>
             </View> : null}
-            <Pressable accessibilityRole="button" accessibilityLabel="Split at Playhead" onPress={() => { const next = splitClip(timeline, selection, playhead); if (next) { onApply(next); onClose(); } }} style={styles.split}><Text style={styles.splitText}>Split at Playhead</Text></Pressable>
-            <Stepper label="In" value={display(from)} onMinus={() => adjustIn(-1)} onPlus={() => adjustIn(1)} />
-            <Stepper label="Out" value={display(from + length)} onMinus={() => adjustOut(-1)} onPlus={() => adjustOut(1)} />
-            <View style={styles.duration}><Text style={styles.durationLabel}>Duration</Text><Text style={styles.durationValue}>{display(length)}</Text></View>
-            <Pressable accessibilityRole="button" accessibilityLabel="Apply Trim" onPress={() => { onApply(updateClip(timeline, selection, { in: from, len: length })); onClose(); }} style={styles.primary}><Text style={styles.primaryText}>Apply Trim</Text></Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel={t('editorParity.splitAtPlayhead')} onPress={() => { const next = splitClip(timeline, selection, playhead); if (next) { onApply(next); onClose(); } }} style={styles.split}><Text style={styles.splitText}>{t('editorParity.splitAtPlayhead')}</Text></Pressable>
+            <Stepper label={t('editorParity.inPoint')} value={display(from)} onMinus={() => adjustIn(-1)} onPlus={() => adjustIn(1)} />
+            <Stepper label={t('editorParity.outPoint')} value={display(from + length)} onMinus={() => adjustOut(-1)} onPlus={() => adjustOut(1)} />
+            <View style={styles.duration}><Text style={styles.durationLabel}>{t('editorParity.duration')}</Text><Text style={styles.durationValue}>{display(length)}</Text></View>
+            <Pressable accessibilityRole="button" accessibilityLabel={t('editorParity.applyTrim')} onPress={() => { onApply(updateClip(timeline, selection, { in: from, len: length })); onClose(); }} style={styles.primary}><Text style={styles.primaryText}>{t('editorParity.applyTrim')}</Text></Pressable>
         </View>
     </Modal>;
 }
 
 function Stepper({ label, value, onMinus, onPlus }: { label: string; value: string; onMinus(): void; onPlus(): void }) {
-    return <View style={styles.stepper}><Text style={styles.stepperLabel}>{label}</Text><Pressable accessibilityRole="button" accessibilityLabel={`Decrease ${label}`} onPress={onMinus} style={styles.stepButton}><Text style={styles.stepButtonText}>−</Text></Pressable><Text style={styles.stepValue}>{value}</Text><Pressable accessibilityRole="button" accessibilityLabel={`Increase ${label}`} onPress={onPlus} style={styles.stepButton}><Text style={styles.stepButtonText}>+</Text></Pressable></View>;
+    return <View style={styles.stepper}><Text style={styles.stepperLabel}>{label}</Text><Pressable accessibilityRole="button" accessibilityLabel={t('editorParity.decreaseValue', { name: label })} onPress={onMinus} style={styles.stepButton}><Text style={styles.stepButtonText}>−</Text></Pressable><Text style={styles.stepValue}>{value}</Text><Pressable accessibilityRole="button" accessibilityLabel={t('editorParity.increaseValue', { name: label })} onPress={onPlus} style={styles.stepButton}><Text style={styles.stepButtonText}>+</Text></Pressable></View>;
 }
 
 const styles = StyleSheet.create({

@@ -7,6 +7,7 @@ import { customCanvasParts, formatCustomCanvasAspect } from '../../lib/nativeEdi
 import { Icon } from '../ui';
 import { ColourField } from './tools/ColourField';
 import { Slider } from './tools/Slider';
+import { t } from '../../lib/i18n';
 
 const RATIOS: readonly CanvasAspect[] = ['9:16', '16:9', '1:1', '4:5'];
 const BACKGROUND_SWATCHES = ['#000000', '#FFFFFF', '#292A2D', '#9B9B9F', '#FF3B30', '#FF9500', '#FFD60A', '#34C759', '#00C7BE', '#0A84FF', '#5E5CE6'] as const;
@@ -72,51 +73,55 @@ export function EditorCanvasSheet({ visible, canvas, timeline, onClose, onCanvas
         setBackgroundMode(mode); if (mediaId) setBackgroundMediaId(mediaId); applyBackdrop(mode, { mediaId });
     };
     return <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} accessibilityViewIsModal>
-        <Pressable accessible={false} style={styles.backdrop} onPress={onClose} />
-        <View style={[styles.sheet, { paddingBottom: Math.max(24, (insets?.bottom ?? 0) + 14) }]}>
+        <Pressable accessible={false} accessibilityRole="button" style={styles.backdrop} onPress={onClose} />
+        <View style={[styles.sheet, {
+            paddingBottom: Math.max(24, (insets?.bottom ?? 0) + 14),
+            paddingLeft: insets?.left ?? 0,
+            paddingRight: insets?.right ?? 0,
+        }]}>
             <View style={styles.grabber} />
-            <View style={styles.header}><Text accessibilityRole="header" style={styles.title}>Canvas Settings</Text><Pressable accessibilityRole="button" accessibilityLabel="Done" onPress={onClose} style={styles.done}><Text style={styles.doneText}>Done</Text></Pressable></View>
+            <View style={styles.header}><Text accessibilityRole="header" style={styles.title}>{t('editorParity.canvasSettings')}</Text><Pressable accessibilityRole="button" accessibilityLabel={t('editorSimple.done')} onPress={onClose} style={styles.done}><Text style={styles.doneText}>{t('editorSimple.done')}</Text></Pressable></View>
             <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-                <Text style={styles.sectionTitle}>Format</Text>
+                <Text accessibilityRole="header" style={styles.sectionTitle}>{t('editorParity.format')}</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.ratios}>
                     {RATIOS.map(ratio => <Choice key={ratio} label={ratio} selected={canvas.aspect_ratio === ratio} onPress={() => onCanvas({ aspect_ratio: ratio })} />)}
-                    <Choice label="Original" selected={!!sourceAspect && canvas.aspect_ratio === sourceAspect} disabled={!sourceAspect} onPress={() => { if (sourceAspect) onCanvas({ aspect_ratio: sourceAspect }); }} />
-                    <Choice label="Custom" selected={!!parts && canvas.aspect_ratio !== sourceAspect} onPress={applyCustom} />
+                    <Choice label={t('editorParity.original')} selected={!!sourceAspect && canvas.aspect_ratio === sourceAspect} disabled={!sourceAspect} onPress={() => { if (sourceAspect) onCanvas({ aspect_ratio: sourceAspect }); }} />
+                    <Choice label={t('editorParity.custom')} selected={!!parts && canvas.aspect_ratio !== sourceAspect} onPress={applyCustom} />
                 </ScrollView>
                 <View style={styles.customRow}>
-                    <TextInput accessibilityLabel="Custom canvas width" keyboardType="number-pad" value={customWidth} onChangeText={setCustomWidth} maxLength={3} style={styles.numberInput} />
+                    <TextInput accessibilityLabel={t('editorParity.customCanvasWidth')} keyboardType="number-pad" value={customWidth} onChangeText={setCustomWidth} maxLength={3} style={styles.numberInput} />
                     <Text style={styles.customSeparator}>:</Text>
-                    <TextInput accessibilityLabel="Custom canvas height" keyboardType="number-pad" value={customHeight} onChangeText={setCustomHeight} maxLength={3} style={styles.numberInput} />
-                    <Pressable accessibilityRole="button" accessibilityLabel="Apply custom canvas" onPress={applyCustom} style={styles.apply}><Text style={styles.applyText}>Apply</Text></Pressable>
+                    <TextInput accessibilityLabel={t('editorParity.customCanvasHeight')} keyboardType="number-pad" value={customHeight} onChangeText={setCustomHeight} maxLength={3} style={styles.numberInput} />
+                    <Pressable accessibilityRole="button" accessibilityLabel={t('editorParity.applyCustomCanvas')} onPress={applyCustom} style={styles.apply}><Text style={styles.applyText}>{t('editorParity.apply')}</Text></Pressable>
                 </View>
 
-                <Text style={styles.sectionTitle}>Fit Mode</Text>
+                <Text accessibilityRole="header" style={styles.sectionTitle}>{t('editorParity.fitMode')}</Text>
                 <View style={styles.segmented}>
-                    <Pressable accessibilityRole="button" accessibilityState={{ selected: fit === 'contain' }} onPress={() => setFit('contain')} style={[styles.segment, fit === 'contain' && styles.segmentSelected]}><Text style={[styles.segmentText, fit === 'contain' && styles.segmentTextSelected]}>Fit</Text></Pressable>
-                    <Pressable accessibilityRole="button" accessibilityState={{ selected: fit === 'cover' }} onPress={() => setFit('cover')} style={[styles.segment, fit === 'cover' && styles.segmentSelected]}><Text style={[styles.segmentText, fit === 'cover' && styles.segmentTextSelected]}>{fit === 'cover' ? '✓  ' : ''}Fill</Text></Pressable>
+                    <Pressable accessibilityRole="button" accessibilityState={{ selected: fit === 'contain' }} onPress={() => setFit('contain')} style={[styles.segment, fit === 'contain' && styles.segmentSelected]}><Text style={[styles.segmentText, fit === 'contain' && styles.segmentTextSelected]}>{t('editorParity.fit')}</Text></Pressable>
+                    <Pressable accessibilityRole="button" accessibilityState={{ selected: fit === 'cover' }} onPress={() => setFit('cover')} style={[styles.segment, fit === 'cover' && styles.segmentSelected]}><Text style={[styles.segmentText, fit === 'cover' && styles.segmentTextSelected]}>{fit === 'cover' ? '✓  ' : ''}{t('editorParity.fill')}</Text></Pressable>
                 </View>
-                <Text style={styles.help}>{fit === 'cover' ? "Fills the canvas and crops the clip's edges." : 'Shows the whole clip inside the canvas without cropping.'}</Text>
+                <Text style={styles.help}>{t(fit === 'cover' ? 'editorParity.fillHelp' : 'editorParity.fitHelp')}</Text>
 
-                <Text style={styles.sectionTitle}>Background</Text>
+                <Text accessibilityRole="header" style={styles.sectionTitle}>{t('editorParity.background')}</Text>
                 <View style={styles.backgroundModes}>
-                    <BackgroundChoice icon="palette" label="Color" selected={backgroundMode === 'solid'} onPress={() => chooseBackgroundMode('solid')} />
-                    <BackgroundChoice icon="swatches" label="Gradient" selected={backgroundMode === 'gradient'} onPress={() => chooseBackgroundMode('gradient')} />
-                    <BackgroundChoice icon="contrast" label="Blur" selected={backgroundMode === 'blur'} onPress={() => chooseBackgroundMode('blur')} />
-                    <BackgroundChoice icon="image" label="Image" selected={backgroundMode === 'image'} disabled={!images.length} onPress={() => chooseBackgroundMode('image')} />
-                    <BackgroundChoice icon="film" label="Video" selected={backgroundMode === 'video'} disabled={!videos.length} onPress={() => chooseBackgroundMode('video')} />
+                    <BackgroundChoice icon="palette" label={t('editorParity.color')} selected={backgroundMode === 'solid'} onPress={() => chooseBackgroundMode('solid')} />
+                    <BackgroundChoice icon="swatches" label={t('editorParity.gradient')} selected={backgroundMode === 'gradient'} onPress={() => chooseBackgroundMode('gradient')} />
+                    <BackgroundChoice icon="contrast" label={t('editorParity.blur')} selected={backgroundMode === 'blur'} onPress={() => chooseBackgroundMode('blur')} />
+                    <BackgroundChoice icon="image" label={t('editorParity.image')} selected={backgroundMode === 'image'} disabled={!images.length} onPress={() => chooseBackgroundMode('image')} />
+                    <BackgroundChoice icon="film" label={t('editorSimple.video')} selected={backgroundMode === 'video'} disabled={!videos.length} onPress={() => chooseBackgroundMode('video')} />
                 </View>
-                {backgroundMode === 'solid' ? <ColourField label="Canvas color" value={timeline.background} swatches={BACKGROUND_SWATCHES} onChange={background => { onTimeline({ ...timeline, background, video: timeline.video.map(item => ({ ...item, background: { type: 'solid', color: background, blur: item.background?.blur ?? blur, mediaId: '' } })) }); }} /> : null}
-                {backgroundMode === 'blur' ? <Slider label="Blur" value={blur} min={4} max={60} step={1} format={value => `${Math.round(value)}`} onChange={value => { setBlur(value); applyBackdrop('blur', { blur: value }); }} /> : null}
-                {backgroundMode === 'gradient' ? <><ColourField label="Gradient end color" value={gradientEnd} swatches={BACKGROUND_SWATCHES} onChange={secondaryColor => { setGradientEnd(secondaryColor); applyBackdrop('gradient', { secondaryColor }); }} /><Slider label="Gradient angle" value={gradientAngle} min={0} max={360} step={15} format={value => `${Math.round(value)}°`} onChange={angle => { setGradientAngle(angle); applyBackdrop('gradient', { angle }); }} /></> : null}
-                {backgroundMode === 'image' ? <View style={styles.imageChoices}>{images.map(item => <Choice key={item.id} label={(item.name || 'Image').slice(0, 26)} selected={backgroundMediaId === item.id} onPress={() => { setBackgroundMediaId(item.id); applyBackdrop('image', { mediaId: item.id }); }} />)}</View> : null}
-                {backgroundMode === 'video' ? <View style={styles.imageChoices}>{videos.map(item => <Choice key={item.id} label={(item.name || 'Video').slice(0, 26)} selected={backgroundMediaId === item.id} onPress={() => { setBackgroundMediaId(item.id); applyBackdrop('video', { mediaId: item.id }); }} />)}</View> : null}
+                {backgroundMode === 'solid' ? <ColourField label={t('editorParity.canvasColor')} value={timeline.background} swatches={BACKGROUND_SWATCHES} onChange={background => { onTimeline({ ...timeline, background, video: timeline.video.map(item => ({ ...item, background: { type: 'solid', color: background, blur: item.background?.blur ?? blur, mediaId: '' } })) }); }} /> : null}
+                {backgroundMode === 'blur' ? <Slider label={t('editorParity.blur')} value={blur} min={4} max={60} step={1} format={value => `${Math.round(value)}`} onChange={value => { setBlur(value); applyBackdrop('blur', { blur: value }); }} /> : null}
+                {backgroundMode === 'gradient' ? <><ColourField label={t('editorParity.gradientEndColor')} value={gradientEnd} swatches={BACKGROUND_SWATCHES} onChange={secondaryColor => { setGradientEnd(secondaryColor); applyBackdrop('gradient', { secondaryColor }); }} /><Slider label={t('editorParity.gradientAngle')} value={gradientAngle} min={0} max={360} step={15} format={value => `${Math.round(value)}°`} onChange={angle => { setGradientAngle(angle); applyBackdrop('gradient', { angle }); }} /></> : null}
+                {backgroundMode === 'image' ? <View style={styles.imageChoices}>{images.map(item => <Choice key={item.id} label={(item.name || t('editorParity.image')).slice(0, 26)} selected={backgroundMediaId === item.id} onPress={() => { setBackgroundMediaId(item.id); applyBackdrop('image', { mediaId: item.id }); }} />)}</View> : null}
+                {backgroundMode === 'video' ? <View style={styles.imageChoices}>{videos.map(item => <Choice key={item.id} label={(item.name || t('editorSimple.video')).slice(0, 26)} selected={backgroundMediaId === item.id} onPress={() => { setBackgroundMediaId(item.id); applyBackdrop('video', { mediaId: item.id }); }} />)}</View> : null}
             </ScrollView>
         </View>
     </Modal>;
 }
 
 function BackgroundChoice({ icon, label, selected, disabled = false, onPress }: { icon: 'palette' | 'swatches' | 'contrast' | 'image' | 'film'; label: string; selected: boolean; disabled?: boolean; onPress(): void }) {
-    return <Pressable accessibilityRole="button" accessibilityLabel={`${label} background`} accessibilityState={{ selected, disabled }} disabled={disabled} onPress={onPress}
+    return <Pressable accessibilityRole="button" accessibilityLabel={t('editorParity.backgroundLabel', { name: label })} accessibilityState={{ selected, disabled }} disabled={disabled} onPress={onPress}
         style={[styles.backgroundChoice, selected && styles.backgroundChoiceSelected, disabled && styles.disabled]}><Icon name={icon} size={24} tint={selected ? colors.accent : colors.body} /><Text style={[styles.backgroundModeText, selected && { color: colors.accent }]}>{label}</Text></Pressable>;
 }
 

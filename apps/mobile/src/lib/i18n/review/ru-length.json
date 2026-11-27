@@ -5076,6 +5076,144 @@
     "ratio": 2.2
   },
   {
+    "id": "editorParity.addNotes",
+    "english": "Add notes",
+    "translation": "Добавить заметки",
+    "ratio": 1.78
+  },
+  {
+    "id": "editorParity.apply",
+    "english": "Apply",
+    "translation": "Применить",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorParity.applyCustomCanvas",
+    "english": "Apply custom canvas",
+    "translation": "Применить пользовательский холст",
+    "ratio": 1.68
+  },
+  {
+    "id": "editorParity.applyTrim",
+    "english": "Apply Trim",
+    "translation": "Применить обрезку",
+    "ratio": 1.7
+  },
+  {
+    "id": "editorParity.blur",
+    "english": "Blur",
+    "translation": "Размытие",
+    "ratio": 2
+  },
+  {
+    "id": "editorParity.custom",
+    "english": "Custom",
+    "translation": "Пользовательский",
+    "ratio": 2.67
+  },
+  {
+    "id": "editorParity.customCanvasWidth",
+    "english": "Custom canvas width",
+    "translation": "Ширина пользовательского холста",
+    "ratio": 1.63
+  },
+  {
+    "id": "editorParity.fill",
+    "english": "Fill",
+    "translation": "Заполнение",
+    "ratio": 2.5
+  },
+  {
+    "id": "editorParity.fit",
+    "english": "Fit",
+    "translation": "По размеру",
+    "ratio": 3.33
+  },
+  {
+    "id": "editorParity.fitMode",
+    "english": "Fit Mode",
+    "translation": "Режим вписывания",
+    "ratio": 2
+  },
+  {
+    "id": "editorParity.heroBestCut",
+    "english": "best cut",
+    "translation": "лучший монтаж",
+    "ratio": 1.63
+  },
+  {
+    "id": "editorParity.image",
+    "english": "Image",
+    "translation": "Изображение",
+    "ratio": 2.2
+  },
+  {
+    "id": "editorParity.inPoint",
+    "english": "In",
+    "translation": "Начало",
+    "ratio": 3
+  },
+  {
+    "id": "editorParity.length",
+    "english": "length",
+    "translation": "длительность",
+    "ratio": 2
+  },
+  {
+    "id": "editorParity.moveLeft",
+    "english": "Move left",
+    "translation": "Переместить влево",
+    "ratio": 1.89
+  },
+  {
+    "id": "editorParity.moveRight",
+    "english": "Move right",
+    "translation": "Переместить вправо",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorParity.muteTrack",
+    "english": "Mute {name}",
+    "translation": "Выключить звук: {name}",
+    "ratio": 2
+  },
+  {
+    "id": "editorParity.natural",
+    "english": "Natural",
+    "translation": "Естественный",
+    "ratio": 1.71
+  },
+  {
+    "id": "editorParity.outPoint",
+    "english": "Out",
+    "translation": "Конец",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorParity.snappy",
+    "english": "Snappy",
+    "translation": "Динамичный",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorParity.splitAtPlayhead",
+    "english": "Split at Playhead",
+    "translation": "Разделить по головке воспроизведения",
+    "ratio": 2.12
+  },
+  {
+    "id": "editorParity.tenMax",
+    "english": "10 max",
+    "translation": "Не более 10",
+    "ratio": 1.83
+  },
+  {
+    "id": "editorParity.unmuteTrack",
+    "english": "Unmute {name}",
+    "translation": "Включить звук: {name}",
+    "ratio": 1.62
+  },
+  {
     "id": "musicAlbums.addTrack",
     "english": "Add",
     "translation": "Добавить",

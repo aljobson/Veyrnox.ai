@@ -2640,6 +2640,132 @@
     "ratio": 1.7
   },
   {
+    "id": "editorParity.aiEditApplied",
+    "english": "AI Edit applied",
+    "translation": "تم تطبيق تعديل الذكاء الاصطناعي",
+    "ratio": 2.07
+  },
+  {
+    "id": "editorParity.aiEditPaused",
+    "english": "AI Edit paused",
+    "translation": "تم إيقاف تعديل الذكاء الاصطناعي مؤقتاً",
+    "ratio": 2.71
+  },
+  {
+    "id": "editorParity.aiEditReview",
+    "english": "AI Edit review",
+    "translation": "مراجعة تعديل الذكاء الاصطناعي",
+    "ratio": 2.07
+  },
+  {
+    "id": "editorParity.audioExportMeta",
+    "english": "WAV · 48 kHz · ~{size} MB",
+    "translation": "WAV · 48 كيلوهرتز · حوالي {size} ميغابايت",
+    "ratio": 1.64
+  },
+  {
+    "id": "editorParity.batchAiEdit",
+    "english": "Batch AI Edit",
+    "translation": "تعديل الذكاء الاصطناعي المجمّع",
+    "ratio": 2.31
+  },
+  {
+    "id": "editorParity.closeAiEditReview",
+    "english": "Close AI Edit review",
+    "translation": "إغلاق مراجعة تعديل الذكاء الاصطناعي",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorParity.closeBatchAiEdit",
+    "english": "Close Batch AI Edit",
+    "translation": "إغلاق تعديل الذكاء الاصطناعي المجمّع",
+    "ratio": 1.89
+  },
+  {
+    "id": "editorParity.fadeIn",
+    "english": "Fade in",
+    "translation": "تلاشٍ تدريجي للدخول",
+    "ratio": 2.71
+  },
+  {
+    "id": "editorParity.fadeOut",
+    "english": "Fade out",
+    "translation": "تلاشٍ تدريجي للخروج",
+    "ratio": 2.38
+  },
+  {
+    "id": "editorParity.fit",
+    "english": "Fit",
+    "translation": "ملاءمة",
+    "ratio": 2
+  },
+  {
+    "id": "editorParity.fps",
+    "english": "{n} FPS",
+    "translation": "{n} إطار/ثانية",
+    "ratio": 2
+  },
+  {
+    "id": "editorParity.inPoint",
+    "english": "In",
+    "translation": "بداية",
+    "ratio": 2.5
+  },
+  {
+    "id": "editorParity.minutesApprox",
+    "english": "~{n} min",
+    "translation": "حوالي {n} دقيقة",
+    "ratio": 1.88
+  },
+  {
+    "id": "editorParity.moreAiEditSettings",
+    "english": "More AI Edit settings",
+    "translation": "المزيد من إعدادات تعديل الذكاء الاصطناعي",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorParity.moveLeft",
+    "english": "Move left",
+    "translation": "انقل إلى اليسار",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorParity.notesPlaceholder",
+    "english": "Tell AI Edit what to keep or avoid",
+    "translation": "أخبر تعديل الذكاء الاصطناعي بما تريد الاحتفاظ به أو تجنبه",
+    "ratio": 1.68
+  },
+  {
+    "id": "editorParity.outPoint",
+    "english": "Out",
+    "translation": "نهاية",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorParity.restartAiEdit",
+    "english": "Restart AI Edit",
+    "translation": "إعادة تشغيل تعديل الذكاء الاصطناعي",
+    "ratio": 2.27
+  },
+  {
+    "id": "editorParity.reviewAiEdit",
+    "english": "Review AI Edit",
+    "translation": "مراجعة تعديل الذكاء الاصطناعي",
+    "ratio": 2.07
+  },
+  {
+    "id": "editorParity.tenMax",
+    "english": "10 max",
+    "translation": "10 كحد أقصى",
+    "ratio": 1.83
+  },
+  {
+    "id": "editorParity.volume",
+    "english": "Volume",
+    "translation": "مستوى الصوت",
+    "ratio": 1.83
+  },
+  {
     "id": "musicAlbums.addTrack",
     "english": "Add",
     "translation": "إضافة",

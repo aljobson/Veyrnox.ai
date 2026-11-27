@@ -45,7 +45,13 @@ const visible = (value: string) => root.container.queryAll(n => n.children.inclu
 async function press(label: string) { const matches = nodes(label); expect(matches).toHaveLength(1); await act(async () => matches[0].props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 })); }
 async function render() { await act(async () => root.render(<FullEditorScreen projectId={projectId} />)); }
 async function open(mode: 'ai' | 'speech') {
-    await press(t('editorSimple.aiEdit')); await press(t(mode === 'ai' ? 'editorAi.describe' : 'editorSpeech.silences'));
+    // The primary AI Edit action now opens ByeCut-style Best Cut directly. Keep the
+    // lower-level AI command contract covered through the selected-clip action.
+    await act(async () => mockSession.setSelection({ track: 'video', id: 'v1' }));
+    const aiActions = nodes(t('editorSimple.aiEdit'));
+    expect(aiActions).toHaveLength(2);
+    await act(async () => aiActions.at(-1)!.props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 }));
+    await press(t(mode === 'ai' ? 'editorAi.describe' : 'editorSpeech.silences'));
     if (mode === 'ai') await act(async () => root.container.queryAll(n => n.props.accessibilityLabel === t('editorAi.instruction') && typeof n.props.onChangeText === 'function')[0].props.onChangeText('Split and lower volume'));
 }
 const sendLabel = (mode: string) => mode === 'ai' ? t('editorAi.send', { price: t('editorAi.price', { n: price }) }) : t('editorSpeech.start');
@@ -93,7 +99,11 @@ for (const mode of ['ai', 'speech'] as const) {
     });
 }
 test('501 hides both AI Edit rows', async () => {
-    unavailable = true; await render(); await press(t('editorSimple.aiEdit'));
+    unavailable = true; await render();
+    await act(async () => mockSession.setSelection({ track: 'video', id: 'v1' }));
+    const aiActions = nodes(t('editorSimple.aiEdit'));
+    expect(aiActions).toHaveLength(2);
+    await act(async () => aiActions.at(-1)!.props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 }));
     expect(nodes(t('editorAi.describe'))).toHaveLength(0); expect(nodes(t('editorSpeech.silences'))).toHaveLength(0); expect(nodes(t('editorSpeech.retakes'))).toHaveLength(0);
 });
 test.each(['f-local', 'e-device', 'p-project'])('speech unsupported source %s explains why and disables Start', async id => {
@@ -131,12 +141,13 @@ test('speech reports transcribing with a live region; closing cancels polling', 
 
 for (const mode of ['ai', 'speech'] as const) test(`${mode}: refused document never announces completion`, async () => {
     await render(); await open(mode); await press(sendLabel(mode)); const before = mockSession.currentDocument();
+    const selection = mockSession.selection;
     const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
     mockRefuse = true;
     await press(t('editorAi.apply'));
     expect(mockSession.currentDocument()).toEqual(before);
     expect(announce).not.toHaveBeenCalledWith(t(mode === 'ai' ? 'editorAi.applied' : 'editorSpeech.applied'));
-    expect(mockSession.selection).toBeNull();
+    expect(mockSession.selection).toEqual(selection);
     expect(visible(t('editorEditGate.tooLarge'))).toBe(true); expect(visible(t('editorAi.stale'))).toBe(false);
     expect(visible(t(mode === 'ai' ? 'editorAi.preview' : 'editorSpeech.preview'))).toBe(true);
     expect(nodes(sendLabel(mode))).toHaveLength(0); expect(nodes(t('recovery.retry'))).toHaveLength(0);

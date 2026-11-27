@@ -6,7 +6,7 @@ import { plural, t } from '../../lib/i18n';
 import { playSelection } from '../../lib/haptics';
 import { hiddenLabelIds, trimHandleWidth } from '../../lib/editorTimelineLayout';
 import { canTrim, formatTimecode, frameAtX, moveItems, movingSelections, snapTo, trimItem } from '../../lib/editorTimeline';
-import { clipAt, type Clip, type Selection, type TextClip, type Timeline } from '../../lib/nativeEditorModel';
+import { clipAt, type Clip, type Selection, type TextClip, type Timeline, type TrackKind } from '../../lib/nativeEditorModel';
 import { studioColors as colors } from '../../theme';
 import { HEADER_MAX_FONT_SCALE } from '../../lib/a11y';
 import { Icon } from '../ui/Icon';
@@ -24,6 +24,8 @@ type Props = {
     // Tapping a track name; the screen decides what that does (remove an empty extra track).
     onTrackPress?(trackId: string): void;
     onToggleTrackMute?(trackId: string): void;
+    // ByeCut keeps adding in context: every fixed track header exposes the action even when the lane scrolls.
+    onAddToTrack?(kind: TrackKind, trackId: string): void;
     onSeek(frame: number): void; onSelect(selection: Selection): void; onApply(timeline: Timeline): void; onViewport(width: number): void;
 };
 export type AnalysisMark = { frame: number; kind: 'hard' | 'possible'; selected: boolean };
@@ -36,7 +38,7 @@ type Gesture = {
 const ROW = 56;
 const position = (item: Clip | TextClip, ppf: number) => ({ position: 'absolute' as const, left: item.start * ppf, top: 6, width: Math.max(8, item.len * ppf - 2), height: 44 });
 
-export function EditorTimeline({ timeline, selections, ppf, total, frame, playing, snap, ripple, analysisMarks = [], clipRanges = [], onSeek, onSelect, onApply, onViewport, onGestureActive, onTrackPress, onToggleTrackMute,
+export function EditorTimeline({ timeline, selections, ppf, total, frame, playing, snap, ripple, analysisMarks = [], clipRanges = [], onSeek, onSelect, onApply, onViewport, onGestureActive, onTrackPress, onToggleTrackMute, onAddToTrack,
     clipThumb, waveforms = {} }: Props) {
     const scroller = useRef<ComponentRef<typeof ScrollView>>(null);
     const gesture = useRef<Gesture | null>(null);
@@ -124,11 +126,16 @@ export function EditorTimeline({ timeline, selections, ppf, total, frame, playin
         <View style={local.headers}>
             <View style={local.ruler} />
             {timeline.tracks.map(track => <View key={track.id} style={local.header}>
-                {track.kind !== 'text' ? <Pressable accessibilityRole="button" accessibilityLabel={`${track.muted ? 'Unmute' : 'Mute'} ${editorTrackLabel(track)}`} accessibilityState={{ checked: track.muted }} onPress={() => onToggleTrackMute?.(track.id)} disabled={!onToggleTrackMute} style={[local.muteButton, track.muted && local.muted]}><Icon name="speaker" size={16} tint={track.muted ? colors.muted : colors.text} /></Pressable>
+                {track.kind !== 'text' ? <Pressable accessibilityRole="button" accessibilityLabel={t(track.muted ? 'editorParity.unmuteTrack' : 'editorParity.muteTrack', { name: editorTrackLabel(track) })} accessibilityState={{ checked: track.muted }} onPress={() => onToggleTrackMute?.(track.id)} disabled={!onToggleTrackMute} style={[local.muteButton, track.muted && local.muted]}><Icon name="speaker" size={16} tint={track.muted ? colors.muted : colors.text} /></Pressable>
                     : <Icon name="textSize" size={16} />}
                 <Pressable testID={`track-header-${track.id}`} style={local.headerCopy} disabled={!onTrackPress} onPress={() => onTrackPress?.(track.id)} accessibilityRole="button" accessibilityLabel={editorTrackLabel(track)} accessibilityHint={onTrackPress ? t('editor.trackhint') : undefined}><Text style={styles.trackLabel} numberOfLines={1} maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE}>{editorTrackLabel(track)}</Text><Text testID={`track-state-${track.id}`} style={styles.trackState} numberOfLines={1} maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE}>{[
                     track.locked ? t('editor.lOCK') : '', track.muted ? t('editor.mUTE') : '', track.hidden ? t('editor.hIDE') : '',
                 ].map(value => value.trim()).filter(Boolean).join(' · ')}</Text></Pressable>
+                {onAddToTrack ? <Pressable testID={`track-add-${track.kind}-${track.id}`} accessibilityRole="button" disabled={track.locked}
+                    accessibilityLabel={t('editor.addtotimeline', { value1: editorTrackLabel(track) })}
+                    onPress={() => onAddToTrack(track.kind, track.id)} style={({ pressed }) => [local.addButton, track.locked && local.addButtonDisabled, pressed && local.addButtonPressed]}>
+                    <Icon name="plus" size={20} tint={colors.accent} />
+                </Pressable> : null}
             </View>)}
         </View>
         <ScrollView ref={scroller} horizontal scrollEnabled={scrollEnabled} style={local.scroller} contentContainerStyle={{ width, direction: 'ltr' }}
@@ -181,7 +188,7 @@ export function EditorTimeline({ timeline, selections, ppf, total, frame, playin
                         onStartShouldSetResponder={() => true} onResponderGrant={event => { emptyTap.current = { x: event.nativeEvent.locationX, page: event.nativeEvent.pageX, y: event.nativeEvent.pageY }; }}
                         onResponderTerminationRequest={() => true} onResponderTerminate={() => { emptyTap.current = null; }}
                         onResponderRelease={event => { const touch = emptyTap.current; if (touch && Math.hypot(event.nativeEvent.pageX - touch.page, event.nativeEvent.pageY - touch.y) < 8) seek(frameAtX(touch.x, ppf, total)); emptyTap.current = null; }}>
-                        {!items.length ? <View pointerEvents="none" style={styles.emptyTrack}><View style={styles.emptyTrackLine} /><Text style={styles.trackEmpty}>{t('editor.empty2')}</Text></View> : null}
+                        {!items.length ? <View pointerEvents="none" style={styles.emptyTrack}><View style={styles.emptyTrackLine} /><Text style={styles.trackEmpty}>{t('editorParity.tapPlusAddClip')}</Text></View> : null}
                         {items.map(item => {
                             const selection: Selection = { track: track.kind, id: item.id };
                             const active = selections.some(s => s.track === track.kind && s.id === item.id);
@@ -226,7 +233,8 @@ const local = StyleSheet.create({
     clipBody: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 }, clipText: { flexShrink: 1 },
     waveform: { position: 'absolute', left: 2, right: 2, top: 5, bottom: 5, flexDirection: 'row', alignItems: 'center', gap: 1, opacity: .45, overflow: 'hidden' },
     waveformBar: { flex: 1, minWidth: 1, maxWidth: 3, borderRadius: 1, backgroundColor: colors.text },
-    container: { flexDirection: 'row', direction: 'ltr' }, headers: { width: 92 }, header: { height: ROW, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 4, gap: 4 }, headerCopy: { flex: 1, minHeight: 44, justifyContent: 'center' }, muteButton: { width: 28, minHeight: 44, alignItems: 'center', justifyContent: 'center' }, muted: { opacity: .55 },
+    container: { flexDirection: 'row', direction: 'ltr' }, headers: { width: 116 }, header: { height: ROW, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 2, gap: 1 }, headerCopy: { flex: 1, minWidth: 0, minHeight: 44, justifyContent: 'center' }, muteButton: { width: 24, minHeight: 44, alignItems: 'center', justifyContent: 'center' }, muted: { opacity: .55 },
+    addButton: { width: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 22 }, addButtonDisabled: { opacity: .35 }, addButtonPressed: { backgroundColor: colors.accentSoft },
     scroller: { flex: 1 }, ruler: { height: 32 }, row: { height: ROW, borderTopWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
     tick: { position: 'absolute', top: 0, height: 32, borderLeftWidth: 1, borderColor: colors.border, paddingLeft: 3 },
     marker: { position: 'absolute', top: 22, width: 8, height: 8, backgroundColor: colors.accent, transform: [{ rotate: '45deg' }] },

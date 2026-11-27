@@ -5,6 +5,7 @@ import type { Project } from '../../lib/projects';
 import { studioColors as colors } from '../../theme';
 import { Icon, Text } from '../ui';
 import { SmartCutBatchQueue } from './SmartCutBatchQueue';
+import { t } from '../../lib/i18n';
 
 export function SmartCutBatchSheet({ visible, workspaceId, projects, router, onClose }: {
     readonly visible: boolean;
@@ -17,8 +18,8 @@ export function SmartCutBatchSheet({ visible, workspaceId, projects, router, onC
     return <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose} accessibilityViewIsModal>
         <View style={[styles.screen, { paddingTop: Math.max(12, insets.top) }]}>
             <View style={styles.header}>
-                <Pressable accessibilityRole="button" accessibilityLabel="Close Batch AI Edit" onPress={onClose} style={styles.close}><Icon name="close" size={24} tint={colors.text} /></Pressable>
-                <View style={styles.heading}><Text variant="title3">Batch AI Edit</Text><Text variant="caption" tone="secondary">Prepare several projects without crowding the editor.</Text></View>
+                <Pressable accessibilityRole="button" accessibilityLabel={t('editorParity.closeBatchAiEdit')} onPress={onClose} style={styles.close}><Icon name="close" size={24} tint={colors.text} /></Pressable>
+                <View style={styles.heading}><Text variant="title3">{t('editorParity.batchAiEdit')}</Text><Text variant="caption" tone="secondary">{t('editorParity.batchAiEditDescription')}</Text></View>
                 <View style={styles.close} />
             </View>
             <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]} keyboardShouldPersistTaps="handled">

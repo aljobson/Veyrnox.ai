@@ -1,0 +1,60 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+
+const sql = await readFile(new URL('../packages/db/schema/supabase/0622_editor_manual_commit_credits.sql', import.meta.url), 'utf8');
+const privilegeGuard = await readFile(new URL('../scripts/test-default-privileges.mjs', import.meta.url), 'utf8');
+const accountDeletionGuard = await readFile(new URL('../scripts/test-account-deletion.mjs', import.meta.url), 'utf8');
+const privacyExportGuard = await readFile(new URL('../scripts/test-privacy-export.mjs', import.meta.url), 'utf8');
+
+test('manual editor Save and Export share one server-derived five-credit receipt', () => {
+  assert.match(sql, /credits integer NOT NULL CHECK \(credits = 5\)/);
+  assert.match(sql, /private\.editor_manual_source_hashes\(p_content\)/);
+  assert.match(sql, /jsonb_array_elements_text\(r\.source_hashes\) paid_source/g);
+  assert.match(sql, /encode\(sha256\(convert_to\(r\.source_id,'UTF8'\)\),'hex'\) AS source_hash/);
+  assert.match(sql, /editor_manual_commit_project_idx[\s\S]*ON public\.editor_manual_commit_receipts\(project_id\)/);
+  assert.match(sql, /JOIN jsonb_each\(coalesce\(content#>'\{timeline,media\}'/);
+  assert.doesNotMatch(sql, /m\.media\?'(?:originalAudio|graphic)'/);
+  assert.match(sql, /public\.ledger_debit\(v_user_id,charge_key,5,'debit:editor_manual_commit','editor-manual-commit'/);
+  assert.match(sql, /UNIQUE\(user_id, project_id, source_fingerprint\)/);
+  assert.match(sql, /jsonb_array_length\(sources\)=0 OR covered THEN 0 ELSE 5/);
+});
+
+test('manual editor charge is atomic with document save and bypasses supplier-only admission', () => {
+  const debit = sql.indexOf('debit:=public.ledger_debit');
+  const save = sql.indexOf('saved:=private.save_project_document');
+  const receipt = sql.indexOf('INSERT INTO public.editor_manual_commit_receipts');
+  assert.ok(debit > 0 && save > debit && receipt > save);
+  assert.match(sql, /WHEN \(NEW\.model_id<>'editor-manual-commit'\).*enforce_user_inflight_on_job/s);
+  assert.match(sql, /WHEN \(NEW\.model_id<>'editor-manual-commit'\).*enforce_provider_spend_on_job/s);
+  assert.match(sql, /user_id=p_user_id AND model_id<>'editor-manual-commit'/);
+  assert.match(sql, /p_expected_credits IS NULL OR p_expected_credits NOT IN \(0,5\)/);
+  assert.doesNotMatch(sql, /ledger_refund/);
+});
+
+test('ambiguous paid responses reconcile by exact idempotency key', () => {
+  assert.match(sql, /private\.manual_editor_commit_status\(p_project uuid,p_request_key text\)/);
+  assert.match(sql, /v\.project_id=p_project AND v\.actor_id=actor AND v\.request_key=p_request_key/);
+});
+
+test('the synchronous debit job is hidden from Library and push completion', () => {
+  assert.match(sql, /UPDATE public\.jobs SET state='STORED',provider='local',deleted_at=now\(\),updated_at=now\(\)/);
+});
+
+test('authenticated manual editor wrappers and checked implementations are explicitly allowlisted', () => {
+  for (const signature of [
+    'public.quote_manual_editor_commit(uuid,jsonb)',
+    'public.save_paid_project_document(uuid,integer,jsonb,text,integer)',
+    'public.manual_editor_commit_status(uuid,text)',
+    'private.quote_manual_editor_commit(uuid,jsonb)',
+    'private.save_paid_project_document(uuid,integer,jsonb,text,integer)',
+    'private.manual_editor_commit_status(uuid,text)',
+  ]) assert.match(privilegeGuard, new RegExp(signature.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+});
+
+test('manual editor receipts retain only hashed source coverage and are classified for erasure policy', () => {
+  assert.doesNotMatch(sql, /source_ids/);
+  assert.match(sql, /source_hashes jsonb NOT NULL/);
+  assert.match(accountDeletionGuard, /'editor_manual_commit_receipts'.*source identifiers are retained only as SHA-256 hashes/);
+  assert.match(privacyExportGuard, /Content-free manual-editor debit\/coverage tombstone; imported source identities are retained only as SHA-256 hashes\.[\s\S]*'editor_manual_commit_receipts'/);
+});

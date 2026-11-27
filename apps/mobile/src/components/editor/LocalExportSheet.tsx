@@ -20,11 +20,11 @@ import { useAnnouncement } from '../../lib/useAnnouncement';
 import { ExportFootagePreview } from './ExportFootagePreview';
 
 type Props = { visible: boolean; api: Pick<ApiClient, 'request'>; account: string; projectId: string; revision: number; timeline: Timeline; canvas: Canvas;
-    localMediaUris: Readonly<Record<string, string>>; onClose(): void; onCloud(): void };
-type Phase = 'idle' | 'exporting' | 'done' | 'error';
+    localMediaUris: Readonly<Record<string, string>>; onClose(): void; onCloud(): void; onPrepare(): Promise<number | null | 'failed'>; onCommit(credits: number): Promise<number | null> };
+type Phase = 'idle' | 'exporting' | 'verifying' | 'done' | 'error';
 type Output = 'video' | 'audio';
 type ExportArtifact = Extract<EditorLocalExportResult, { ok: true }>['artifact'] | Extract<EditorAudioExportResult, { ok: true }>['artifact'];
-type ExportError = EditorExportSourceFailureCode | 'invalid-timeline' | 'unsupported-frame' | 'native-media' | 'write-failed' | 'save-permission' | 'save-failed' | 'share-unavailable';
+type ExportError = EditorExportSourceFailureCode | 'invalid-timeline' | 'unsupported-frame' | 'native-media' | 'write-failed' | 'save-permission' | 'save-failed' | 'share-unavailable' | 'credit-check-failed' | 'credit-failed';
 export const localExportDimensions = (canvas: Canvas) => canvasPixelSize(canvas.aspect_ratio, canvas.aspect_ratio === '1:1' ? 960 : 1280,
     canvas.aspect_ratio === '1:1' ? 960 : 1280);
 const MAX_LOCAL_EXPORT_PIXELS = 1280 * 720;
@@ -65,7 +65,7 @@ export async function saveLocalExportToPhotos(uri: string, isCurrent: () => bool
 }
 export const localExportInterruptedState = (taskCurrent: boolean, aborted: boolean): { phase: Phase; error: ExportError | null } =>
     !taskCurrent ? { phase: 'error', error: 'stale' } : aborted ? { phase: 'idle', error: null } : { phase: 'error', error: 'write-failed' };
-export function LocalExportSheet({ visible, api, account, projectId, revision, timeline, canvas, localMediaUris, onClose, onCloud }: Props) {
+export function LocalExportSheet({ visible, api, account, projectId, revision, timeline, canvas, localMediaUris, onClose, onCloud, onPrepare, onCommit }: Props) {
     const insets = useOptionalSafeAreaInsets();
     const beginSessionTask = useSessionTask();
     const [phase, setPhase] = useState<Phase>('idle'), [error, setError] = useState<ExportError | null>(null);
@@ -74,7 +74,7 @@ export function LocalExportSheet({ visible, api, account, projectId, revision, t
     const [quality, setQuality] = useState<LocalExportQuality>('standard'), [codec, setCodec] = useState<LocalExportCodec>('h264');
     const [resolution, setResolution] = useState<LocalExportResolution>('1080p');
     const [frameRate, setFrameRate] = useState<LocalExportFrameRate>([24, 25, 30, 60].includes(timeline.fps) ? timeline.fps as LocalExportFrameRate : 30);
-    const [autoSave, setAutoSave] = useState(true), [saved, setSaved] = useState(false), [saving, setSaving] = useState(false);
+    const [autoSave, setAutoSave] = useState(true), [saved, setSaved] = useState(false), [saving, setSaving] = useState(false), [confirming, setConfirming] = useState(false);
     const exportIdentity = `${projectId}:${revision}`;
     const controller = useRef<AbortController | null>(null), mounted = useRef(true), latestArtifact = useRef(artifact), lastIdentity = useRef(exportIdentity), saveToken = useRef(0); latestArtifact.current = artifact;
     const releaseArtifact = (value: ExportArtifact) => value.kind === 'wav' ? Promise.resolve(releaseWavArtifact(value))
@@ -88,10 +88,16 @@ export function LocalExportSheet({ visible, api, account, projectId, revision, t
         const value = latestArtifact.current; latestArtifact.current = null; if (value) void releaseArtifact(value);
         setArtifact(null); setError(null); setProgress(null); setSaved(false); setSaving(false); setPhase('idle');
     }, [exportIdentity, projectId]);
-    const close = () => { if (phase !== 'exporting' && !saving) onClose(); };
+    const close = () => { if (phase !== 'exporting' && phase !== 'verifying' && !saving && !confirming) onClose(); };
     const start = async () => {
-        if (controller.current) return;
+        if (controller.current || confirming) return;
         if (output === 'video' && resolution === '4k') { onCloud(); return; }
+        setConfirming(true);
+        const expectedCredits = await onPrepare().catch(() => null);
+        if (!mounted.current) return;
+        setConfirming(false);
+        if (expectedCredits === 'failed') { setError('credit-check-failed'); setPhase('error'); return; }
+        if (expectedCredits === null) return;
         const frozen = JSON.parse(JSON.stringify(timeline)) as Timeline, abort = new AbortController(), task = beginSessionTask(); controller.current = abort;
         if (artifact) await releaseArtifact(artifact).catch(() => undefined);
         setArtifact(null); setError(null); setProgress(null); setSaved(false); setSaving(false); setPhase('exporting');
@@ -130,6 +136,18 @@ export function LocalExportSheet({ visible, api, account, projectId, revision, t
         }
         const result = prepared.value;
         if (result.ok) {
+            setPhase('verifying'); setProgress(null);
+            const committedRevision = await onCommit(expectedCredits).catch(() => null);
+            if (!mounted.current || controller.current !== null || !task.current()) {
+                await releaseArtifact(result.artifact); return;
+            }
+            if (committedRevision === null) {
+                await releaseArtifact(result.artifact); setError('credit-failed'); setPhase('error'); setProgress(null); return;
+            }
+            // The paid commit advances the server revision. Adopt that identity before
+            // React delivers the new prop so the freshly rendered artifact is not
+            // mistaken for output from a stale edit and released by the identity effect.
+            lastIdentity.current = `${projectId}:${committedRevision}`;
             latestArtifact.current = result.artifact; setArtifact(result.artifact); setPhase('done');
             if (autoSave && result.artifact.kind === 'mp4') {
                 const token = ++saveToken.current; setSaving(true);
@@ -158,6 +176,7 @@ export function LocalExportSheet({ visible, api, account, projectId, revision, t
     const value = Math.round((progress?.value ?? 0) * 100), messageKey = error ? `editorLocalExport.${error}` as Parameters<typeof t>[0] : null;
     const announcedValue = Math.floor(value / 10) * 10, totalFrames = progress?.frames ?? editorLocalExportFrameCount(timeline, frameRate);
     const announcement = messageKey ? t(messageKey) : phase === 'done' && artifact ? t('editorLocalExport.done', { size: formatNumber(artifact.size / 1_000_000, 1) })
+        : phase === 'verifying' ? t('editorLocalExport.verifying')
         : phase === 'exporting' ? `${t(`editorLocalExport.${progress?.stage ?? 'preparing'}` as Parameters<typeof t>[0])}. ${t('editorLocalExport.progress', {
             percent: announcedValue, frame: Math.round(totalFrames * announcedValue / 100), total: totalFrames,
         })}` : null;
@@ -171,14 +190,15 @@ export function LocalExportSheet({ visible, api, account, projectId, revision, t
             <View accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: 100, now: value }} style={styles.track}><View style={[styles.fill, { width: `${value}%` }]} /></View>
             <Text style={styles.text}>{t('editorLocalExport.progress', { percent: value, frame: progress?.frame ?? 0, total: progress?.frames ?? editorLocalExportFrameCount(timeline, frameRate) })}</Text>
             <Button label={t('editorScenes.cancel')} onPress={() => controller.current?.abort()} /></> : null}
+        {phase === 'verifying' ? <Text style={styles.text}>{t('editorLocalExport.verifying')}</Text> : null}
         {messageKey ? <Text style={styles.error}>{t(messageKey)}</Text> : null}
-        {phase === 'idle' || phase === 'error' ? <><View style={styles.readyCard}><View style={styles.readyIcon}><Text style={styles.readyIconText}>{output === 'audio' ? '♫' : '▣'}</Text></View><View style={{ flex: 1 }}><Text style={styles.readyTitle}>Ready to export</Text><Text style={styles.readyMeta}>{output === 'audio' ? `WAV · 48 kHz · ~${formatNumber(estimatedLocalAudioBytes(timeline) / 1_000_000, 1)} MB` : `${selectedLocalExportDimensions(canvas, resolution).width}×${selectedLocalExportDimensions(canvas, resolution).height} · ${frameRate} FPS · ~${formatNumber(estimatedLocalExportBytes(timeline, quality) / 1_000_000, 1)} MB`}</Text></View></View>
-            <Text style={styles.label}>Output</Text><View accessibilityRole="radiogroup" accessibilityLabel="Output" style={styles.outputSegment}>{(['video', 'audio'] as const).map(value => <Pressable key={value} accessibilityRole="radio" accessibilityLabel={value === 'video' ? 'Video' : 'Audio Only'} accessibilityState={{ checked: output === value }} onPress={() => setOutput(value)} style={[styles.outputChoice, output === value && styles.outputSelected]}><Text style={output === value ? styles.outputSelectedText : styles.outputChoiceText}>{value === 'video' ? 'Video' : 'Audio Only'}</Text></Pressable>)}</View>
-            {output === 'video' ? <><Text style={styles.label}>Resolution</Text>
-            <View accessibilityRole="radiogroup" accessibilityLabel="Resolution" style={styles.row}>{(['720p', '1080p', '4k'] as const).map(value => <Pressable key={value} accessibilityRole="radio" accessibilityLabel={value === '4k' ? '4K' : value.toUpperCase()} accessibilityState={{ checked: resolution === value }} onPress={() => setResolution(value)} style={[styles.choice, resolution === value && styles.choiceSelected]}><Text style={styles.text}>{value === '4k' ? '4K' : value.toUpperCase()}</Text></Pressable>)}</View>
-            {resolution === '4k' ? <Text style={styles.help}>4K uses the cloud renderer. You can review any credit cost before confirming.</Text> : null}
-            <Text style={styles.label}>Frame Rate</Text>
-            <View accessibilityRole="radiogroup" accessibilityLabel="Frame Rate" style={styles.row}>{([24, 25, 30, 60] as const).map(value => <Pressable key={value} accessibilityRole="radio" accessibilityLabel={`${value} FPS`} accessibilityState={{ checked: frameRate === value }} onPress={() => setFrameRate(value)} style={[styles.choice, frameRate === value && styles.choiceSelected]}><Text style={styles.text}>{value}</Text></Pressable>)}</View>
+        {phase === 'idle' || phase === 'error' ? <><View style={styles.readyCard}><View style={styles.readyIcon}><Text style={styles.readyIconText}>{output === 'audio' ? '♫' : '▣'}</Text></View><View style={{ flex: 1 }}><Text style={styles.readyTitle}>{t('editorParity.readyToExport')}</Text><Text style={styles.readyMeta}>{output === 'audio' ? t('editorParity.audioExportMeta', { size: formatNumber(estimatedLocalAudioBytes(timeline) / 1_000_000, 1) }) : t('editorParity.videoExportMeta', { width: selectedLocalExportDimensions(canvas, resolution).width, height: selectedLocalExportDimensions(canvas, resolution).height, fps: frameRate, size: formatNumber(estimatedLocalExportBytes(timeline, quality) / 1_000_000, 1) })}</Text></View></View>
+            <Text style={styles.label}>{t('editorParity.output')}</Text><View accessibilityRole="radiogroup" accessibilityLabel={t('editorParity.output')} style={styles.outputSegment}>{(['video', 'audio'] as const).map(value => <Pressable key={value} accessibilityRole="radio" accessibilityLabel={t(value === 'video' ? 'editorSimple.video' : 'editorParity.audioOnly')} accessibilityState={{ checked: output === value }} onPress={() => setOutput(value)} style={[styles.outputChoice, output === value && styles.outputSelected]}><Text style={output === value ? styles.outputSelectedText : styles.outputChoiceText}>{t(value === 'video' ? 'editorSimple.video' : 'editorParity.audioOnly')}</Text></Pressable>)}</View>
+            {output === 'video' ? <><Text style={styles.label}>{t('editorParity.resolution')}</Text>
+            <View accessibilityRole="radiogroup" accessibilityLabel={t('editorParity.resolution')} style={styles.row}>{(['720p', '1080p', '4k'] as const).map(value => <Pressable key={value} accessibilityRole="radio" accessibilityLabel={value === '4k' ? t('editorParity.fourK') : value.toUpperCase()} accessibilityState={{ checked: resolution === value }} onPress={() => setResolution(value)} style={[styles.choice, resolution === value && styles.choiceSelected]}><Text style={styles.text}>{value === '4k' ? t('editorParity.fourK') : value.toUpperCase()}</Text></Pressable>)}</View>
+            {resolution === '4k' ? <Text style={styles.help}>{t('editorParity.fourKHelp')}</Text> : null}
+            <Text style={styles.label}>{t('editorParity.frameRate')}</Text>
+            <View accessibilityRole="radiogroup" accessibilityLabel={t('editorParity.frameRate')} style={styles.row}>{([24, 25, 30, 60] as const).map(value => <Pressable key={value} accessibilityRole="radio" accessibilityLabel={t('editorParity.fps', { n: value })} accessibilityState={{ checked: frameRate === value }} onPress={() => setFrameRate(value)} style={[styles.choice, frameRate === value && styles.choiceSelected]}><Text style={styles.text}>{value}</Text></Pressable>)}</View>
             <Text style={styles.label}>{t('editorLocalExport.quality')}</Text>
             <View accessibilityRole="radiogroup" accessibilityLabel={rawText(t('editorLocalExport.quality'))} style={styles.row}>{(['compact', 'standard', 'high'] as const).map(value => <Pressable key={value} accessibilityRole="radio"
                 accessibilityLabel={rawText(t(`editorLocalExport.quality.${value}` as Parameters<typeof t>[0]))} accessibilityState={{ checked: quality === value }} onPress={() => setQuality(value)} style={[styles.choice, quality === value && styles.choiceSelected]}>
@@ -191,13 +211,13 @@ export function LocalExportSheet({ visible, api, account, projectId, revision, t
             <Text style={styles.text}>{t(codec === 'hevc' ? 'editorLocalExport.codec.hevcHelp' : 'editorLocalExport.codec.h264Help')}</Text>
             <Text style={styles.text}>{t('editorLocalExport.estimate', { size: formatNumber(estimatedLocalExportBytes(timeline, quality) / 1_000_000, 1) })}</Text>
             <View style={styles.switchRow}><Text style={styles.text}>{t('editorLocalExport.autoSave')}</Text><Switch accessibilityLabel={rawText(t('editorLocalExport.autoSave'))}
-                value={autoSave} onValueChange={setAutoSave} /></View></> : <Text style={styles.help}>Exports the complete mixed soundtrack as a 48 kHz WAV file, ready to save or share.</Text>}
-            <Button label={output === 'video' && resolution === '4k' ? 'Continue to 4K Export' : output === 'audio' ? 'Export Audio' : t('editorLocalExport.start')} onPress={() => void start()} /></> : null}
+                value={autoSave} onValueChange={setAutoSave} /></View></> : <Text style={styles.help}>{t('editorParity.audioExportHelp')}</Text>}
+            <Button label={output === 'video' && resolution === '4k' ? t('editorParity.continueFourK') : output === 'audio' ? t('editorParity.exportAudio') : t('editorLocalExport.start')} disabled={confirming} onPress={() => void start()} /></> : null}
         {phase === 'done' && artifact ? <><Text style={styles.text}>{t('editorLocalExport.done', { size: formatNumber(artifact.size / 1_000_000, 1) })}</Text>
             {artifact.kind === 'mp4' ? saving ? <Text style={styles.text}>{t('editorLocalExport.saving')}</Text> : saved ? <Text style={styles.text}>{t('editorLocalExport.saved')}</Text>
-                : <Button label={t('editorLocalExport.save')} onPress={() => void save()} /> : <Text style={styles.help}>Use Share to save the WAV to Files or send it to another audio app.</Text>}
+                : <Button label={t('editorLocalExport.save')} onPress={() => void save()} /> : <Text style={styles.help}>{t('editorParity.shareWavHelp')}</Text>}
             <Button label={t('editorServerExport.share')} disabled={saving} onPress={() => void share()} /></> : null}
-        {phase !== 'exporting' && !saving ? <Button label={t('editorLocalExport.cloud')} onPress={onCloud} /> : null}<Button label={t('editorServerExport.close')} disabled={phase === 'exporting' || saving} onPress={close} />
+        {phase !== 'exporting' && phase !== 'verifying' && !saving ? <Button label={t('editorLocalExport.cloud')} disabled={confirming} onPress={onCloud} /> : null}<Button label={t('editorServerExport.close')} disabled={phase === 'exporting' || phase === 'verifying' || saving || confirming} onPress={close} />
         </ScrollView></View></Modal>;
 }
 function Button({ label, disabled = false, onPress }: { label: string; disabled?: boolean; onPress(): void }) { return <Pressable accessibilityRole="button" accessibilityLabel={rawText(label)}
