@@ -35,6 +35,9 @@ const isFalControls = (v: unknown): boolean => isRecord(v)
     && (v.instrumental === 'optional' || v.instrumental === 'required')
     && isDuration(v.duration_seconds)
     && (v.duration_price_block_seconds === undefined || (isFiniteNumber(v.duration_price_block_seconds) && v.duration_price_block_seconds > 0));
+const isSunoModelLabels = (v: unknown, allowed: readonly unknown[]): boolean => v === undefined || (isRecord(v)
+    && Object.entries(v).every(([key, value]) => allowed.includes(key) && str(value)
+        && value.trim().length > 0 && Array.from(value).length <= 40));
 const isSunoControls = (v: unknown): boolean => isRecord(v)
     && all(v, ['description', 'style_influence', 'exclude_styles', 'tempo_key_meter', 'lyrics', 'styles', 'weirdness'], bool)
     && (v.instrumental === 'optional' || v.instrumental === 'required')
@@ -42,6 +45,7 @@ const isSunoControls = (v: unknown): boolean => isRecord(v)
     && (v.lyrics_required_for_custom_vocal === undefined || bool(v.lyrics_required_for_custom_vocal))
     && Array.isArray(v.variety) && v.variety.every(str)
     && Array.isArray(v.suno_model) && v.suno_model.length > 0 && v.suno_model.every(x => sunoModels.includes(x as string))
+    && isSunoModelLabels(v.suno_model_labels, v.suno_model)
     && Array.isArray(v.vocal_gender) && v.vocal_gender.every(x => genders.includes(x as string))
     && (v.duration_seconds === null || isDuration(v.duration_seconds));
 

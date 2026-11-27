@@ -29,6 +29,7 @@ export const crunControls = {
     exclude_styles: true, tempo_key_meter: false, duration_seconds: { min: 1, max: 135, default: 60, custom_only: true },
     lyrics: true, lyrics_required_for_custom_vocal: true, styles: true, title: true,
     vocal_gender: ['auto', 'male', 'female'] as const, suno_model: ['v6', 'v6_mini', 'v6_wild'] as const,
+    suno_model_labels: { v6: 'Balanced', v6_mini: 'Fast', v6_wild: 'Creative' },
     weirdness: true, instrumental: 'optional' as const,
 };
 export const crunLimits = { prompt: 500, title: 80, lyrics: 5000, styles: 1000, exclude_styles: 1000,
@@ -36,11 +37,12 @@ export const crunLimits = { prompt: 500, title: 80, lyrics: 5000, styles: 1000, 
     variety: { min: 0, max: 100, provider_min: 0, provider_max: 4 }, style_weight: { min: 0, max: 1 }, weirdness: { min: 0, max: 1 } };
 export const crunCounters = { prompt: { max: 500 }, title: { max: 80 }, lyrics: { max: 5000 }, styles: { max: 1000 }, exclude_styles: { max: 1000, applied: 200 } };
 export const crunEntitlements: MusicEntitlements = { ...entitlements,
-    models: [{ ...entitlements.models[0], provider_contract: 'crun-suno-v1', controls: { ...crunControls,
+    models: [{ ...entitlements.models[0], name: 'Veyrnox Music', provider_contract: 'crun-suno-v1', controls: { ...crunControls,
         duration_seconds: null, lyrics: false, lyrics_required_for_custom_vocal: false, styles: false, title: false, weirdness: false,
-        variety: [], style_influence: false, exclude_styles: false, vocal_gender: [], suno_model: ['v6'], instrumental: 'required' },
+        variety: [], style_influence: false, exclude_styles: false, vocal_gender: [], suno_model: ['v6'],
+        suno_model_labels: { v6: 'Balanced' }, instrumental: 'required' },
         limits: crunLimits, counters: crunCounters, credits_per_candidate: 4, total_credits: 8 },
-    { ...entitlements.models[1], provider_contract: 'crun-suno-v1', controls: crunControls, limits: crunLimits,
+    { ...entitlements.models[1], name: 'Veyrnox Music Pro', provider_contract: 'crun-suno-v1', controls: crunControls, limits: crunLimits,
         counters: crunCounters, credits_per_candidate: 4, total_credits: 8 }],
     custom_drafts: { ...entitlements.custom_drafts, provider_contract: 'crun-suno-v1', lyrics_max: 5000, styles_max: 1000 } };
 export const crunDraft: MusicDraft = { ...draft, id: JOB, provider_contract: 'crun-suno-v1' };
