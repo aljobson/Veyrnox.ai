@@ -51,7 +51,7 @@ describe('music voice state-change idempotency', { skip: !DATABASE_URL && 'DATAB
       if (!(await one("SELECT to_regclass('public.evidence_holds') IS NOT NULL AS ready")).ready) {
         await client.query('CREATE TABLE public.evidence_holds (r2_key TEXT, released_at TIMESTAMPTZ)');
       }
-      const sql = (await readFile(new URL('./schema/supabase/0622_music_voice_verification.sql', import.meta.url), 'utf8'))
+      const sql = (await readFile(new URL('./schema/supabase/0623_music_voice_verification.sql', import.meta.url), 'utf8'))
         .replace(/^BEGIN;\s*$/m, '').replace(/^COMMIT;\s*$/m, '');
       await client.query(sql);
     }
