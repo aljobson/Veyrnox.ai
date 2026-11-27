@@ -47,14 +47,14 @@ describe('development mock parity', () => {
         expect(source).toContain("created: Date.now() - 20_000");
     });
 
-    test('keeps native Music fixture-only and generation-safe', () => {
+    test('keeps the native Music contract and Lyricist reply fixture', () => {
         expect(source).toContain('Development-only native Music contract');
         expect(source).toContain('body.revision !== state.musicDraft.revision');
         expect(source).toContain('features: { albums: false, inspiration: false, studioChat: false, dailyChallenge: false, persistentQueue: false }');
         expect(source).toContain("requestText.includes('BEGIN REVISED LYRICS')");
         expect(source).toContain("requestText.includes('END REVISED LYRICS')");
         expect(source).not.toContain("path === '/api/v1/music/quote'");
-        expect(source).not.toContain("path === '/api/v1/music/generations'");
+        expect(source).toContain("path === '/api/v1/music/generations'");
     });
 });
 

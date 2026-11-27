@@ -19,6 +19,7 @@ import { frameLayers, resolvePictures, paintFrame, timelineSize } from './editor
 export { EXPORT_HEIGHTS, outputSize } from './editorRender.mjs';
 import { usesWebKit, canEncodeSafariVideo, createSafariCanvasSource } from './editorSafariEncoder.mjs';
 import { createSafariAudioSource } from './editorSafariAudio.mjs';
+import { addVideoFrameWithTimeout } from './editorExportEncoder.mjs';
 
 import { sequenceTransitionAfter } from './editorSequence.mjs';
 import { SAMPLE_RATE, mixAudio } from './editorAudio.mjs';
@@ -65,7 +66,7 @@ export async function exportBlocker(size = { width: 1280, height: 720 }, options
  * Render the timeline to an MP4 Blob. `blobs` maps media id to the file's bytes. `onProgress({ stage, done, total })`.
  * Rejects with an AbortError when `signal` aborts; any partial output is discarded.
  */
-export async function exportTimeline(tl, blobs, { signal = new AbortController().signal, height = 720, frameRate = 30, format = 'mp4', quality = 'standard', bitrate = EXPORT_BITRATES[quality], fitMode = 'contain', onProgress = () => {}, onPreview = null } = {}) {
+export async function exportTimeline(tl, blobs, { signal = new AbortController().signal, height = 720, frameRate = 30, format = 'mp4', quality = 'standard', bitrate = EXPORT_BITRATES[quality], fitMode = 'contain', hardwareAcceleration = 'prefer-software', videoFrameTimeoutMs = 30000, onProgress = () => {}, onPreview = null } = {}) {
     if (signal.aborted) throw abortError();
     if(!Number.isFinite(bitrate)||bitrate<128000||bitrate>32000000)throw new Error('Choose a supported video bitrate.');
     const total = totalFrames(tl);
@@ -73,6 +74,7 @@ export async function exportTimeline(tl, blobs, { signal = new AbortController()
     const settingsProblem = validateExportSettings({ height, frameRate, format, quality }, total / FPS);
     if (settingsProblem) throw new Error(settingsProblem);
     if (!['contain', 'cover'].includes(fitMode)) throw new Error('Choose valid frame fitting.');
+    if (!['no-preference', 'prefer-hardware', 'prefer-software'].includes(hardwareAcceleration)) throw new Error('Choose valid video encoder acceleration.');
     const memoryProblem = exportMemoryProblem(tl, height, quality, bitrate); if (memoryProblem) throw new Error(memoryProblem);
     const outputFrames = Math.ceil(total / FPS * frameRate);
     const { width: W, height: H } = timelineSize(tl, height);
@@ -112,7 +114,7 @@ export async function exportTimeline(tl, blobs, { signal = new AbortController()
         const mix = await mixAudio(tl, inputs, Math.ceil(total / FPS * SAMPLE_RATE), signal);
 
         output = new Output({ format: format === 'mov' ? new MovOutputFormat({ fastStart: 'in-memory' }) : new Mp4OutputFormat({ fastStart: 'in-memory' }), target: new BufferTarget() });
-        video = usesWebKit() ? await createSafariCanvasSource(canvas, { frameRate, bitrate, signal }) : new CanvasSource(canvas, { codec: 'avc', quality: new Quality({ bitrate }), keyFrameInterval: 2, hardwareAcceleration: 'prefer-software' });
+        video = usesWebKit() ? await createSafariCanvasSource(canvas, { frameRate, bitrate, signal }) : new CanvasSource(canvas, { codec: 'avc', quality: new Quality({ bitrate }), keyFrameInterval: 2, hardwareAcceleration });
         output.addVideoTrack(video.source || video, { frameRate });
         audio = mix ? (usesWebKit() ? await createSafariAudioSource({ samples: mix.length, signal }) : new AudioBufferSource({ codec: 'aac', bitrate: 128000 })) : null;
         if (audio) output.addAudioTrack(audio.source || audio);
@@ -145,7 +147,10 @@ export async function exportTimeline(tl, blobs, { signal = new AbortController()
                 const until = entry.start + entry.clip.len + (tl.schemaVersion === 3 ? sequenceTransitionAfter(tl, entry.clip) : effectiveTransition(tl, k + 1));
                 if (!retired.has(k) && (i + 1) / frameRate * FPS >= until) { await readers[k].close(); retired.add(k); }
             }
-            await video.add(i / frameRate, Math.min(1 / frameRate, total / FPS - i / frameRate));
+            await addVideoFrameWithTimeout(
+                () => video.add(i / frameRate, Math.min(1 / frameRate, total / FPS - i / frameRate)),
+                { signal, timeoutMs: videoFrameTimeoutMs },
+            );
             if ((i + 1) % frameRate === 0) { await flush(Math.floor((i + 1) / frameRate * SAMPLE_RATE)); onProgress({ stage: 'encode', done: i + 1, total: outputFrames }); }
         }
         await flush(mix ? mix.length : 0);

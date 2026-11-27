@@ -2,7 +2,8 @@ import { act, type ComponentProps } from 'react';
 import { createRoot, type Root } from 'test-renderer';
 import * as RN from 'react-native';
 import { BeatSongLibrarySheet } from '../src/components/beats/BeatSongLibrarySheet';
-import { BeatSongLibraryError, type BeatLibrarySong, type BeatSongLibrarySession } from '../src/lib/beatNative/songLibrary';
+import { BeatEditorTransport } from '../src/components/beats/BeatEditorTransport';
+import { BeatSongLibraryError, type BeatLibrarySong, type BeatSongLibrarySession, type PreparedRemoteSong } from '../src/lib/beatNative/songLibrary';
 import { position } from '../src/lib/beatNative/regionActions';
 import { setLocaleFromDevice, t } from '../src/lib/i18n';
 import type { AudioAsset } from '../src/lib/beatNative/labs';
@@ -89,6 +90,60 @@ test.each(['compact', 'accessible'] as const)('%s is an exact one-column layout 
     expect(control(first.name)).toBeUndefined();
 });
 
+test('inline mode stays in one bounded dock workspace even at regular width', async () => {
+    await render(props({ layout: 'regular', inline: true }));
+    expect(node('beat-song-library-inline')).toBeDefined();
+    expect(node('beat-song-library-layout-inline')).toBeDefined();
+    expect(node('beat-song-library-detail-pane')).toBeUndefined();
+    expect(node('beat-song-library-back')).toBeDefined();
+    expect(root.container.queryAll(item => item.props.transparent && item.props.presentationStyle === 'overFullScreen')).toHaveLength(0);
+});
+
+test('focused compact inline mode uses one horizontal rail so Back, Search, status, Retry and rows cannot be vertically clipped', async () => {
+    await render(props({ inline: true, compact: true }));
+    expect(RN.StyleSheet.flatten(node('beat-song-library-inline').props.style).height).toBe('100%');
+    expect(node('beat-song-library-compact-rail').props.horizontal).toBe(true);
+    expect(node('beat-song-library-back')).toBeDefined();
+    expect(field()).toBeDefined();
+    expect(RN.StyleSheet.flatten(node(`beat-song-library-row-${first.id}`).props.style).minHeight).toBe(44);
+});
+
+test('real compact Library remains horizontally reachable inside a 71pt keyboard transport tray', async () => {
+    const keyboardCallbacks: Record<string, (event?: any) => void> = {};
+    const keyboardSpy = jest.spyOn(RN.Keyboard, 'addListener').mockImplementation(((event: string, callback: (event?: any) => void) => {
+        keyboardCallbacks[event] = callback;
+        return { remove: jest.fn() };
+    }) as typeof RN.Keyboard.addListener);
+    const library = props({ inline: true, compact: true });
+    await act(async () => {
+        root.render(<BeatEditorTransport playing={false} starting={false} locked={false} availableHeight={160} compactViewport
+            showPatterns={false} showHistory={false} pattern="A" patternDisabled={false} canUndo canRedo
+            onPattern={jest.fn()} onPatternControls={jest.fn()} onUndo={jest.fn()} onRedo={jest.fn()} onPlay={jest.fn()}
+            onMixer={jest.fn()} subMenuFillsBudget subMenuLabel={t('beat.library.open')}
+            subMenu={<BeatSongLibrarySheet {...library} />} />);
+        await Promise.resolve();
+    });
+    await act(async () => keyboardCallbacks.keyboardWillShow?.({ endCoordinates: { height: 200 } }));
+    const viewport = node('beat-editor-submenu-viewport');
+    expect(RN.StyleSheet.flatten(viewport.props.style).height).toBe(71);
+    expect(node('beat-song-library-compact-rail').props.horizontal).toBe(true);
+    expect(node(`beat-song-library-row-${first.id}`)).toBeDefined();
+    keyboardSpy.mockRestore();
+});
+
+test('compact rail keeps a retryable loading failure in the same reachable row', async () => {
+    mockSession.list.mockRejectedValueOnce(new BeatSongLibraryError('offline'));
+    await render(props({ inline: true, compact: true }));
+    expect(node('beat-song-library-compact-rail').props.horizontal).toBe(true);
+    expect(node('beat-song-library-retry')).toBeDefined();
+    expect(status()).toBe(t('beat.library.error.offline'));
+});
+
+test('a locked inline Library explains the actual editor lock instead of a generic read-only state', async () => {
+    await render(props({ inline: true, disabled: true, disabledReason: 'Finish replacing the current take.' }));
+    expect(node('beat-song-library-read-only').props.children).toBe('Finish replacing the current take.');
+});
+
 test('regular layout keeps list then detail in logical order and never introduces horizontal scrolling', async () => {
     await render(props({ layout: 'regular' }));
     const layout = node('beat-song-library-layout-regular');
@@ -170,6 +225,26 @@ test('Add captures placement, rechecks the session, commits once, and leaves suc
     expect(onCommit).toHaveBeenCalledWith(asset, { start: 960, trackId: 'audio-track' });
     expect(RN.AccessibilityInfo.announceForAccessibility).not.toHaveBeenCalledWith(t('beat.library.added', { name: first.name, position: position(960) }));
     expect(onClose).toHaveBeenCalledTimes(1);
+});
+
+test('a lock change aborts an in-flight Add and publishes a recoverable inline status', async () => {
+    let finish!: (value: PreparedRemoteSong) => void;
+    mockSession.prepare.mockImplementationOnce((_item, signal) => new Promise(resolve => {
+        expect(signal.aborted).toBe(false); finish = resolve;
+    }));
+    const onCommit = jest.fn(() => true);
+    const input = props({ onCommit });
+    await render(input);
+    await act(async () => { void (control(t('beat.library.addNamed', { name: first.name, position: position(960) })).props.onClick
+        ?? control(t('beat.library.addNamed', { name: first.name, position: position(960) })).props.onPress)({ nativeEvent: {} }); });
+    const signal = mockSession.prepare.mock.calls[0][1];
+    expect(status()).toBe(t('beat.library.adding', { name: first.name, position: position(960) }));
+    await rerender({ ...input, disabled: true });
+    expect(signal.aborted).toBe(true);
+    expect(status()).toBe(t('beat.library.addRefused'));
+    expect(node('beat-song-library-read-only')).toBeDefined();
+    await act(async () => finish({ asset, buffer: { numberOfChannels: 2, sampleRate: 48000, length: 576000 } }));
+    expect(onCommit).not.toHaveBeenCalled();
 });
 
 test('refused Add remains recoverable and initial typed errors render exact copy and Retry policy', async () => {

@@ -4302,6 +4302,12 @@
     "ratio": 1.8
   },
   {
+    "id": "beatMix.dock.mix",
+    "english": "Mix",
+    "translation": "Mezcla",
+    "ratio": 2
+  },
+  {
     "id": "beatMix.master.room",
     "english": "Reverb room size",
     "translation": "Tamaño de sala de reverberación",

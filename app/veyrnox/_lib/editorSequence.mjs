@@ -123,7 +123,7 @@ export function duplicateSequence(tl, selection) {
     const { track: kind, id } = selection || {};
     const item = editable(tl, kind, id); if (item.error) return item;
     const seq = tl.seq + 1;
-    return checked({ ...tl, seq, [kind]: [...tl[kind], { ...item, id: `${kind[0]}${seq}`, start: item.start + item.len }] });
+    return checked({ ...tl, seq, [kind]: [...tl[kind], { ...item, id: `${kind[0]}${seq}`, start: sequenceEnd(tl) }] });
 }
 export function addSequenceTrack(tl, kind) {
     if (!['video', 'audio', 'text'].includes(kind)) return error('Choose video, audio or text.');
