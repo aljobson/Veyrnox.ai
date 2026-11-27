@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getT } from '../../../../../lib/i18n/server';
 import { musicUiEnabled } from '../../../../../lib/musicBackend.js';
+import { MusicCreationTypeNav } from '../../../_components/music/MusicCreationTypeNav';
 
 export async function generateMetadata() { const { t } = await getT(); return { title: t('music.meta.sounds') }; }
 
@@ -9,7 +10,8 @@ export default function MusicSoundsPage() {
   if (!musicUiEnabled()) redirect('/app/music/create');
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
-      <header>
+      <MusicCreationTypeNav active="sound-effect" />
+      <header className="mt-8">
         <p className="font-vx-mono text-xs font-bold uppercase tracking-widest text-vx-accent">Verified reusable audio tools</p>
         <h1 className="mt-2 font-vx text-4xl font-black tracking-tight sm:text-5xl">Create a sound or seamless loop.</h1>
         <p className="mt-3 max-w-2xl leading-7 text-vx-fg-body">Open an existing Veyrnox.ai text-to-sound model. The destination shows its exact credit price before you confirm and returns failed generations through the normal refund path.</p>

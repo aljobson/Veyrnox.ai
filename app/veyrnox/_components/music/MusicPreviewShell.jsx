@@ -15,10 +15,8 @@ const LINKS = [
   { href: '/app/music/discover', label: 'Discover', key: 'discover', discover: true },
   { href: '/app/music/instruments', label: 'Instruments', key: 'instruments', discover: true },
   { href: '/app/music/library', label: 'Music Library', key: 'library' },
-  { href: '/app/music/workspaces', label: 'Workspaces', key: 'workspaces' },
   { href: '/app/music/playlists', label: 'Playlists', key: 'playlists' },
   { href: '/app/music/albums', label: 'Albums', key: 'albums' },
-  { href: '/app/music/sounds', label: 'Sounds', key: 'sounds', independent: true },
   { href: '/app/music/beats', label: 'Beats', key: 'beats', beats: true },
   { href: '/app/music/labs', label: 'Labs', key: 'labs', labs: true },
   { href: '/app/music/studio', label: 'Studio', key: 'studio', studio: true },
@@ -90,17 +88,19 @@ export function MusicPreviewShell({ children, initialEnabled = false, serverMode
               </div>
               <nav aria-label={shell('nav')} className="flex max-w-full overflow-x-auto rounded-full border border-vx-border bg-vx-base p-1 text-sm font-bold">
                 {LINKS.filter((link) => {
-                  if (link.independent) return serverMode;
                   if (link.beats) return beatsMode && !studioMode;
                   if (link.labs) return labsMode;
                   if (link.studio) return studioMode;
                   if (link.discover) return true;
                   if (link.href.endsWith('/playlists')) return playlistsMode;
                   if (link.href.endsWith('/albums')) return albumsMode;
-                  return !serverMode ? !link.href.endsWith('/workspaces') : libraryMode || link.href.endsWith('/create');
+                  return !serverMode || libraryMode || link.href.endsWith('/create');
                 }).map((entry) => {
                   const link = entry.studio && beatsMode ? { ...entry, href: '/app/music/beats', label: 'Beats', key: 'beats', beats: true } : entry;
-                  const active = pathname === link.href || pathname.startsWith(`${link.href}/`) || (link.href.includes('library') && pathname.includes('/songs/'));
+                  const active = pathname === link.href
+                    || pathname.startsWith(`${link.href}/`)
+                    || (link.key === 'create' && pathname === '/app/music/sounds')
+                    || (link.href.includes('library') && pathname.includes('/songs/'));
                   const NavigationLink = (link.beats || link.studio) && !pathname.startsWith('/app/music/beats') ? 'a' : Link;
                   return (
                     <NavigationLink key={link.href} href={link.href} aria-current={active ? 'page' : undefined} className={`vx-press inline-flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-full px-4 py-2 ${active ? 'bg-vx-fg text-vx-base' : 'text-vx-fg-body hover:text-vx-fg'}`}>
