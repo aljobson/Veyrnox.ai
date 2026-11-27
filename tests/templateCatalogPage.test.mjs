@@ -46,6 +46,19 @@ test('every catalog family has an in-card preview surface', () => {
   assert.match(component, /listenPreview/);
 });
 
+test('every catalog family shows a fail-closed Veyrnox Credit price', () => {
+  assert.match(page, /credits: card\.credits/);
+  assert.match(page, /model: 'ace-step'/);
+  assert.match(page, /credits: 4/);
+  assert.ok(VEO_TEMPLATE_RECIPES.every(item => item.credits === 9));
+  assert.match(component, /fetch\('\/api\/catalog'\)/);
+  assert.match(component, /function ReadyCard\(\{ item, badge, credits, t \}\)/);
+  assert.match(component, /function VeoCard\(\{ item, credits, onUse, t \}\)/);
+  assert.match(component, /function SunoCard\(\{ item, credits, playing, progress, onToggle, t \}\)/);
+  assert.match(component, /app\.templates\.priceUnavailable/);
+  assert.equal(appEnglish['app.templates.priceUnavailable'], 'Price unavailable');
+});
+
 test('provider effects show customer prices and a runnable generation action', () => {
   assert.match(component, /app\.templates\.liveHelp/);
   assert.match(appEnglish['app.templates.liveHelp'], /generate it directly/);

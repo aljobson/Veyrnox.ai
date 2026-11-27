@@ -32,7 +32,9 @@ function Empty({ query, t }) {
   return <p className="rounded-2xl border border-dashed border-vx-border p-8 text-center text-sm text-vx-fg-muted">{t('app.templates.empty', { query })}</p>;
 }
 
-function ReadyCard({ item, badge, t }) {
+const validCreditPrice = value => Number.isInteger(value) && value > 0 ? value : null;
+
+function ReadyCard({ item, badge, credits, t }) {
   return (
     <li className="overflow-hidden rounded-2xl border border-vx-border bg-vx-panel">
       <div className="relative aspect-[4/3] overflow-hidden bg-[radial-gradient(circle_at_top_left,var(--color-vx-accent),transparent_58%),linear-gradient(145deg,#0d1824,#152d3f)]">
@@ -46,7 +48,9 @@ function ReadyCard({ item, badge, t }) {
       <div className="p-4">
         <h3 className="text-base font-black">{item.name}</h3>
         <p className="mt-1 text-xs text-vx-fg-muted">{item.category} · {item.model}{item.durationSeconds ? ` · ${item.durationSeconds}s` : ''}</p>
-        <Link href={`/presets/${encodeURIComponent(item.id)}`} className="vx-press mt-4 inline-flex min-h-11 items-center rounded-full bg-vx-accent px-5 text-sm font-extrabold text-vx-accent-ink">{t('app.templates.openTemplate')}</Link>
+        {credits ? <p className="mt-3 text-sm font-bold text-vx-money">{t('app.templates.price', { count: credits })}</p> : <p className="mt-3 text-sm font-bold text-vx-fg-muted">{t('app.templates.priceUnavailable')}</p>}
+        {credits ? <Link href={`/presets/${encodeURIComponent(item.id)}`} className="vx-press mt-4 inline-flex min-h-11 items-center rounded-full bg-vx-accent px-5 text-sm font-extrabold text-vx-accent-ink">{t('app.templates.openTemplate')}</Link>
+          : <button type="button" disabled className="mt-4 inline-flex min-h-11 items-center rounded-full border border-vx-border px-5 text-sm font-extrabold opacity-50">{t('app.templates.openTemplate')}</button>}
       </div>
     </li>
   );
@@ -150,7 +154,7 @@ function CatalogTemplateRun({ item, provider, t }) {
   </>;
 }
 
-function VeoCard({ item, onUse, t }) {
+function VeoCard({ item, credits, onUse, t }) {
   return (
     <li className="flex min-h-72 flex-col overflow-hidden rounded-2xl border border-vx-border bg-vx-panel">
       <div role="img" aria-label={t('app.templates.conceptPreviewLabel', { name: item.name })} className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-cyan-200/60 via-violet-700/35 to-slate-950 p-5 text-white">
@@ -167,13 +171,14 @@ function VeoCard({ item, onUse, t }) {
         <h3 className="mt-4 text-lg font-black">{item.name}</h3>
         <p className="mt-1 text-xs text-vx-fg-muted">{t('app.templates.veoMeta', { category: item.category })}</p>
         <p className="mt-4 line-clamp-5 text-sm leading-6 text-vx-fg-body">{item.prompt}</p>
-        <button type="button" onClick={() => onUse(item)} className="vx-press mt-auto inline-flex min-h-11 w-fit items-center rounded-full bg-vx-accent px-5 text-sm font-extrabold text-vx-accent-ink">{t('app.templates.useVeo')}</button>
+        {credits ? <p className="mt-3 text-sm font-bold text-vx-money">{t('app.templates.price', { count: credits })}</p> : <p className="mt-3 text-sm font-bold text-vx-fg-muted">{t('app.templates.priceUnavailable')}</p>}
+        <button type="button" disabled={!credits} onClick={() => onUse(item)} className="vx-press mt-auto inline-flex min-h-11 w-fit items-center rounded-full bg-vx-accent px-5 text-sm font-extrabold text-vx-accent-ink disabled:opacity-50">{t('app.templates.useVeo')}</button>
       </div>
     </li>
   );
 }
 
-function SunoCard({ item, playing, progress, onToggle, t }) {
+function SunoCard({ item, credits, playing, progress, onToggle, t }) {
   return (
     <li className="overflow-hidden rounded-2xl border border-vx-border bg-vx-panel">
       <img src={item.artwork} alt="" loading="lazy" className="aspect-[4/3] w-full bg-vx-base object-cover" />
@@ -188,7 +193,9 @@ function SunoCard({ item, playing, progress, onToggle, t }) {
           <span aria-hidden="true">{playing ? 'Ⅱ' : '▶'}</span>
           <span>{playing ? t('app.templates.pausePreview') : t('app.templates.listenPreview', { seconds: MUSIC_SAMPLE_PREVIEW_SECONDS })}</span>
         </button>
-        <Link href={`/app/music/create?sample=${encodeURIComponent(item.id)}`} className="vx-press mt-4 inline-flex min-h-11 items-center rounded-full bg-vx-accent px-5 text-sm font-extrabold text-vx-accent-ink">{t('app.templates.useSuno')}</Link>
+        {credits ? <p className="mt-3 text-sm font-bold text-vx-money">{t('app.templates.price', { count: credits })}</p> : <p className="mt-3 text-sm font-bold text-vx-fg-muted">{t('app.templates.priceUnavailable')}</p>}
+        {credits ? <Link href={`/app/music/create?sample=${encodeURIComponent(item.id)}`} className="vx-press mt-4 inline-flex min-h-11 items-center rounded-full bg-vx-accent px-5 text-sm font-extrabold text-vx-accent-ink">{t('app.templates.useSuno')}</Link>
+          : <button type="button" disabled className="mt-4 inline-flex min-h-11 items-center rounded-full border border-vx-border px-5 text-sm font-extrabold opacity-50">{t('app.templates.useSuno')}</button>}
       </div>
     </li>
   );
@@ -200,6 +207,7 @@ export function TemplateCatalog({ kling, seedance, veo, suno }) {
   const [provider, setProvider] = useState('kling');
   const [query, setQuery] = useState('');
   const [crunPreviewCount, setCrunPreviewCount] = useState(null);
+  const [modelPrices, setModelPrices] = useState({});
   const [remote, setRemote] = useState({ kling: null, seedance: null, vidu: null });
   const [loading, setLoading] = useState(null);
   const [error, setError] = useState({});
@@ -216,6 +224,20 @@ export function TemplateCatalog({ kling, seedance, veo, suno }) {
       .then(response => response.ok ? response.json() : null)
       .then(body => {
         if (live && Number.isInteger(body?.total) && body.total >= 0) setCrunPreviewCount(body.total);
+      })
+      .catch(() => {});
+    return () => { live = false; };
+  }, []);
+
+  useEffect(() => {
+    let live = true;
+    fetch('/api/catalog')
+      .then(response => response.ok ? response.json() : null)
+      .then(body => {
+        if (!live || !Array.isArray(body?.models)) return;
+        setModelPrices(Object.fromEntries(body.models
+          .map(model => [model.id, validCreditPrice(Number(model.credits))])
+          .filter(([, credits]) => credits)));
       })
       .catch(() => {});
     return () => { live = false; };
@@ -278,6 +300,7 @@ export function TemplateCatalog({ kling, seedance, veo, suno }) {
   const local = provider === 'kling' ? kling : provider === 'seedance' ? seedance : provider === 'veo' ? veo : provider === 'suno' ? suno : EMPTY_TEMPLATES;
   const visibleLocal = useMemo(() => local.filter(item => includesQuery(item, needle)), [local, needle]);
   const visibleRemote = (remote[provider]?.templates || []).filter(item => includesQuery(item, needle));
+  const creditsFor = item => modelPrices[item.model] ?? validCreditPrice(item.credits);
 
   const useVeo = item => {
     const written = writeStudioDraft(window.sessionStorage, item);
@@ -317,7 +340,7 @@ export function TemplateCatalog({ kling, seedance, veo, suno }) {
           <div className="mb-4 mt-8 flex items-end justify-between gap-3">
             <div><h3 className="text-xl font-black">{t('app.templates.readyCount', { count: visibleLocal.length })}</h3><p className="mt-1 text-xs text-vx-fg-muted">{t('app.templates.readyHelp')}</p></div>
           </div>
-          {visibleLocal.length ? <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{visibleLocal.map(item => <ReadyCard key={item.id} item={item} badge={t('app.templates.ready')} t={t} />)}</ul>
+          {visibleLocal.length ? <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{visibleLocal.map(item => <ReadyCard key={item.id} item={item} badge={t('app.templates.ready')} credits={creditsFor(item)} t={t} />)}</ul>
             : needle ? <Empty query={query} t={t} />
               : <p className="rounded-2xl border border-dashed border-vx-border p-8 text-center text-sm text-vx-fg-muted">{t('app.templates.noLocal')}</p>}
           <div className="mb-4 mt-12">
@@ -336,9 +359,9 @@ export function TemplateCatalog({ kling, seedance, veo, suno }) {
         </>
       )}
 
-      {provider === 'veo' && (visibleLocal.length ? <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{visibleLocal.map(item => <VeoCard key={item.id} item={item} onUse={useVeo} t={t} />)}</ul> : <div className="mt-8"><Empty query={query} t={t} /></div>)}
+      {provider === 'veo' && (visibleLocal.length ? <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{visibleLocal.map(item => <VeoCard key={item.id} item={item} credits={creditsFor(item)} onUse={useVeo} t={t} />)}</ul> : <div className="mt-8"><Empty query={query} t={t} /></div>)}
       {provider === 'suno' && audioError ? <p role="alert" className="mt-6 rounded-xl border border-vx-danger/40 bg-vx-danger/5 px-4 py-3 text-sm text-vx-danger">{audioError}</p> : null}
-      {provider === 'suno' && (visibleLocal.length ? <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{visibleLocal.map(item => <SunoCard key={item.id} item={item} playing={playingPreview === item.id} progress={playingPreview === item.id ? previewProgress : 0} onToggle={() => toggleSunoPreview(item)} t={t} />)}</ul> : <div className="mt-8"><Empty query={query} t={t} /></div>)}
+      {provider === 'suno' && (visibleLocal.length ? <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{visibleLocal.map(item => <SunoCard key={item.id} item={item} credits={creditsFor(item)} playing={playingPreview === item.id} progress={playingPreview === item.id ? previewProgress : 0} onToggle={() => toggleSunoPreview(item)} t={t} />)}</ul> : <div className="mt-8"><Empty query={query} t={t} /></div>)}
     </section>
   );
 }
