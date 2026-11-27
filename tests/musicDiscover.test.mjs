@@ -74,6 +74,8 @@ test('create resolves only known sample ids and keeps the new direction separate
   assert.match(page, /sampleMix=\{sampleMix\}/);
   assert.match(page, /sampleSeed=\{sampleSeed\}/);
   assert.match(create, /MusicSampleSeedCard seed=\{activeSeed\} mix=\{activeMix\}/);
+  assert.match(create, /<SunoSimpleFields[^>]*sampleSeed=\{activeSeed\} sampleMix=\{activeMix\} onRemoveSample=/);
+  assert.match(create, /<MusicSampleSeedCard seed=\{sampleSeed\} mix=\{sampleMix\} onRemove=\{onRemoveSample\}/);
   assert.match(create, /buildMusicSamplePrompt\(activeSeed, description, activeMix\)/);
   assert.match(create, /Add a new direction/);
   assert.match(create, /Review exact quote/);
