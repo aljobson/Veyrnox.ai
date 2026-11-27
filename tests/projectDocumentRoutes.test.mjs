@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { DELETE, GET, POST, PUT } from '../app/api/v1/projects/[id]/document/route.js';
+import { DELETE, GET, PATCH, POST, PUT } from '../app/api/v1/projects/[id]/document/route.js';
 import { GET as history } from '../app/api/v1/projects/[id]/history/route.js';
 import { emptyProjectDocument, equalProjectDocuments, validProjectDocument } from '../lib/projectDocument.js';
 const id=crypto.randomUUID(), other=crypto.randomUUID();
@@ -54,7 +54,7 @@ test('manual editor ambiguity status is bound to the exact idempotency key',asyn
  assert.deepEqual(await response.json(),{ok:true,committed:true,pending:false,canceled:false,revision:7});
 });
 test('manual editor delivery finalization and cancellation use the exact reservation key',async()=>{
- for(const [handler,method,rpc,payload] of [[POST,'POST','finalize',{ok:true,committed:true,revision:7}],[DELETE,'DELETE','cancel',{ok:true,canceled:true,revision:7}]]){
+ for(const [handler,method,rpc,payload] of [[PATCH,'PATCH','begin',{ok:true,authorized:true,revision:7}],[POST,'POST','finalize',{ok:true,committed:true,revision:7}],[DELETE,'DELETE','cancel',{ok:true,canceled:true,revision:7}]]){
   const calls=[];globalThis.fetch=async(url,init)=>{calls.push({url:String(url),body:init?.body?JSON.parse(init.body):null});return Response.json(calls.length===1?[{id}]:payload);};
   const response=await handler(settleReq(method),params);assert.equal(response.status,200);
   assert.match(calls[1].url,new RegExp(`rpc/${rpc}_manual_editor_commit$`));

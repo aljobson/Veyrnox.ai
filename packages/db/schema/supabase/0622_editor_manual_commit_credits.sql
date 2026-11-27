@@ -35,7 +35,8 @@ CREATE TABLE IF NOT EXISTS public.editor_manual_commit_operations (
   source_hashes jsonb NOT NULL CHECK (jsonb_typeof(source_hashes) = 'array'),
   job_id uuid UNIQUE REFERENCES public.jobs(id) ON DELETE RESTRICT,
   credits integer NOT NULL CHECK (credits IN (0,5)),
-  state text NOT NULL DEFAULT 'PENDING' CHECK (state IN ('PENDING','COMMITTED','REFUNDED')),
+  state text NOT NULL DEFAULT 'PENDING' CHECK (state IN ('PENDING','DELIVERING','COMMITTED','REFUNDED')),
+  delivery_expires_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
   UNIQUE(actor_id, project_id, request_key),
@@ -46,7 +47,7 @@ CREATE INDEX IF NOT EXISTS editor_manual_commit_operations_project_idx
 DROP INDEX IF EXISTS public.editor_manual_commit_one_pending_charge_idx;
 CREATE UNIQUE INDEX IF NOT EXISTS editor_manual_commit_one_pending_project_idx
   ON public.editor_manual_commit_operations(user_id,project_id)
-  WHERE credits=5 AND state='PENDING';
+  WHERE credits=5 AND state IN ('PENDING','DELIVERING');
 ALTER TABLE public.editor_manual_commit_operations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.editor_manual_commit_operations FORCE ROW LEVEL SECURITY;
 REVOKE ALL ON TABLE public.editor_manual_commit_operations FROM PUBLIC,anon,authenticated,service_role;
@@ -147,7 +148,7 @@ BEGIN
   SELECT * INTO existing FROM public.editor_manual_commit_operations o
     WHERE o.actor_id=actor AND o.project_id=p_project AND o.request_key=p_request_key;
   IF existing.id IS NOT NULL THEN
-    IF existing.state='PENDING' AND existing.credits=5 AND EXISTS(
+    IF existing.state IN ('PENDING','DELIVERING') AND existing.credits=5 AND EXISTS(
       SELECT 1 FROM public.jobs j WHERE j.id=existing.job_id AND j.state='REFUNDED'
     ) THEN
       UPDATE public.editor_manual_commit_operations SET state='REFUNDED',updated_at=now() WHERE id=existing.id;
@@ -161,7 +162,7 @@ BEGIN
       RETURN jsonb_build_object('ok',false,'code','PRICE_CHANGED','expected_credits',existing.credits);
     END IF;
     RETURN saved||jsonb_build_object('ok',true,'credits',existing.credits,'covered',existing.credits=0,
-      'pending',existing.state='PENDING','committed',existing.state='COMMITTED','canceled',existing.state='REFUNDED');
+      'pending',existing.state IN ('PENDING','DELIVERING'),'committed',existing.state='COMMITTED','canceled',existing.state='REFUNDED');
   END IF;
   IF EXISTS(SELECT 1 FROM public.project_document_versions v
     WHERE v.project_id=p_project AND v.actor_id=actor AND v.request_key=p_request_key) THEN
@@ -186,15 +187,15 @@ BEGIN
     -- The generic stuck-job sweep owns the credit refund. Reconcile its result
     -- here as well as in the status endpoint so a restarted client can reserve
     -- again with a fresh key without knowing the abandoned request key.
-    UPDATE public.editor_manual_commit_operations o SET state='REFUNDED',updated_at=now()
+    UPDATE public.editor_manual_commit_operations o SET state='REFUNDED',delivery_expires_at=NULL,updated_at=now()
       FROM public.jobs j
-     WHERE o.user_id=v_user_id AND o.project_id=p_project AND o.credits=5 AND o.state='PENDING'
+     WHERE o.user_id=v_user_id AND o.project_id=p_project AND o.credits=5 AND o.state IN ('PENDING','DELIVERING')
        AND j.id=o.job_id AND j.state='REFUNDED';
     -- Only one paid delivery may be pending for a user's project. This blocks
     -- overlapping sets (A+B followed by A) until the first delivery either
     -- creates its coverage receipt or refunds, preventing two retained debits.
     IF EXISTS(SELECT 1 FROM public.editor_manual_commit_operations o WHERE o.user_id=v_user_id
-      AND o.project_id=p_project AND o.credits=5 AND o.state='PENDING') THEN
+      AND o.project_id=p_project AND o.credits=5 AND o.state IN ('PENDING','DELIVERING')) THEN
       RETURN jsonb_build_object('ok',false,'code','COMMIT_PENDING');
     END IF;
     charge_key:='editor-manual.'||encode(sha256(convert_to(actor::text||':'||p_project::text||':'||p_request_key||':'||fingerprint,'UTF8')),'hex');
@@ -219,7 +220,11 @@ BEGIN
     'pending',true,'committed',false,'canceled',false);
 END $$;
 
-CREATE OR REPLACE FUNCTION private.finalize_manual_editor_commit(p_project uuid,p_request_key text) RETURNS jsonb
+-- Claim the external-delivery window before exposing the rendered file to
+-- Photos or the share sheet. The one-day lease protects the debit from the
+-- generic stuck-job refund while the native controller is open; a crashed
+-- client is still recovered by that sweep after the lease expires.
+CREATE OR REPLACE FUNCTION private.begin_manual_editor_delivery(p_project uuid,p_request_key text) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
 DECLARE actor uuid:=auth.uid(); op public.editor_manual_commit_operations%ROWTYPE; job_state text;
 BEGIN
@@ -235,23 +240,64 @@ BEGIN
   SELECT * INTO op FROM public.editor_manual_commit_operations o
    WHERE o.actor_id=actor AND o.project_id=p_project AND o.request_key=p_request_key FOR UPDATE;
   IF op.id IS NULL THEN RETURN jsonb_build_object('ok',false,'code','COMMIT_NOT_FOUND'); END IF;
-  IF op.state='COMMITTED' THEN RETURN jsonb_build_object('ok',true,'committed',true,'revision',op.revision); END IF;
+  IF op.state='COMMITTED' THEN RETURN jsonb_build_object('ok',true,'authorized',true,'revision',op.revision); END IF;
   IF op.state='REFUNDED' THEN RETURN jsonb_build_object('ok',false,'code','COMMIT_CANCELED','revision',op.revision); END IF;
   IF op.credits=5 THEN
     SELECT state INTO job_state FROM public.jobs WHERE id=op.job_id FOR UPDATE;
     IF job_state='REFUNDED' THEN
-      UPDATE public.editor_manual_commit_operations SET state='REFUNDED',updated_at=now() WHERE id=op.id;
+      UPDATE public.editor_manual_commit_operations SET state='REFUNDED',delivery_expires_at=NULL,updated_at=now() WHERE id=op.id;
+      RETURN jsonb_build_object('ok',false,'code','COMMIT_CANCELED','revision',op.revision);
+    END IF;
+    IF job_state<>'DEBITED' THEN RETURN jsonb_build_object('ok',false,'code','COMMIT_STATE_INVALID'); END IF;
+    UPDATE public.jobs SET updated_at=now() WHERE id=op.job_id AND state='DEBITED';
+  END IF;
+  UPDATE public.editor_manual_commit_operations
+     SET state='DELIVERING',delivery_expires_at=now()+interval '1 day',updated_at=now()
+   WHERE id=op.id;
+  RETURN jsonb_build_object('ok',true,'authorized',true,'revision',op.revision);
+END $$;
+
+CREATE OR REPLACE FUNCTION private.finalize_manual_editor_commit(p_project uuid,p_request_key text) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+DECLARE actor uuid:=auth.uid(); op public.editor_manual_commit_operations%ROWTYPE; job_state text; erased jsonb;
+BEGIN
+  IF actor IS NULL THEN RAISE EXCEPTION 'UNAUTHORIZED' USING ERRCODE='PT401'; END IF;
+  IF NOT EXISTS(SELECT 1 FROM public.editor_manual_commit_config WHERE singleton AND enabled)
+    THEN RAISE EXCEPTION 'FEATURE_DISABLED' USING ERRCODE='PT404'; END IF;
+  IF p_request_key IS NULL OR p_request_key!~'^[A-Za-z0-9._-]{8,128}$'
+    THEN RAISE EXCEPTION 'INVALID_IDEMPOTENCY_KEY' USING ERRCODE='PT400'; END IF;
+  PERFORM pg_advisory_xact_lock(hashtextextended(actor::text,34));
+  PERFORM 1 FROM public.projects WHERE id=p_project FOR UPDATE;
+  IF coalesce(private.project_role(p_project),'') NOT IN ('OWNER','ADMIN','CREATOR','EDITOR')
+    THEN RAISE EXCEPTION 'NOT_FOUND' USING ERRCODE='PT404'; END IF;
+  SELECT * INTO op FROM public.editor_manual_commit_operations o
+   WHERE o.actor_id=actor AND o.project_id=p_project AND o.request_key=p_request_key FOR UPDATE;
+  IF op.id IS NULL THEN RETURN jsonb_build_object('ok',false,'code','COMMIT_NOT_FOUND'); END IF;
+  IF op.state='COMMITTED' THEN RETURN jsonb_build_object('ok',true,'committed',true,'revision',op.revision); END IF;
+  IF op.state='REFUNDED' THEN RETURN jsonb_build_object('ok',false,'code','COMMIT_CANCELED','revision',op.revision); END IF;
+  IF op.state<>'DELIVERING' THEN RETURN jsonb_build_object('ok',false,'code','DELIVERY_NOT_STARTED'); END IF;
+  IF op.credits=5 THEN
+    SELECT state INTO job_state FROM public.jobs WHERE id=op.job_id FOR UPDATE;
+    IF job_state='REFUNDED' THEN
+      UPDATE public.editor_manual_commit_operations SET state='REFUNDED',delivery_expires_at=NULL,updated_at=now() WHERE id=op.id;
       RETURN jsonb_build_object('ok',false,'code','COMMIT_CANCELED','revision',op.revision);
     END IF;
     IF job_state<>'DEBITED' THEN RETURN jsonb_build_object('ok',false,'code','COMMIT_STATE_INVALID'); END IF;
     INSERT INTO public.editor_manual_commit_receipts(user_id,project_id,source_fingerprint,source_hashes,job_id,credits)
       VALUES(op.user_id,p_project,op.source_fingerprint,op.source_hashes,op.job_id,5)
       ON CONFLICT(user_id,project_id,source_fingerprint) DO NOTHING;
-    UPDATE public.jobs SET state='STORED',provider='local',deleted_at=now(),updated_at=now()
+    UPDATE public.jobs SET state='STORED',provider='local',updated_at=now()
       WHERE id=op.job_id AND state='DEBITED';
     IF NOT FOUND THEN RAISE EXCEPTION 'COMMIT_STATE_INVALID' USING ERRCODE='PT409'; END IF;
+    -- This accounting-only job must never surface as generated content. Use
+    -- the repository's sole deletion boundary rather than writing deleted_at
+    -- here, so holds and all future deletion invariants remain centralized.
+    erased:=public.delete_user_job(actor::text,op.job_id);
+    IF erased->>'ok' IS DISTINCT FROM 'true' THEN
+      RAISE EXCEPTION 'ACCOUNTING_JOB_DELETE_FAILED' USING ERRCODE='PT409';
+    END IF;
   END IF;
-  UPDATE public.editor_manual_commit_operations SET state='COMMITTED',updated_at=now() WHERE id=op.id;
+  UPDATE public.editor_manual_commit_operations SET state='COMMITTED',delivery_expires_at=NULL,updated_at=now() WHERE id=op.id;
   RETURN jsonb_build_object('ok',true,'committed',true,'revision',op.revision);
 END $$;
 
@@ -282,14 +328,14 @@ BEGIN
       RETURN jsonb_build_object('ok',false,'code','COMMIT_STATE_INVALID');
     END IF;
   END IF;
-  UPDATE public.editor_manual_commit_operations SET state='REFUNDED',updated_at=now() WHERE id=op.id;
+  UPDATE public.editor_manual_commit_operations SET state='REFUNDED',delivery_expires_at=NULL,updated_at=now() WHERE id=op.id;
   RETURN jsonb_build_object('ok',true,'canceled',true,'revision',op.revision);
 END $$;
 
 -- Authoritative reconciliation for ambiguous reserve/finalize responses.
 CREATE OR REPLACE FUNCTION private.manual_editor_commit_status(p_project uuid,p_request_key text) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
-DECLARE actor uuid:=auth.uid(); op public.editor_manual_commit_operations%ROWTYPE; job_state text;
+DECLARE actor uuid:=auth.uid(); op public.editor_manual_commit_operations%ROWTYPE; job_state text; effective_state text;
 BEGIN
   IF actor IS NULL THEN RAISE EXCEPTION 'UNAUTHORIZED' USING ERRCODE='PT401'; END IF;
   IF NOT EXISTS(SELECT 1 FROM public.editor_manual_commit_config WHERE singleton AND enabled)
@@ -298,25 +344,18 @@ BEGIN
     THEN RAISE EXCEPTION 'INVALID_IDEMPOTENCY_KEY' USING ERRCODE='PT400'; END IF;
   IF coalesce(private.project_role(p_project),'') NOT IN ('OWNER','ADMIN','CREATOR','EDITOR')
     THEN RAISE EXCEPTION 'NOT_FOUND' USING ERRCODE='PT404'; END IF;
-  -- Serialize behind any already-issued paid save for this actor/project.
-  -- Once this lock is acquired, a missing exact key is an authoritative
-  -- rollback/non-arrival result rather than a snapshot taken mid-transaction.
-  PERFORM pg_advisory_xact_lock(hashtextextended(actor::text,34));
-  PERFORM 1 FROM public.projects WHERE id=p_project FOR UPDATE;
   SELECT * INTO op FROM public.editor_manual_commit_operations o
-   WHERE o.actor_id=actor AND o.project_id=p_project AND o.request_key=p_request_key FOR UPDATE;
+   WHERE o.actor_id=actor AND o.project_id=p_project AND o.request_key=p_request_key;
   IF op.id IS NULL THEN
     RETURN jsonb_build_object('ok',true,'committed',false,'pending',false,'canceled',false,'revision',NULL);
   END IF;
-  IF op.state='PENDING' AND op.credits=5 THEN
+  effective_state:=op.state;
+  IF op.state IN ('PENDING','DELIVERING') AND op.credits=5 THEN
     SELECT state INTO job_state FROM public.jobs WHERE id=op.job_id;
-    IF job_state='REFUNDED' THEN
-      UPDATE public.editor_manual_commit_operations SET state='REFUNDED',updated_at=now() WHERE id=op.id;
-      op.state:='REFUNDED';
-    END IF;
+    IF job_state='REFUNDED' THEN effective_state:='REFUNDED'; END IF;
   END IF;
-  RETURN jsonb_build_object('ok',true,'committed',op.state='COMMITTED','pending',op.state='PENDING',
-    'canceled',op.state='REFUNDED','revision',op.revision);
+  RETURN jsonb_build_object('ok',true,'committed',effective_state='COMMITTED',
+    'pending',effective_state IN ('PENDING','DELIVERING'),'canceled',effective_state='REFUNDED','revision',op.revision);
 END $$;
 
 CREATE OR REPLACE FUNCTION public.quote_manual_editor_commit(p_project_id uuid,p_document jsonb) RETURNS jsonb
@@ -332,6 +371,10 @@ CREATE OR REPLACE FUNCTION public.manual_editor_commit_status(p_project_id uuid,
 LANGUAGE sql SECURITY INVOKER SET search_path='' AS $$
   SELECT private.manual_editor_commit_status(p_project_id,p_idempotency_key);
 $$;
+CREATE OR REPLACE FUNCTION public.begin_manual_editor_delivery(p_project_id uuid,p_idempotency_key text) RETURNS jsonb
+LANGUAGE sql SECURITY INVOKER SET search_path='' AS $$
+  SELECT private.begin_manual_editor_delivery(p_project_id,p_idempotency_key);
+$$;
 CREATE OR REPLACE FUNCTION public.finalize_manual_editor_commit(p_project_id uuid,p_idempotency_key text) RETURNS jsonb
 LANGUAGE sql SECURITY INVOKER SET search_path='' AS $$
   SELECT private.finalize_manual_editor_commit(p_project_id,p_idempotency_key);
@@ -343,14 +386,14 @@ $$;
 
 REVOKE ALL ON FUNCTION private.editor_manual_source_hashes(jsonb),private.quote_manual_editor_commit(uuid,jsonb),
   private.save_paid_project_document(uuid,integer,jsonb,text,integer),private.manual_editor_commit_status(uuid,text),
-  private.finalize_manual_editor_commit(uuid,text),private.cancel_manual_editor_commit(uuid,text),
+  private.begin_manual_editor_delivery(uuid,text),private.finalize_manual_editor_commit(uuid,text),private.cancel_manual_editor_commit(uuid,text),
   public.quote_manual_editor_commit(uuid,jsonb),public.save_paid_project_document(uuid,integer,jsonb,text,integer),
-  public.manual_editor_commit_status(uuid,text),public.finalize_manual_editor_commit(uuid,text),
+  public.manual_editor_commit_status(uuid,text),public.begin_manual_editor_delivery(uuid,text),public.finalize_manual_editor_commit(uuid,text),
   public.cancel_manual_editor_commit(uuid,text) FROM PUBLIC,anon,service_role;
 GRANT EXECUTE ON FUNCTION private.quote_manual_editor_commit(uuid,jsonb),private.save_paid_project_document(uuid,integer,jsonb,text,integer),
-  private.manual_editor_commit_status(uuid,text),private.finalize_manual_editor_commit(uuid,text),private.cancel_manual_editor_commit(uuid,text),
+  private.manual_editor_commit_status(uuid,text),private.begin_manual_editor_delivery(uuid,text),private.finalize_manual_editor_commit(uuid,text),private.cancel_manual_editor_commit(uuid,text),
   public.quote_manual_editor_commit(uuid,jsonb),public.save_paid_project_document(uuid,integer,jsonb,text,integer),
-  public.manual_editor_commit_status(uuid,text),public.finalize_manual_editor_commit(uuid,text),
+  public.manual_editor_commit_status(uuid,text),public.begin_manual_editor_delivery(uuid,text),public.finalize_manual_editor_commit(uuid,text),
   public.cancel_manual_editor_commit(uuid,text) TO authenticated;
 
 -- Manual accounting rows are not generation attempts. Exclude only this
@@ -528,6 +571,48 @@ CREATE TRIGGER jobs_inflight_guard BEFORE INSERT ON public.jobs
 DROP TRIGGER IF EXISTS jobs_provider_spend_guard ON public.jobs;
 CREATE TRIGGER jobs_provider_spend_guard BEFORE INSERT ON public.jobs
   FOR EACH ROW WHEN (NEW.model_id<>'editor-manual-commit') EXECUTE FUNCTION private.enforce_provider_spend_on_job();
+
+-- Preserve 0601's sweep behavior while an OS delivery controller owns a
+-- live lease. If the app disappears, the lease expires and the ordinary
+-- DEBITED timeout refunds the charge without a special worker path.
+CREATE OR REPLACE FUNCTION public.sweep_stuck_jobs(
+ p_debited_minutes INTEGER DEFAULT 15,p_submitted_minutes INTEGER DEFAULT 120,
+ p_limit INTEGER DEFAULT 200,p_succeeded_minutes INTEGER DEFAULT 60
+) RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+DECLARE v_job RECORD; v_refunded INTEGER:=0; v_failed INTEGER:=0; v_unstored INTEGER:=0; v_unpaid INTEGER:=0; v_res JSONB;
+BEGIN
+ FOR v_job IN SELECT j.id,j.user_id,j.credits,j.state FROM public.jobs j
+  WHERE j.inputs->>'kind' IS DISTINCT FROM 'speech_analysis'
+   AND NOT EXISTS(SELECT 1 FROM public.crun_dispatch d WHERE d.job_id=j.id
+    AND d.state IN('READY','STARTED','ACCEPTED','UNKNOWN','DEFERRED'))
+   AND NOT EXISTS(SELECT 1 FROM public.editor_manual_commit_operations o WHERE o.job_id=j.id
+    AND o.state='DELIVERING' AND o.delivery_expires_at>now())
+   AND ((j.state='DEBITED' AND j.updated_at<now()-make_interval(mins=>p_debited_minutes)
+      AND NOT(j.error_code IS NOT DISTINCT FROM 'provider_outcome_unknown' AND EXISTS(
+       SELECT 1 FROM public.provider_spend_reservations r WHERE r.user_id=j.user_id
+        AND (r.effect_key=j.idempotency_key OR starts_with(r.effect_key,j.idempotency_key||':a')))))
+    OR (j.state IN('SUBMITTED','FAILOVER') AND j.updated_at<now()-make_interval(mins=>p_submitted_minutes))
+    OR (j.state='SUCCEEDED' AND j.updated_at<now()-make_interval(mins=>p_succeeded_minutes)
+      AND NOT EXISTS(SELECT 1 FROM public.assets a WHERE a.job_id=j.id))
+    OR (j.state='FAILED' AND (j.credits>0 OR j.free_allowance)
+      AND j.updated_at<now()-make_interval(mins=>p_debited_minutes)
+      AND NOT EXISTS(SELECT 1 FROM public.ledger_entries le WHERE le.job_id=j.id AND le.delta>0)))
+  ORDER BY j.updated_at LIMIT p_limit FOR UPDATE OF j SKIP LOCKED
+ LOOP
+  IF v_job.state IN('SUBMITTED','FAILOVER') THEN
+   UPDATE public.jobs SET state='FAILED',error_code='stuck_timeout',updated_at=now() WHERE id=v_job.id; v_failed:=v_failed+1;
+  ELSIF v_job.state='SUCCEEDED' THEN
+   UPDATE public.jobs SET state='FAILED',error_code='asset_store_failed',updated_at=now() WHERE id=v_job.id; v_unstored:=v_unstored+1;
+  ELSIF v_job.state='FAILED' THEN v_unpaid:=v_unpaid+1; END IF;
+  v_res:=public.ledger_refund(v_job.id,v_job.user_id,v_job.credits,CASE v_job.state
+   WHEN 'DEBITED' THEN 'refund:stuck_debited' WHEN 'SUCCEEDED' THEN 'refund:asset_store_failed'
+   WHEN 'FAILED' THEN 'refund:failed_unpaid' ELSE 'refund:stuck_submitted' END);
+  IF (v_res->>'ok')::BOOLEAN AND NOT COALESCE((v_res->>'idempotent')::BOOLEAN,false) THEN v_refunded:=v_refunded+1; END IF;
+ END LOOP;
+ RETURN jsonb_build_object('ok',true,'failed',v_failed,'unstored',v_unstored,'unpaid_failures',v_unpaid,'refunded',v_refunded);
+END $$;
+REVOKE ALL ON FUNCTION public.sweep_stuck_jobs(INTEGER,INTEGER,INTEGER,INTEGER) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.sweep_stuck_jobs(INTEGER,INTEGER,INTEGER,INTEGER) TO service_role;
 
 NOTIFY pgrst,'reload schema';
 COMMIT;

@@ -44,13 +44,14 @@ export async function getManualEditorCommitStatus(api: ApiClient, id: string, ke
         || (result.committed || result.pending || result.canceled) !== (result.revision !== null)) throw new ApiError(503, 'invalid_response');
     return { committed: result.committed, pending: result.pending, canceled: result.canceled, revision: result.revision };
 }
-async function settleManualEditorCommit(api: ApiClient, id: string, key: string, method: 'POST' | 'DELETE') {
+async function settleManualEditorCommit(api: ApiClient, id: string, key: string, method: 'PATCH' | 'POST' | 'DELETE') {
     const result = await observe(api.request<{ ok: boolean; revision: number | null }>(path(id), { method, headers: { 'Idempotency-Key': key } }));
     if (result?.ok !== true || (result.revision !== null && (!Number.isSafeInteger(result.revision) || result.revision < 1)))
         throw new ApiError(503, 'invalid_response');
     return result.revision;
 }
 export const finalizeManualEditorCommit = (api: ApiClient, id: string, key: string) => settleManualEditorCommit(api, id, key, 'POST');
+export const beginManualEditorDelivery = (api: ApiClient, id: string, key: string) => settleManualEditorCommit(api, id, key, 'PATCH');
 export const cancelManualEditorCommit = (api: ApiClient, id: string, key: string) => settleManualEditorCommit(api, id, key, 'DELETE');
 export async function putDocument(api: ApiClient, id: string, expectedRevision: number, document: ProjectDocument, key: string) {
     const result = await observe(api.request<{ revision: number }>(path(id), {

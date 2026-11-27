@@ -32,15 +32,17 @@ test('manual editor reserves atomically before delivery and bypasses supplier-on
   assert.match(sql, /user_id=p_user_id AND model_id<>'editor-manual-commit'/);
   assert.match(sql, /p_expected_credits IS NULL OR p_expected_credits NOT IN \(0,5\)/);
   assert.match(sql, /public\.ledger_refund\(op\.job_id,op\.user_id,op\.credits,'refund:editor_manual_delivery_failed'\)/);
-  assert.match(sql, /editor_manual_commit_one_pending_project_idx[\s\S]*\(user_id,project_id\)[\s\S]*state='PENDING'/);
+  assert.match(sql, /editor_manual_commit_one_pending_project_idx[\s\S]*\(user_id,project_id\)[\s\S]*state IN \('PENDING','DELIVERING'\)/);
   assert.match(sql, /UPDATE public\.editor_manual_commit_operations o SET state='REFUNDED'[\s\S]*j\.state='REFUNDED'/);
-  assert.match(sql, /o\.project_id=p_project AND o\.credits=5 AND o\.state='PENDING'/);
+  assert.match(sql, /o\.project_id=p_project AND o\.credits=5 AND o\.state IN \('PENDING','DELIVERING'\)/);
+  assert.match(sql, /private\.begin_manual_editor_delivery[\s\S]*state='DELIVERING'[\s\S]*delivery_expires_at=now\(\)\+interval '1 day'/);
+  assert.match(sql, /o\.state='DELIVERING' AND o\.delivery_expires_at>now\(\)/);
   assert.doesNotMatch(sql, /UPDATE public\.project_document_versions/);
 });
 
 test('manual editor charge is disabled by default and exact job identity is enforced', () => {
   assert.match(sql, /editor_manual_commit_config[\s\S]*enabled boolean NOT NULL DEFAULT false/);
-  assert.equal((sql.match(/FEATURE_DISABLED/g) ?? []).length, 5);
+  assert.equal((sql.match(/FEATURE_DISABLED/g) ?? []).length, 6);
   assert.match(sql, /j\.credits IS DISTINCT FROM p_credits OR j\.inputs IS DISTINCT FROM p_inputs/);
   assert.match(sql, /j\.inputs=charge_inputs/);
 });
@@ -48,11 +50,15 @@ test('manual editor charge is disabled by default and exact job identity is enfo
 test('ambiguous paid responses reconcile by exact idempotency key', () => {
   assert.match(sql, /private\.manual_editor_commit_status\(p_project uuid,p_request_key text\)/);
   assert.match(sql, /o\.actor_id=actor AND o\.project_id=p_project AND o\.request_key=p_request_key/);
-  assert.match(sql, /'pending',op\.state='PENDING'/);
+  assert.match(sql, /'pending',effective_state IN \('PENDING','DELIVERING'\)/);
+  const status = sql.slice(sql.indexOf('CREATE OR REPLACE FUNCTION private.manual_editor_commit_status'), sql.indexOf('CREATE OR REPLACE FUNCTION public.quote_manual_editor_commit'));
+  assert.doesNotMatch(status, /UPDATE|FOR UPDATE|pg_advisory_xact_lock/);
 });
 
 test('the synchronous debit job is hidden from Library and push completion', () => {
-  assert.match(sql, /UPDATE public\.jobs SET state='STORED',provider='local',deleted_at=now\(\),updated_at=now\(\)/);
+  assert.match(sql, /UPDATE public\.jobs SET state='STORED',provider='local',updated_at=now\(\)/);
+  assert.match(sql, /public\.delete_user_job\(actor::text,op\.job_id\)/);
+  assert.doesNotMatch(sql, /UPDATE public\.jobs SET[^;]*deleted_at/s);
 });
 
 test('authenticated manual editor wrappers and checked implementations are explicitly allowlisted', () => {
@@ -60,11 +66,13 @@ test('authenticated manual editor wrappers and checked implementations are expli
     'public.quote_manual_editor_commit(uuid,jsonb)',
     'public.save_paid_project_document(uuid,integer,jsonb,text,integer)',
     'public.manual_editor_commit_status(uuid,text)',
+    'public.begin_manual_editor_delivery(uuid,text)',
     'public.finalize_manual_editor_commit(uuid,text)',
     'public.cancel_manual_editor_commit(uuid,text)',
     'private.quote_manual_editor_commit(uuid,jsonb)',
     'private.save_paid_project_document(uuid,integer,jsonb,text,integer)',
     'private.manual_editor_commit_status(uuid,text)',
+    'private.begin_manual_editor_delivery(uuid,text)',
     'private.finalize_manual_editor_commit(uuid,text)',
     'private.cancel_manual_editor_commit(uuid,text)',
   ]) assert.match(privilegeGuard, new RegExp(signature.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));

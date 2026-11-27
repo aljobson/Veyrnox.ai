@@ -1,6 +1,7 @@
 var mockExportMp4 = jest.fn();
 var mockRelease = jest.fn().mockResolvedValue(undefined);
 var mockCreateAsset = jest.fn().mockResolvedValue({});
+var mockNativeShare = jest.fn().mockResolvedValue({ ok: true, completed: true });
 
 jest.mock('../src/lib/editorLocalExport', () => {
     const actual = jest.requireActual('../src/lib/editorLocalExport');
@@ -13,6 +14,7 @@ jest.mock('../src/lib/editorCompositorNative', () => ({
     createNativeEditorLocalExportDependencies: () => ({}), createNativeEditorAudioExportDependencies: () => ({}),
 }));
 jest.mock('../src/lib/editorMedia/artifacts', () => ({ editorMediaArtifacts: { release: (...args: unknown[]) => mockRelease(...args) } }));
+jest.mock('../src/lib/editorMedia/native', () => ({ optionalEditorMediaModule: () => ({ share: (...args: unknown[]) => mockNativeShare(...args) }) }));
 jest.mock('../src/lib/editorFontFiles', () => ({ editorFontStore: { exportSources: () => ({}) } }));
 jest.mock('../src/auth/sessionTask', () => ({ useSessionTask: () => () => ({ current: () => true }) }));
 jest.mock('../src/components/editor/ExportFootagePreview', () => ({ ExportFootagePreview: () => null }));
@@ -39,6 +41,7 @@ beforeEach(() => {
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
     jest.clearAllMocks();
     mockExportMp4.mockResolvedValue({ ok: true, artifact });
+    mockNativeShare.mockResolvedValue({ ok: true, completed: true });
     root = createRoot();
 });
 afterEach(async () => act(async () => root.unmount()));
@@ -128,6 +131,22 @@ test('with automatic Photos delivery off, reserve happens first and Share finali
     expect(labelled('Share export')).toHaveLength(1);
     await press('Share export');
     expect(onFinalize).toHaveBeenCalledTimes(1);
+});
+
+test('canceling the native share sheet refunds instead of finalizing the reserved charge', async () => {
+    mockNativeShare.mockResolvedValue({ ok: true, completed: false });
+    const onFinalize = jest.fn().mockResolvedValue(7), onCancel = jest.fn().mockResolvedValue(true);
+    await act(async () => root.render(<LocalExportSheet visible api={{ request: jest.fn() } as never} account="owner" projectId={projectId} revision={7}
+        timeline={timeline} canvas={canvas} localMediaUris={{}} onClose={jest.fn()} onCloud={jest.fn()} onPrepare={jest.fn().mockResolvedValue(5)}
+        onCommit={jest.fn().mockResolvedValue(7)} onBeginDelivery={jest.fn().mockResolvedValue(7)} onFinalize={onFinalize} onCancel={onCancel} />));
+    await act(async () => labelled('Save to your photo library automatically')[0].props.onChange({ nativeEvent: { value: false } }));
+    await startLocalExport();
+    await press('Share export');
+    expect(mockNativeShare).toHaveBeenCalledWith(artifact.uri, 'video/mp4');
+    expect(onFinalize).not.toHaveBeenCalled();
+    expect(onCancel).toHaveBeenCalledTimes(1);
+    expect(mockRelease).toHaveBeenCalledTimes(1);
+    expect(labelled('Export on this device')).toHaveLength(1);
 });
 
 test('cancelling the credit confirmation does not render or show a false export error', async () => {

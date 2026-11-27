@@ -77,6 +77,31 @@ public final class VeyrnoxEditorMediaModule: Module {
         self.presentColorPicker(initialHex, promise: promise)
       }
     }
+    AsyncFunction("share") { (uri: String, mimeType: String, promise: Promise) in
+      DispatchQueue.main.async { [weak self] in
+        guard let self, let presenter = self.appContext?.utilities?.currentViewController(),
+              let file = URL(string: uri), file.isFileURL,
+              FileManager.default.fileExists(atPath: file.path) else {
+          promise.resolve(["ok": false, "code": "share-unavailable"])
+          return
+        }
+        let controller = UIActivityViewController(activityItems: [file], applicationActivities: nil)
+        if let popover = controller.popoverPresentationController {
+          popover.sourceView = presenter.view
+          popover.sourceRect = CGRect(x: presenter.view.bounds.midX, y: presenter.view.bounds.maxY,
+                                      width: 1, height: 1)
+          popover.permittedArrowDirections = []
+        }
+        controller.completionWithItemsHandler = { _, completed, _, error in
+          if let error {
+            promise.resolve(["ok": false, "code": "share-failed", "message": error.localizedDescription])
+          } else {
+            promise.resolve(["ok": true, "completed": completed])
+          }
+        }
+        presenter.present(controller, animated: true)
+      }
+    }
   }
 
   private func presentColorPicker(_ initialHex: String, promise: Promise) {

@@ -18,10 +18,11 @@ import { editorFontStore } from '../../lib/editorFontFiles';
 import { useOptionalSafeAreaInsets } from '../../lib/safeArea';
 import { useAnnouncement } from '../../lib/useAnnouncement';
 import { ExportFootagePreview } from './ExportFootagePreview';
+import { optionalEditorMediaModule } from '../../lib/editorMedia/native';
 
 type Props = { visible: boolean; api: Pick<ApiClient, 'request'>; account: string; projectId: string; revision: number; timeline: Timeline; canvas: Canvas;
     localMediaUris: Readonly<Record<string, string>>; onClose(): void; onCloud(): void; onPrepare(): Promise<number | null | 'failed'>;
-    onCommit(credits: number): Promise<number | null>; onFinalize(): Promise<number | null>; onCancel(): Promise<boolean> };
+    onCommit(credits: number): Promise<number | null>; onBeginDelivery?(): Promise<number | null>; onFinalize(): Promise<number | null>; onCancel(): Promise<boolean> };
 type Phase = 'idle' | 'exporting' | 'verifying' | 'done' | 'error';
 type Output = 'video' | 'audio';
 type ExportArtifact = Extract<EditorLocalExportResult, { ok: true }>['artifact'] | Extract<EditorAudioExportResult, { ok: true }>['artifact'];
@@ -64,9 +65,20 @@ export async function saveLocalExportToPhotos(uri: string, isCurrent: () => bool
         return isCurrent() ? 'saved' : 'stale';
     } catch { return isCurrent() ? 'failed' : 'stale'; }
 }
+export type LocalExportShareResult = 'completed' | 'canceled' | 'unavailable' | 'failed';
+export async function shareLocalExportWithCompletion(uri: string, mimeType: string,
+    module = optionalEditorMediaModule()): Promise<LocalExportShareResult> {
+    if (!module?.share) return 'unavailable';
+    try {
+        const result = await module.share(uri, mimeType);
+        if (result?.ok !== true) return result?.code === 'share-unavailable' ? 'unavailable' : 'failed';
+        return result.completed === true ? 'completed' : 'canceled';
+    } catch { return 'failed'; }
+}
 export const localExportInterruptedState = (taskCurrent: boolean, aborted: boolean): { phase: Phase; error: ExportError | null } =>
     !taskCurrent ? { phase: 'error', error: 'stale' } : aborted ? { phase: 'idle', error: null } : { phase: 'error', error: 'write-failed' };
-export function LocalExportSheet({ visible, api, account, projectId, revision, timeline, canvas, localMediaUris, onClose, onCloud, onPrepare, onCommit, onFinalize, onCancel }: Props) {
+export function LocalExportSheet({ visible, api, account, projectId, revision, timeline, canvas, localMediaUris, onClose, onCloud, onPrepare, onCommit,
+    onBeginDelivery = async () => revision, onFinalize, onCancel }: Props) {
     const insets = useOptionalSafeAreaInsets();
     const beginSessionTask = useSessionTask();
     const [phase, setPhase] = useState<Phase>('idle'), [error, setError] = useState<ExportError | null>(null);
@@ -125,6 +137,17 @@ export function LocalExportSheet({ visible, api, account, projectId, revision, t
     const saveAndCommit = async (target: Extract<ExportArtifact, { kind: 'mp4' }>, credits: number | null, sessionCurrent: () => boolean = () => true) => {
         const token = ++saveToken.current; setSaving(true);
         const stillCurrent = () => mounted.current && sessionCurrent() && latestArtifact.current?.artifactId === target.artifactId;
+        if (credits !== null) {
+            const authorizedRevision = await onBeginDelivery().catch(() => null);
+            if (!mounted.current || saveToken.current !== token) return;
+            if (authorizedRevision === null || !stillCurrent()) {
+                setSaving(false); await cancelReservation();
+                if (latestArtifact.current?.artifactId === target.artifactId) {
+                    await releaseArtifact(target); latestArtifact.current = null; setArtifact(null); setError('credit-failed'); setPhase('error');
+                }
+                return;
+            }
+        }
         const outcome = await saveLocalExportToPhotos(target.uri, stillCurrent);
         if (!mounted.current || saveToken.current !== token) return;
         if (stillCurrent()) {
@@ -227,10 +250,29 @@ export function LocalExportSheet({ visible, api, account, projectId, revision, t
             await releaseArtifact(target); latestArtifact.current = null; setArtifact(null); setError(code); setPhase('error');
         }
     };
-    const share = async () => { if (!artifact) return; try { if (!await Sharing.isAvailableAsync()) { await abandonArtifact(artifact, 'share-unavailable'); return; }
-        await Sharing.shareAsync(artifact.uri, { mimeType: artifact.kind === 'wav' ? 'audio/wav' : 'video/mp4' });
-        if (pendingCredits !== null && commitAttempted) await commitDeliveredArtifact(artifact, pendingCredits);
-    } catch { await abandonArtifact(artifact, 'write-failed'); } };
+    const share = async () => { if (!artifact) return; const mimeType = artifact.kind === 'wav' ? 'audio/wav' : 'video/mp4';
+        if (pendingCredits !== null && commitAttempted) {
+            setSaving(true);
+            const authorizedRevision = await onBeginDelivery().catch(() => null);
+            if (!mounted.current || latestArtifact.current?.artifactId !== artifact.artifactId) return;
+            if (authorizedRevision === null) { setSaving(false); await abandonArtifact(artifact, 'credit-failed'); return; }
+            const outcome = await shareLocalExportWithCompletion(artifact.uri, mimeType);
+            if (!mounted.current || latestArtifact.current?.artifactId !== artifact.artifactId) return;
+            setSaving(false);
+            if (outcome === 'completed') await commitDeliveredArtifact(artifact, pendingCredits);
+            else if (outcome === 'canceled') {
+                await cancelReservation();
+                if (latestArtifact.current?.artifactId === artifact.artifactId) {
+                    await releaseArtifact(artifact); latestArtifact.current = null; setArtifact(null); setError(null); setPhase('idle');
+                }
+            } else await abandonArtifact(artifact, outcome === 'unavailable' ? 'share-unavailable' : 'write-failed');
+            return;
+        }
+        try {
+            if (!await Sharing.isAvailableAsync()) { setError('share-unavailable'); return; }
+            await Sharing.shareAsync(artifact.uri, { mimeType });
+        } catch { setError('write-failed'); }
+    };
     const openCloud = () => { void cancelReservation(); onCloud(); };
     const value = Math.round((progress?.value ?? 0) * 100), messageKey = error ? `editorLocalExport.${error}` as Parameters<typeof t>[0] : null;
     const announcedValue = Math.floor(value / 10) * 10, totalFrames = progress?.frames ?? editorLocalExportFrameCount(timeline, frameRate);

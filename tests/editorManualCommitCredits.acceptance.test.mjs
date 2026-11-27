@@ -30,7 +30,8 @@ const doc = (ids, fail = false) => JSON.stringify({ schema_version: 3, fail, tim
   video: ids.map((id, index) => ({ id: `clip-${index}`, mediaId: id })), audio: [],
 } }).replaceAll("'", "''");
 const saveSql = (target, expected, content, key, credits) => `BEGIN; SELECT set_config('request.jwt.claim.sub','${actor}',true); SELECT public.save_paid_project_document('${target}',${expected},'${content}'::jsonb,'${key}',${credits}); COMMIT;`;
-const finalizeSql = (target, key) => `BEGIN; SELECT set_config('request.jwt.claim.sub','${actor}',true); SELECT public.finalize_manual_editor_commit('${target}','${key}'); COMMIT;`;
+const beginSql = (target, key) => `BEGIN; SELECT set_config('request.jwt.claim.sub','${actor}',true); SELECT public.begin_manual_editor_delivery('${target}','${key}'); COMMIT;`;
+const finalizeSql = (target, key) => `BEGIN; SELECT set_config('request.jwt.claim.sub','${actor}',true); SELECT public.begin_manual_editor_delivery('${target}','${key}'); SELECT public.finalize_manual_editor_commit('${target}','${key}'); COMMIT;`;
 const cancelSql = (target, key) => `BEGIN; SELECT set_config('request.jwt.claim.sub','${actor}',true); SELECT public.cancel_manual_editor_commit('${target}','${key}'); COMMIT;`;
 
 test('manual editor debit migration is atomic, idempotent and invisible', { skip: !url }, async t => {
@@ -49,7 +50,11 @@ test('manual editor debit migration is atomic, idempotent and invisible', { skip
     CREATE TABLE public.projects(id uuid PRIMARY KEY,user_id uuid NOT NULL REFERENCES public.users(id));
     CREATE TABLE public.jobs(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),user_id uuid NOT NULL REFERENCES public.users(id),idempotency_key text NOT NULL,
       credits integer NOT NULL,reason text,model_id text,inputs jsonb NOT NULL DEFAULT '{}',state text NOT NULL DEFAULT 'DEBITED',provider text,
+      provider_job_id text,error_code text,free_allowance boolean NOT NULL DEFAULT false,
       deleted_at timestamptz,created_at timestamptz DEFAULT now(),updated_at timestamptz DEFAULT now(),UNIQUE(user_id,idempotency_key));
+    CREATE TABLE public.crun_dispatch(job_id uuid PRIMARY KEY REFERENCES public.jobs(id),state text);
+    CREATE TABLE public.provider_spend_reservations(user_id uuid,effect_key text);
+    CREATE TABLE public.assets(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),job_id uuid REFERENCES public.jobs(id));
     CREATE TABLE public.project_document_versions(project_id uuid NOT NULL REFERENCES public.projects(id),revision integer NOT NULL,actor_id uuid NOT NULL,
       request_key text NOT NULL,expected_revision integer NOT NULL,document jsonb NOT NULL,restored_from integer,created_at timestamptz DEFAULT now(),
       PRIMARY KEY(project_id,revision),UNIQUE(project_id,actor_id,request_key));
@@ -71,6 +76,12 @@ test('manual editor debit migration is atomic, idempotent and invisible', { skip
       UPDATE public.credit_balances SET balance=balance+p_credits,free_balance=free_balance+p_credits WHERE user_id=p_user;
       UPDATE public.jobs SET state='REFUNDED',updated_at=now() WHERE id=p_job;
       RETURN jsonb_build_object('ok',true,'idempotent',false,'entry_id',entry); END $$;
+    CREATE OR REPLACE FUNCTION public.delete_user_job(p_auth text,p_job uuid) RETURNS jsonb
+    LANGUAGE plpgsql SECURITY DEFINER AS $$ BEGIN
+      UPDATE public.jobs j SET inputs='{}'::jsonb,deleted_at=now(),updated_at=now()
+       FROM public.users u WHERE j.id=p_job AND j.user_id=u.id AND u.auth_id=p_auth AND j.state IN ('STORED','FAILED','REFUNDED');
+      IF NOT FOUND THEN RETURN jsonb_build_object('ok',false,'code','NOT_FOUND'); END IF;
+      RETURN jsonb_build_object('ok',true,'replayed',false); END $$;
     CREATE TABLE public.ai_limit_policy(singleton boolean PRIMARY KEY DEFAULT true,gen_limit_per_window integer);
     CREATE TABLE public.user_ai_controls(user_id uuid PRIMARY KEY REFERENCES public.users(id),ai_disabled boolean NOT NULL DEFAULT false,gen_limit_per_window integer);
     CREATE TABLE public.generation_attempt_rate_limits(user_id uuid PRIMARY KEY REFERENCES public.users(id),window_started_at timestamptz NOT NULL,request_count integer NOT NULL);
@@ -176,6 +187,17 @@ test('manual editor debit migration is atomic, idempotent and invisible', { skip
       (SELECT count(*) FROM public.jobs WHERE inputs->>'project_id'='${projectTwo}');`), '0|0|0');
   });
 
+  await t.test('an active native delivery lease cannot be refunded by the generic stuck-job sweep', async () => {
+    await psql(`UPDATE public.credit_balances SET balance=20,free_balance=20 WHERE user_id='${user}';`);
+    assert.match(await psql(saveSql(projectTwo, 0, doc(['camera-lease']), 'delivery-lease', 5)), /"pending": true/);
+    assert.match(await psql(beginSql(projectTwo, 'delivery-lease')), /"authorized": true/);
+    await psql(`UPDATE public.jobs SET updated_at=now()-interval '2 days' WHERE inputs->>'project_id'='${projectTwo}';`);
+    assert.match(await psql(`SELECT public.sweep_stuck_jobs(0,0,200,0);`), /"refunded": 0/);
+    assert.equal(await psql(`SELECT j.state||'|'||o.state FROM public.jobs j JOIN public.editor_manual_commit_operations o ON o.job_id=j.id
+      WHERE o.project_id='${projectTwo}';`), 'DEBITED|DELIVERING');
+    assert.match(await psql(`BEGIN; SELECT set_config('request.jwt.claim.sub','${actor}',true); SELECT public.finalize_manual_editor_commit('${projectTwo}','delivery-lease'); COMMIT;`), /"committed": true/);
+  });
+
   await t.test('concurrent same-source commits never double-debit', async () => {
     await psql(`UPDATE public.credit_balances SET balance=20,free_balance=20 WHERE user_id='${user}';`);
     await Promise.allSettled([
@@ -255,16 +277,17 @@ test('manual editor debit migration is atomic, idempotent and invisible', { skip
     assert.equal(await psql(`SELECT balance FROM public.credit_balances WHERE user_id='${user}';`), before);
   });
 
-  await t.test('exact-key status waits behind an in-flight reservation and returns pending', async () => {
+  await t.test('exact-key status is read-only during an in-flight reservation and sees it after commit', async () => {
     await psql(`UPDATE public.credit_balances SET balance=20,free_balance=20 WHERE user_id='${user}';`);
     const committing = run('psql', [url, '--no-psqlrc', '--set', 'ON_ERROR_STOP=1', '--tuples-only', '--no-align', '--command',
       `BEGIN; SELECT set_config('request.jwt.claim.sub','${actor}',true); SELECT public.save_paid_project_document('${projectStatus}',0,'${doc(['status-source'])}'::jsonb,'status-commit-key',5); SELECT pg_sleep(0.4); COMMIT;`]);
     await new Promise(resolve => setTimeout(resolve, 80));
     const started = Date.now();
     const status = await psql(`BEGIN; SELECT set_config('request.jwt.claim.sub','${actor}',true); SELECT public.manual_editor_commit_status('${projectStatus}','status-commit-key'); COMMIT;`);
-    assert.ok(Date.now() - started >= 250, 'status must wait for the paid transaction lock');
-    assert.match(status, /"pending": true/);
+    assert.ok(Date.now() - started < 250, 'status must not lock or wait behind the paid transaction');
+    assert.match(status, /"pending": false/);
     await committing;
+    assert.match(await psql(`BEGIN; SELECT set_config('request.jwt.claim.sub','${actor}',true); SELECT public.manual_editor_commit_status('${projectStatus}','status-commit-key'); COMMIT;`), /"pending": true/);
   });
 
   await t.test('failed delivery refunds a reservation and prevents later finalization', async () => {
@@ -275,13 +298,13 @@ test('manual editor debit migration is atomic, idempotent and invisible', { skip
     assert.match(await psql(finalizeSql(projectNull, 'refund-key')), /COMMIT_CANCELED/);
   });
 
-  await t.test('exact-key status waits behind rollback and returns false', async () => {
+  await t.test('exact-key status does not wait behind an unrelated rollback', async () => {
     const rollingBack = run('psql', [url, '--no-psqlrc', '--set', 'ON_ERROR_STOP=1', '--tuples-only', '--no-align', '--command',
       `BEGIN; SELECT set_config('request.jwt.claim.sub','${actor}',true); SELECT pg_advisory_xact_lock(hashtextextended('${actor}',34)); SELECT pg_sleep(0.4); ROLLBACK;`]);
     await new Promise(resolve => setTimeout(resolve, 80));
     const started = Date.now();
     const status = await psql(`BEGIN; SELECT set_config('request.jwt.claim.sub','${actor}',true); SELECT public.manual_editor_commit_status('${projectStatus}','status-rollback-key'); COMMIT;`);
-    assert.ok(Date.now() - started >= 250, 'status must wait for rollback of the paid transaction lock');
+    assert.ok(Date.now() - started < 250, 'status must remain a read-only observation');
     assert.match(status, /"committed": false/);
     await rollingBack;
   });

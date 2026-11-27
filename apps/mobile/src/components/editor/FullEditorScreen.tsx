@@ -673,7 +673,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         <LocalExportSheet visible={localExportVisible} api={api} account={getCacheUser() ?? ''} projectId={projectId} revision={getEditRevision()} timeline={timeline} canvas={canvas} localMediaUris={localMediaUris}
             onClose={() => setLocalExportVisible(false)} onCloud={() => { setLocalExportVisible(false); void openCloudExport(); }}
             onPrepare={() => prepareManualEdit('export')} onCommit={commitPreparedManualEdit}
-            onFinalize={() => sync.finalizePaid()} onCancel={() => sync.cancelPaid()} />
+            onBeginDelivery={() => sync.beginPaidDelivery()} onFinalize={() => sync.finalizePaid()} onCancel={() => sync.cancelPaid()} />
         <EditorCanvasSheet visible={canvasVisible} canvas={canvas} timeline={timeline} onClose={() => setCanvasVisible(false)} onCanvas={updateCanvas} onTimeline={applyTimeline} />
         <EditorPolishSheet visible={polishVisible} timeline={timeline} onClose={() => setPolishVisible(false)} onApply={applyTimeline} />
         <EditorTrimSheet visible={trimVisible} timeline={timeline} selection={selection} playhead={frameStore.get()} onClose={() => setTrimVisible(false)} onApply={applyTimeline}

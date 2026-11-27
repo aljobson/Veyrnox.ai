@@ -101,12 +101,13 @@ async function settleManualCommit(request, params, action) {
     if (result?.ok === false) {
       const code = String(result.code || 'MANUAL_COMMIT_FAILED').toUpperCase();
       const status = code === 'COMMIT_NOT_FOUND' ? 404
-        : ['COMMIT_CANCELED', 'ALREADY_COMMITTED', 'COMMIT_STATE_INVALID'].includes(code) ? 409 : 503;
+        : ['COMMIT_CANCELED', 'ALREADY_COMMITTED', 'COMMIT_STATE_INVALID', 'DELIVERY_NOT_STARTED'].includes(code) ? 409 : 503;
       throw new ApiError(status, code, code, result);
     }
     return Response.json(result);
   });
 }
 
+export async function PATCH(request, { params }) { return settleManualCommit(request, params, 'begin'); }
 export async function POST(request, { params }) { return settleManualCommit(request, params, 'finalize'); }
 export async function DELETE(request, { params }) { return settleManualCommit(request, params, 'cancel'); }
