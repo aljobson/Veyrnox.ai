@@ -20,7 +20,7 @@
 import { NextResponse } from 'next/server';
 import { rpc, select, envConfig } from '../../../../packages/db/supabase-client.js';
 import { presignPutUrl, listObjects, isConfigured as r2IsConfigured, envConfig as r2EnvConfig } from '../../../../packages/adapters/r2.js';
-import { checkDeclared, uploadKeyFor, UPLOAD_URL_TTL_SECONDS, UPLOAD_PREFIX } from '../../../../lib/uploadSource.js';
+import { checkDeclared, uploadKeyFor, fieldForType, MUSIC_VOICE_UPLOAD_PREFIX, UPLOAD_URL_TTL_SECONDS, UPLOAD_PREFIX } from '../../../../lib/uploadSource.js';
 import { admissionAvailable } from '../../../../lib/uploadAdmission.js';
 
 import { isUuidLoose } from '../../../../lib/validate.js';
@@ -58,6 +58,14 @@ export async function POST(req) {
     // Gate 1: judge what the client claims, before signing anything.
     const declared = checkDeclared(body.content_type, body.size_bytes);
     if (!declared.ok) return NextResponse.json({ error: declared.error }, { status: 400 });
+    const purpose = body.purpose === undefined ? null : body.purpose;
+    if (purpose !== null && purpose !== 'music_voice_evidence') {
+        return NextResponse.json({ error: 'invalid_upload_purpose' }, { status: 400 });
+    }
+    if (purpose === 'music_voice_evidence' && fieldForType(declared.contentType) !== 'audio_url') {
+        return NextResponse.json({ error: 'upload_type_not_allowed' }, { status: 400 });
+    }
+    const uploadPrefix = purpose === 'music_voice_evidence' ? MUSIC_VOICE_UPLOAD_PREFIX : UPLOAD_PREFIX;
 
     // Enable only after migration 0116. Every valid request consumes a slot,
     // including requests later denied for balance or storage state.
@@ -104,7 +112,7 @@ export async function POST(req) {
     }
 
     // Refuse issuance when the stored-object snapshot is already at the cap.
-    const held = await listObjects(`${UPLOAD_PREFIX}/${authId.toLowerCase()}/`, r2cfg, { maxKeys: MAX_PENDING_UPLOADS + 1 });
+    const held = await listObjects(`${uploadPrefix}/${authId.toLowerCase()}/`, r2cfg, { maxKeys: MAX_PENDING_UPLOADS + 1 });
     if (!held.ok) {
         // Fail closed: an unreadable bucket must not become an open endpoint.
         console.error('[uploads] could not count pending uploads:', held.error);
@@ -139,7 +147,7 @@ export async function POST(req) {
 
     // Gate: the key is built from the verified auth id and a fresh UUID. No
     // filename, no path, nothing the client sent.
-    const derived = uploadKeyFor(authId, declared.contentType, crypto.randomUUID());
+    const derived = uploadKeyFor(authId, declared.contentType, crypto.randomUUID(), uploadPrefix);
     if (!derived.ok) {
         console.error('[uploads] key derivation refused:', derived.error);
         return NextResponse.json({ error: derived.error }, { status: 400 });

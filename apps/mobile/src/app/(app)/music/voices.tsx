@@ -23,7 +23,7 @@ import {
 } from '../../../lib/voiceoverRecorder';
 import { ds } from '../../../theme';
 
-type Reference = { readonly uri: string; readonly size: number; readonly type: 'audio/mpeg' | 'audio/wav'; readonly name: string };
+type Reference = { readonly uri: string; readonly size: number; readonly type: 'audio/mpeg' | 'audio/wav'; readonly name: string; readonly durationSeconds?: number };
 type PendingAttempts = {
     enroll?: { readonly referenceKey: string; readonly name: string; readonly idempotencyKey: string };
     reissue?: { readonly profileId: string; readonly idempotencyKey: string };
@@ -47,15 +47,17 @@ export default function MusicVoicesScreen() {
     const [name, setName] = useState(''); const [reference, setReference] = useState<Reference | null>(null);
     const [owner, setOwner] = useState(false); const [adult, setAdult] = useState(false); const [region, setRegion] = useState(false);
     const [challenge, setChallenge] = useState<MusicVoiceChallenge | null>(null);
-    const [take, setTake] = useState<string | null>(null); const [busy, setBusy] = useState(''); const [error, setError] = useState('');
+    const [take, setTake] = useState<Reference | null>(null); const [busy, setBusy] = useState(''); const [error, setError] = useState('');
     const live = useRef(true); const referenceUri = useRef<string | null>(null); const takeUri = useRef<string | null>(null);
     const attempts = useRef<PendingAttempts>({});
     const controllers = useRef(new Set<AbortController>()); const recorder = useAudioRecorder(VOICEOVER_OPTIONS); const recorderState = useAudioRecorderState(recorder, 100);
-    const changeReference = (next: Reference | null) => { const previous = referenceUri.current; referenceUri.current = next?.uri || null; setReference(next); if (previous !== next?.uri) discardCacheCopy(previous); };
-    const changeTake = (next: string | null) => { const previous = takeUri.current; takeUri.current = next; setTake(next); if (previous !== next) discardTake(previous); };
+    const changeReference = (next: Reference | null) => { const previous = referenceUri.current; referenceUri.current = next?.uri || null; setReference(next);
+        if (previous !== next?.uri) { delete attempts.current.enroll; discardCacheCopy(previous); } };
+    const changeTake = (next: Reference | null) => { const previous = takeUri.current; takeUri.current = next?.uri || null; setTake(next);
+        if (previous !== next?.uri) { delete attempts.current.submit; discardTake(previous); } };
     const upload = async (source: { readonly uri: string; readonly size: number }, type: 'audio/mpeg' | 'audio/wav') => {
         const controller = new AbortController(); controllers.current.add(controller);
-        try { return await uploadSource(api, source, type, () => {}, controller.signal); } finally { controllers.current.delete(controller); }
+        try { return await uploadSource(api, source, type, () => {}, controller.signal, undefined, 'music_voice_evidence'); } finally { controllers.current.delete(controller); }
     };
     const active = profiles.find(item => ['challenge_issued', 'pending_review', 'verified'].includes(item.status)) || null;
     const terminal = !active ? profiles.find(item => ['rejected', 'revoked', 'expired'].includes(item.status)) || null : null;
@@ -79,6 +81,14 @@ export default function MusicVoicesScreen() {
         }
         changeReference({ uri: item.uri, size: item.size, type, name: item.name }); setError('');
     }
+    async function pickTake() {
+        const picked = await DocumentPicker.getDocumentAsync({ type: ['audio/mpeg', 'audio/wav', 'audio/x-wav', 'audio/wave'], copyToCacheDirectory: true });
+        if (picked.canceled) return; const item = picked.assets[0]; const type = normalType(item.mimeType);
+        if ((type !== 'audio/mpeg' && type !== 'audio/wav') || !Number.isSafeInteger(item.size) || !item.size || item.size > 20 * 1024 * 1024) {
+            discardCacheCopy(item.uri); setError(t('musicVoices.error.choose')); return;
+        }
+        changeTake({ uri: item.uri, size: item.size, type, name: item.name }); setError('');
+    }
     async function enroll() {
         if (!reference) return;
         await run('enroll', async () => { let attempt = attempts.current.enroll;
@@ -97,12 +107,14 @@ export default function MusicVoicesScreen() {
             if (!permission.granted) { Alert.alert(t('musicVoices.microphoneTitle'), t('musicVoices.microphoneBody')); return; }
             changeTake(null); await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true }); await recorder.prepareToRecordAsync(); recorder.record({ forDuration: 60 }); });
     }
-    async function stopRecording() { await run('stop', async () => { await recorder.stop(); await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true }); if (live.current) changeTake(recorder.uri || null); }); }
+    async function stopRecording() { await run('stop', async () => { await recorder.stop(); await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true });
+        if (live.current && recorder.uri) { const file = new File(recorder.uri); if (!Number.isSafeInteger(file.size) || file.size < 1) throw new ApiError(400, 'source_invalid');
+            changeTake({ uri: recorder.uri, size: file.size, type: 'audio/wav', name: 'challenge.wav', durationSeconds: duration }); } }); }
     async function submit() {
         if (!active || !challenge || !take) return;
-        await run('submit', async () => { const file = new File(take); const size = file.size; if (!Number.isSafeInteger(size) || size < 1) throw new ApiError(400, 'source_invalid');
+        await run('submit', async () => { if (!Number.isSafeInteger(take.size) || take.size < 1) throw new ApiError(400, 'source_invalid');
             let attempt = attempts.current.submit;
-            if (!attempt || attempt.profileId !== active.id) { const challengeKey = await upload({ uri: take, size }, 'audio/wav');
+            if (!attempt || attempt.profileId !== active.id) { const challengeKey = await upload(take, take.type);
                 attempt = { profileId: active.id, challengeKey, phrase: challenge.phrase, idempotencyKey: `music-voice-submit-${randomUUID()}` }; attempts.current.submit = attempt; }
             await submitMusicVoiceChallenge(api, active.id, attempt); delete attempts.current.submit;
             if (!live.current) return; changeTake(null); setChallenge(null); await load(); });
@@ -142,10 +154,11 @@ export default function MusicVoicesScreen() {
         {active?.status === 'challenge_issued' ? <Card style={s.group}><Text variant="title2">{t('musicVoices.challengeTitle')}</Text>
             {!challenge ? <><Text variant="body" tone="secondary">{t('musicVoices.hiddenPhrase')}</Text><Button label={t('musicVoices.issuePhrase')} loading={busy === 'challenge'} disabled={Boolean(busy)} onPress={() => void reissue()} testID="music-voice-new-challenge" /></>
                 : <><View style={s.phrase}><Text variant="title2" selectable testID="music-voice-phrase">{challenge.phrase}</Text></View><Text variant="body" tone="secondary">{t('musicVoices.phraseBody')}</Text>
-                    {!recorderState.isRecording ? <Button icon="microphone" label={t(take ? 'musicVoices.recordAgain' : 'musicVoices.recordStart')} disabled={Boolean(busy)} onPress={() => void startRecording()} testID="music-voice-record" />
-                        : <Button variant="destructive" label={t('musicVoices.recordStop', { seconds: duration })} onPress={() => void stopRecording()} testID="music-voice-stop" />}
-                    {take ? <Text variant="footnote" tone="secondary">{t('musicVoices.recordReady', { seconds: duration })}</Text> : null}
-                    <Button label={t('musicVoices.submit')} loading={busy === 'submit'} disabled={Boolean(busy) || !take || duration < 2} onPress={() => void submit()} testID="music-voice-submit" /></>}
+                    {VOICEOVER_AVAILABLE && Platform.OS === 'ios' ? (!recorderState.isRecording ? <Button icon="microphone" label={t(take ? 'musicVoices.recordAgain' : 'musicVoices.recordStart')} disabled={Boolean(busy)} onPress={() => void startRecording()} testID="music-voice-record" />
+                        : <Button variant="destructive" label={t('musicVoices.recordStop', { seconds: duration })} onPress={() => void stopRecording()} testID="music-voice-stop" />)
+                        : <Button variant="secondary" icon="audio" label={take ? t('musicVoices.selected', { name: take.name }) : t('musicVoices.choose')} disabled={Boolean(busy)} onPress={() => void pickTake()} testID="music-voice-recording-file" />}
+                    {take?.durationSeconds !== undefined ? <Text variant="footnote" tone="secondary">{t('musicVoices.recordReady', { seconds: take.durationSeconds })}</Text> : null}
+                    <Button label={t('musicVoices.submit')} loading={busy === 'submit'} disabled={Boolean(busy) || !take || (take.durationSeconds !== undefined && take.durationSeconds < 2)} onPress={() => void submit()} testID="music-voice-submit" /></>}
         </Card> : null}
         {active?.status === 'pending_review' ? <Card testID="music-voice-pending" style={s.group}><Text variant="title2">{t('musicVoices.pendingTitle')}</Text><Text variant="body" tone="secondary">{t('musicVoices.pendingBody')}</Text></Card> : null}
         {active?.status === 'verified' ? <Card testID="music-voice-verified" style={s.group}><Text variant="title2">{t('musicVoices.verifiedTitle', { name: active.name })}</Text><Text variant="body" tone="secondary">{t('musicVoices.verifiedBody')}</Text></Card> : null}

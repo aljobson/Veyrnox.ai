@@ -37,7 +37,7 @@ import { runScheduledBackfill } from './lib/scheduledBackfill.js';
 import { runPushSweep } from './lib/pushNotifications.js';
 import { removeReservedUpload, sweepUploadReservations } from './lib/uploadReservations.js';
 import { sweepSocialUploads } from './lib/social/uploadSweep.js';
-import { musicVoiceUploadProtected, protectedMusicVoiceUploads, sweepUploads, sweepConsumedUploads } from './lib/uploadSweep.js';
+import { musicVoiceUploadProtected, protectedMusicVoiceUploads, sweepMusicVoiceUploads, sweepUploads, sweepConsumedUploads } from './lib/uploadSweep.js';
 import { isConfigured as r2IsConfigured } from './packages/adapters/r2.js';
 import { sweepSteps } from './lib/autoShortSweep.js';
 import { sweepEditorServerRender } from './lib/editorServerRenderSweep.js';
@@ -321,6 +321,9 @@ async function runUploadSweep(env) {
     const out = await sweepUploads(cfg, opts);
     if (!out.ok) console.error('[upload-sweep] failed:', out.error);
     else if (out.deleted || out.failed) console.error('[upload-sweep]', JSON.stringify(out));
+    const voiceOut = await sweepMusicVoiceUploads(cfg, opts);
+    if (!voiceOut.ok) { console.error('[upload-sweep] voice evidence failed:', voiceOut.error); return { ok: false }; }
+    else if (voiceOut.deleted || voiceOut.failed) console.error('[upload-sweep] voice evidence', JSON.stringify(voiceOut));
 
     if (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) {
         const used = await sweepConsumedUploads(cfg, dbcfg, opts);
@@ -331,5 +334,7 @@ async function runUploadSweep(env) {
         console.error('[upload-sweep] Supabase not configured; consumed uploads wait for the age sweep');
         return { ok: false };
     }
-    return reservationFailure ? { ...out, ok: false } : out;
+    const combined = { ...out, listed: out.listed + voiceOut.listed, expired: out.expired + voiceOut.expired,
+        deleted: out.deleted + voiceOut.deleted, failed: out.failed + voiceOut.failed };
+    return reservationFailure || voiceOut.failed ? { ...combined, ok: false } : combined;
 }

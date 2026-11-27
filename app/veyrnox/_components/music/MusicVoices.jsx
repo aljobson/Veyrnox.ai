@@ -26,7 +26,7 @@ async function uploadAudio(file) {
   if (!(file instanceof Blob) || !AUDIO_TYPES.has(file.type) || file.size < 1 || file.size > MAX_BYTES) throw new Error('source_invalid');
   const contentType = normalType(file);
   const grant = await gatewayFetch('/uploads', { method: 'POST', preserveUploadErrors: true,
-    body: JSON.stringify({ content_type: contentType, size_bytes: file.size }) });
+    body: JSON.stringify({ content_type: contentType, size_bytes: file.size, purpose: 'music_voice_evidence' }) });
   const response = await fetch(grant.upload_url, { method: 'PUT', headers: grant.headers || { 'Content-Type': contentType }, body: file });
   if (!response.ok) throw new Error('upload_failed');
   return grant.key;

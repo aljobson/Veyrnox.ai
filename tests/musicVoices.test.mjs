@@ -25,7 +25,7 @@ import {
 import { musicVoiceReadContext } from '../lib/musicVoiceRuntime.js';
 
 const id = '9ca2c67a-d66f-4fc8-bd98-3ac763aab020';
-const source = `uploads/${id}/1891763e-9988-43f1-8733-da5ab3e9568f.wav`;
+const source = `music-voice-uploads/${id}/1891763e-9988-43f1-8733-da5ab3e9568f.wav`;
 const secret = 'voice-test-secret-that-is-longer-than-thirty-two-bytes';
 const request = (aal = 'aal2', at = '1000') => new Request('https://example.test', {
   headers: { 'x-veyrnox-auth-aal': aal, 'x-veyrnox-auth-mfa-at': at },
@@ -165,6 +165,8 @@ test('the migration preserves evidence accountability without retaining content 
   assert.match(sql, /music_voice_source_unbound[\s\S]*music_source_assets[\s\S]*source_keys[\s\S]*references/);
   assert.match(sql, /DELETE FROM public\.upload_reservations WHERE r2_key=p_reference_key AND user_id=u/);
   assert.match(sql, /DELETE FROM public\.upload_reservations WHERE r2_key=p_challenge_key AND user_id=u/);
+  assert.match(sql, /p_reference_key!~\('\^music-voice-uploads\/'\|\|lower\(p_auth_id\)/);
+  assert.match(sql, /p_challenge_key!~\('\^music-voice-uploads\/'\|\|lower\(p_auth_id\)/);
   assert.match(sql, /asset_reap_queue WHERE r2_key=p_reference_key/);
   assert.match(sql, /actor=v\.user_id[\s\S]*SELF_REVIEW_FORBIDDEN/);
   assert.match(sql, /SELECT id INTO actor[\s\S]*IF actor IS NULL THEN RAISE EXCEPTION 'not_admin'/);
@@ -197,9 +199,18 @@ test('the migration preserves evidence accountability without retaining content 
 });
 
 test('choosing a replacement challenge recording invalidates the cached upload attempt', async () => {
-  const source = await readFile(new URL('../app/veyrnox/_components/music/MusicVoices.jsx', import.meta.url), 'utf8');
-  assert.match(source, /selectLiveRecording[\s\S]*delete attempts\.current\.submit;[\s\S]*setLiveRecording\(file\)/);
-  assert.match(source, /music-voice-live-recording[\s\S]*selectLiveRecording\(event\.target\.files\?\.\[0\] \|\| null\)/);
+  const [web, native, upload] = await Promise.all([
+    readFile(new URL('../app/veyrnox/_components/music/MusicVoices.jsx', import.meta.url), 'utf8'),
+    readFile(new URL('../apps/mobile/src/app/(app)/music/voices.tsx', import.meta.url), 'utf8'),
+    readFile(new URL('../app/api/v1/uploads/route.js', import.meta.url), 'utf8'),
+  ]);
+  assert.match(web, /selectLiveRecording[\s\S]*delete attempts\.current\.submit;[\s\S]*setLiveRecording\(file\)/);
+  assert.match(web, /music-voice-live-recording[\s\S]*selectLiveRecording\(event\.target\.files\?\.\[0\] \|\| null\)/);
+  assert.match(web, /purpose: 'music_voice_evidence'/);
+  assert.match(native, /changeReference[\s\S]*delete attempts\.current\.enroll/);
+  assert.match(native, /changeTake[\s\S]*delete attempts\.current\.submit/);
+  assert.match(native, /Platform\.OS === 'ios'[\s\S]*pickTake[\s\S]*music-voice-recording-file/);
+  assert.match(upload, /music_voice_evidence[\s\S]*MUSIC_VOICE_UPLOAD_PREFIX/);
 });
 
 test('route replay branches never disclose a freshly generated unstored phrase', async () => {

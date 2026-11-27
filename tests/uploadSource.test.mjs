@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-    ALLOWED_UPLOAD_TYPES, checkDeclared, uploadKeyFor, ownsUploadKey, sniffType, checkSniffed, requireImageDimensions,
+    ALLOWED_UPLOAD_TYPES, checkDeclared, MUSIC_VOICE_UPLOAD_PREFIX, uploadKeyFor, ownsMusicVoiceUploadKey,
+    ownsUploadKey, sniffType, checkSniffed, requireImageDimensions,
 } from '../lib/uploadSource.js';
 
 const AUTH = '11111111-2222-3333-4444-555555555555';
@@ -43,6 +44,15 @@ test('the key is built only from server-controlled values', () => {
     const { key } = uploadKeyFor(AUTH, 'image/png', UUID);
     assert.equal(key, `uploads/${AUTH}/${UUID}.png`);
     assert.equal(uploadKeyFor(AUTH, 'video/mp4', UUID).key, `uploads/${AUTH}/${UUID}.mp4`);
+});
+
+test('voice evidence uses its rollback-safe namespace and exact ownership check', () => {
+    const result = uploadKeyFor(AUTH, 'audio/wav', UUID, MUSIC_VOICE_UPLOAD_PREFIX);
+    assert.equal(result.key, `music-voice-uploads/${AUTH}/${UUID}.wav`);
+    assert.equal(ownsMusicVoiceUploadKey(AUTH, result.key), true);
+    assert.equal(ownsMusicVoiceUploadKey(OTHER, result.key), false);
+    assert.equal(ownsUploadKey(AUTH, result.key), false);
+    assert.equal(uploadKeyFor(AUTH, 'audio/wav', UUID, 'untrusted').error, 'upload_prefix_invalid');
 });
 
 test('a non-UUID auth id never reaches a storage key', () => {

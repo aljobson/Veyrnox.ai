@@ -23,7 +23,7 @@ function deps(listResult) {
     };
 }
 
-const { musicVoiceUploadProtected, protectedMusicVoiceUploads, sweepUploads } = await import('../lib/uploadSweep.js');
+const { musicVoiceUploadProtected, protectedMusicVoiceUploads, sweepMusicVoiceUploads, sweepUploads } = await import('../lib/uploadSweep.js');
 
 test('an upload older than the window is deleted; a fresh one is not', async () => {
     const out = await sweepUploads(CFG, deps({ ok: true, nextToken: null, objects: [
@@ -37,9 +37,9 @@ test('an upload older than the window is deleted; a fresh one is not', async () 
 });
 
 test('active voice evidence survives the 24-hour sweep and lookup fails closed', async () => {
-    const protectedKey = `uploads/${AUTH}/${UUID}.wav`;
-    const staleKey = `uploads/${AUTH}/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb.wav`;
-    const out = await sweepUploads(CFG, { ...deps({ ok: true, nextToken: null, objects: [
+    const protectedKey = `music-voice-uploads/${AUTH}/${UUID}.wav`;
+    const staleKey = `music-voice-uploads/${AUTH}/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb.wav`;
+    const out = await sweepMusicVoiceUploads(CFG, { ...deps({ ok: true, nextToken: null, objects: [
         { key: protectedKey, lastModified: hoursAgo(720), size: 10 },
         { key: staleKey, lastModified: hoursAgo(48), size: 10 },
     ] }), protectedKeys: new Set([protectedKey]) });
@@ -59,8 +59,8 @@ test('active voice evidence survives the 24-hour sweep and lookup fails closed',
 });
 
 test('an upload protected after the initial snapshot is rechecked immediately before deletion', async () => {
-    const key = `uploads/${AUTH}/${UUID}.wav`;
-    const out = await sweepUploads(CFG, { ...deps({ ok: true, nextToken: null, objects: [
+    const key = `music-voice-uploads/${AUTH}/${UUID}.wav`;
+    const out = await sweepMusicVoiceUploads(CFG, { ...deps({ ok: true, nextToken: null, objects: [
         { key, lastModified: hoursAgo(48), size: 10 },
     ] }), protectedKeys: new Set(), isProtected: async candidate => candidate === key });
     assert.equal(out.deleted, 0);
