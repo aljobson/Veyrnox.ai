@@ -8,7 +8,7 @@ const EXPECTED = [
   'ai-avatar-generator', 'talking-avatar', 'ai-human-generator', 'ai-influencer-generator',
   'text-to-speech', 'ai-voice-cloning', 'lip-sync', 'ai-talking-photo-generator', 'singing-photo',
   'avatar-dialogue', 'video-dubbing', 'talking-cartoon', 'talking-animals',
-  'ai-baby-podcast', 'talking-objects', 'ai-ad-clone', 'product-avatar',
+  'ai-baby-podcast', 'ai-ad-clone', 'product-avatar',
   'product-video-generator', 'product-image-generator',
 ];
 
@@ -90,22 +90,18 @@ test('unavailable workflows stay safeguarded and route customers to working alte
     assert.equal(feature.alternativeLabel, 'Open Lip Sync Studio');
   }
 
-  const talkingObjects = creativeFeature('talking-objects');
-  assert.equal(talkingObjects.model, undefined);
-  assert.equal(talkingObjects.blocked, true);
-  assert.match(talkingObjects.blockedReason, /rejected object-only sources during paid production testing/);
-  assert.equal(talkingObjects.alternativeHref, '/app/features/product-video-generator');
-  assert.ok(!CREATIVE_FEATURE_DIRECTORY.includes(talkingObjects));
+  assert.equal(creativeFeature('talking-objects'), null);
 });
 
 test('recipe discovery cannot launch workflows that failed production compatibility checks', () => {
-  for (const id of ['lip-sync', 'video-dubbing', 'talking-object']) {
+  for (const id of ['lip-sync', 'video-dubbing']) {
     const recipe = recipeById(id);
     assert.equal(recipe.status, 'blocked');
     assert.equal(recipe.href, null);
     assert.ok(recipe.blockedReason);
     assert.equal(launchableRecipe(recipe), false);
   }
+  assert.equal(recipeById('talking-object'), null);
 });
 
 test('the app route and sidebar expose the workflow suite', async () => {
@@ -126,10 +122,10 @@ test('Creative tools owns guided outcomes once while Audio keeps its existing wo
   const create = await readFile(new URL('../app/veyrnox/app/create/page.js', import.meta.url), 'utf8');
   const audio = ['text-to-speech', 'lip-sync', 'ai-talking-photo-generator', 'singing-photo', 'video-dubbing'];
   assert.deepEqual(CREATIVE_FEATURES.filter((item) => creativeFeatureOwner(item) === 'audio').map((item) => item.slug), audio);
-  assert.equal(CREATIVE_FEATURE_DIRECTORY.length, CREATIVE_FEATURES.length - audio.length - 2);
+  assert.equal(CREATIVE_FEATURE_DIRECTORY.length, CREATIVE_FEATURES.length - audio.length - 1);
   assert.ok(CREATIVE_FEATURE_DIRECTORY.some((item) => item.slug === 'ai-avatar-generator'));
   assert.ok(!CREATIVE_FEATURE_DIRECTORY.some((item) => item.slug === 'ai-voice-cloning'));
-  assert.ok(!CREATIVE_FEATURE_DIRECTORY.some((item) => item.slug === 'talking-objects'));
+  assert.ok(!CREATIVE_FEATURE_SLUGS.includes('talking-objects'));
   assert.doesNotMatch(create, /CreateStartFrom/);
 });
 
@@ -146,10 +142,9 @@ test('studio example cards share one component and show only media we host', asy
   assert.match(card, /app\.features\.exampleAria/);
   assert.doesNotMatch(card, /lipsync\.video/);
   assert.match(performance, /<StudioExampleCard slug="lip-sync"/);
-  assert.match(performance, /dedicatedCharacterWorkflow === 'talking-object' && <StudioExampleCard slug="talking-objects"/);
   assert.match(speech, /<StudioExampleCard slug="text-to-speech"/);
   assert.doesNotMatch(performance + speech + tools, /LipSyncExampleCard/);
-  for (const slug of ['lip-sync', 'text-to-speech', 'talking-objects']) {
+  for (const slug of ['lip-sync', 'text-to-speech']) {
     assert.ok(creativeFeatureExample(slug).url.startsWith('/examples/'), `${slug} must stay on owned media`);
   }
 });
