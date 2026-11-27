@@ -69,8 +69,12 @@ const PAID_ACTIONS: readonly RegExp[] = [
     /^\/api\/v1\/editor\/server-render\/?$/,
     /^\/api\/v1\/montage(\/|$)/,
 ];
+const PAID_QUERY_ACTIONS: readonly RegExp[] = [
+    /^\/api\/v1\/music\/songs\/[^/?]+\/?\?phase=confirm(?:&|$)/,
+];
 export const isPaidAction = (path: string, method: string): boolean => {
     if (method.toUpperCase() !== 'POST') return false;
+    if (PAID_QUERY_ACTIONS.some(pattern => pattern.test(path))) return true;
     const clean = path.split('?')[0];
     return PAID_ACTIONS.some(pattern => pattern.test(clean));
 };

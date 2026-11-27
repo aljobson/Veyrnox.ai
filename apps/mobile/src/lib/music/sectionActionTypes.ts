@@ -1,6 +1,7 @@
 import type { PairQuote, GenerationActionKind } from './generationActionTypes';
+import type { RemixActionKind } from './remixActionTypes';
 export type SectionActionKind = 'add_section' | 'replace_section';
-export type AnyGenerationActionKind = GenerationActionKind | SectionActionKind;
+export type AnyGenerationActionKind = GenerationActionKind | SectionActionKind | RemixActionKind;
 // Mirrored from parseMusicAddSectionQuote; parser parity is checked in the validator tests.
 export const SECTION_POSITIONS = ['beginning', 'end'] as const;
 export const SECTION_DURATIONS = [10, 20, 30] as const;

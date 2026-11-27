@@ -1,6 +1,6 @@
-## Parity: 53.5 / 100
+## Parity: 54.1 / 100
 
-features 53.5  (176 counted, must-haves 13 of 44 done)
+features 54.1  (176 counted, must-haves 13 of 44 done)
 
 Not shippable yet: 31 must-have features are not done.
 
@@ -11,7 +11,7 @@ Not shippable yet: 31 must-have features are not done.
 - community                     25.0  (4 features)
 - studio                        32.9  (35 features)
 - models                        33.3  (7 features)
-- remix                         34.1  (12 features)
+- remix                         43.2  (12 features)
 - stems                         43.8  (4 features)
 - organization                  46.4  (9 features)
 - safety                        50.0  (1 features)
@@ -70,8 +70,6 @@ Not shippable yet: 31 must-have features are not done.
 - [should] identity: Create own Voice profile, no  (Pro/Premier and age/region limits)
 - [should] identity: Use Voice in creation, no  (Compatible model required)
 - [should] identity: Voice privacy setting, no  (Public or private where supported)
-- [should] remix: Mashup exactly two owned songs, no  (Explicit two-source workflow)
-- [should] remix: Sample an owned audio range, no  (Select a slice from song upload or recording)
 - [should] speech: Speech generation with soundtrack, no  (Web beta combines spoken voice and music)
 - [should] collaboration: Invite collaborators by handle, partial  (Owners invite an exact private collaboration handle with durable replay protection and a ten-member transaction limit; removal and live database races remain)
 - [should] collaboration: Owner and collaborator roles, partial  (Membership persists explicit owner or collaborator roles; only owners receive invitation controls while collaborators get read-only shared songs and member lists)
@@ -92,7 +90,9 @@ Not shippable yet: 31 must-have features are not done.
 - [should] library: Uploads and stems collections, partial  (Owner-only verified uploads are browsable and playable and a song action can return a private stem archive; a dedicated browsable Stems collection and individual stem rows remain unavailable)
 - [should] models: Premium v6 model, partial  (Clean-room analogue ACE-Step 1.5 is an active schema-pinned higher-quality pair model; UI and both database spend boundaries require a current active paid period while live Music acceptance remains pending and no Suno v6 identity is claimed)
 - [should] organization: Create playlists, partial  (Private ordered collections of owned songs with atomic revision-checked replacement are implemented behind disabled playlist and schema gates)
+- [should] remix: Mashup exactly two owned songs, partial  (The billed server and web path accepts exactly one other owner-current WAV song prepares a bounded two-source mix preserves both originals and requires rights attestation plus an exact two-result quote; React Native iOS reaches the same quote flow against a deterministic local mock but still lacks live server acceptance and client-side source-duration bounds)
 - [should] remix: Reuse styles and lyrics, partial  (One exact owner-current generated version can revision-safely copy selected stored lyrics and/or style direction into the private Custom draft with durable replay and no spend; live database acceptance and reuse from non-generation edits remain unavailable)
+- [should] remix: Sample an owned audio range, partial  (Web and React Native iOS select a bounded 5–30 second range from an existing owner-current WAV song preserve the original prepare the exact crop server-side and require rights attestation plus an exact two-result credit quote; direct recording or pre-song upload selection waveform audition and client-side duration bounds remain absent)
 - [should] results: Like and dislike feedback, partial  (Owner-only durable like dislike and clear mutations are implemented behind disabled schema and Library gates; reason capture and live database acceptance remain)
 - [should] sharing: Allow or disable comments, partial  (Publication stores and publicly projects the owner's explicit comments permission; an actual comments system remains absent)
 - [should] sharing: Allow or disable remixes, partial  (Publication stores and publicly projects the owner's explicit remix permission; remix generation remains unavailable)
