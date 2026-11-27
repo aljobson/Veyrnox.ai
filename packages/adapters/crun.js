@@ -1,10 +1,9 @@
 /**
  * Crun provider adapter (ADR-0256, phase 5), Worker runtime, no dependencies.
  *
- * NOT REGISTERED. Nothing in packages/provider-sdk/registry.js names it and no
- * catalog row uses it, so no job can reach Crun. It exists so the route and its
- * request shapes are reviewed and tested before the owner has answers on resale
- * rights, upstream supply and credit expiry, and before there is a key.
+ * Registered through the provider SDK. Public catalogue-template requests are
+ * admitted through a private model row after the server reloads and validates
+ * the exact live catalogue item and price.
  *
  *   submitTask(job, cfg)   POST /api/v1/client/job/CreateTask
  *   fetchTask(taskId, cfg) GET  /api/v1/client/job/TaskInfo
@@ -49,6 +48,7 @@ const SUNO_MODEL = 'suno/music-generate';
 const SUNO_SOUNDS_MODEL = 'suno/sounds-generate';
 const SUNO_VERSIONS = new Set(['v6', 'v6_mini', 'v6_wild']);
 const SUNO_MODELS = new Set(['v6', 'v6_mini', 'v6_wild', 'chirp-v6']);
+const TEMPLATE_MODELS = new Set(['kling/template', 'bytedance/template', 'vidu/template']);
 // Kling (docs.crun.ai/models/kling/v3-0.json and v2-6.json, read 2026-11-03). Each mirrors the kie row it would back:
 // `kling/v3` is the 3.0 image-to-video offer (pro = 1080p; `kling/v3-std` is the same at 720p, single shot, audio off, one start frame required) and
 // `kling/v2-6` is the 2.6 Pro text-to-video offer (pro, audio off, no source image). Both are sold as a 5 s unit and
@@ -87,7 +87,7 @@ const KLING_O1_SWAP_TIERS = Object.freeze({ [KLING_O1_SWAP_MODEL]: '720p', 'klin
 const isKlingO1Swap = model => Object.hasOwn(KLING_O1_SWAP_TIERS, model);
 // These requests carry signed links to a person's photo or voice, so Crun's own refusal text is never kept.
 const isVeoI2v = model => /^google\/veo3-1-(?:lite-|fast-)?i2v$/.test(model);
-const redactsRefusal = model => isVeoI2v(model) || !!seedance25Task(model) || model === QWEN_ENDPOINT || isKlingO1Swap(model) || model === KLING_AVATAR_MODEL || model === SEEDANCE_R2V_MODEL || model === CRUN_KLING_O1_REFERENCE_ENDPOINT_MODEL || CRUN_IMAGE_TOOL_MODELS.includes(model);
+const redactsRefusal = model => isVeoI2v(model) || !!seedance25Task(model) || TEMPLATE_MODELS.has(model) || model === QWEN_ENDPOINT || isKlingO1Swap(model) || model === KLING_AVATAR_MODEL || model === SEEDANCE_R2V_MODEL || model === CRUN_KLING_O1_REFERENCE_ENDPOINT_MODEL || CRUN_IMAGE_TOOL_MODELS.includes(model);
 const ENDPOINT_RE = /^crun:([a-z0-9][a-z0-9./_-]{1,80})$/i;
 const TASK_ID_RE = /^[A-Za-z0-9._-]{1,128}$/;
 
@@ -95,7 +95,7 @@ const TASK_ID_RE = /^[A-Za-z0-9._-]{1,128}$/;
 export function parseEndpoint(endpoint) {
     if (typeof endpoint === 'string' && endpoint.startsWith('crun:') && seedance25Task(endpoint.slice(5))) return { model: endpoint.slice(5) };
     const m = ENDPOINT_RE.exec(String(endpoint || ''));
-    return m && !m[1].includes('..') && (m[1] === QWEN_ENDPOINT || MODELS[m[1]] || IMAGE_MODELS[m[1]] || KLING_MODELS[m[1]] || m[1] === WAN_ANIMATE_MODEL || m[1] === KLING_AVATAR_MODEL || m[1] === SEEDANCE_R2V_MODEL || m[1] === CRUN_KLING_O1_REFERENCE_ENDPOINT_MODEL || CRUN_IMAGE_TOOL_MODELS.includes(m[1]) || m[1] === SUNO_MODEL || m[1] === SUNO_SOUNDS_MODEL || isKlingO1Swap(m[1])) ? { model: m[1] } : null;
+    return m && !m[1].includes('..') && (m[1] === QWEN_ENDPOINT || MODELS[m[1]] || IMAGE_MODELS[m[1]] || KLING_MODELS[m[1]] || TEMPLATE_MODELS.has(m[1]) || m[1] === WAN_ANIMATE_MODEL || m[1] === KLING_AVATAR_MODEL || m[1] === SEEDANCE_R2V_MODEL || m[1] === CRUN_KLING_O1_REFERENCE_ENDPOINT_MODEL || CRUN_IMAGE_TOOL_MODELS.includes(m[1]) || m[1] === SUNO_MODEL || m[1] === SUNO_SOUNDS_MODEL || isKlingO1Swap(m[1])) ? { model: m[1] } : null;
 }
 
 /** 'video', 'image', 'audio' (music) or 'speech' for a Crun endpoint this adapter owns, else null. */
@@ -110,6 +110,7 @@ export function endpointKind(endpoint) {
  * @returns {{ok:true, body:object}|{ok:false, error:string}}
  */
 export function buildRequest(target, inputs) {
+    if (TEMPLATE_MODELS.has(target.model)) return buildTemplateRequest(target.model, inputs);
     if (target.model === QWEN_ENDPOINT) return buildQwenRequest(inputs);
     if (seedance25Task(target.model)) return buildSeedance25Request(seedance25Task(target.model), inputs);
     if (target.model === SUNO_MODEL) return buildSunoRequest(inputs);
@@ -154,6 +155,27 @@ export function buildRequest(target, inputs) {
         ok: true,
         body: { model: target.model, input: { prompt, duration: seconds, resolution: [...spec.resolutions][0], aspect_ratio: aspect, ...(spec.audio ? { audio: true } : {}) } },
     };
+}
+
+function buildTemplateRequest(model, inputs) {
+    if (!inputs || typeof inputs !== 'object' || Array.isArray(inputs)) return { ok: false, error: 'inputs_invalid' };
+    const allowed = new Set(['template_id', 'image_url', ...(model === 'bytedance/template' ? ['resolution'] : []), ...(model === 'vidu/template' ? ['bgm'] : [])]);
+    for (const key of Object.keys(inputs)) if (!allowed.has(key)) return { ok: false, error: `inputs_key_not_allowed:${key.slice(0, 32)}` };
+    if (typeof inputs.template_id !== 'string' || !/^[A-Za-z0-9._-]{1,120}$/.test(inputs.template_id)) return { ok: false, error: 'inputs_invalid:template_id' };
+    const images = Array.isArray(inputs.image_url) ? inputs.image_url : inputs.image_url ? [inputs.image_url] : [];
+    const maxImages = model === 'bytedance/template' ? 8 : 5;
+    if (images.length > maxImages || (model !== 'vidu/template' && images.length < 1)) return { ok: false, error: 'source_count_exceeded' };
+    for (const image of images) {
+        try { if (typeof image !== 'string' || image.length > 2048 || new URL(image).protocol !== 'https:') throw new Error(); }
+        catch { return { ok: false, error: 'inputs_invalid:image_url' }; }
+    }
+    if (model === 'kling/template') return { ok: true, body: { model, input: { template_id: inputs.template_id, img_urls: images } } };
+    if (model === 'bytedance/template') {
+        if (!['480p', '720p', '1080p'].includes(inputs.resolution)) return { ok: false, error: 'inputs_invalid:resolution' };
+        return { ok: true, body: { model, input: { template_id: inputs.template_id, img_urls: images, resolution: inputs.resolution } } };
+    }
+    if (inputs.bgm !== false) return { ok: false, error: 'inputs_invalid:bgm' };
+    return { ok: true, body: { model, input: { template: inputs.template_id, images, bgm: false } } };
 }
 
 function textField(input, field, max, { required = false } = {}) {

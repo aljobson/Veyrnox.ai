@@ -34,7 +34,7 @@ describe('audio hub targets', () => {
         expect(audioTarget('dub', null)).toEqual({ pathname: '/features/[slug]', params: { slug: 'lip-sync' } });
     });
     test('Music uses its native flow while speech still picks the cheapest eligible model', () => {
-        const models = [model('suno', 'Suno music', 9), model('ace-step', 'ACE-Step (music/SFX)', 2), model('tts', 'Text to speech voice', 1)];
+        const models = [model('veyrnox-music', 'Veyrnox Music', 9), model('ace-step', 'ACE-Step (music/SFX)', 2), model('tts', 'Text to speech voice', 1)];
         expect(audioTarget('music', models)).toEqual({ pathname: '/music/create' });
         expect(audioTarget('speech', models)).toEqual({ pathname: '/create/[modelId]', params: { modelId: 'tts' } });
     });

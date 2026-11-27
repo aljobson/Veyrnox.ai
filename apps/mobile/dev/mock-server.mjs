@@ -5,6 +5,7 @@ import { mockInbox } from './mockInbox.mjs';
 // previewed in the simulator without an account. Development only: `node dev/mock-server.mjs` (port 8799).
 import { mockSocialUploads, uploadsEnabled, validateUploadMedia } from './mockSocialUploads.mjs';
 import { mockQaJobs, qaAsset } from './mockQaJobs.mjs';
+import { mockMusicRemix } from './mockMusicRemix.mjs';
 import { mockSecurity } from './mockSecurityFixtures.mjs';
 import { mockWins } from './mockWins.mjs';
 import { mockCheckin } from './mockCheckin.mjs';
@@ -23,6 +24,33 @@ const depthAccountId = '7c1f0d7e-2b4a-4c55-9a8e-3f1d2c6b5a40';
 const reportFlags = { scheduledReportsEnabled: process.env.MOCK_REPORT_FLAGS !== 'noschedule',
     reportDeliveryEnabled: process.env.MOCK_REPORT_FLAGS !== 'nodelivery', reportExportsEnabled: true };
 const reportRole = process.env.MOCK_REPORT_ROLE || 'owner';
+const MUSIC_DRAFT_ID = '4ca1c8a9-d2fd-4590-a799-0801fbe288c1';
+const MUSIC_ENTITLEMENTS = Object.freeze({
+    available: true, mode: 'custom', output_count: 2, concurrency_limit: 4,
+    balance: 240, free_credits: 0, free_expires_at: null,
+    models: [{
+        id: 'ace-step-1.5', name: 'Veyrnox Music', provider_contract: 'crun-suno-v1',
+        generation_modes: ['simple', 'custom'],
+        controls: {
+            description: true, variety: ['Off', 'Normal', 'High', 'Extra', 'Max'], style_influence: true,
+            exclude_styles: true, tempo_key_meter: false, duration_seconds: { min: 1, max: 135, default: 60, custom_only: true },
+            lyrics: true, lyrics_required_for_custom_vocal: true, styles: true, title: true,
+            vocal_gender: ['auto', 'male', 'female'], suno_model: ['v6', 'v6_mini', 'v6_wild'],
+            weirdness: true, instrumental: 'optional',
+        },
+        limits: {
+            prompt: 500, title: 80, lyrics: 5000, styles: 1000, exclude_styles: 1000,
+            duration_seconds: { min: 1, max: 135, default: 60, custom_only: true },
+            variety: { min: 0, max: 100, provider_min: 0, provider_max: 4 },
+            style_weight: { min: 0, max: 1 }, weirdness: { min: 0, max: 1 },
+        },
+        counters: { prompt: { max: 500 }, title: { max: 80 }, lyrics: { max: 5000 }, styles: { max: 1000 }, exclude_styles: { max: 1000 } },
+        credits_per_candidate: 4, total_credits: 8, instrumental_only: false, requires_paid_plan: false, available: true,
+    }],
+    custom_drafts: { available: true, autosave: true, generation_supported: true, lyrics_max: 5000, styles_max: 1000, title_max: 80, provider_contract: 'crun-suno-v1' },
+    features: { albums: false, inspiration: false, studioChat: false, dailyChallenge: false, persistentQueue: false },
+    daily_allowance: { enabled: false }, policy: { version: 'music-v1', pre_debit: true },
+});
 const MUSIC_SONGS = [
     { id: '66666666-6666-4666-8666-666666666661', title: 'Midnight Keys', job_id: '77777777-7777-4777-8777-777777777771', version_id: '55555555-5555-4555-8555-555555555551', lifecycle_status: 'active', revision: 1 },
     { id: '66666666-6666-4666-8666-666666666662', title: 'Neon Guitar', job_id: '77777777-7777-4777-8777-777777777772', version_id: '55555555-5555-4555-8555-555555555552', lifecycle_status: 'active', revision: 1 },
@@ -84,6 +112,11 @@ const state = {
     brandKits: new Map(),
     retention: new Map(),
     progress: new Map([['11111111-1111-4111-8111-111111111111', 24]]),
+    musicRemixGenerations: new Map(),
+    musicRemixQuotes: new Map(),
+    musicRemixConfirmations: new Map(),
+    musicDraft: { id: MUSIC_DRAFT_ID, updated_at: new Date().toISOString(), revision: 0,
+        provider_contract: 'crun-suno-v1', model_id: 'ace-step-1.5', lyrics: '', styles: '', title: '' },
 };
 state.messages.set(state.threads[0].id, [
     { id: randomUUID(), role: 'user', content: 'Give me three angles for a spring launch video.' },
@@ -196,6 +229,7 @@ createServer(async (req, res) => {
     if (await mockSocialUploads(req, res, `http://${req.headers.host || `localhost:${PORT}`}`, state.socialPosts)) return;
     const body = req.method === 'POST' || req.method === 'PATCH' || req.method === 'PUT' || req.method === 'DELETE' ? await readBody(req) : {};
     console.log(req.method, path);
+    if (mockMusicRemix(req, res, url, body, state)) return;
     if (mockSecurity(req, res, url, body)) return;
 
     if (path.startsWith('/mock-upload/') && req.method === 'PUT') {
@@ -831,6 +865,23 @@ createServer(async (req, res) => {
         return send(res, 200, { plan: { message: credits ? 'Your balance is in the credits chip. Every paid action shows its price first.' : 'Open Create, pick a model and describe what you want. The price shows before you start.', target: credits ? 'nav.credits' : 'nav.create', action: 'show_target' } });
     }
     if (path === '/api/v1/chat/models') return send(res, 200, { models: CHAT_MODELS });
+    // Development-only native Music contract. It never quotes, spends credits or calls a provider.
+    if (path === '/api/v1/music/entitlements' && req.method === 'GET') return send(res, 200, MUSIC_ENTITLEMENTS);
+    if (path === '/api/v1/music/drafts/custom' && req.method === 'GET') {
+        return send(res, 200, { provider_contract: 'crun-suno-v1', draft: state.musicDraft });
+    }
+    if (path === '/api/v1/music/drafts/custom' && req.method === 'PUT') {
+        if (body.provider_contract !== 'crun-suno-v1' || body.draft_id !== state.musicDraft.id) {
+            return send(res, 409, { error: 'contract_stale' });
+        }
+        if (body.revision !== state.musicDraft.revision) {
+            return send(res, 409, { error: 'revision_conflict', draft: state.musicDraft });
+        }
+        state.musicDraft = { ...state.musicDraft, model_id: String(body.model_id || 'ace-step-1.5'),
+            lyrics: String(body.lyrics || ''), styles: String(body.styles || ''), title: String(body.title || ''),
+            revision: state.musicDraft.revision + 1, updated_at: new Date().toISOString() };
+        return send(res, 200, { provider_contract: 'crun-suno-v1', draft: state.musicDraft });
+    }
     // Personas and folders (stateful), with the real routes' limits and error codes.
     const count = (fid) => state.threads.filter((t) => t.folder_id === fid).length;
     if (path === '/api/v1/chat/personas' && req.method === 'GET') return send(res, 200, { enabled: true, personas: state.personas });
@@ -905,7 +956,10 @@ createServer(async (req, res) => {
         const t = state.threads.find((x) => x.id === m[1]);
         if (!t) return send(res, 404, { error: 'thread_not_found' });
         if (!m[2]) return send(res, 200, { thread: t, messages: state.messages.get(t.id) ?? [] });
-        const reply = `Here is a quick take on “${String(body.text || '').slice(0, 60)}”: lead with the strongest visual, keep it under ten seconds, and end on the product name.`;
+        const requestText = String(body.text || '');
+        const reply = requestText.includes('BEGIN REVISED LYRICS') && requestText.includes('END REVISED LYRICS')
+            ? 'BEGIN REVISED LYRICS\nThrough the longest night, a spark becomes a flame\nMorning finds us brighter, calling out our name\nStep into the daylight, leave the dark behind\nWe were always made to shine\nEND REVISED LYRICS'
+            : `Here is a quick take on “${requestText.slice(0, 60)}”: lead with the strongest visual, keep it under ten seconds, and end on the product name.`;
         // Priced like lib/chat.js replyPrice: the catalog base plus the extra for each option chosen; an option the model does not offer is refused.
         const model = CHAT_MODELS.find((x) => x.id === t.model_id) ?? CHAT_MODELS[0];
         const chosen = body.options ?? {};

@@ -30,6 +30,9 @@ export function MusicSongActions({ song }: { song: MusicSongDetail }) {
         {(['extend', 'cover'] as const).filter(name => song.actions.includes(name) && capability(capabilities, name)).map(name =>
             <Button key={name} variant="secondary" icon={name === 'extend' ? 'arrowsHorizontal' : 'magicWand'} label={t(`musicGenerationActions.${name}.title`)}
                 onPress={() => router.push({ pathname: `/music/${name}`, params: { id: song.id } } as never)} />)}
+        {(['mashup', 'sample'] as const).filter(name => song.actions.includes(name) && capability(capabilities, name)).map(name =>
+            <Button key={name} variant="secondary" icon={name === 'mashup' ? 'swap' : 'scissors'} label={t(`musicRemix.${name}.title`)}
+                onPress={() => router.push({ pathname: `/music/${name}`, params: { id: song.id } } as never)} />)}
         {formatEditsUnavailable ? <Text variant="footnote" tone="secondary" accessibilityRole="note">
             {t('music.actions.editUnavailableForFormat')}
         </Text> : null}</>;

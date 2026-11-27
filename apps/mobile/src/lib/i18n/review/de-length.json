@@ -1,5 +1,11 @@
 [
   {
+    "id": "crunTemplates.run.library",
+    "english": "View in Library",
+    "translation": "In der Bibliothek ansehen",
+    "ratio": 1.67
+  },
+  {
     "id": "music.queue.add",
     "english": "Add to listening queue",
     "translation": "Zur Wiedergabewarteschlange hinzufügen",
@@ -5392,6 +5398,54 @@
     "english": "Copper sunrise",
     "translation": "Kupferner Sonnenaufgang",
     "ratio": 1.64
+  },
+  {
+    "id": "musicRemix.sample.startMore",
+    "english": "Move start later",
+    "translation": "Beginn nach hinten verschieben",
+    "ratio": 1.88
+  },
+  {
+    "id": "musicSources.offline",
+    "english": "No connection. Reconnect and try again.",
+    "translation": "Keine Verbindung. Stelle die Verbindung wieder her und versuche es erneut.",
+    "ratio": 1.9
+  },
+  {
+    "id": "musicLyricist.retry",
+    "english": "Retry",
+    "translation": "Erneut versuchen",
+    "ratio": 3.2
+  },
+  {
+    "id": "musicLyricist.examples",
+    "english": "Examples you wrote or own",
+    "translation": "Beispiele, die du geschrieben hast oder besitzt",
+    "ratio": 1.88
+  },
+  {
+    "id": "musicLyricist.coWrite",
+    "english": "Co-write in Chat",
+    "translation": "Gemeinsam in Chat schreiben",
+    "ratio": 1.69
+  },
+  {
+    "id": "music.lyricAssistant.profilesError",
+    "english": "Could not load your Lyricists. Try again.",
+    "translation": "Deine Songtexter konnten nicht geladen werden. Versuche es erneut.",
+    "ratio": 1.61
+  },
+  {
+    "id": "music.lyricAssistant.retry",
+    "english": "Try again",
+    "translation": "Erneut versuchen",
+    "ratio": 1.78
+  },
+  {
+    "id": "music.lyricAssistant.emptyDraft",
+    "english": "No lyrics yet.",
+    "translation": "Noch kein Songtext vorhanden.",
+    "ratio": 2.07
   },
   {
     "id": "studioAssistant.value_on",

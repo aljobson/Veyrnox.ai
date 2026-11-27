@@ -1,7 +1,6 @@
-import { createTranslator, fill } from '../src/lib/i18n/translate';
+import { createTranslator, fallbackPluralCategory, fill } from '../src/lib/i18n/translate';
 import { isRtl, matchTag, resolveLocale } from '../src/lib/i18n/locales';
 import { getLocale, setLocaleFromDevice, t } from '../src/lib/i18n';
-import en from '../src/lib/i18n/messages/en';
 
 describe('locale detection', () => {
     test('maps regional and script tags to the shipped code', () => {
@@ -49,6 +48,25 @@ describe('translator', () => {
         expect(ar.plural('n', 0)).toBe('لا ملفات');
         expect(ar.plural('n', 1)).toBe('\u20681\u2069 ملف'); // Arabic "one" has no entry, so other
         expect(createTranslator('en', catalogs).plural('absent', 2)).toBe('absent');
+    });
+    test('matches shipped Intl cardinal rules when Hermes has no PluralRules', () => {
+        const locales = ['en', 'es', 'fr', 'de', 'pt', 'ru', 'ja', 'ko', 'zh', 'hi', 'ar'] as const;
+        const counts = [0, 0.5, 1, 1.5, 2, 2.5, 3, 5, 11, 21, 101, -1, 1_000_000];
+        const expected = new Map(locales.flatMap(locale => counts.map(count => [
+            `${locale}:${count}`, new Intl.PluralRules(locale).select(count),
+        ] as const)));
+        const original = Intl.PluralRules;
+        try {
+            Object.defineProperty(Intl, 'PluralRules', { configurable: true, writable: true, value: undefined });
+            for (const locale of locales) for (const count of counts) {
+                expect(fallbackPluralCategory(locale, count)).toBe(expected.get(`${locale}:${count}`));
+            }
+            expect(fallbackPluralCategory('en', Number.NaN)).toBe('other');
+            expect(fallbackPluralCategory('ar', Number.POSITIVE_INFINITY)).toBe('other');
+            expect(createTranslator('en', catalogs).plural('n', 1)).toBe('1 file');
+        } finally {
+            Object.defineProperty(Intl, 'PluralRules', { configurable: true, writable: true, value: original });
+        }
     });
 });
 

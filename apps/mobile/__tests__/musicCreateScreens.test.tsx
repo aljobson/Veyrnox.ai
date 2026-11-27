@@ -9,12 +9,14 @@ import { ApiError, type ApiClient } from '../src/lib/api';
 import { bindCacheUser, resetCacheUser } from '../src/lib/appCache';
 import { getMusicCreateSession } from '../src/lib/music/createSession';
 import { t } from '../src/lib/i18n';
-import { entitlements, draft, quote, generation, view, custom } from './fixtures/musicCreate';
+import { bindMusicLyricThread, MUSIC_LYRIC_BEGIN, MUSIC_LYRIC_END, selectMusicLyricPersona, stageMusicLyricHandoff, stageMusicLyricProposal } from '../src/lib/music/lyricAssistantHandoff';
+import { entitlements, draft, quote, generation, view, custom, crunEntitlements, crunDraft } from './fixtures/musicCreate';
 import { JOB } from './fixtures/music';
-const mockApi = { request: jest.fn() }, mockPush = jest.fn();
+const mockApi = { request: jest.fn() }, mockPush = jest.fn(), mockSetParams = jest.fn();
+let mockParams: Record<string, string> = {};
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi }) }));
-jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useRouter: () => ({ push: mockPush }),
-    useLocalSearchParams: () => ({}), useFocusEffect: (cb: () => void) => require('react').useEffect(cb, [cb]) }));
+jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useRouter: () => ({ push: mockPush, setParams: mockSetParams }),
+    useLocalSearchParams: () => mockParams, useFocusEffect: (cb: () => void) => require('react').useEffect(cb, [cb]) }));
 jest.mock('../src/components/music/MusicPlayer', () => ({ MusicPlayer: () => require('react').createElement(require('react-native').View, { testID: 'music-player' }) }));
 jest.mock('../src/components/VeyCharacter', () => ({ VeyCharacter: () => null }));
 void [RN.View, RN.Text, RN.Pressable, RN.ScrollView];
@@ -31,6 +33,11 @@ const mode = async (value: string) => {
     const tab = root.container.queryAll(n => n.props.accessibilityRole === 'tab' && n.props.accessibilityLabel === t(label))[0];
     await act(async () => tab.props.onClick({ nativeEvent: {} }));
 };
+const customVocal = async () => {
+    await mode('custom');
+    const flow = getMusicCreateSession(mockApi as unknown as ApiClient);
+    await act(async () => { await flow.loadDraft(); flow.edit({ instrumental: false }); });
+};
 const baseResponse = async (path: string, init?: RequestInit): Promise<unknown> => {
     if (path.endsWith('/entitlements')) return entitlements;
     if (path.endsWith('/drafts/custom')) return { draft: init ? { ...draft, ...JSON.parse(init.body as string), revision: 1 } : draft };
@@ -40,7 +47,7 @@ const baseResponse = async (path: string, init?: RequestInit): Promise<unknown> 
 };
 beforeEach(async () => {
     RN.AppState.currentState = 'active';
-    resetCacheUser(); await bindCacheUser('music-create-user'); jest.clearAllMocks(); mockApi.request.mockImplementation(baseResponse);
+    resetCacheUser(); await bindCacheUser('music-create-user'); jest.clearAllMocks(); mockParams = {}; mockApi.request.mockImplementation(baseResponse);
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; root = createRoot();
 });
 afterEach(async () => { await act(async () => { root.unmount(); resetCacheUser(); }); jest.restoreAllMocks(); jest.useRealTimers(); });
@@ -166,6 +173,20 @@ test('advanced controls are capability-gated progressive disclosure and never re
     expect(button(t('music.create.advanced.hide')).props.accessibilityState.expanded).toBe(true);
     expect(text(t('music.create.advanced.bpmInvalid', { min: 40, max: 220 })).length).toBeGreaterThan(0);
 });
+test('Lyricist profiles render only for Custom vocals', async () => {
+    await mount();
+    expect(text(t('musicLyricist.title'))).toHaveLength(0);
+    await mode('custom');
+    expect(text(t('musicLyricist.title'))).toHaveLength(0);
+    const instrumental = root.container.queryAll(n => n.props.accessibilityLabel === t('music.create.instrumental')
+        && typeof n.props.onChange === 'function')[0];
+    await act(async () => instrumental.props.onChange({ nativeEvent: { value: false } }));
+    expect(text(t('musicLyricist.title')).length).toBeGreaterThan(0);
+    await act(async () => instrumental.props.onChange({ nativeEvent: { value: true } }));
+    expect(text(t('musicLyricist.title'))).toHaveLength(0);
+    await mode('simple');
+    expect(text(t('musicLyricist.title'))).toHaveLength(0);
+});
 test('custom saves draft then quotes saved revision and resolves conflict', async () => {
     await mount(); await mode('custom'); await edit('lyrics', 'My lyrics'); await edit('styles', 'warm piano');
     let conflicted = false;
@@ -178,6 +199,82 @@ test('custom saves draft then quotes saved revision and resolves conflict', asyn
     const puts = mockApi.request.mock.calls.filter(([, init]) => init?.method === 'PUT'); expect(JSON.parse(puts[1][1].body)).toMatchObject({ revision: 9, lyrics: 'My lyrics' });
     const body = JSON.parse(mockApi.request.mock.calls.find(([p]) => p.endsWith('/generation-quotes'))![1].body);
     expect(body.draft_revision).toBe(1);
+});
+test('custom vocal creation stages only an opaque Lyricist handoff and does not quote', async () => {
+    await mount(); await customVocal();
+    expect(field(t('music.lyricAssistant.request'))).toBeDefined();
+    await act(async () => field(t('music.lyricAssistant.request')).props.onChangeText('Make the chorus more vivid.'));
+    mockApi.request.mockClear();
+    await click(t('music.lyricAssistant.work'));
+    const route = mockPush.mock.calls.at(-1)?.[0];
+    expect(route.pathname).toBe('/chat/new');
+    expect(route.params.lyricHandoff).toMatch(/^lyrics-/);
+    expect(JSON.stringify(route)).not.toContain('chorus');
+    expect(mockApi.request.mock.calls.some(([path]) => String(path).includes('generation'))).toBe(false);
+});
+test('the Lyricist section is also available for the Suno custom-vocal contract', async () => {
+    mockApi.request.mockImplementation((path, init) => path.endsWith('/entitlements') ? crunEntitlements
+        : path.endsWith('/drafts/custom') && !init ? { draft: crunDraft } : baseResponse(path, init));
+    await mount(); await customVocal();
+    expect(field(t('music.lyricAssistant.request'))).toBeDefined();
+});
+test('returned Lyricist proposal requires review, resets rights, and never quotes on Apply', async () => {
+    await mount(); await customVocal(); await edit('lyrics', 'Old words'); await edit('styles', 'warm piano');
+    const rights = root.container.queryAll(n => n.props.accessibilityRole === 'checkbox')[0];
+    await act(async () => rights.props.onClick({ nativeEvent: {} }));
+    const flow = getMusicCreateSession(mockApi as unknown as ApiClient), current = flow.snapshot();
+    expect(current.rights).toBe(true);
+    const token = stageMusicLyricHandoff({ sourceLyrics: current.input.lyrics, lyricLimit: 3000, request: 'Rewrite it.',
+        draftId: current.draft!.id, draftRevision: current.draft!.revision })!;
+    selectMusicLyricPersona(token, 'persona-one'); bindMusicLyricThread(token, 'persona-one', 'thread-one');
+    stageMusicLyricProposal(token, 'thread-one', 'assistant-one', `${MUSIC_LYRIC_BEGIN}\nNew words\n${MUSIC_LYRIC_END}`);
+    mockApi.request.mockClear(); mockParams = { lyricHandoff: token };
+    await act(async () => root.render(<MusicCreate />));
+    expect(button(t('music.lyricAssistant.apply'))).toBeDefined();
+    expect(flow.snapshot().input.lyrics).toBe('Old words');
+    await click(t('music.lyricAssistant.apply'));
+    expect(flow.snapshot().input.lyrics).toBe('New words');
+    expect(flow.snapshot().rights).toBe(false);
+    expect(mockSetParams).toHaveBeenCalledWith({ lyricHandoff: undefined });
+    expect(mockApi.request.mock.calls.some(([path]) => String(path).includes('generation'))).toBe(false);
+});
+test('a stale returned proposal is rejected and a reviewed proposal can be discarded idempotently', async () => {
+    await mount(); await customVocal(); await edit('lyrics', 'Source words'); await edit('styles', 'piano');
+    const flow = getMusicCreateSession(mockApi as unknown as ApiClient), current = flow.snapshot();
+    const stale = stageMusicLyricHandoff({ sourceLyrics: current.input.lyrics, lyricLimit: 3000, request: 'Rewrite.',
+        draftId: current.draft!.id, draftRevision: current.draft!.revision })!;
+    selectMusicLyricPersona(stale, 'p'); bindMusicLyricThread(stale, 'p', 't');
+    stageMusicLyricProposal(stale, 't', 'a', `${MUSIC_LYRIC_BEGIN}\nProposal\n${MUSIC_LYRIC_END}`);
+    await edit('lyrics', 'Locally changed'); mockParams = { lyricHandoff: stale };
+    await act(async () => root.render(<MusicCreate />));
+    expect(button(t('music.lyricAssistant.apply'))).toBeUndefined();
+    expect(text(t('music.lyricAssistant.stale')).length).toBeGreaterThan(0);
+
+    const freshState = flow.snapshot();
+    const fresh = stageMusicLyricHandoff({ sourceLyrics: freshState.input.lyrics, lyricLimit: 3000, request: 'Rewrite.',
+        draftId: freshState.draft!.id, draftRevision: freshState.draft!.revision })!;
+    selectMusicLyricPersona(fresh, 'p'); bindMusicLyricThread(fresh, 'p', 't2');
+    stageMusicLyricProposal(fresh, 't2', 'a2', `${MUSIC_LYRIC_BEGIN}\nDiscard me\n${MUSIC_LYRIC_END}`);
+    mockParams = { lyricHandoff: fresh }; await act(async () => root.render(<MusicCreate />));
+    await click(t('music.lyricAssistant.discard'));
+    expect(flow.snapshot().input.lyrics).toBe('Locally changed');
+    await act(async () => root.render(<MusicCreate />));
+    expect(button(t('music.lyricAssistant.apply'))).toBeUndefined();
+});
+test('a returned proposal is withdrawn if the active lyric limit shrinks before Apply', async () => {
+    await mount(); await customVocal(); await edit('lyrics', 'Source'); await edit('styles', 'piano');
+    const flow = getMusicCreateSession(mockApi as unknown as ApiClient), current = flow.snapshot();
+    const token = stageMusicLyricHandoff({ sourceLyrics: current.input.lyrics, lyricLimit: 3000, request: 'Rewrite.',
+        draftId: current.draft!.id, draftRevision: current.draft!.revision })!;
+    selectMusicLyricPersona(token, 'p'); bindMusicLyricThread(token, 'p', 't');
+    stageMusicLyricProposal(token, 't', 'a', `${MUSIC_LYRIC_BEGIN}\nLong proposal\n${MUSIC_LYRIC_END}`);
+    mockParams = { lyricHandoff: token }; await act(async () => root.render(<MusicCreate />));
+    expect(button(t('music.lyricAssistant.apply'))).toBeDefined();
+    const smaller = { ...entitlements, custom_drafts: { ...entitlements.custom_drafts, lyrics_max: 3 } };
+    mockApi.request.mockImplementation((path, init) => path.endsWith('/entitlements') ? smaller : baseResponse(path, init));
+    await act(async () => { await flow.refreshEntitlements(); });
+    expect(button(t('music.lyricAssistant.apply'))).toBeUndefined();
+    expect(text(t('music.lyricAssistant.overLength')).length).toBeGreaterThan(0);
 });
 test('lost acknowledgement survives expiry and remount with same key and snapshot lyrics', async () => {
     jest.useFakeTimers(); let sends = 0; const keys: string[] = [], soon = new Date(Date.now() + 1000).toISOString();

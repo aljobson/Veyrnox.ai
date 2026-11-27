@@ -104,7 +104,7 @@ export function MusicSunoControls({ model, draft, updateDraft, controls, updateC
       <fieldset>
         <legend className="text-sm font-bold text-vx-fg-body">{t('app.music.suno.model')}</legend>
         <div className="mt-2 flex flex-wrap gap-2">
-          {(model?.controls?.suno_model || []).map((value) => <button key={value} type="button" aria-pressed={controls.sunoModel === value} onClick={() => updateControl('sunoModel', value)} className={`min-h-11 rounded-full border px-4 text-sm font-bold ${controls.sunoModel === value ? 'border-vx-accent bg-vx-accent text-vx-accent-ink' : 'border-vx-border bg-vx-base text-vx-fg-body hover:border-vx-border-boost'}`}>{value}</button>)}
+          {(model?.controls?.suno_model || []).map((value) => <button key={value} type="button" aria-pressed={controls.sunoModel === value} onClick={() => updateControl('sunoModel', value)} className={`min-h-11 rounded-full border px-4 text-sm font-bold ${controls.sunoModel === value ? 'border-vx-accent bg-vx-accent text-vx-accent-ink' : 'border-vx-border bg-vx-base text-vx-fg-body hover:border-vx-border-boost'}`}>{model?.controls?.suno_model_labels?.[value] || value}</button>)}
         </div>
       </fieldset>
 

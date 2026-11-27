@@ -1,5 +1,11 @@
 [
   {
+    "id": "crunTemplates.run.library",
+    "english": "View in Library",
+    "translation": "Voir dans la bibliothèque",
+    "ratio": 1.67
+  },
+  {
     "id": "editorAudioTools.previewNote",
     "english": "The phone preview plays volume and fades. EQ, pan, voice, noise and effects are saved but not heard on the phone yet.",
     "translation": "L’aperçu sur le téléphone restitue le volume et les fondus. L’égalisation, le panoramique, la voix, le bruit et les effets sont enregistrés mais ne sont pas encore audibles sur le téléphone.",
@@ -7726,6 +7732,48 @@
     "english": "Draft",
     "translation": "Brouillon",
     "ratio": 1.8
+  },
+  {
+    "id": "musicRemix.sample.longer",
+    "english": "Longer sample",
+    "translation": "Échantillon plus long",
+    "ratio": 1.62
+  },
+  {
+    "id": "musicSources.title",
+    "english": "Owned audio",
+    "translation": "Audio dont vous détenez les droits",
+    "ratio": 3.09
+  },
+  {
+    "id": "musicLyricist.retry",
+    "english": "Retry",
+    "translation": "Réessayer",
+    "ratio": 1.8
+  },
+  {
+    "id": "musicLyricist.examples",
+    "english": "Examples you wrote or own",
+    "translation": "Exemples que vous avez écrits ou possédez",
+    "ratio": 1.64
+  },
+  {
+    "id": "musicLyricist.save",
+    "english": "Save profile",
+    "translation": "Enregistrer le profil",
+    "ratio": 1.75
+  },
+  {
+    "id": "musicLyricist.confirmDelete",
+    "english": "Confirm delete",
+    "translation": "Confirmer la suppression",
+    "ratio": 1.71
+  },
+  {
+    "id": "music.lyricAssistant.emptyDraft",
+    "english": "No lyrics yet.",
+    "translation": "Aucune parole pour le moment.",
+    "ratio": 2.07
   },
   {
     "id": "studioAssistant.value_on",

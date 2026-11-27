@@ -504,6 +504,15 @@ test('Suno controls name every field and slider, format decimals by locale, and 
   assert.match(source, /Intl\.NumberFormat\(locale/, 'slider readouts use the locale decimal mark');
   assert.doesNotMatch(source, /toFixed\(2\)/);
   assert.match(source, /\{showTextFields \? <StylePicker label=\{t\('app\.music\.suno\.style'\)\}/, 'the composer shows its own Style box, so the picker hides there');
+  assert.match(source, /suno_model_labels\?\.\[value\] \|\| value/, 'the label is projected while the option value stays on the wire token');
+});
+
+test('core Web music creation renders Veyrnox-facing model copy, never implementation names', () => {
+  const studio = readFileSync(new URL('../app/veyrnox/_components/music/MusicServerStudio.jsx', import.meta.url), 'utf8');
+  const controls = readFileSync(new URL('../app/veyrnox/_components/music/MusicSunoControls.jsx', import.meta.url), 'utf8');
+  assert.doesNotMatch(studio, /ACE-Step/);
+  assert.match(studio, /\{model\.name\}/);
+  assert.doesNotMatch(controls, />\{value\}<\/option>/);
 });
 
 test('the Suno Simple brief box shows the typed text untrimmed, so a trailing space can be typed', () => {

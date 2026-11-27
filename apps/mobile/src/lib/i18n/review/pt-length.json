@@ -1,5 +1,11 @@
 [
   {
+    "id": "crunTemplates.inputNone",
+    "english": "No input image required",
+    "translation": "Não é necessária uma imagem de entrada",
+    "ratio": 1.65
+  },
+  {
     "id": "videoShape.all",
     "english": "All shapes",
     "translation": "Todos os formatos",
@@ -4972,6 +4978,24 @@
     "english": "Move up",
     "translation": "Mover para cima",
     "ratio": 2.14
+  },
+  {
+    "id": "musicRemix.sample.title",
+    "english": "Sample this song",
+    "translation": "Usar um sample desta música",
+    "ratio": 1.69
+  },
+  {
+    "id": "musicLyricist.retry",
+    "english": "Retry",
+    "translation": "Tentar novamente",
+    "ratio": 3.2
+  },
+  {
+    "id": "music.lyricAssistant.retry",
+    "english": "Try again",
+    "translation": "Tentar novamente",
+    "ratio": 1.78
   },
   {
     "id": "studioAssistant.value_on",

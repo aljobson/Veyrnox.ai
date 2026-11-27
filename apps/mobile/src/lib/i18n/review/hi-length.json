@@ -1,5 +1,11 @@
 [
   {
+    "id": "crunTemplates.use",
+    "english": "Use template",
+    "translation": "टेम्पलेट इस्तेमाल करें",
+    "ratio": 1.83
+  },
+  {
     "id": "videoShape.match",
     "english": "Use {shape}",
     "translation": "{shape} इस्तेमाल करें",
@@ -2806,6 +2812,24 @@
     "english": "Unpublish album",
     "translation": "एल्बम का प्रकाशन रद्द करें",
     "ratio": 1.73
+  },
+  {
+    "id": "musicLyricist.retry",
+    "english": "Retry",
+    "translation": "फिर कोशिश करें",
+    "ratio": 2.8
+  },
+  {
+    "id": "music.lyricAssistant.reviewInMusic",
+    "english": "Review in Music",
+    "translation": "म्यूज़िक में समीक्षा करें",
+    "ratio": 1.67
+  },
+  {
+    "id": "music.lyricAssistant.backToMusic",
+    "english": "Back to Music",
+    "translation": "म्यूज़िक पर वापस जाएँ",
+    "ratio": 1.62
   },
   {
     "id": "studioAssistant.ask",

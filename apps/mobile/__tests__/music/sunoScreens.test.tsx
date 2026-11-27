@@ -30,7 +30,8 @@ test('Suno custom form renders projection-driven counters, options, note and acc
     expect(controls('adjustable', t('music.create.suno.duration'))).toHaveLength(1);
     expect(controls('radio')).toHaveLength(5);
     expect(root.container.queryAll(node => node.props.accessibilityRole === 'tab'
-        && node.props.accessibilityLabel === 'v6_wild')[0].props.accessibilityState.selected).toBe(true);
+        && node.props.accessibilityLabel === 'Creative')[0].props.accessibilityState.selected).toBe(true);
+    expect(text('v6_wild')).toHaveLength(0);
     expect(root.container.queryAll(node => node.props.accessibilityRole === 'tab'
         && node.props.accessibilityLabel === t('music.create.suno.gender.female'))[0].props.accessibilityState.selected).toBe(true);
     const max = controls('radio', t('music.create.suno.variety.4'))[0];

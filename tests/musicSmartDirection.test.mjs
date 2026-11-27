@@ -53,7 +53,7 @@ test('web and mobile only change vocal mode after an explicit Voice change', () 
   const mobileSource = readFileSync(new URL('../apps/mobile/src/app/(app)/music/create.tsx', import.meta.url), 'utf8');
   assert.match(webSource, /const voiceChanged = next\.voice !== direction\.voice;/);
   assert.match(webSource, /if \(voiceChanged\) \{[\s\S]*?updateControl\('instrumental'/);
-  assert.match(mobileSource, /const voicePatch = !voiceChanged \? \{\}/);
+  assert.match(mobileSource, /const voicePatch = instrumentalOverride !== undefined[\s\S]*?: !voiceChanged \? \{\}/);
 });
 
 test('the single-track billing and refund decision is recorded', () => {

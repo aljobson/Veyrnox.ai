@@ -1,5 +1,5 @@
 import { isFiniteNumber, isRecord } from '../responseShapes';
-import type { MusicDraft, MusicCandidateView, MusicGenerationView, MusicEntitlements, MusicGeneration, MusicInspirationResult, MusicModel, MusicQuote, MusicSongRow, MusicSongDetail, MusicVersion, MusicHook, MusicShareLink, MusicLifecycle, MusicVersionCapabilities, MusicReuseContext } from './types';
+import type { MusicDraft, MusicCandidateView, MusicGenerationView, MusicEntitlements, MusicGeneration, MusicInspirationResult, MusicModel, MusicQuote, MusicSongRow, MusicSongDetail, MusicVersion, MusicHook, MusicShareLink, MusicLifecycle, MusicVersionCapabilities, MusicReuseContext, MusicOwnedSource } from './types';
 import { isMusicDailyChallenge } from './dailyChallenge';
 
 // Boundary checks: every field the exported types promise is verified, so a screen never meets a
@@ -35,6 +35,9 @@ const isFalControls = (v: unknown): boolean => isRecord(v)
     && (v.instrumental === 'optional' || v.instrumental === 'required')
     && isDuration(v.duration_seconds)
     && (v.duration_price_block_seconds === undefined || (isFiniteNumber(v.duration_price_block_seconds) && v.duration_price_block_seconds > 0));
+const isSunoModelLabels = (v: unknown, allowed: readonly unknown[]): boolean => v === undefined || (isRecord(v)
+    && Object.entries(v).every(([key, value]) => allowed.includes(key) && str(value)
+        && value.trim().length > 0 && Array.from(value).length <= 40));
 const isSunoControls = (v: unknown): boolean => isRecord(v)
     && all(v, ['description', 'style_influence', 'exclude_styles', 'tempo_key_meter', 'lyrics', 'styles', 'weirdness'], bool)
     && (v.instrumental === 'optional' || v.instrumental === 'required')
@@ -42,6 +45,7 @@ const isSunoControls = (v: unknown): boolean => isRecord(v)
     && (v.lyrics_required_for_custom_vocal === undefined || bool(v.lyrics_required_for_custom_vocal))
     && Array.isArray(v.variety) && v.variety.every(str)
     && Array.isArray(v.suno_model) && v.suno_model.length > 0 && v.suno_model.every(x => sunoModels.includes(x as string))
+    && isSunoModelLabels(v.suno_model_labels, v.suno_model)
     && Array.isArray(v.vocal_gender) && v.vocal_gender.every(x => genders.includes(x as string))
     && (v.duration_seconds === null || isDuration(v.duration_seconds));
 
@@ -64,7 +68,7 @@ export const isMusicEntitlements = (v: unknown): v is MusicEntitlements => isRec
     && all(v.custom_drafts, ['lyrics_max', 'styles_max', 'title_max'], isFiniteNumber)
     && (v.custom_drafts.provider_contract === undefined || isContract(v.custom_drafts.provider_contract))
     && isRecord(v.features)
-    && all(v.features, ['albums', 'inspiration', 'studioChat', 'dailyChallenge', 'persistentQueue'], bool)
+    && all(v.features, ['albums', 'inspiration', 'studioChat', 'dailyChallenge', 'persistentQueue', 'sources'], bool)
     && Array.isArray(v.inspiration_sources)
     && v.inspiration_sources.every(x => str(x) && inspirationSources.includes(x))
     && new Set(v.inspiration_sources).size === v.inspiration_sources.length
@@ -74,6 +78,13 @@ export const isMusicEntitlements = (v: unknown): v is MusicEntitlements => isRec
         && optional(v.daily_allowance, ['reset_at'], str)))
     && (v.daily_challenge === undefined || isMusicDailyChallenge(v.daily_challenge))
     && isRecord(v.policy) && str(v.policy.version) && bool(v.policy.pre_debit);
+
+export const isMusicOwnedSource = (v: unknown): v is MusicOwnedSource => isRecord(v)
+    && str(v.id) && str(v.filename) && (v.mime_type === 'audio/mpeg' || v.mime_type === 'audio/wav')
+    && isPositiveInteger(v.size_bytes) && isFiniteNumber(v.duration_seconds) && Number(v.duration_seconds) > 0
+    && v.status === 'ready' && str(v.created_at) && v.rights_statement_version === 'music-source-rights-v1'
+    && str(v.preview_url) && /^https:\/\//.test(v.preview_url)
+    && isPositiveInteger(v.preview_expires_in);
 
 export const isMusicInspirationResult = (v: unknown): v is MusicInspirationResult => isRecord(v)
     && str(v.analysis_id) && str(v.brief) && str(v.receipt) && str(v.expires_at) && bool(v.idempotent)
