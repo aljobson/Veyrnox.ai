@@ -2808,6 +2808,18 @@
     "ratio": 1.73
   },
   {
+    "id": "music.lyricAssistant.reviewInMusic",
+    "english": "Review in Music",
+    "translation": "म्यूज़िक में समीक्षा करें",
+    "ratio": 1.67
+  },
+  {
+    "id": "music.lyricAssistant.backToMusic",
+    "english": "Back to Music",
+    "translation": "म्यूज़िक पर वापस जाएँ",
+    "ratio": 1.62
+  },
+  {
     "id": "studioAssistant.ask",
     "english": "Review",
     "translation": "समीक्षा करें",
