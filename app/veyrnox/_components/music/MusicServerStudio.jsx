@@ -175,7 +175,7 @@ function LyricsFocusEditor({ value, onChange, maxLength, onSelectionAssistant, a
   );
 }
 
-function SunoSimpleFields({ entitlements, model, modelId, setModelId, description, setDescription, instrumental, setInstrumental, quote, busy, clearQuote, reviewQuote, confirmQuote, canQuote, hasSharedSlot }) {
+function SunoSimpleFields({ entitlements, model, modelId, setModelId, description, setDescription, sampleSeed, sampleMix, onRemoveSample, instrumental, setInstrumental, quote, busy, clearQuote, reviewQuote, confirmQuote, canQuote, hasSharedSlot }) {
   const { t, locale } = useI18n();
   const promptMax = sunoLimit(model, 'prompt');
   const [direction, setDirection] = useState(EMPTY_MUSIC_DIRECTION);
@@ -203,6 +203,7 @@ function SunoSimpleFields({ entitlements, model, modelId, setModelId, descriptio
 
   return (
     <>
+      <MusicSampleSeedCard seed={sampleSeed} mix={sampleMix} onRemove={onRemoveSample} />
       <fieldset>
         <legend className="text-sm font-bold text-vx-fg-body">{t('app.music.suno.offer')}</legend>
         <div className="mt-2 flex flex-wrap gap-2">
@@ -721,13 +722,6 @@ export function MusicServerStudio({ sourcesEnabled = false, sampleSeed = null, s
     };
   }
 
-  function setSunoDescription(value) {
-    setActiveSeed(null);
-    setActiveMix(null);
-    setActiveTemplate(null);
-    setDescription(value);
-  }
-
   function updateDirection(next) {
     const voiceChanged = next.voice !== direction.voice;
     setDirection(next);
@@ -790,7 +784,7 @@ export function MusicServerStudio({ sourcesEnabled = false, sampleSeed = null, s
           <div className="mt-6 space-y-5">
             {!sunoActive ? <MusicSourceUploadPanel enabled={sourcesEnabled} selectedId={sourceId} onSelectionChange={(next) => { setSourceId(next); clearQuote(); }} /> : null}
             {mode === 'simple' ? (
-              sunoActive ? <SunoSimpleFields entitlements={entitlements} model={model} modelId={modelId} setModelId={setModelId} description={sunoField} setDescription={setSunoDescription} instrumental={instrumental} setInstrumental={setInstrumental} quote={quote} busy={busy} clearQuote={clearQuote} reviewQuote={reviewQuote} confirmQuote={confirmQuote} canQuote={canQuote} hasSharedSlot={hasSharedSlot} /> : <>
+              sunoActive ? <SunoSimpleFields entitlements={entitlements} model={model} modelId={modelId} setModelId={setModelId} description={sunoField} setDescription={setDescription} sampleSeed={activeSeed} sampleMix={activeMix} onRemoveSample={() => { setActiveSeed(null); setActiveMix(null); clearQuote(); }} instrumental={instrumental} setInstrumental={setInstrumental} quote={quote} busy={busy} clearQuote={clearQuote} reviewQuote={reviewQuote} confirmQuote={confirmQuote} canQuote={canQuote} hasSharedSlot={hasSharedSlot} /> : <>
             <MusicSampleSeedCard seed={activeSeed} mix={activeMix} onRemove={() => { setActiveSeed(null); setActiveMix(null); clearQuote(); }} />
             <LicensedTemplateCard template={activeTemplate} disabled={Boolean(busy)} onRemove={() => {
               // The description began as the template direction, so it goes with the template; any reviewed quote goes too.
