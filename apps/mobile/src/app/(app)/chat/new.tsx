@@ -3,7 +3,7 @@ import { isAssetId } from '../../../lib/useAskAbout';
 import { plural, t } from '../../../lib/i18n';
 import { Stack, useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, View } from 'react-native';
+import { ActivityIndicator, FlatList, ScrollView, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { ApiError } from '../../../lib/api';
 import { chatApi, type ChatModel } from '../../../lib/chat';
@@ -144,7 +144,7 @@ export default function NewChat() {
             </View> : (!decided && !error) || (creating && !error) ? (
                 <ActivityIndicator color={styles.accentInk.color} />
             ) : musicToken ? (
-                <View style={styles.personas}>
+                <ScrollView contentContainerStyle={styles.personas} keyboardShouldPersistTaps="handled">
                     {error ? null : !personasEnabled ? <Text style={styles.muted}>{t('music.lyricAssistant.unavailable')}</Text>
                         : personas.length === 0 ? <Text style={styles.muted}>{t('music.lyricAssistant.noProfiles')}</Text>
                             : <>
@@ -160,7 +160,7 @@ export default function NewChat() {
                     {!error && personasEnabled ? <Button accessibilityRole="button" variant="secondary" label={t(personas.length ? 'music.lyricAssistant.manageProfiles' : 'music.lyricAssistant.createProfile')}
                         onPress={() => router.push('/chat/personas')} /> : null}
                     {error ? <Button accessibilityRole="button" variant="secondary" label={t('music.lyricAssistant.retry')} onPress={() => setProfileReload(value => value + 1)} /> : null}
-                </View>
+                </ScrollView>
             ) : (
                 <FlatList
                     ListHeaderComponent={

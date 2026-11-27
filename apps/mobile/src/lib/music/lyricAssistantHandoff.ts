@@ -117,7 +117,10 @@ export function parseMusicLyricProposal(content: string, limit: number): string 
     const ends = lines.reduce<number[]>((out, line, index) => line === MUSIC_LYRIC_END ? [...out, index] : out, []);
     if (starts.length !== 1 || ends.length !== 1 || ends[0] <= starts[0] + 1) return '';
     const lyrics = lines.slice(starts[0] + 1, ends[0]).join('\n').trim();
-    return lyrics && Array.from(lyrics).length <= limit ? lyrics : '';
+    // Match the draft save boundary while preserving tabs and line breaks used by lyric structure.
+    // eslint-disable-next-line no-control-regex
+    const invalid = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(lyrics);
+    return lyrics && !invalid && Array.from(lyrics).length <= limit ? lyrics : '';
 }
 
 export function latestMusicLyricProposal(messages: readonly ChatMessage[], sending: boolean, limit: number): { messageId: string; lyrics: string } | null {

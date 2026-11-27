@@ -18,7 +18,7 @@ jest.mock('../src/lib/music/lyricAssistantHandoff', () => ({
     selectMusicLyricPersona: (...args: any[]) => mockSelectPersona(...args),
     bindMusicLyricThread: (...args: any[]) => mockBindThread(...args),
 }));
-void [RN.View, RN.Text, RN.Pressable, RN.FlatList, RN.ActivityIndicator];
+void [RN.View, RN.Text, RN.Pressable, RN.FlatList, RN.ScrollView, RN.ActivityIndicator];
 const model = { id: SKILL_MODEL, name: 'Default', credits_per_reply: 3, gated: false };
 const persona = { id: 'persona', name: 'Editor', instructions: 'Be helpful', modelId: 'persona-model' };
 const asset = '12345678-1234-1234-1234-123456789abc';
@@ -57,6 +57,15 @@ test('Music Lyricist mode waits for and binds one private persona and exact thre
     expect(mockStart).toHaveBeenCalledWith(mockApi, persona, 'other');
     expect(mockBindThread).toHaveBeenCalledWith('opaque-token', persona.id, 'persona-thread');
     expect(mockRouter.replace).toHaveBeenCalledWith({ pathname: '/chat/[id]', params: { id: 'persona-thread', lyricHandoff: 'opaque-token' } });
+});
+test('Music Lyricist mode keeps a long private-profile picker scrollable', async () => {
+    mockParams = { lyricHandoff: 'opaque-token' };
+    mockPersonas.mockResolvedValue({ enabled: true, personas: Array.from({ length: 20 }, (_, index) => ({
+        ...persona, id: `persona-${index}`, name: `Editor ${index}`,
+    })) });
+    await render();
+    expect(root.container.queryAll(n => n.props.keyboardShouldPersistTaps === 'handled').length).toBeGreaterThan(0);
+    expect(control(t('music.lyricAssistant.manageProfiles'))).toBeDefined();
 });
 test.each([
     [{ enabled: false, personas: [] }, 'music.lyricAssistant.unavailable'],
