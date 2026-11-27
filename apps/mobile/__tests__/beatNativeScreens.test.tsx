@@ -303,7 +303,9 @@ describe('beat editor', () => {
     });
     test('add and remove a track', async () => {
         const doc = await open();
-        await press(t('beat.track.add'));
+        const timelineAdd = testId('arrangement-add-track')[0];
+        expect(timelineAdd.props.accessibilityLabel).toBe(t('beat.track.add'));
+        await act(async () => (timelineAdd.props.onClick ?? timelineAdd.props.onPress)({ nativeEvent: {} }));
         expect(testId('music-add-track-tray')).toHaveLength(1);
         await act(async () => {
             const instrument = testId('music-add-track-instrument')[0];

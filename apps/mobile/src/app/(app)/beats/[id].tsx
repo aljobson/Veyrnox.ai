@@ -858,7 +858,8 @@ export default function BeatEditor() {
                             editTrackId={resolvedEditTrackId} onEditTrackChange={setEditTrackId}
                             locator={arrangementLocator} onLocatorChange={setArrangementLocator} snap={arrangementSnap} onSnapChange={changeArrangementSnap}
                             playing={playing} step={step} disabled={patternLocked} navigationDisabled={locked || historyBusy}
-                            announce={setSaid} onHold={setHeld} onRevealLane={revealLane} layout={layout} compactHeight={compactViewport || compactTimelineForTool} />
+                            announce={setSaid} onHold={setHeld} onRevealLane={revealLane} onAddTrack={openAddTools}
+                            layout={layout} compactHeight={compactViewport || compactTimelineForTool} />
                         <BeatRecordPanel doc={doc} controller={takes.controller} view={takes.view} playing={playing}
                             externalLocked={midiController.locked()} />
                         {midiVisible && midiTrack ? <BeatMidiRecordPanel track={midiTrack}

@@ -21,6 +21,7 @@ type Props = {
     playing: boolean; step: number | null; disabled: boolean; navigationDisabled: boolean;
     announce: (message: string) => void; onHold: (held: boolean) => void;
     onRevealLane: (lane: ComponentRef<typeof View> | null) => void;
+    onAddTrack: () => void;
     layout: BeatEditorLayout;
     compactHeight?: boolean;
 };
@@ -28,7 +29,7 @@ const MIN_LANE_HEIGHT = 64;
 const COMPACT_LANE_HEIGHT = 56;
 export const resolvedLaneHeight = (measuredHeight: number | undefined, compactHeight: boolean) =>
     Math.max(compactHeight ? COMPACT_LANE_HEIGHT : MIN_LANE_HEIGHT, measuredHeight ?? 0);
-export function BeatArrangement({ doc, apply, selectCurrentPattern, editTrackId, onEditTrackChange, locator, onLocatorChange, snap, onSnapChange, playing, step, disabled, navigationDisabled, announce, onHold, onRevealLane, manualRunRef, layout, compactHeight = false }: Props) {
+export function BeatArrangement({ doc, apply, selectCurrentPattern, editTrackId, onEditTrackChange, locator, onLocatorChange, snap, onSnapChange, playing, step, disabled, navigationDisabled, announce, onHold, onRevealLane, onAddTrack, manualRunRef, layout, compactHeight = false }: Props) {
     const s = useThemedStyles(sheets);
     const { increasedContrast } = useAppearance();
     const [zoom, setZoom] = useState(96);
@@ -161,7 +162,11 @@ export function BeatArrangement({ doc, apply, selectCurrentPattern, editTrackId,
         </ScrollView>
         <View style={s.timeline}>
             <View style={[s.headers, layout === 'compact' && s.headersCompact]}>
-                <View style={[s.addTrackSlot, { height: RULER_HEIGHT }]} />
+                <View style={[s.addTrackSlot, { height: RULER_HEIGHT }]}>
+                    <Button testID="arrangement-add-track" size="md" variant="tertiary" icon="plus" iconOnly
+                        label={t('beat.track.add')} disabled={navigationDisabled} onPress={onAddTrack}
+                        containerStyle={s.addTrackButton} />
+                </View>
                 {doc.tracks.map((track, index) => <Pressable key={track.id} accessibilityRole="button" accessibilityLabel={track.name}
                     accessibilityState={{ selected: editTrack?.id === track.id, disabled: navigationDisabled }} disabled={navigationDisabled}
                     onPress={() => { if (!navigationDisabled) onEditTrackChange(track.id); }}
@@ -219,6 +224,7 @@ const sheets = themedStyles(p => ({
     headers: { width: 98, borderRightWidth: 1, borderRightColor: p.borderStrong },
     headersCompact: { width: 64 },
     addTrackSlot: { alignItems: 'center', justifyContent: 'center', borderBottomWidth: 1, borderBottomColor: p.borderStrong, backgroundColor: p.bgElevated1 },
+    addTrackButton: { width: 44, height: 44, flexGrow: 0 },
     header: { paddingHorizontal: ds.space.sm, justifyContent: 'center', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: p.borderSubtle, backgroundColor: p.bgElevated1 },
     headerCompact: { paddingHorizontal: ds.space.xs },
     headerContent: { width: '100%', flexDirection: 'row', justifyContent: 'flex-start', alignItems: 'center', gap: ds.space.sm },
