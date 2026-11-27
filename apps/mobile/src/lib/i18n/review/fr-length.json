@@ -7872,6 +7872,12 @@
     "ratio": 1.8
   },
   {
+    "id": "music.lyricAssistant.emptyDraft",
+    "english": "No lyrics yet.",
+    "translation": "Aucune parole pour le moment.",
+    "ratio": 2.07
+  },
+  {
     "id": "studioAssistant.value_on",
     "english": "on",
     "translation": "activé",
