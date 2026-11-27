@@ -17,7 +17,12 @@ import { createBeatEngine } from '../../../_lib/music/beat/beatEngine';
 import BeatLibraryItem from './BeatLibraryItem';
 import { button, input } from './beatStyles';
 const tabs = ['Sounds', 'Mine', 'Instruments'], shelves = ['Takes', 'Songs'], categories = ['All', 'Bass', 'Keys', 'Synth', 'FX'];
-export default function BeatLibrary({ generate, bpm, onAdd, onAddInstrument, announce }) {
+function LibraryTabIcon({ name }) {
+  const path = name === 'Sounds' ? 'M4 12h2l2-6 3 12 3-10 2 4h4' : name === 'Mine' ? 'M3 7h7l2 2h9v10H3z' : 'M4 6h16v12H4z M8 6v7 M12 6v7 M16 6v7';
+  return <svg aria-hidden="true" viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d={path} /></svg>;
+}
+
+export default function BeatLibrary({ generate, bpm, onAdd, onAddInstrument, announce, inline = false }) {
   const { t } = useI18n();
   const [tab, setTab] = useState('Sounds'), [mine, setMine] = useState('Takes');
   const [query, setQuery] = useState(''), [category, setCategory] = useState('All');
@@ -83,13 +88,15 @@ export default function BeatLibrary({ generate, bpm, onAdd, onAddInstrument, ann
     : mine === 'Takes' ? shelf.map((t) => ({ id: t.id, source: 'take', ref: t.id, name: t.label, durationSec: t.seconds, bpm: null }))
       : librarySongs(songs);
   const filtered = items.filter((i) => i.name.toLowerCase().includes(query.toLowerCase()) && (tab !== 'Sounds' || category === 'All' || i.category === category));
-  function contents() {
+  function contents(compact = false) {
     return <div className="space-y-3">
-      <h2 className="text-lg font-bold">{t('app.music.beat.ui.library')}</h2>
-      <div className="flex flex-wrap gap-2" aria-label={t('app.music.beat.ui.library.tabs')}>{tabs.map((name) => <button data-beat-tip="library" key={name} className={button} aria-pressed={tab === name} onClick={() => setTab(name)}>{beatLabel(name, t)}</button>)}</div>
+      <div className="flex flex-wrap items-center gap-2"><h2 className="me-auto text-lg font-bold">{t('app.music.beat.ui.library')}</h2>
+        <div className="flex flex-wrap gap-1" aria-label={t('app.music.beat.ui.library.tabs')}>{tabs.map((name) => <button data-beat-tip="library" key={name} className={`${button} inline-flex items-center gap-2 ${compact ? 'min-h-10 rounded-lg px-2 py-1.5' : ''} ${tab === name ? 'bg-vx-accent text-vx-accent-ink' : ''}`} aria-pressed={tab === name} onClick={() => setTab(name)}><LibraryTabIcon name={name} /><span className="max-sm:sr-only">{beatLabel(name, t)}</span></button>)}</div>
+      </div>
       {tab === 'Mine' && <div className="flex flex-wrap gap-2" aria-label={t('app.music.beat.ui.my.library')}>{shelves.map((name) => <button key={name} className={button} aria-pressed={mine === name} onClick={() => setMine(name)}>{beatLabel(name, t)}</button>)}</div>}
-      <label className="block">{t('app.music.beat.ui.search.by.name')}<input className={`${input} w-full`} type="search" value={query} onChange={(e) => setQuery(e.target.value)} /></label>
-      {tab === 'Sounds' && <><p className="text-sm">{t('app.music.beat.ui.key.a.minor')}</p><label>{t('app.music.beat.ui.category')}<select className={input} value={category} onChange={(e) => setCategory(e.target.value)}>{categories.map((c) => <option key={c} value={c}>{beatLabel(c, t)}</option>)}</select></label></>}
+      <div className="flex flex-wrap items-end gap-2"><label className="min-w-48 flex-1"><span className="sr-only">{t('app.music.beat.ui.search.by.name')}</span><input className={`${input} w-full`} type="search" placeholder={t('app.music.beat.ui.search.by.name')} value={query} onChange={(e) => setQuery(e.target.value)} /></label>
+        {tab === 'Sounds' && <><p className="pb-2 text-xs text-vx-fg-muted">{t('app.music.beat.ui.key.a.minor')}</p><label className="text-xs">{t('app.music.beat.ui.category')}<select className={`${input} ms-2 min-h-10 py-1.5`} value={category} onChange={(e) => setCategory(e.target.value)}>{categories.map((c) => <option key={c} value={c}>{beatLabel(c, t)}</option>)}</select></label></>}
+      </div>
       {tab === 'Mine' && mine === 'Songs' && <div aria-live="polite">
         {status === 'signed-out' && <p><a className="inline-flex min-h-11 items-center underline focus-visible:outline-vx-accent" href="?auth=sign_in" onClick={signIn}>{t('app.music.beat.ui.sign.in.to.use.your.songs')}</a></p>}
         {status === 'expired' && <p>{t('app.music.beat.ui.your.session.expired')}<a className="inline-flex min-h-11 items-center underline focus-visible:outline-vx-accent" href="?auth=sign_in" onClick={signIn}>{t('app.music.beat.ui.sign.in.to.use.your.songs')}</a></p>}
@@ -102,9 +109,10 @@ export default function BeatLibrary({ generate, bpm, onAdd, onAddInstrument, ann
       {!filtered.length && !!items.length && <BeatLibraryEmpty query={query} clear={() => { setQuery(''); setCategory('All'); }}
         chooseCategory={category => { setTab('Sounds'); setCategory(category); setQuery(''); }} generate={generate ? () => { dialog.current?.close(); generate(); } : undefined} />}
       {tab === 'Instruments' && <BeatInstrumentLibrary onAdd={onAddInstrument} announce={announce} query={query} />}
-      {tab !== 'Instruments' && <ul className="max-h-[60vh] space-y-2 overflow-y-auto">{filtered.map((item) => <BeatLibraryItem key={item.id} item={item} active={active === item.id} audition={audition} add={add} busy={busy} />)}</ul>}
+      {tab !== 'Instruments' && <ul className={`${compact ? 'grid sm:grid-cols-2 xl:grid-cols-3' : 'space-y-2'} max-h-[48vh] gap-2 overflow-y-auto`}>{filtered.map((item) => <BeatLibraryItem compact={compact} key={item.id} item={item} active={active === item.id} audition={audition} add={add} busy={busy} />)}</ul>}
     </div>;
   }
+  if (inline) return <section className="rounded-2xl border border-vx-border bg-vx-panel p-3" aria-label={t('app.music.beat.ui.sound.library')}>{contents(true)}</section>;
   return <>
     <aside className="hidden min-w-0 rounded-xl border border-vx-border bg-vx-panel p-3 lg:block">{!open && contents()}</aside>
     <div className="lg:hidden"><button data-beat-tip="library" className={button} onClick={() => { setOpen(true); dialog.current.showModal(); }}>{t('app.music.beat.ui.library')}</button></div>
