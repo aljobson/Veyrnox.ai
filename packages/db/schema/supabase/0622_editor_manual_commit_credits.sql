@@ -43,8 +43,9 @@ CREATE TABLE IF NOT EXISTS public.editor_manual_commit_operations (
 );
 CREATE INDEX IF NOT EXISTS editor_manual_commit_operations_project_idx
   ON public.editor_manual_commit_operations(project_id,actor_id,created_at DESC);
-CREATE UNIQUE INDEX IF NOT EXISTS editor_manual_commit_one_pending_charge_idx
-  ON public.editor_manual_commit_operations(user_id,project_id,source_fingerprint)
+DROP INDEX IF EXISTS public.editor_manual_commit_one_pending_charge_idx;
+CREATE UNIQUE INDEX IF NOT EXISTS editor_manual_commit_one_pending_project_idx
+  ON public.editor_manual_commit_operations(user_id,project_id)
   WHERE credits=5 AND state='PENDING';
 ALTER TABLE public.editor_manual_commit_operations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.editor_manual_commit_operations FORCE ROW LEVEL SECURITY;
@@ -146,6 +147,12 @@ BEGIN
   SELECT * INTO existing FROM public.editor_manual_commit_operations o
     WHERE o.actor_id=actor AND o.project_id=p_project AND o.request_key=p_request_key;
   IF existing.id IS NOT NULL THEN
+    IF existing.state='PENDING' AND existing.credits=5 AND EXISTS(
+      SELECT 1 FROM public.jobs j WHERE j.id=existing.job_id AND j.state='REFUNDED'
+    ) THEN
+      UPDATE public.editor_manual_commit_operations SET state='REFUNDED',updated_at=now() WHERE id=existing.id;
+      existing.state:='REFUNDED';
+    END IF;
     -- Re-run the canonical save so a same-key replay must still match the exact
     -- expected revision and document payload. Payment state is never inferred
     -- from, or written back into, the immutable version row.
@@ -176,8 +183,18 @@ BEGIN
     RETURN jsonb_build_object('ok',false,'code','PRICE_CHANGED','expected_credits',amount);
   END IF;
   IF amount=5 THEN
+    -- The generic stuck-job sweep owns the credit refund. Reconcile its result
+    -- here as well as in the status endpoint so a restarted client can reserve
+    -- again with a fresh key without knowing the abandoned request key.
+    UPDATE public.editor_manual_commit_operations o SET state='REFUNDED',updated_at=now()
+      FROM public.jobs j
+     WHERE o.user_id=v_user_id AND o.project_id=p_project AND o.credits=5 AND o.state='PENDING'
+       AND j.id=o.job_id AND j.state='REFUNDED';
+    -- Only one paid delivery may be pending for a user's project. This blocks
+    -- overlapping sets (A+B followed by A) until the first delivery either
+    -- creates its coverage receipt or refunds, preventing two retained debits.
     IF EXISTS(SELECT 1 FROM public.editor_manual_commit_operations o WHERE o.user_id=v_user_id
-      AND o.project_id=p_project AND o.source_fingerprint=fingerprint AND o.credits=5 AND o.state='PENDING') THEN
+      AND o.project_id=p_project AND o.credits=5 AND o.state='PENDING') THEN
       RETURN jsonb_build_object('ok',false,'code','COMMIT_PENDING');
     END IF;
     charge_key:='editor-manual.'||encode(sha256(convert_to(actor::text||':'||p_project::text||':'||p_request_key||':'||fingerprint,'UTF8')),'hex');

@@ -18,6 +18,8 @@ const projectUnion = '66666666-6666-4666-8666-666666666666';
 const projectNull = '77777777-7777-4777-8777-777777777777';
 const projectStatus = '88888888-8888-4888-8888-888888888888';
 const projectCrossRoute = '12121212-1212-4212-8212-121212121212';
+const projectOverlap = '13131313-1313-4313-8313-131313131313';
+const projectSwept = '14141414-1414-4414-8414-141414141414';
 
 async function psql(sql) {
   const { stdout } = await run('psql', [url, '--no-psqlrc', '--set', 'ON_ERROR_STOP=1', '--tuples-only', '--no-align', '--command', sql], { maxBuffer: 4 * 1024 * 1024 });
@@ -107,7 +109,8 @@ test('manual editor debit migration is atomic, idempotent and invisible', { skip
   await psql(migration);
   await psql(`INSERT INTO public.users(id,auth_id) VALUES('${user}','${actor}'),('${otherUser}','${otherActor}');
     INSERT INTO public.projects(id,user_id) VALUES('${project}','${user}'),('${projectTwo}','${user}'),('${projectConcurrent}','${user}'),
-      ('${projectUnion}','${user}'),('${projectNull}','${user}'),('${projectStatus}','${user}'),('${projectCrossRoute}','${user}');
+      ('${projectUnion}','${user}'),('${projectNull}','${user}'),('${projectStatus}','${user}'),('${projectCrossRoute}','${user}'),
+      ('${projectOverlap}','${user}'),('${projectSwept}','${user}');
     INSERT INTO public.credit_balances(user_id,balance,free_balance,subscription_balance,subscription_expires_at,subscription_cycle)
       VALUES('${user}',20,20,0,now()+interval '1 month',1);`);
 
@@ -182,6 +185,27 @@ test('manual editor debit migration is atomic, idempotent and invisible', { skip
     await Promise.allSettled([psql(finalizeSql(projectConcurrent, 'concurrent-a')), psql(finalizeSql(projectConcurrent, 'concurrent-b'))]);
     assert.equal(await psql(`SELECT balance||'|'||(SELECT count(*) FROM public.editor_manual_commit_receipts WHERE project_id='${projectConcurrent}')
       FROM public.credit_balances WHERE user_id='${user}';`), '15|1');
+  });
+
+  await t.test('an overlapping source set cannot reserve before the first delivery establishes coverage', async () => {
+    await psql(`UPDATE public.credit_balances SET balance=20,free_balance=20 WHERE user_id='${user}';`);
+    assert.match(await psql(saveSql(projectOverlap, 0, doc(['camera-a','camera-b']), 'overlap-ab', 5)), /"pending": true/);
+    assert.match(await psql(saveSql(projectOverlap, 1, doc(['camera-a']), 'overlap-a', 5)), /COMMIT_PENDING/);
+    assert.equal(await psql(`SELECT balance||'|'||(SELECT count(*) FROM public.jobs WHERE inputs->>'project_id'='${projectOverlap}')||'|'||
+      (SELECT count(*) FROM public.project_document_versions WHERE project_id='${projectOverlap}') FROM public.credit_balances WHERE user_id='${user}';`), '15|1|1');
+    await psql(finalizeSql(projectOverlap, 'overlap-ab'));
+    assert.match(await psql(saveSql(projectOverlap, 1, doc(['camera-a']), 'overlap-a-covered', 0)), /"credits": 0/);
+    assert.equal(await psql(`SELECT balance FROM public.credit_balances WHERE user_id='${user}';`), '15');
+  });
+
+  await t.test('a swept refund releases the project reservation for a fresh key', async () => {
+    await psql(`UPDATE public.credit_balances SET balance=20,free_balance=20 WHERE user_id='${user}';`);
+    assert.match(await psql(saveSql(projectSwept, 0, doc(['camera-retry']), 'swept-old', 5)), /"pending": true/);
+    await psql(`UPDATE public.jobs SET state='REFUNDED',updated_at=now() WHERE inputs->>'project_id'='${projectSwept}';
+      UPDATE public.credit_balances SET balance=balance+5,free_balance=free_balance+5 WHERE user_id='${user}';`);
+    assert.match(await psql(saveSql(projectSwept, 1, doc(['camera-retry']), 'swept-new', 5)), /"pending": true/);
+    assert.equal(await psql(`SELECT balance||'|'||(SELECT count(*) FROM public.editor_manual_commit_operations WHERE project_id='${projectSwept}' AND state='REFUNDED')||'|'||
+      (SELECT count(*) FROM public.editor_manual_commit_operations WHERE project_id='${projectSwept}' AND state='PENDING') FROM public.credit_balances WHERE user_id='${user}';`), '15|1|1');
   });
 
   await t.test('paid and free routes serialize the same request key before debit', async () => {

@@ -32,6 +32,9 @@ test('manual editor reserves atomically before delivery and bypasses supplier-on
   assert.match(sql, /user_id=p_user_id AND model_id<>'editor-manual-commit'/);
   assert.match(sql, /p_expected_credits IS NULL OR p_expected_credits NOT IN \(0,5\)/);
   assert.match(sql, /public\.ledger_refund\(op\.job_id,op\.user_id,op\.credits,'refund:editor_manual_delivery_failed'\)/);
+  assert.match(sql, /editor_manual_commit_one_pending_project_idx[\s\S]*\(user_id,project_id\)[\s\S]*state='PENDING'/);
+  assert.match(sql, /UPDATE public\.editor_manual_commit_operations o SET state='REFUNDED'[\s\S]*j\.state='REFUNDED'/);
+  assert.match(sql, /o\.project_id=p_project AND o\.credits=5 AND o\.state='PENDING'/);
   assert.doesNotMatch(sql, /UPDATE public\.project_document_versions/);
 });
 

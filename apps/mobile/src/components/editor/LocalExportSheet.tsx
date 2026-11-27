@@ -41,9 +41,7 @@ export type LocalExportResolution = '720p' | '1080p' | '4k';
 export type LocalExportFrameRate = 24 | 25 | 30 | 60;
 export const selectedLocalExportDimensions = (canvas: Canvas, resolution: LocalExportResolution) => {
     const edge = resolution === '720p' ? 720 : resolution === '1080p' ? 1080 : 2160;
-    const desired = canvasResolutionSize(canvas.aspect_ratio, edge) ?? fittedLocalExportDimensions(canvas);
-    if (desired.width * desired.height <= MAX_LOCAL_EXPORT_PIXELS && desired.width <= 1280 && desired.height <= 1280) return desired;
-    return fittedLocalExportDimensions(canvas);
+    return canvasResolutionSize(canvas.aspect_ratio, edge) ?? fittedLocalExportDimensions(canvas);
 };
 export const LOCAL_EXPORT_QUALITY: Readonly<Record<LocalExportQuality, { videoBitRate: number; audioBitRate: number }>> = Object.freeze({
     compact: { videoBitRate: 3_000_000, audioBitRate: 128_000 },
@@ -146,7 +144,10 @@ export function LocalExportSheet({ visible, api, account, projectId, revision, t
     };
     const start = async () => {
         if (controller.current || confirming) return;
-        if (output === 'video' && resolution === '4k') { onCloud(); return; }
+        // The native frame protocol is deliberately bounded to 720p. Route
+        // larger selections to the server encoder instead of silently writing
+        // a 720p file while the sheet still says 1080p or 4K.
+        if (output === 'video' && resolution !== '720p') { onCloud(); return; }
         setConfirming(true);
         const expectedCredits = await onPrepare().catch(() => null);
         if (!mounted.current) return;
@@ -271,8 +272,8 @@ export function LocalExportSheet({ visible, api, account, projectId, revision, t
             <Text style={styles.text}>{t('editorLocalExport.estimate', { size: formatNumber(estimatedLocalExportBytes(timeline, quality) / 1_000_000, 1) })}</Text>
             <View style={styles.switchRow}><Text style={styles.text}>{t('editorLocalExport.autoSave')}</Text><Switch accessibilityLabel={rawText(t('editorLocalExport.autoSave'))}
                 value={autoSave} onValueChange={setAutoSave} /></View></> : <Text style={styles.help}>{t('editorParity.audioExportHelp')}</Text>}
-            <Button label={output === 'video' && resolution === '4k' ? t('editorParity.continueFourK') : output === 'audio' ? t('editorParity.exportAudio') : t('editorLocalExport.start')} disabled={confirming} onPress={() => void start()} /></> : null}
-        {(phase === 'done' || phase === 'error' && artifact && pendingCredits !== null && !commitAttempted) && artifact ? <><Text style={styles.text}>{t('editorLocalExport.done', { size: formatNumber(artifact.size / 1_000_000, 1) })}</Text>
+            <Button label={output === 'video' && resolution !== '720p' ? t('editorLocalExport.cloud') : output === 'audio' ? t('editorParity.exportAudio') : t('editorLocalExport.start')} disabled={confirming} onPress={() => void start()} /></> : null}
+        {artifact && (phase === 'done' || phase === 'error' && pendingCredits !== null) ? <><Text style={styles.text}>{t('editorLocalExport.done', { size: formatNumber(artifact.size / 1_000_000, 1) })}</Text>
             {artifact.kind === 'mp4' ? saving ? <Text style={styles.text}>{t('editorLocalExport.saving')}</Text> : saved ? <Text style={styles.text}>{t('editorLocalExport.saved')}</Text>
                 : <Button label={t('editorLocalExport.save')} onPress={() => void save()} /> : <Text style={styles.help}>{t('editorParity.shareWavHelp')}</Text>}
             <Button label={t('editorServerExport.share')} disabled={saving} onPress={() => void share()} /></> : null}
