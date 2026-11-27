@@ -17,7 +17,6 @@ const tools = [
   ['talking-cartoon', 'Talking Cartoon', 2, false],
   ['talking-animals', 'Talking Animals', 2, false],
   ['ai-baby-podcast', 'AI Baby Podcast', 2, false],
-  ['talking-objects', 'Talking Objects', 2, false],
   ['ai-ad-clone', 'AI Ad Clone', 1, false],
   ['product-avatar', 'Product Avatar', 2, false],
   ['product-video-generator', 'Product Video Generator', 1, false],
