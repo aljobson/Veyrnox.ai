@@ -161,7 +161,7 @@ export default function CreativeFeatureStudio({ feature }) {
             <span>{copy.group}</span><span aria-hidden="true">·</span><span>{feature.kind}</span>
           </div>
           <h1 className="vx-display mt-4 text-[42px] leading-[0.95] sm:text-[58px]">{copy.title}</h1>
-          <p className="mt-4 max-w-2xl text-sm leading-6 text-vx-fg-muted">{t('app.features.guide')}</p>
+          <p className="mt-4 max-w-2xl text-sm leading-6 text-vx-fg-muted">{t(feature.blocked ? 'app.features.guardedGuide' : 'app.features.guide')}</p>
         </header>
 
         {example && <section className={`${card} overflow-hidden`}>
