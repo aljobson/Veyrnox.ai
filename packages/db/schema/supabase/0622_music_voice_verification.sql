@@ -350,6 +350,7 @@ DECLARE u UUID; v public.music_voice_profiles; r public.upload_reservations; see
  PERFORM pg_advisory_xact_lock(618,hashtext(u::text)); SELECT * INTO v FROM public.music_voice_profiles WHERE id=p_profile_id AND user_id=u FOR UPDATE;
  SELECT * INTO seen FROM public.music_voice_receipts WHERE actor_user_id=u AND operation='submit' AND idempotency_key=p_idem_key;
  IF FOUND THEN IF seen.request_digest<>p_request_digest THEN RETURN jsonb_build_object('ok',false,'code','IDEMPOTENCY_CONFLICT'); END IF;
+  IF seen.result->>'code' IS NOT NULL THEN RETURN seen.result||jsonb_build_object('idempotent',true); END IF;
   SELECT * INTO v FROM public.music_voice_profiles WHERE id=(seen.result->>'profile_id')::uuid AND user_id=u;
   RETURN jsonb_build_object('ok',true,'profile',private.music_voice_json(v),'idempotent',true); END IF;
  IF NOT private.music_voice_fresh_mfa(p_aal,p_mfa_at) THEN RETURN jsonb_build_object('ok',false,'code','MFA_REQUIRED'); END IF;
@@ -366,7 +367,10 @@ DECLARE u UUID; v public.music_voice_profiles; r public.upload_reservations; see
    INSERT INTO public.music_voice_events(profile_id,event_type,submission_revision,reason_code,policy_version)
     VALUES(v.id,'expired',v.submission_revision,'challenge_attempts_exhausted',v.policy_version);
   END IF;
-  RETURN jsonb_build_object('ok',false,'code','CHALLENGE_MISMATCH','attempts_remaining',greatest(0,3-v.challenge_attempt_count));
+  result:=jsonb_build_object('profile_id',v.id,'ok',false,'code','CHALLENGE_MISMATCH',
+   'attempts_remaining',greatest(0,3-v.challenge_attempt_count));
+  INSERT INTO public.music_voice_receipts VALUES(u,'submit',p_idem_key,p_request_digest,result,clock_timestamp());
+  RETURN result||jsonb_build_object('idempotent',false);
  END IF;
  IF p_challenge_key=v.reference_source_key OR p_challenge_mime NOT IN('audio/mpeg','audio/wav') OR p_challenge_size NOT BETWEEN 1 AND 20971520
   OR p_challenge_seconds NOT BETWEEN 2 AND 60 OR p_idem_key!~'^[A-Za-z0-9._-]{8,120}$' OR p_request_digest!~'^[a-f0-9]{64}$'

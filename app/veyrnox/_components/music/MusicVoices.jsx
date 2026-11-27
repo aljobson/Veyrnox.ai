@@ -131,6 +131,10 @@ export function MusicVoices({ enrollmentInitiallyAvailable = false }) {
       setChallenge(null); setLiveRecording(null); await load();
     });
   }
+  const selectLiveRecording = (file) => {
+    delete attempts.current.submit;
+    setLiveRecording(file);
+  };
   const setAttestation = (key, checked) => setAttestations((value) => ({ ...value, [key]: checked }));
 
   return <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
@@ -175,7 +179,7 @@ export function MusicVoices({ enrollmentInitiallyAvailable = false }) {
           {!challenge ? <><p className="mt-3 text-sm leading-6 text-vx-fg-muted">For privacy, a phrase is shown only when issued. Generate a new one after a reload.</p><button data-testid="music-voice-new-challenge" disabled={busy} onClick={reissue} className="mt-5 min-h-11 rounded-full border border-vx-accent px-5 font-bold text-vx-accent">Issue a new phrase</button></>
             : <><p data-testid="music-voice-phrase" className="mt-5 rounded-2xl border border-vx-accent/40 bg-vx-accent/10 p-5 font-vx text-xl font-black leading-8">{challenge.phrase}</p>
               <p className="mt-3 text-sm leading-6 text-vx-fg-muted">Upload a fresh, unedited recording made after this phrase was issued. This is your attestation; an authorized person reviews the phrase and voice consistency.</p>
-              <label className="mt-5 block text-sm font-bold">Fresh challenge recording<input data-testid="music-voice-live-recording" type="file" accept="audio/mpeg,audio/wav,audio/x-wav,audio/wave" onChange={(event) => setLiveRecording(event.target.files?.[0] || null)} className="mt-2 block w-full font-normal" /></label>
+              <label className="mt-5 block text-sm font-bold">Fresh challenge recording<input data-testid="music-voice-live-recording" type="file" accept="audio/mpeg,audio/wav,audio/x-wav,audio/wave" onChange={(event) => selectLiveRecording(event.target.files?.[0] || null)} className="mt-2 block w-full font-normal" /></label>
               <label className="mt-4 flex items-start gap-3 text-sm leading-6"><input type="checkbox" checked={attestations.live} onChange={(event) => setAttestation('live', event.target.checked)} className="mt-1 h-5 w-5 accent-vx-accent" /><span>I recorded this challenge live after the phrase was issued.</span></label>
               <button data-testid="music-voice-submit" type="button" disabled={busy || !liveRecording || !attestations.live} onClick={submit} className="mt-6 min-h-12 rounded-full bg-vx-accent px-6 font-black text-vx-accent-ink disabled:opacity-40">{busy === 'submit' ? 'Submitting securely…' : 'Submit for human review'}</button></>}
         </section> : null}

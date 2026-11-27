@@ -133,7 +133,7 @@ test('owner projection cannot leak evidence, phrase or reviewer identity', () =>
 
 test('the migration preserves evidence accountability without retaining content in receipts', async () => {
   const [sql, accountDeletion, privacyExport] = await Promise.all([
-    readFile(new URL('../packages/db/schema/supabase/0618_music_voice_verification.sql', import.meta.url), 'utf8'),
+    readFile(new URL('../packages/db/schema/supabase/0622_music_voice_verification.sql', import.meta.url), 'utf8'),
     readFile(new URL('../scripts/test-account-deletion.mjs', import.meta.url), 'utf8'),
     readFile(new URL('../scripts/test-privacy-export.mjs', import.meta.url), 'utf8'),
   ]);
@@ -152,6 +152,8 @@ test('the migration preserves evidence accountability without retaining content 
   assert.match(sql, /'profile',private\.music_voice_json\(v\),'created',false,'idempotent',true/);
   assert.match(sql, /'profile',private\.music_voice_json\(v\),'reissued',false,'idempotent',true/);
   assert.match(sql, /operation='submit'[\s\S]*idempotency_key=p_idem_key[\s\S]*request_digest/);
+  assert.match(sql, /seen\.result->>'code' IS NOT NULL THEN RETURN seen\.result\|\|jsonb_build_object\('idempotent',true\)/);
+  assert.match(sql, /'code','CHALLENGE_MISMATCH'[\s\S]*INSERT INTO public\.music_voice_receipts VALUES\(u,'submit',p_idem_key,p_request_digest,result/);
   assert.match(sql, /music_voice_challenge_context\(p_auth_id TEXT,p_profile_id UUID,p_idem_key TEXT,p_request_digest TEXT\)[\s\S]*seen\.request_digest<>p_request_digest[\s\S]*IDEMPOTENCY_CONFLICT/);
   assert.match(sql, /music_voice_enroll_context\(p_auth_id TEXT,p_idem_key TEXT,p_request_digest TEXT\)[\s\S]*operation='enroll'[\s\S]*seen\.request_digest<>p_request_digest[\s\S]*private\.music_voice_json\(v\)/);
   assert.match(sql, /status='pending_review'[\s\S]*challenge_size_bytes=p_challenge_size,challenge_duration_seconds=p_challenge_seconds,[\s\S]*submission_revision/);
@@ -192,6 +194,12 @@ test('the migration preserves evidence accountability without retaining content 
   const revoke = sql.slice(sql.indexOf('CREATE OR REPLACE FUNCTION public.music_voice_revoke'),
     sql.indexOf('-- Extend the complete 0428 matrix'));
   assert.doesNotMatch(revoke, /music_voice_fresh_mfa/);
+});
+
+test('choosing a replacement challenge recording invalidates the cached upload attempt', async () => {
+  const source = await readFile(new URL('../app/veyrnox/_components/music/MusicVoices.jsx', import.meta.url), 'utf8');
+  assert.match(source, /selectLiveRecording[\s\S]*delete attempts\.current\.submit;[\s\S]*setLiveRecording\(file\)/);
+  assert.match(source, /music-voice-live-recording[\s\S]*selectLiveRecording\(event\.target\.files\?\.\[0\] \|\| null\)/);
 });
 
 test('route replay branches never disclose a freshly generated unstored phrase', async () => {
