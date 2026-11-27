@@ -241,6 +241,22 @@ export function useMusicCustomDraft({ active, defaultModelId = 'ace-step', provi
     return savePayload(payload, editSerial.current);
   }, [conflict, draft, loaded, savePayload]);
 
+  const saveBeforeLeave = useCallback(async () => {
+    if (!loaded || saving.current || conflict) return false;
+    const serial = editSerial.current;
+    const current = draftRef.current;
+    const saved = await savePayload({
+      provider_contract: current.provider_contract,
+      draft_id: current.id,
+      revision: current.revision,
+      model_id: current.model_id,
+      lyrics: current.lyrics,
+      styles: current.styles,
+      title: current.title,
+    }, serial);
+    return Boolean(saved && serial === editSerial.current);
+  }, [conflict, loaded, savePayload]);
+
   const loadNewer = useCallback(() => {
     if (!conflict) return;
     baseDraft.current = conflict.server;
@@ -275,6 +291,6 @@ export function useMusicCustomDraft({ active, defaultModelId = 'ace-step', provi
 
   return {
     draft, loaded, loadFailed, dirty, status, error, conflict, notice, needsReview, previousText,
-    update, saveNow, refresh, loadNewer, keepMine, copyPreviousText, retry,
+    update, saveNow, saveBeforeLeave, refresh, loadNewer, keepMine, copyPreviousText, retry,
   };
 }
