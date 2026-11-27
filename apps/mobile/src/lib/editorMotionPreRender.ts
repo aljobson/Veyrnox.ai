@@ -1,6 +1,6 @@
 import { createNativeEditorLocalExportDependencies, type EditorCompositorSourceMap } from './editorCompositorNative';
 import { exportEditorMp4, type EditorLocalExportProgress } from './editorLocalExport';
-import { clipAt, type Clip, type Selection, type Timeline } from './nativeEditorModel';
+import { canvasAspectRatio, clipAt, type Clip, type Selection, type Timeline } from './nativeEditorModel';
 import type { Mp4Artifact } from './editorMedia/protocol';
 
 export const EDITOR_MOTION_BAKED_FIELDS = Object.freeze([
@@ -23,7 +23,7 @@ export function canonicalMotionTimeline(timeline: Timeline, selection: Selection
 }
 
 const dimensions = (timeline: Timeline, height: 480 | 720) => {
-    const aspect = timeline.aspect === '9:16' ? 9 / 16 : timeline.aspect === '1:1' ? 1 : 16 / 9;
+    const aspect = canvasAspectRatio(timeline.aspect) ?? 16 / 9;
     return { width: Math.min(1280, Math.max(8, Math.round(height * aspect / 2) * 2)), height };
 };
 

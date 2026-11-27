@@ -8,8 +8,8 @@ const table = (convert, approximate, drop) => Object.freeze(Object.fromEntries([
 ]));
 export const DISPOSITIONS = Object.freeze({
     document: table('schemaVersion fps seq aspect media video audio text tracks markers', '', 'background folders fonts'),
-    clip: table('id start len trackId mediaId in rate reverse freezeFrame', 'volume pan transform crop', 'animation keyframes groupId transition fadeIn fadeOut eq filter mask maskSettings maskKeyframes colourAdjustment blend fit effect transitionType speedCurve background parameterKeyframes preservePitch audioProcessing audioEffects smartPicture semanticMask'),
-    text: table('id start len trackId', 'text x y size style', 'animation keyframes groupId caption words wordStyle wordsEstimated'),
+    clip: table('id start len trackId mediaId in rate reverse freezeFrame', 'volume pan transform crop', 'animation keyframes groupId transition fadeIn fadeOut eq filter mask maskSettings maskKeyframes colourAdjustment blend fit effect transitionType speedCurve background parameterKeyframes preservePitch audioProcessing audioEffects smartPicture semanticMask behindSubject'),
+    text: table('id start len trackId', 'text x y size style', 'animation keyframes groupId caption words wordStyle wordsEstimated behindSubject'),
     track: table('id kind name locked muted hidden solo', '', ''),
     media: table('id kind frames name hasAudio width height sourceName assetSource', '', 'graphic folder attribution originalAudio'),
     marker: table('id frame label color', '', ''),

@@ -97,10 +97,18 @@ export function encodeCredential(credential) {
     return out;
 }
 
-// A cancelled prompt is a NotAllowedError, same as a genuine timeout. It is
-// the single most common outcome and is not an error worth shouting about.
+// Registration can be abandoned without leaving an error behind. Sign-in is
+// different: browsers also use NotAllowedError when no matching credential is
+// available or the request times out, so swallowing it makes a broken sign-in
+// look like a button that did nothing.
 function isUserCancelled(err) {
     return err && (err.name === "NotAllowedError" || err.name === "AbortError");
+}
+
+function noCredentialSelected() {
+    const error = new Error("No passkey was selected.");
+    error.name = "NotAllowedError";
+    return error;
 }
 
 /**
@@ -150,7 +158,7 @@ export function signInBody(captchaToken) {
  * @param {string} [captchaToken]  Turnstile token (ADR-0026) — required
  *                                 whenever Attack Protection is on
  * @returns {Promise<import("./authClient.js").VeyrnoxSession | null>} null if
- *          the user dismissed the prompt
+ *          the request was explicitly aborted
  */
 export async function signInWithPasskey(captchaToken) {
     if (!passkeysSupported()) throw new Error("This browser cannot use passkeys.");
@@ -161,10 +169,10 @@ export async function signInWithPasskey(captchaToken) {
             publicKey: decodeOptions(started.options),
         });
     } catch (err) {
-        if (isUserCancelled(err)) return null;
+        if (err && err.name === "AbortError") return null;
         throw err;
     }
-    if (!credential) return null;
+    if (!credential) throw noCredentialSelected();
     const data = await gotruePost(SIGNIN_VERIFY, {
         challenge_id: started.challenge_id,
         credential: encodeCredential(credential),

@@ -5,13 +5,14 @@ import { paletteForScheme } from '../src/theme';
 import { View } from 'react-native';
 
 let mockScheme: 'light' | 'dark' = 'light';
+let mockCanGoBack = true;
 let mockOptions: any;
 let mockScreenLayout: any;
 jest.mock('../src/components/ui', () => ({ ...jest.requireActual('../src/components/ui'), Text: () => null, useAppearance: () => ({ settings: require('../src/theme').getAppearance(), scheme: mockScheme }) }));
 jest.mock('expo-router', () => {
     const Stack: any = (props: any) => { mockOptions = props.screenOptions; mockScreenLayout = props.screenLayout; return null; };
     Stack.Screen = () => null;
-    return { Stack, Redirect: () => null };
+    return { Stack, Redirect: () => null, useCanGoBack: () => mockCanGoBack };
 });
 jest.mock('react-native-safe-area-context', () => ({ SafeAreaView: 'SafeAreaView' }));
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ status: 'signedIn', generation: 0 }) }));
@@ -23,6 +24,7 @@ jest.mock('../src/components/ReferralAttach', () => ({ ReferralAttach: () => nul
 jest.mock('../src/components/Logo', () => ({ Logo: () => null }));
 jest.mock('../src/components/AiConsentHost', () => ({ AiConsentHost: () => null }));
 jest.mock('../src/components/FirstRunGate', () => ({ FirstRunGate: () => null }));
+jest.mock('../src/components/NotificationPrimerGate', () => ({ NotificationPrimerGate: () => null }));
 jest.mock('../src/components/OfflineBanner', () => ({ OfflineBanner: () => null }));
 jest.mock('../src/components/ServiceBanner', () => ({ ServiceBanner: () => null }));
 jest.mock('../src/components/PaywallPrompt', () => ({ PaywallPrompt: () => null }));
@@ -32,24 +34,27 @@ jest.mock('../src/components/account/AgeConfirmationGate', () => ({ AgeConfirmat
 jest.mock('../src/components/HardPaywallGate', () => ({ HardPaywallGate: ({ children }: any) => children }));
 
 let root: Root;
-beforeEach(() => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; root = createRoot(); });
+beforeEach(() => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; mockCanGoBack = true; root = createRoot(); });
 afterEach(async () => { await act(async () => root.unmount()); });
 
 test('the back chevron tint follows a live theme change, not the scheme at first render', async () => {
     mockScheme = 'light';
     await act(async () => root.render(<AppLayout />));
-    expect(mockOptions({ navigation: { canGoBack: () => true } }).headerTintColor).toBe(paletteForScheme('light').text);
+    expect(mockOptions().headerTintColor).toBe(paletteForScheme('light').text);
     mockScheme = 'dark';
     await act(async () => root.render(<AppLayout />));
-    const dark = mockOptions({ navigation: { canGoBack: () => true } });
+    const dark = mockOptions();
     expect(dark.headerTintColor).toBe(paletteForScheme('dark').text);
     expect(dark.contentStyle.backgroundColor).toBe(paletteForScheme('dark').background);
 });
 
 test('a screen with nothing behind it gets the home back button', async () => {
+    mockCanGoBack = false;
     await act(async () => root.render(<AppLayout />));
-    expect(mockOptions({ navigation: { canGoBack: () => false } }).headerLeft).toBeInstanceOf(Function);
-    expect(mockOptions({ navigation: { canGoBack: () => true } }).headerLeft).toBeUndefined();
+    expect(mockOptions().headerLeft).toBeInstanceOf(Function);
+    mockCanGoBack = true;
+    await act(async () => root.render(<AppLayout />));
+    expect(mockOptions().headerLeft).toBeUndefined();
 });
 
 test.each(['publish/accounts', 'templates/[id]', 'oddlings/build', 'features/[slug]', 'job/[id]'])('%s receives the stack landscape safe area', async routeName => {

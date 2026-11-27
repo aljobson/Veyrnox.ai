@@ -7,6 +7,7 @@ import type { BeatSoundAsset } from './doc';
 import type { PlaybackContext, PlaybackBuffer } from './takePlayback';
 import { createNativeHeldAssets, nativeHeldError, recordNativeHeldError, type NativeHeldAssets } from './nativeHeldAssets';
 import { loadNativeStemArchive, loadNativeStemArchiveParts, type StemParts } from './stemArchive';
+import { secureRemoteSongUrl } from './remoteSong';
 // @ts-ignore shared bounded loader; this native seam supplies Expo fetch and the native decoder.
 import * as audioFetch from '../../../../../app/veyrnox/_lib/music/beat/beatAudioFetch.mjs';
 // @ts-ignore shared release-authority path; the server remains the source of truth.
@@ -67,8 +68,8 @@ const checkDecoded = (audioRules as unknown as {
 }).checkDecoded;
 
 function signedUrl(value: unknown): value is { url: string; size_bytes?: number } {
-    if (!value || typeof value !== 'object' || typeof (value as { url?: unknown }).url !== 'string'
-        || !/^https:\/\//.test((value as { url: string }).url)) return false;
+    if (!value || typeof value !== 'object' || typeof (value as { url?: unknown }).url !== 'string') return false;
+    try { secureRemoteSongUrl((value as { url: string }).url); } catch { return false; }
     const size = (value as { size_bytes?: unknown }).size_bytes;
     return size === undefined || typeof size === 'number' && Number.isSafeInteger(size) && size > 0;
 }

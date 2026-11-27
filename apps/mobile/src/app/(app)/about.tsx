@@ -1,10 +1,11 @@
 import { rawText } from '../../lib/i18n/translate';
 import Constants from 'expo-constants';
 import { router, Stack } from 'expo-router';
-import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, ScrollView, StyleSheet, Text } from 'react-native';
+import { VividCard } from '../../components/ui';
 import { ABOUT_FACTS, LEGAL_EMAIL, LEGAL_LINKS } from '../../lib/account';
 import { t } from '../../lib/i18n';
-import { colors, LIST_END_PADDING } from '../../theme';
+import { colors, LIST_END_PADDING, VIVID_HUES } from '../../theme';
 
 // About Veyrnox.ai: what it is, who runs it, how to write to us and the policies (the web's /about).
 export default function About() {
@@ -14,23 +15,19 @@ export default function About() {
             <Stack.Screen options={{ title: t('abt.title') }} />
             <Text style={styles.lead}>{t('abt.lead')}</Text>
             <Text style={styles.heading} accessibilityRole="header">{t('abt.details')}</Text>
-            <View style={styles.card}>
-                {ABOUT_FACTS.map((f) => (
-                    <View key={f.labelKey} style={styles.fact} accessible accessibilityLabel={rawText(`${t(f.labelKey)}: ${f.value}`)}>
-                        <Text style={styles.note}>{t(f.labelKey)}</Text>
-                        <Text style={styles.value}>{f.value}</Text>
-                    </View>
-                ))}
-            </View>
+            {ABOUT_FACTS.map((f, index) => <VividCard
+                key={f.labelKey}
+                hue={VIVID_HUES[index % VIVID_HUES.length]}
+                icon="idCard"
+                eyebrow={t(f.labelKey)}
+                title={f.value}
+                layout="compact"
+                accessibilityRole="text"
+                accessibilityLabel={rawText(`${t(f.labelKey)}: ${f.value}`)}
+            />)}
             <Text style={styles.heading} accessibilityRole="header">{t('abt.contact')}</Text>
-            <Pressable accessibilityRole="button" style={styles.row} onPress={() => Linking.openURL(`mailto:${LEGAL_EMAIL}`)}>
-                <Text style={styles.value}>{t('abt.emailUs', { email: LEGAL_EMAIL })}</Text>
-            </Pressable>
-            {LEGAL_LINKS.map((l) => (
-                <Pressable key={l.route} accessibilityRole="link" style={styles.row} onPress={() => router.push(l.route)}>
-                    <Text style={styles.value}>{t(l.labelKey)}</Text>
-                </Pressable>
-            ))}
+            <VividCard hue="orange" icon="envelope" title={t('abt.emailUs', { email: LEGAL_EMAIL })} layout="row" showChevron accessibilityRole="button" onPress={() => void Linking.openURL(`mailto:${LEGAL_EMAIL}`)} />
+            {LEGAL_LINKS.map((l, index) => <VividCard key={l.route} hue={VIVID_HUES[(index + 3) % VIVID_HUES.length]} icon="shieldCheck" title={t(l.labelKey)} layout="compact" showChevron accessibilityRole="link" onPress={() => router.push(l.route)} />)}
             {version ? <Text style={styles.note}>{t('abt.version', { version })}</Text> : null}
         </ScrollView>
     );
@@ -41,9 +38,5 @@ const styles = StyleSheet.create({
     content: { padding: 16, paddingBottom: 16 + LIST_END_PADDING, gap: 14 },
     lead: { color: colors.text, fontSize: 16, lineHeight: 24 },
     heading: { color: colors.muted, fontSize: 14, textTransform: 'uppercase', marginTop: 8 },
-    card: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14 },
-    fact: { paddingVertical: 12, gap: 2 },
-    row: { minHeight: 44, justifyContent: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 14 },
-    value: { color: colors.text, fontSize: 15 },
     note: { color: colors.muted, fontSize: 13 },
 });

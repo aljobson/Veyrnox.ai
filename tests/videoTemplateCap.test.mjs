@@ -114,12 +114,12 @@ test('images list at most 150, every prompt English', () => {
     }
 });
 
-test('audio lists at most 100: all licensed tracks plus the first 13 "For you" Discover samples', () => {
+test('audio lists at most 100: active Sound Effects starts, licensed tracks and the first seven "For you" samples', () => {
     const create = createTemplatesFor('audio');
-    assert.ok(create.every((t) => LICENSED_MUSIC_TRACKS.some((track) => track.id === t.licensedTrackId)), 'Create audio starts are licensed tracks');
-    assert.equal(MUSIC_DISCOVER_LISTED_BEATS.length, 13);
-    assert.deepEqual(MUSIC_DISCOVER_LISTED_BEATS, MUSIC_DISCOVER_BEATS.filter((b) => b.section === 'For you').slice(0, 13));
-    const audio = LICENSED_MUSIC_TRACKS.length + MUSIC_DISCOVER_LISTED_BEATS.length;
+    assert.ok(create.every((t) => t.model === 'Suno Sound Effects' && t.category === 'SOUND FX'), 'Create audio starts use the active Sound Effects model');
+    assert.equal(MUSIC_DISCOVER_LISTED_BEATS.length, 7);
+    assert.deepEqual(MUSIC_DISCOVER_LISTED_BEATS, MUSIC_DISCOVER_BEATS.filter((b) => b.section === 'For you').slice(0, 7));
+    const audio = create.length + LICENSED_MUSIC_TRACKS.length + MUSIC_DISCOVER_LISTED_BEATS.length;
     assert.ok(audio <= AUDIO_CAP, `${audio} audio templates listed`);
     const hidden = MUSIC_DISCOVER_BEATS.find((b) => !MUSIC_DISCOVER_LISTED_BEATS.includes(b));
     assert.equal(getMusicDiscoverSeed(hidden.id), hidden, 'a hidden sample still opens from a saved mix or link');

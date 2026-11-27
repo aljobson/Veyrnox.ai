@@ -1,6 +1,7 @@
 import { scanProProject } from '../../../lib/proProjectScan.mjs';
 import { validateSequence, TEXT_DEFAULTS } from './editorSequenceValidation.mjs';
 import { emptySequence } from './editorSequence.mjs';
+import { canvasAspectFromDimensions, validCanvasAspect } from './editorCanvasFormat.mjs';
 import { assertManifest, manifestMedia, manifestEntry, safeSourceName, safeText } from './proMediaManifest.mjs';
 import { result, refuse, loss, checkedTicks, rationalRate, ticksToFrames, sourceFirstTick, dbToVolume, MAX_SEQUENCE_TICKS, TICKS_PER_FRAME } from './proInterchangeTime.mjs';
 import { assertCounts, sequenceCounts, reportUnknown, boundReport, LABELS } from './proInterchangeFormat.mjs';
@@ -87,7 +88,7 @@ export function importProInterchange(input, options = {}) {
             if(!obj(item)||String(item.id)!==key||!obj(item.kind)||Object.keys(item.kind).length!==1)refuse('invalid_item',{key:safeText(key,64)});
             items.set(item.id,item);
             reportUnknown(item,['id','name','label','kind','metadata'],`items.${item.id}`,report);
-            if(item.metadata)reportUnknown(item.metadata,['veyrnox.tracks.v1'],`items.${item.id}.metadata`,report);
+            if(item.metadata)reportUnknown(item.metadata,['veyrnox.tracks.v1','veyrnox.canvas.v1'],`items.${item.id}.metadata`,report);
             loss(report,`items.${item.id}.label`,'item_label');
         }
         // Check references even in later sequences which will be dropped.
@@ -105,8 +106,10 @@ export function importProInterchange(input, options = {}) {
         const width=number(settings.width,'width'),height=number(settings.height,'height');
         if(width<=0||height<=0||width>32768||height>32768)refuse('invalid_dimensions');
         const rate=rationalRate(settings.frame_rate);if(rate.num/rate.den!==30)loss(report,'sequence.settings.frame_rate','frame_rate','approximated','Conformed to 30 fps.');
+        const canvasValue=sequences[0].metadata?.['veyrnox.canvas.v1'];
+        if(canvasValue!==undefined && !validCanvasAspect(canvasValue,{allowSource:true}))refuse('invalid_canvas_metadata');
         const tl=emptySequence();tl.tracks=[];tl.media=Object.create(null);
-        tl.aspect=width/height===16/9?'16:9':width/height===9/16?'9:16':width===height?'1:1':'source';
+        tl.aspect=canvasValue ?? canvasAspectFromDimensions(width,height) ?? 'source';
         const manifest={version:1,entries:[]}, mediaIds=new Map(), usedIds=new Set(supplied.entries.map(e=>e.mediaId)), unknownPaths=new Map();
         let counter=0;
         const fresh=prefix=>`${prefix}${++counter}`;

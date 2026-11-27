@@ -1,6 +1,6 @@
 import { templateContract, templateRouteContract, templateBoundPrompt, fidelityBlocked, fidelityTemplateId } from './templateFidelity';
 import { normalizeTemplateClipPrompt } from '../../../../lib/templateClipPrompt.mjs';
-import { hasExactPromptOrigin } from '../../../../lib/templatePromptOrigin.mjs';
+import { withTemplateReferencePriority } from '../../../../lib/templateReferencePriority.js';
 import { optionsFor, resolveAudio, resolveResolution, settingsInputs } from './createOptions';
 import type { SubmitRequest } from './generationSubmit';
 import { estimateCredits, kindOf, textInput, type CatalogModel } from './media';
@@ -44,21 +44,12 @@ export function inlineBlockReason(preset: Preset, model: CatalogModel | undefine
     return null;
 }
 
-// A start image only fixes the first frame; this line keeps the person in it as the lead for the whole clip.
-// Only for a prompt the person edited: an unedited exact source prompt is never changed (ADR-0325).
-const PHOTO_CHARACTER_LINE = 'The person in the attached photo is the main character; keep their face, hair and clothing the same throughout.';
-function withPhotoLine(text: string, hasPhoto: boolean): string {
-    const joined = `${text}\n\n${PHOTO_CHARACTER_LINE}`;
-    return hasPhoto && joined.length <= GENERATION_PROMPT_MAX ? joined : text;
-}
-
 /** The request Create would send for this template with nothing, or one start photo, attached and no extra settings. */
 export function templateRequest(preset: Preset, model: CatalogModel, choice: { prompt: string; aspect: string | null; duration: number | null; references?: readonly GenerationReference[]; sourceRights?: boolean; templateClip?: string }): SubmitRequest {
     if (choice.templateClip === preset.id) return { analyticsKind: 'video', modelId: model.id, templateClip: preset.id, prompt: normalizeTemplateClipPrompt(choice.prompt), durationSeconds: 5, confirmedCredits: model.credits, references: choice.references ?? [], sourceRights: true };
     const options = optionsFor(model);
-    const exactOrigin = hasExactPromptOrigin(preset.sourcePromptOrigin);
-    const exact = exactOrigin && preset.sourcePrompt ? preset.sourcePrompt : preset.prompt;
-    const uneditedExact = exactOrigin && choice.prompt === exact;
+    const exact = preset.sourcePromptOrigin === 'community-source-exact' && preset.sourcePrompt ? preset.sourcePrompt : preset.prompt;
+    const uneditedExact = preset.sourcePromptOrigin === 'community-source-exact' && choice.prompt === exact;
     const video = kindOf(model.modality) === 'video';
     const references = choice.references ?? [];
     const extraInputs = settingsInputs(options, {
@@ -67,13 +58,18 @@ export function templateRequest(preset: Preset, model: CatalogModel, choice: { p
     });
     const contract = templateContract(preset.id);
     const boundPrompt = templateBoundPrompt(contract, choice.prompt, model.id, references.length);
+    const text = choice.prompt === exact ? boundPrompt : choice.prompt.trim();
+    const runnablePhotoPrompt = choice.prompt !== exact || !contract || ['like-for-like-safe', 'bound'].includes(contract.class);
+    const photoDriven = video && runnablePhotoPrompt && references.length > 0 && references.every(reference => reference.slot === 'image');
+    const guarded = withTemplateReferencePriority(text, photoDriven, textInput(model)?.max ?? GENERATION_PROMPT_MAX);
     const templateId = choice.prompt === exact && (contract?.class !== 'bound' || references.length === contract.slotCount) ? fidelityTemplateId(contract, boundPrompt, model.id, { ...extraInputs, duration_seconds: video ? choice.duration : null }) : undefined;
     if (templateId && typeof extraInputs.negative_prompt === 'string') extraInputs.negative_prompt = extraInputs.negative_prompt.trimEnd();
     return {
         analyticsKind: kindOf(model.modality),
         modelId: model.id,
-        // Like Create: the recipe's own words go unchanged, anything the person edited is trimmed.
-        prompt: withPhotoLine(choice.prompt === exact ? boundPrompt : choice.prompt.trim(), references.length > 0 && !uneditedExact),
+        // Like web Create: anything the person edited is trimmed. Every
+        // photo-driven video template gets the same reference-first contract.
+        prompt: guarded ?? text,
         templateId,
         confirmedCredits: estimateCredits(model, video ? choice.duration : null),
         durationSeconds: video ? choice.duration : null,

@@ -2,6 +2,7 @@ import english from '../lib/i18n/messages/en.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { humanAuthError } from '../components/humanAuthError.js';
 
 // humanAuthError (moved out of AuthGate.jsx unchanged) maps GoTrue's developer-facing messages to plain English, first
 // match wins, and anything unmatched becomes "That didn't work. Try again."
@@ -33,6 +34,11 @@ test('the existing mappings still win for their own messages', () => {
     assert.match(human('Invalid login credentials'), /don't match/);
     assert.match(human('Password should be at least 8 characters.'), /at least 8/);
     assert.match(human('captcha protection: request disallowed (invalid-input-response)'), /security check/);
+});
+
+test('a browser passkey refusal is explained instead of disappearing', () => {
+    const copy = humanAuthError({ name: 'NotAllowedError' }, (key) => english[key]);
+    assert.match(copy, /No passkey/);
 });
 
 test('a sign-up refused by the disposable-email trigger says what to do', () => {

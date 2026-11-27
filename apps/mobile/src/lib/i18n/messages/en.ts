@@ -73,6 +73,7 @@ import area_creativeFeatures from './en/creativeFeatures';
 import area_creditHistory from './en/creditHistory';
 import area_credits from './en/credits';
 import area_creditsPage from './en/creditsPage';
+import area_crunTemplates from './en/crunTemplates';
 import area_deleteCreation from './en/deleteCreation';
 import area_deleteaccount from './en/deleteaccount';
 import area_dev from './en/dev';
@@ -87,6 +88,7 @@ import area_editorAudioTools from './en/editorAudioTools';
 import area_editorCaptionTools from './en/editorCaptionTools';
 import area_editorClips from './en/editorClips';
 import area_editorCore from './en/editorCore';
+import area_editorCover from './en/editorCover';
 import area_editorEditGate from './en/editorEditGate';
 import area_editorExportRefusal from './en/editorExportRefusal';
 import area_editorFont from './en/editorFont';
@@ -177,6 +179,7 @@ import area_oddlings from './en/oddlings';
 import area_oddlingsLibrary from './en/oddlingsLibrary';
 import area_oddlingsProjects from './en/oddlingsProjects';
 import area_oddlingsStudio from './en/oddlingsStudio';
+import area_onboarding from './en/onboarding';
 import area_opt from './en/opt';
 import area_optionLabels0 from './en/optionLabels0';
 import area_optionLabels1 from './en/optionLabels1';
@@ -189,6 +192,7 @@ import area_presets from './en/presets';
 import area_preview from './en/preview';
 import area_pricing from './en/pricing';
 import area_privacyExport from './en/privacyExport';
+import area_projectCloud from './en/projectCloud';
 import area_projectDocument from './en/projectDocument';
 import area_projectHome from './en/projectHome';
 import area_projects from './en/projects';
@@ -333,6 +337,7 @@ const catalog = {
     ...area_creditHistory,
     ...area_credits,
     ...area_creditsPage,
+    ...area_crunTemplates,
     ...area_deleteCreation,
     ...area_deleteaccount,
     ...area_dev,
@@ -347,6 +352,7 @@ const catalog = {
     ...area_editorCaptionTools,
     ...area_editorClips,
     ...area_editorCore,
+    ...area_editorCover,
     ...area_editorEditGate,
     ...area_editorExportRefusal,
     ...area_editorFont,
@@ -437,6 +443,7 @@ const catalog = {
     ...area_oddlingsLibrary,
     ...area_oddlingsProjects,
     ...area_oddlingsStudio,
+    ...area_onboarding,
     ...area_opt,
     ...area_optionLabels0,
     ...area_optionLabels1,
@@ -449,6 +456,7 @@ const catalog = {
     ...area_preview,
     ...area_pricing,
     ...area_privacyExport,
+    ...area_projectCloud,
     ...area_projectDocument,
     ...area_projectHome,
     ...area_projects,

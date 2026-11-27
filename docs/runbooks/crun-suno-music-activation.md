@@ -2,6 +2,8 @@
 
 Songs are built to run on Crun's Suno (`suno/music-generate`) with fal as standby, and ship DARK: migrations 0591-0593 add schema and two standby, unverified Crun routes beneath `ace-step` and `ace-step-1.5`. Nothing flips until the **OWNER** runs the transaction in section 3. Rehearse everything on staging first. SQL here is reviewed text to paste into a reviewed session, never a committed migration.
 
+**Production status, 2026-11-26:** migration 0621 relists `ace-step` after proving the real Create Music path with six stored CRUN candidates, a clear dispatch-health result and a fresh successful worker heartbeat. The two timeout jobs that triggered 0611 were generic model-QA jobs: they had no Music candidate, request, quote or durable dispatch row, so they did not test this pipeline. `ace-step-1.5` remains inactive until it has separate create-to-library evidence. This status note supersedes the original all-dark activation wording above for the current production catalog.
+
 Project ids: production `xdxdzmsztyzbnzeforxx`, staging `nszlbcmcysftwyudthjz` (check `list_projects`: "Veyrnox PRODUCTION (live)" is not the live project).
 
 ## 1. Preconditions (all must be true)

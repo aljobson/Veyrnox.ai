@@ -53,11 +53,11 @@ test('plain single-layer frames stay exact and inactive or hidden edits do not r
     expect(isEditorPreviewApproximate(timeline, 15)).toBe(false);
 });
 
-test('the legacy preview reports overlapping visible layers instead of showing one as exact', () => {
+test('the legacy preview supports overlapping visible layers', () => {
     const timeline = fidelityTimeline();
     timeline.tracks.push({ id: 'video-1', kind: 'video', name: 'Overlay', locked: false, muted: false, hidden: false });
     timeline.video.push({ ...timeline.video[0], id: 'overlay', trackId: 'video-1' });
-    expect(isEditorPreviewApproximate(timeline, 15)).toBe(true);
+    expect(isEditorPreviewApproximate(timeline, 15)).toBe(false);
 });
 
 test.each([

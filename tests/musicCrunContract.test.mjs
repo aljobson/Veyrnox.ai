@@ -43,7 +43,7 @@ test('Crun quote validation rejects fal-only controls and validates each frozen 
 
   const controls = {
     mode: 'custom', provider_contract: MUSIC_CRUN_CONTRACT, draft_id: DRAFT_ID,
-    draft_revision: 7, instrumental: false, rights_confirmed: true, duration_seconds: 135,
+    draft_revision: 7, instrumental: false, rights_confirmed: true, duration_seconds: 360,
     suno_model: 'v6_wild', vocal_gender: 'female', style_influence: 75,
     weirdness: 0.625, variety: 88, exclude_styles: 'noise',
   };
@@ -57,7 +57,7 @@ test('Crun quote validation rejects fal-only controls and validates each frozen 
     ['style_influence', 101, 'style_influence_invalid'],
     ['weirdness', 1.1, 'weirdness_invalid'],
     ['variety', -1, 'variety_invalid'],
-    ['duration_seconds', 136, 'duration_invalid'],
+    ['duration_seconds', 361, 'duration_invalid'],
   ]) assert.equal(parseCrunMusicQuote({ ...controls, [key]: value }).error, error, key);
 });
 
@@ -118,7 +118,7 @@ test('entitlements use the active contract table and catalog price', () => {
   });
   assert.equal(result.models[0].provider_contract, MUSIC_CRUN_CONTRACT);
   assert.equal(result.models[0].credits_per_candidate, 4);
-  assert.equal(result.models[0].total_credits, 8);
+  assert.equal(result.models[0].total_credits, 4);
   assert.equal(result.models[0].controls.tempo_key_meter, false);
 });
 

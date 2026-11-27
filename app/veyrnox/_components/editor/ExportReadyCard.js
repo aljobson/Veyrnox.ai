@@ -5,11 +5,12 @@ import { Button } from '../Button';
 import { EditorDeliveryPanel } from './EditorDeliveryPanel';
 
 // Calm full-width progress: a big percentage, one line of reassurance, a way out.
-export function ExportProgress({ progress, children }) {
+export function ExportProgress({ progress, preview, children }) {
   const { t, locale } = useI18n();
   const percent = Math.max(0, Math.min(100, Math.round((Number.isFinite(progress) ? progress : 0) * 100)));
   const shown = new Intl.NumberFormat(localeTag(locale)).format(percent);
   return <div className="space-y-2 text-center" data-testid="editor-export-progress">
+    {preview && <img src={preview} alt={t('app.editor.export.previewLabel')} className="max-h-56 w-full rounded-lg bg-black object-contain" />}
     <p className="text-3xl font-black vx-num" aria-hidden="true">{shown}%</p>
     <progress aria-label={t('app.editor.legacy.exportProgress')} value={progress} max={1} className="w-full" />
     <p className="text-xs text-vx-fg-muted">{t('app.editor.export.keepOpen')}</p>

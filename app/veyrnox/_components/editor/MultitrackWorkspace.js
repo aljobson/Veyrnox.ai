@@ -63,6 +63,8 @@ import { BackgroundControls } from './BackgroundControls';
 import { SpeedControls } from './SpeedControls';
 import { VisualControls, SoundControls, TextControls, NumberControl } from './EditorControls';
 import { CanvasHandles } from './CanvasHandles';
+import { SafeAreaOverlay } from './SafeAreaOverlay';
+import { SAFE_AREA_GUIDES } from '../../_lib/editorSafeAreas.mjs';
 import { TrackTimeline } from './TrackTimeline';
 import { EditorTransport } from './EditorTransport';
 import { ShortcutGuide } from './ShortcutGuide';
@@ -73,11 +75,14 @@ import { checkLocalFile, editorJobHandoffFromUrl, probeMedia, checkProbe, mediaF
 import { createPreviewer } from '../../_lib/editorPreview.mjs';
 import { createAudioPlayer } from '../../_lib/editorPlayback.mjs';
 import { timelineSize } from '../../_lib/editorRender.mjs';
+import { customCanvasParts, formatCustomCanvasAspect } from '../../_lib/editorCanvasFormat.mjs';
 import { exportBlocker, exportTimeline, exportFileName } from '../../_lib/editorExport.mjs';
+import { exportWithEncoderFallback } from '../../_lib/editorExportEncoder.mjs';
 import { fitTimelineZoom, stepTimelineZoom, autoFitZoom } from '../../_lib/editorTransport.mjs';
 import { editorDraftScope, editorHasWork, readEditorDraft, removeEditorDraft, writeEditorDraft } from '../../_lib/editorDraft.mjs';
+import { behindSubjectCandidates } from '../../_lib/editorBehindSubject.mjs';
 // Closed UI option sets: IDs are persisted; only labels are translated.
-const ASPECTS = ['source', '16:9', '9:16', '1:1'];
+const ASPECTS = ['source', '16:9', '9:16', '1:1', '4:5'];
 const MOBILE_STAGES = [{ id: 'media', key: 'app.publish.composer.media' }, { id: 'preview', key: 'app.editor.workspace.preview' }, { id: 'timeline', key: 'app.editor.workspace.timeline' }, { id: 'inspector', key: 'app.editor.workspace.adjust' }];
 const field = 'w-full rounded-lg border border-vx-border bg-vx-base p-2 text-sm';
 const EDITOR_PALETTE={
@@ -98,16 +103,24 @@ export function MultitrackWorkspace({ onCredits }) {
     const [history, setHistory] = useState(() => createHistory(emptySequence())), ref = useRef(history);
     const tl = history.now, total = sequenceEnd(tl), blobs = useRef(new Map()), canvas = useRef(null), preview = useRef(null), player = useRef(null), abort = useRef(null), alive = useRef(true), request = useRef(0);
     const [frame, setFrame] = useState(0), [selected, setSelected] = useState(null), [selection, setSelection] = useState([]), [clipboard, setClipboard] = useState(null), [playing, setPlaying] = useState(false), [preparing, setPreparing] = useState(false), [notice, setNotice] = useState('');
-    const [busy, setBusy] = useState(false), [exporting, setExporting] = useState(false), [progress, setProgress] = useState(0), [result, setResult] = useState(null), [tick, setTick] = useState(0), [loaded, setLoaded] = useState([]);
+    const [busy, setBusy] = useState(false), [exporting, setExporting] = useState(false), [progress, setProgress] = useState(0), [exportPreview, setExportPreview] = useState(null), [exportError, setExportError] = useState(''), [result, setResult] = useState(null), [tick, setTick] = useState(0), [loaded, setLoaded] = useState([]);
     const [draftCandidate,setDraftCandidate]=useState(undefined),[draftStatus,setDraftStatus]=useState('');
     const draftIdentity=useRef(null),draftTimer=useRef(null);
     const [ppf, setPpf] = useState(2), [timelineViewport,setTimelineViewport]=useState(800),[shortcuts,setShortcuts]=useState(false),[exportOpen,setExportOpen]=useState(false),[mobileStage,setMobileStage]=useState('preview'), [snap, setSnap] = useState(true), [ripple, setRipple] = useState('none'), [binWidth, setBinWidth] = useState(320), [panel, setPanel] = useState('Media'), [height, setHeight] = useState(720), [blocker, setBlocker] = useState(''), [exportName, setExportName] = useState('veyrnox-studio-edit');
+    const [safeAreaGuideId, setSafeAreaGuideId] = useState('off');
+    const initialCustomAspect = customCanvasParts(tl.aspect);
+    const [customCanvasWidth, setCustomCanvasWidth] = useState(() => String(initialCustomAspect?.width ?? 4));
+    const [customCanvasHeight, setCustomCanvasHeight] = useState(() => String(initialCustomAspect?.height ?? 5));
     const addMediaInput = useRef(null), jobHandoffStarted = useRef(false);
     const [intentRequest, setIntentRequest] = useState(null), [moreTools, setMoreTools] = useState(false);
     const guidance = timelineGuidance(tl);
     const translatedGuidance = guidance && { ...guidance, title: tOr(t, `app.editor.workspace.guidance.${guidance.id}.title`, guidance.title), body: tOr(t, `app.editor.workspace.guidance.${guidance.id}.body`, guidance.body), action: t('app.editor.workspace.guidance.action') };
     const size = useMemo(() => timelineSize(tl, 720), [tl]), item = selected ? tl[selected.track]?.find(c => c.id === selected.id) : null;
     const selectedBlob=useLocalMediaBlob(blobs,item?.mediaId,loaded);
+    useEffect(() => {
+        const custom = customCanvasParts(tl.aspect);
+        if (custom) { setCustomCanvasWidth(String(custom.width)); setCustomCanvasHeight(String(custom.height)); }
+    }, [tl.aspect]);
     useEffect(()=>{fontRegistry.current=createFontRegistry();return()=>fontRegistry.current.clear();},[]);
     const pause = useCallback(() => { request.current++; player.current?.stop(); setPlaying(false); setPreparing(false); }, []);
     const replace = useCallback(next => { ref.current = next; setHistory(next); }, []);
@@ -173,6 +186,7 @@ export function MultitrackWorkspace({ onCredits }) {
     useEffect(() => { exportBlocker().then(reason => alive.current && setBlocker(reason || '')); }, []);
     useEffect(() => { const ids = retainedMedia(history); for (const id of Object.keys(clipboard?.media || {})) ids.add(id); for (const id of blobs.current.keys()) if (!ids.has(id)) blobs.current.delete(id); preview.current?.retain(ids, new Set(history.now.video.map(c => c.id))); }, [history, clipboard]);
     useEffect(() => () => { if (result) URL.revokeObjectURL(result.url); }, [result]);
+    useEffect(() => () => { if (exportPreview) URL.revokeObjectURL(exportPreview); }, [exportPreview]);
     useEffect(() => { if (!canvas.current) return; preview.current ||= createPreviewer(blobs.current,proxies); const engine=preview.current;engine.draw(tl, Math.min(frame, Math.max(0, total - 1)), canvas.current).then(painted=>{if(painted && alive.current && engine===preview.current){const next=engine.status();setPreviewStatus(previous=>JSON.stringify(previous)===JSON.stringify(next)?previous:next);}}).catch(() => setNotice(t("app.editor.workspace.decodeFailed"))); }, [tl, frame, total, tick,proxies,t]);
     useEffect(() => { if (!playing) return; let raf; const advance = () => { const at = player.current.frame(); setFrame(Math.min(at, total - 1)); if (at >= total) pause(); else raf = requestAnimationFrame(advance); }; raf = requestAnimationFrame(advance); return () => cancelAnimationFrame(raf); }, [playing, pause, total]);
     const seek = at => { pause(); setFrame(Math.max(0, Math.min(at, Math.max(0, total - 1)))); };
@@ -233,11 +247,11 @@ export function MultitrackWorkspace({ onCredits }) {
     }
     function insertCopies(source, at) {
         const before = new Set(['video', 'audio', 'text'].flatMap(kind => ref.current.now[kind].map(c => c.id)));
-        const next = apply(sequence => pasteSelection(sequence, source, at));
+        const next = apply(sequence => pasteSelection(sequence, source, at, ripple === 'all'));
         if (next) { const added = ['video', 'audio', 'text'].flatMap(track => next[track].filter(c => !before.has(c.id)).map(c => ({ track, id: c.id }))); setSelection(added); setSelected(added[0] || null); }
     }
     const members = selectionMembers(tl, selection), selectionLocked = members.some(c => trackFor(tl, c)?.locked);
-    const duplicate = () => { if (members.length) insertCopies(copySelection(tl, selection), Math.max(...members.map(c => c.start + c.len))); };
+    const duplicate = () => { if (members.length) insertCopies(copySelection(tl, selection), sequenceEnd(tl)); };
     const remove = () => { if (apply(sequence => deleteSelection(sequence, selection, ripple==='none'?false:ripple==='all'?'all':true))) { setSelected(null); setSelection([]); } };
     const paste = () => insertCopies(clipboard, frame);
     const fitTimeline=()=>setPpf(fitTimelineZoom(total,timelineViewport));
@@ -252,12 +266,16 @@ export function MultitrackWorkspace({ onCredits }) {
     }
     function removeProxy(id){preview.current?.dispose();preview.current=null;setProxies(current=>new Map([...current].filter(([key])=>key!==id)));setTick(n=>n+1);}
     async function runExport(options = {}) {
-        const fontProblem=missingCustomFont(ref.current.now,fontRegistry.current);if(fontProblem){setNotice(fontProblem);return;}
-        const controller = new AbortController(); abort.current = controller; pause(); setResult(null); setExporting(true); setProgress(0); setNotice('');
-        try { const blob = await exportTimeline(ref.current.now, blobs.current, { ...options, signal: controller.signal, height, onProgress: p => alive.current && setProgress(p.done / p.total) }); if (alive.current) setResult({ blob, url: URL.createObjectURL(blob), name: exportFileName(exportName, options.format), size: blob.size }); }
-        catch (e) { if (e.name !== 'AbortError') setNotice(e.message || t("app.editor.workspace.exportFailed")); }
+        const fontProblem=missingCustomFont(ref.current.now,fontRegistry.current);if(fontProblem){setExportError(fontProblem);return;}
+        const controller = new AbortController(); abort.current = controller; pause(); setResult(null); setExportPreview(null); setExportError(''); setExporting(true); setProgress(0); setNotice('');
+        const execute = hardwareAcceleration => exportTimeline(ref.current.now, blobs.current, { ...options, signal: controller.signal, height, hardwareAcceleration,
+            onProgress: p => alive.current && setProgress(p.done / p.total),
+            onPreview: frame => { if (alive.current && !controller.signal.aborted) setExportPreview(URL.createObjectURL(frame)); } });
+        try { const blob = await exportWithEncoderFallback(execute, () => { if (alive.current) { setProgress(0); setExportPreview(null); } }); if (alive.current) setResult({ blob, url: URL.createObjectURL(blob), name: exportFileName(exportName, options.format), size: blob.size }); }
+        catch (e) { if (e.name !== 'AbortError' && alive.current) setExportError(e.message || t("app.editor.workspace.exportFailed")); }
         finally { abort.current = null; if (alive.current) setExporting(false); }
     }
+    const openExport = () => { setExportError(''); setExportOpen(true); };
     function keys(event) {
         // Keys pressed inside a modal dialog (shortcuts, export, credits) belong to that dialog: Escape must reach its
         // native cancel, and Delete/Space/undo must not act on the timeline behind it.
@@ -298,6 +316,17 @@ export function MultitrackWorkspace({ onCredits }) {
         return updateSequenceClip(sequence, selected.track, selected.id, next);
     });
     const locked = item && trackFor(tl, item)?.locked, disabled = exporting || busy;
+    const customCanvas = customCanvasParts(tl.aspect);
+    const applyCustomCanvas = () => {
+        const aspect = formatCustomCanvasAspect(customCanvasWidth, customCanvasHeight);
+        if (!aspect) { setNotice(t('app.editor.workspace.customCanvasError')); return; }
+        apply(sequence => ({ ...sequence, aspect }));
+    };
+    const selectCanvas = value => {
+        if (value !== 'custom') { apply(sequence => ({ ...sequence, aspect: value })); return; }
+        const aspect = formatCustomCanvasAspect(customCanvasWidth, customCanvasHeight) || 'custom:4x5';
+        apply(sequence => ({ ...sequence, aspect }));
+    };
     const openMedia = () => { setPanel('Media'); setMobileStage('media'); };
     function openIntent(nextPanel, request) {
         setIntentRequest({ ...request, panel: nextPanel, id: crypto.randomUUID() });
@@ -312,7 +341,7 @@ export function MultitrackWorkspace({ onCredits }) {
     return <div role="region" data-testid="editor-workspace" aria-label={t("app.editor.workspace.workspace")} style={EDITOR_PALETTE} className={`${fitScreen?"fixed inset-0 z-[60] flex flex-col overflow-hidden outline-none":"space-y-3 rounded-2xl"} bg-vx-base text-vx-fg`} tabIndex={0} onKeyDown={keys}>
         <input ref={addMediaInput} type="file" multiple hidden disabled={disabled} accept="video/mp4,video/webm,video/quicktime,audio/mpeg,audio/wav,audio/mp4,image/png,image/jpeg,image/webp" onChange={files} />
         {shortcuts&&<ShortcutGuide onClose={()=>setShortcuts(false)} />}
-        {exportOpen&&<Modal aria-label={t("app.editor.workspace.exportVideo")} onCancel={()=>setExportOpen(false)} className="items-center justify-center p-4"><div className="max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-2xl border border-vx-border bg-vx-panel p-5 shadow-2xl"><div className="mb-4 flex items-center justify-between gap-3"><h2 className="text-lg font-black">{t("app.editor.workspace.export")}</h2><Button size="sm" variant="ghost" onClick={()=>setExportOpen(false)}>{t("app.editor.workspace.close")}</Button></div><ExportPanel tl={tl} name={exportName} onName={setExportName} height={height} onHeight={setHeight} disabled={disabled} exporting={exporting} progress={progress} result={result} blocker={blocker} onExport={runExport} onCancel={() => abort.current?.abort()} onDone={() => setExportOpen(false)} onCover={async () => { await preview.current.draw(tl, frame, canvas.current); return new Promise((resolve, reject) => canvas.current.toBlob(blob => blob ? resolve(blob) : reject(new Error(t("app.editor.workspace.noFrame"))), 'image/png')); }} />{proInterchange && <ProInterchangeControls tl={tl} onLoadTimeline={loadProjectFile} disabled={disabled} openDisabled={!!projectContext?.id} />}{serverRender !== 'off' && <ServerRenderPanel blobs={blobs} uploadCache={serverUploadCache} mode={serverRender} project={projectContext} timeline={tl} height={height} label={exportName} balanceInfo={serverRenderBalance} state={serverRenderState} onState={setServerRenderState} onCredits={() => { setExportOpen(false); onCredits?.(); }} />}</div></Modal>}
+        {exportOpen&&<Modal aria-label={t("app.editor.workspace.exportVideo")} onCancel={()=>{if(!exporting)setExportOpen(false);}} className="items-center justify-center p-4"><div className="max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-2xl border border-vx-border bg-vx-panel p-5 shadow-2xl"><div className="mb-4 flex items-center justify-between gap-3"><h2 className="text-lg font-black">{t("app.editor.workspace.export")}</h2><Button size="sm" variant="ghost" disabled={exporting} onClick={()=>setExportOpen(false)}>{t("app.editor.workspace.close")}</Button></div><ExportPanel tl={tl} name={exportName} onName={setExportName} height={height} onHeight={setHeight} disabled={disabled} exporting={exporting} progress={progress} preview={exportPreview} result={result} error={exportError} blocker={blocker} onExport={runExport} onCancel={() => abort.current?.abort()} onDone={() => setExportOpen(false)} onCover={async () => { await preview.current.draw(tl, frame, canvas.current); return new Promise((resolve, reject) => canvas.current.toBlob(blob => blob ? resolve(blob) : reject(new Error(t("app.editor.workspace.noFrame"))), 'image/png')); }} />{proInterchange && <ProInterchangeControls tl={tl} onLoadTimeline={loadProjectFile} disabled={disabled} openDisabled={!!projectContext?.id} />}{serverRender !== 'off' && <ServerRenderPanel blobs={blobs} uploadCache={serverUploadCache} mode={serverRender} project={projectContext} timeline={tl} height={height} label={exportName} balanceInfo={serverRenderBalance} state={serverRenderState} onState={setServerRenderState} onCredits={() => { setExportOpen(false); onCredits?.(); }} />}</div></Modal>}
         {draftCandidate&&<div role="status" className="m-3 flex flex-wrap items-center gap-3 rounded-xl border border-vx-accent bg-vx-panel px-4 py-3 text-sm">
             <div className="min-w-0 flex-1"><p className="font-bold">{t("app.editor.workspace.recoverQuestion")}</p><p className="text-xs text-vx-fg-muted">{t('app.editor.workspace.savedAt', { date: new Date(draftCandidate.updatedAt).toLocaleString(localeTag(locale)) })}</p></div>
             <Button size="sm" onClick={recoverDraft} data-testid="editor-recover">{t("app.editor.workspace.recover")}</Button><Button size="sm" variant="ghost" onClick={discardDraft} data-testid="editor-discard">{t("app.publish.drafts.discard")}</Button>
@@ -329,7 +358,7 @@ export function MultitrackWorkspace({ onCredits }) {
             {draftStatus&&draftStatus!=='recovery'&&<span role="status" className="hidden shrink-0 text-[10px] text-vx-fg-muted xl:inline">{tOr(t, `app.editor.workspace.draft.${draftStatus}`, draftStatus)}</span>}
             <div className="flex w-full shrink-0 items-center justify-end gap-1.5 border-t border-vx-border pt-2 sm:ms-auto sm:w-auto sm:gap-2 sm:border-t-0 sm:pt-0">
                 <WorkspaceLayout compact layout={layout} onChange={setLayout} />
-                <Button data-testid="editor-export" className="px-3" size="sm" onClick={()=>setExportOpen(true)}>{t("app.editor.workspace.export")}</Button>
+                <Button data-testid="editor-export" className="px-3" size="sm" onClick={openExport}>{t("app.editor.workspace.export")}</Button>
                 <Button className="px-3" size="sm" variant="money" onClick={onCredits}>{t('label.Credits')}</Button>
                 <Button className="px-3" size="sm" variant="ghost" aria-pressed={fitScreen} onClick={()=>setFitScreen(v=>!v)}><span className="sm:hidden">{fitScreen?t("app.editor.workspace.exit"):t("app.editor.workspace.full")}</span><span className="hidden sm:inline">{fitScreen?t("app.editor.workspace.exitFull"):t("app.editor.workspace.fullEditor")}</span></Button>
             </div>
@@ -359,7 +388,7 @@ export function MultitrackWorkspace({ onCredits }) {
         {notice && <HelperNotice message={notice} className="mx-3 mt-2 rounded-lg border border-vx-border bg-vx-panel p-3 text-sm" />}
         <div className={`${mobileStage==='timeline'?'hidden lg:grid':'grid'} min-h-0 gap-px bg-vx-border lg:grid-cols-[var(--workspace-columns)] ${fitScreen?"flex-1 [container-type:size] [--panel-max-height:100%] lg:min-h-[max(12rem,28svh)]":""}`} style={{ '--workspace-columns':workspaceColumns(layout,binWidth) }}>
             <aside aria-label={t("app.editor.workspace.projectMedia")} hidden={layout.mediaDock==='hidden'} style={{order:layout.mediaDock==='right'?3:1,maxHeight:fitScreen?`var(--panel-max-height, ${layout.previewHeight+5}vh)`:`${layout.previewHeight+5}vh`}} className={`${mobileStage==='media'?'flex':'hidden'} flex-col gap-3 overflow-hidden bg-vx-panel p-2 md:flex-row lg:flex`}>
-                <EditorToolRail panel={panel} onPanel={setPanel} onExport={() => setExportOpen(true)} onMoreToggle={setMoreTools} disabled={disabled} sharedTools={sharedTools} scenes={scenes} clipper={clipper} agent={agent}/><div className="min-w-0 flex-1 space-y-3 overflow-y-auto py-1 pe-1">
+                <EditorToolRail panel={panel} onPanel={setPanel} onExport={openExport} onMoreToggle={setMoreTools} disabled={disabled} sharedTools={sharedTools} scenes={scenes} clipper={clipper} agent={agent}/><div className="min-w-0 flex-1 space-y-3 overflow-y-auto py-1 pe-1">
                 {panel === 'Media' && <><AdvancedMediaBin tl={tl} blobs={blobs} loaded={loaded} disabled={disabled} selectedClip={item&&selected?.track!=='text'?{kind:selected.track,item}:null} apply={apply} onFiles={files} onIngest={ingest} onAdd={add} onReplace={mediaId=>apply(sequence=>replaceSequenceClipMedia(sequence,selected.track,item.id,mediaId))} onRemove={id => apply(sequence => removeSequenceMedia(sequence, id))} onRelink={relink} onDetails={(id,patch)=>apply(sequence=>updateMediaDetails(sequence,id,patch))} proxies={proxies} onProxy={createProxy} onRemoveProxy={removeProxy} onError={setNotice} />
                 {proxyJob && <div role="status" className="space-y-2 text-xs">{t("app.editor.workspace.proxyPreparing")}<progress aria-label={t("app.editor.workspace.proxyProgress")} max={1} value={proxyJob.progress} className="w-full" /><Button size="sm" onClick={()=>abort.current?.abort()}>{t("app.editor.workspace.proxyCancel")}</Button></div>}
                 <label className="block text-xs">{t("app.editor.workspace.panelWidth")}<input aria-label={t("app.editor.workspace.mediaPanelWidth")} type="range" min={180} max={360} value={binWidth} onChange={e => setBinWidth(Number(e.target.value))} className="w-full accent-vx-accent" /></label>
@@ -383,8 +412,8 @@ export function MultitrackWorkspace({ onCredits }) {
                 {panel === 'Transcript' && <TranscriptPanel tl={tl} blobs={blobs} disabled={disabled} frame={frame} apply={apply} onSelect={selectClip} onSeek={seek} onError={setNotice} onBusy={setBusy} />}
                 </div>
             </aside>
-            <section aria-label={t("app.editor.workspace.preview")} style={{order:2}} className={`${mobileStage==='preview'?'flex':'hidden'} min-h-0 flex-col gap-3 overflow-hidden bg-vx-panel p-3 lg:flex`}>
-                <div className="relative mx-auto" style={{ width: `min(100%, calc(${fitScreen?`min(${layout.previewHeight}vh, max(48px, calc(100cqh - 68px)))`:`${layout.previewHeight}vh`} * ${size.width / size.height}))` }}><canvas ref={canvas} width={size.width} height={size.height} role="img" aria-label={t("app.editor.workspace.videoPreview")} style={{maxHeight:fitScreen?`min(${layout.previewHeight}vh, max(48px, calc(100cqh - 68px)))`:`${layout.previewHeight}vh`}} className="w-full rounded-lg bg-black object-contain" /><CanvasHandles item={item && selected.track !== 'audio' && frame >= item.start && frame < item.start + item.len ? item : null} kind={selected?.track} frame={frame} disabled={disabled || locked} onChange={patch} /></div>
+            <section aria-label={t("app.editor.workspace.preview")} style={{order:2}} className={`${mobileStage==='preview'?'flex':'hidden'} min-h-0 flex-col gap-3 overflow-y-auto overscroll-contain bg-vx-panel p-3 lg:flex lg:overflow-hidden`}>
+                <div className="relative mx-auto overflow-hidden rounded-lg" style={{ width: `min(100%, calc(${fitScreen?`min(${layout.previewHeight}vh, max(48px, calc(100cqh - 68px)))`:`${layout.previewHeight}vh`} * ${size.width / size.height}))` }}><canvas ref={canvas} width={size.width} height={size.height} role="img" aria-label={t("app.editor.workspace.videoPreview")} style={{maxHeight:fitScreen?`min(${layout.previewHeight}vh, max(48px, calc(100cqh - 68px)))`:`${layout.previewHeight}vh`}} className="w-full bg-black object-contain" /><SafeAreaOverlay id={safeAreaGuideId} width={size.width} height={size.height} label={t('app.editor.safeArea.keepInside')} /><CanvasHandles item={item && selected.track !== 'audio' && frame >= item.start && frame < item.start + item.len ? item : null} kind={selected?.track} frame={frame} disabled={disabled || locked} onChange={patch} /></div>
                 {previewStatus.sources.some(s=>s.proxy) && <p role="status" aria-label={t("app.editor.workspace.sourceQuality")} className="text-xs text-vx-fg-muted">{t('app.editor.workspace.proxyDescription', { sizes: previewStatus.sources.filter(row=>row.proxy).map(row=>`${number(row.width)} × ${number(row.height)}`).join(', ') })}</p>}
                 <EditorTransport frame={frame} total={total} playing={playing} preparing={preparing} disabled={disabled} onPlay={play} onPause={pause} onSeek={seek} onFit={fitTimeline} onShortcuts={()=>{pause();setShortcuts(true);}} />
             </section>
@@ -405,12 +434,14 @@ export function MultitrackWorkspace({ onCredits }) {
                             return {...sequence,video:sequence.video.map(voice),audio:sequence.audio.map(voice)};
                         })} /><AudioEffectsControls item={item} media={tl.media[item.mediaId]} onChange={patch} /><SoundControls item={item} onChange={patch} onRate={item.freezeFrame===undefined && !['image', 'graphic'].includes(tl.media[item.mediaId]?.kind) ? n => apply(sequence => setSequenceRate(sequence, selected.track, item.id, n)) : null} onExtract={item.freezeFrame===undefined && selected.track === 'video' && tl.media[item.mediaId]?.hasAudio ? () => apply(sequence => extractSequenceAudio(sequence, item.id)) : null} />
                         {selected.track === 'video' && <NumberControl label={t("app.editor.workspace.dissolve")} value={item.transition / 30} min={0} max={2} onChange={n => patch({ transition: Math.round(n * 30) })} />}
-                    </>}</>}
+                    </>}{(selected.track==='text'||selected.track==='video'&&['image','graphic'].includes(tl.media[item.mediaId]?.kind))&&(()=>{const subjects=behindSubjectCandidates(tl,item);return subjects.length||item.behindSubject?<label className="block text-xs">{t('app.editor.workspace.behindSubject')}<select aria-label={t('app.editor.workspace.behindSubject')} className={field} value={item.behindSubject||''} onChange={e=>patch({behindSubject:e.target.value||undefined})}><option value="">{t('app.editor.workspace.behindSubjectOff')}</option>{subjects.map(subject=><option key={subject.id} value={subject.id}>{tl.media[subject.mediaId]?.name||t('app.editor.workspace.maskedSubject')}</option>)}</select><span className="mt-1 block text-[11px] text-vx-fg-muted">{t('app.editor.workspace.behindSubjectHelp')}</span></label>:null;})()}</>}
 
                 </fieldset>
                 {selected?.track==='video' && tl.media[item?.mediaId]?.kind==='video' && <><MotionProcessingControls key={`motion:${item.id}`} media={tl.media[item.mediaId]} blob={selectedBlob} timeline={tl} disabled={disabled || locked} onIngest={ingest} onBusy={setBusy} onError={setNotice} />{localInference&&panel!=='Effects'&&<PersonProcessingControls key={`person:${item.id}`} media={tl.media[item.mediaId]} blob={selectedBlob} timeline={tl} disabled={disabled || locked} onIngest={ingest} onBusy={setBusy} onError={setNotice} />}</>}
                 <label className="flex items-center justify-between text-xs">{t("app.editor.workspace.background")}<input aria-label={t("app.editor.workspace.background")} type="color" disabled={disabled} value={tl.background} onChange={e => apply(sequence => ({ ...sequence, background: e.target.value }))} /></label>
-                <label className="block text-xs">{t("app.editor.workspace.shape")}<select aria-label={t("app.editor.workspace.shape")} className={field} disabled={disabled} value={tl.aspect} onChange={e => apply(sequence => ({ ...sequence, aspect: e.target.value }))}>{ASPECTS.map(aspect => <option key={aspect} value={aspect}>{aspect === 'source' ? t('app.editor.workspace.source') : aspect}</option>)}</select></label>
+                <label className="block text-xs">{t("app.editor.workspace.shape")}<select aria-label={t("app.editor.workspace.shape")} className={field} disabled={disabled} value={customCanvas ? 'custom' : tl.aspect} onChange={e => selectCanvas(e.target.value)}>{ASPECTS.map(aspect => <option key={aspect} value={aspect}>{aspect === 'source' ? t('app.editor.workspace.source') : aspect}</option>)}<option value="custom">{t('app.editor.workspace.customCanvas')}</option></select></label>
+                {customCanvas && <div className="grid grid-cols-2 gap-2"><label className="text-xs">{t('app.editor.workspace.width')}<input aria-label={t('app.editor.workspace.customCanvasWidth')} className={field} disabled={disabled} type="number" inputMode="numeric" min="1" max="100" step="1" value={customCanvasWidth} onChange={e => setCustomCanvasWidth(e.target.value)} /></label><label className="text-xs">{t('app.editor.workspace.height')}<input aria-label={t('app.editor.workspace.customCanvasHeight')} className={field} disabled={disabled} type="number" inputMode="numeric" min="1" max="100" step="1" value={customCanvasHeight} onChange={e => setCustomCanvasHeight(e.target.value)} /></label><Button disabled={disabled} className="col-span-2" onClick={applyCustomCanvas}>{t('app.editor.workspace.applyCustomRatio')}</Button></div>}
+                {size.height > size.width && <label className="block text-xs">{t('app.editor.safeArea.label')}<select data-testid="editor-safe-area-select" aria-label={t('app.editor.safeArea.label')} className={field} disabled={disabled} value={safeAreaGuideId} onChange={e => setSafeAreaGuideId(e.target.value)}>{SAFE_AREA_GUIDES.map(guide => <option key={guide.id} value={guide.id}>{t(guide.labelKey)}</option>)}</select><span className="mt-1 block text-[11px] text-vx-fg-muted">{t('app.editor.safeArea.help')}</span></label>}
             </aside>
         </div>
         <nav data-testid="editor-sections" aria-label={t("app.editor.workspace.mobileSections")} className="order-3 z-30 mx-2 mb-2 flex shrink-0 justify-center gap-1 rounded-full border border-vx-border bg-vx-panel/95 p-1 shadow-xl backdrop-blur lg:hidden">{MOBILE_STAGES.map(({id:value,key})=><button key={value} type="button" aria-pressed={mobileStage===value} className={`min-h-10 min-w-0 flex-1 truncate rounded-full px-2 text-xs font-bold ${mobileStage===value?'bg-vx-accent text-vx-accent-ink':'text-vx-fg-muted'}`} data-testid={`editor-stage-${value}`} onClick={()=>setMobileStage(value)}>{t(key)}</button>)}</nav>

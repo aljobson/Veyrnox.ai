@@ -13,12 +13,12 @@ test('says the editor switches are on, with the build and the workspace count', 
     expect(editorDiagnostics(1)).toBe('Build 1.0.0 (31) · editor switch on · full editor on · workspaces 1');
 });
 
-test('says the editor switch is off when the build was made without it', () => {
+test('defaults the shipped editors on when a local build omits EAS profile variables', () => {
     const { editorDiagnostics } = load(undefined, undefined);
-    expect(editorDiagnostics(null)).toBe('Build 1.0.0 (31) · editor switch off · full editor off · workspaces ?');
+    expect(editorDiagnostics(null)).toBe('Build 1.0.0 (31) · editor switch on · full editor on · workspaces ?');
 });
 
-test('a switch that is not exactly "true" counts as off', () => {
-    const { editorDiagnostics } = load('1', 'TRUE');
+test('an explicit false switch remains the rollback', () => {
+    const { editorDiagnostics } = load('false', 'false');
     expect(editorDiagnostics(0)).toContain('editor switch off · full editor off · workspaces 0');
 });

@@ -65,6 +65,7 @@ test('mobile wire request carries swap and omits a duration for the scene handof
   const { mediaApi } = load('apps/mobile/src/lib/media.ts', {
     './appCache': { getCacheUser: () => 'owner' }, './network': { ensureOnline: async () => {} }, './aiConsentStore': { aiConsent: { ensure: async () => {}, hasAgreed: async () => true } },
     './celebrate': { noteLocalSubmission() {} }, './generationProgress': { noteJobStarted() {} }, './analytics/generations': { noteGenerationSubmitted: async () => {} },
+    './notificationPrimer': { markNotificationPrimerPending: async () => {} },
   });
   await mediaApi({ request: async (_path, init) => { wire = JSON.parse(init.body); return { job_id: 'fixture' }; } }).createGeneration({ modelId: 'swap-recast', swap: scenes[0].id, prompt: '', durationSeconds: null, idempotencyKey: 'key', references: [{ slot: 'image', origin: 'asset', asset_id: 'photo' }], sourceRights: true });
   assert.equal(wire.swap, scenes[0].id); assert.equal(wire.inputs.duration_seconds, undefined);

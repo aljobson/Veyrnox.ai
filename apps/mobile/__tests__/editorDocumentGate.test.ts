@@ -9,6 +9,7 @@ import { webSequenceV3, envelope } from './fixtures/webSequenceV3';
 import { nearLimit } from './fixtures/editorNearLimit';
 import { emptyTimeline } from '../src/lib/nativeEditorModel';
 const mockRequest = jest.fn(), mockApi = { request: mockRequest }, mockRouter = { back: jest.fn() };
+let mockCloudSync = true;
 const mockBegin = () => ({ current: () => true });
 jest.mock('expo-router', () => ({ useRouter: () => mockRouter }));
 jest.mock('expo-crypto', () => ({ randomUUID: () => 'key' }));
@@ -16,6 +17,7 @@ jest.mock('expo-secure-store', () => ({ getItemAsync: jest.fn().mockResolvedValu
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi, beginSessionTask: mockBegin }) }));
 jest.mock('../src/lib/appCache', () => ({ getCacheUser: () => 'owner', subscribeCacheUser: () => () => {} }));
 jest.mock('../src/lib/editorDrafts', () => ({ readDraft: jest.fn().mockResolvedValue(null), writeDraft: jest.fn().mockResolvedValue(true), removeDraft: jest.fn() }));
+jest.mock('../src/lib/projectSyncPreference', () => ({ projectCloudSyncEnabled: () => Promise.resolve(mockCloudSync) }));
 jest.mock('../src/lib/editorDeviceMedia', () => ({ editorDeviceMedia: { hydrate: jest.fn().mockResolvedValue({}) } }));
 let root: Root, session: ReturnType<typeof useFullEditorSession>;
 function Harness() { session = useFullEditorSession({ projectId: envelope(null).project_id }); return null; }
@@ -23,7 +25,7 @@ async function open(doc: ProjectDocument) {
     mockRequest.mockImplementation(async (path: string) => path.endsWith('/document') ? { document: doc, revision: 1 } : { project: { name: 'Test' } });
     await act(async () => root.render(createElement(Harness)));
 }
-beforeEach(() => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; jest.useFakeTimers(); jest.clearAllMocks(); jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {}); root = createRoot(); });
+beforeEach(() => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; jest.useFakeTimers(); jest.clearAllMocks(); mockCloudSync = true; jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {}); root = createRoot(); });
 afterEach(async () => { await act(async () => root.unmount()); jest.restoreAllMocks(); jest.useRealTimers(); });
 test('pure gate validates timelines, versions and exact UTF-8 envelope size', () => {
     const doc = envelope(webSequenceV3()); expect(documentProblem(doc)).toBeNull();
@@ -91,6 +93,16 @@ test('a successful save makes its earlier history known baseline snapshots', asy
     expect(session.currentDocument()).toEqual(earlier); expect(session.problem).toBeNull();
     await act(async () => session.travel('redo'));
     expect(session.currentDocument()).toEqual(valid);
+});
+test('cloud-sync opt-out persists edits only in the account-scoped device draft', async () => {
+    mockCloudSync = false;
+    const doc = envelope(webSequenceV3()); await open(doc);
+    const edited = { ...doc, brief: 'Only on this iPhone' };
+    await act(async () => { session.markDocument(edited); await jest.advanceTimersByTimeAsync(1_400); });
+    expect(jest.mocked(writeDraft).mock.calls.at(-1)?.[0].document).toEqual(edited);
+    expect(mockRequest.mock.calls.filter(([, init]) => init?.method === 'PUT')).toHaveLength(0);
+    expect(session.dirty).toBe(false);
+    expect(session.saveStatus).toBe('Saved on this iPhone');
 });
 test('a save finishing after an undo preserves the new branch\'s previously live snapshots', async () => {
     const valid = envelope(webSequenceV3()), baseline = { ...valid, timeline: { ...webSequenceV3(), fps: 29 } };

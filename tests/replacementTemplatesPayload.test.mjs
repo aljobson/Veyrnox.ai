@@ -15,6 +15,7 @@ import { checkTemplateRequest } from '../lib/templateFidelity.js';
 import { MODELS } from '../app/veyrnox/_lib/tokens.js';
 import { KLING_V3_PROMPT_MAX } from '../lib/generationPromptLimits.js';
 import { capabilityFor, checkInputs } from '../lib/modelCapabilities.js';
+import { TEMPLATE_REFERENCE_PRIORITY } from '../lib/templateReferencePriority.js';
 
 const json = file => JSON.parse(readFileSync(new URL(file, import.meta.url)));
 const hashes = { ...json('./fixtures/higgsfieldReplacementPromptHashes.json'), ...json('./fixtures/syntxReplacementPromptHashes.json') };
@@ -40,8 +41,13 @@ function boundPrompt(id) {
     text += source.slice(cursor, m.offset) + m.target;
     cursor = m.offset + m.token.length;
   }
-  exactBytes(c.prompt, text + source.slice(cursor));
+  const bound = text + source.slice(cursor);
+  exactBytes(c.prompt, c.identityLine ? `${TEMPLATE_REFERENCE_PRIORITY}\n\n${bound}` : bound);
   return c.prompt;
+}
+function photoPrompt(id) {
+  const c = templateContract(id);
+  return c?.identityLine ? c.prompt : lockedPrompt(id);
 }
 
 before(() => mock.method(globalThis, 'fetch', () => { throw new Error('G1 forbids network'); }));
@@ -148,12 +154,13 @@ for (const id of overCapIds) {
     assert.deepEqual(checkInputs(capabilityFor('fal-ai/kling-video/v3/pro/image-to-video'), { prompt, start_image_url: PHOTO_URL }), { ok: false, error: 'inputs_invalid:prompt' });
     assert.equal(templateContract(id).class, 'bound');
     assert.equal(templateContract(id).modelId, 'seedance-2.0-photo-kie');
-    assert.equal(templateContract(id).prompt.length, prompt.length);
+    assert.equal(templateContract(id).prompt.length, prompt.length + TEMPLATE_REFERENCE_PRIORITY.length + 2);
+    exactBytes(templateContract(id).prompt, boundPrompt(id));
   });
 }
 
 for (const id of photoIds) {
-  test(`G1 real withPhoto=true: single start-image transport and unchanged exact prompt: ${id}`, async () => {
+  test(`G1 real withPhoto=true: single start-image transport and reference-first prompt: ${id}`, async () => {
     const { page, request, result } = await runPhoto(id);
     photoResults.set(id, result);
     const prompt = lockedPrompt(id);
@@ -165,16 +172,16 @@ for (const id of photoIds) {
     assert.equal(request.max_charge_credits, 64);
     assert.equal(request.consent, true);
     assert.deepEqual(request.references, fixtureReferences);
-    exactBytes(request.inputs.prompt, boundPrompt(id));
+    exactBytes(request.inputs.prompt, photoPrompt(id));
     assert.deepEqual(result.checked, { ok: true });
     assert.deepEqual(result.lookedUp, [PHOTO_KEY]);
     assert.deepEqual(result.resolved.inputs, { image_url: PHOTO_URL });
     if (isBound(id)) {
-      assert.deepEqual(result.body, { prompt: boundPrompt(id), start_image_url: PHOTO_URL, duration: '10', generate_audio: false });
+      assert.deepEqual(result.body, { prompt: photoPrompt(id), start_image_url: PHOTO_URL, duration: '10', generate_audio: false });
       assert.equal(request.template_id, id);
       assert.equal(checkTemplateRequest(request).ok, true);
     } else {
-      assert.deepEqual(result.body, { prompt: prompt, start_image_url: PHOTO_URL, duration: '10', generate_audio: false });
+      assert.deepEqual(result.body, { prompt: photoPrompt(id), start_image_url: PHOTO_URL, duration: '10', generate_audio: false });
       assert.equal(typeof result.payload.start_image_url, 'string');
     }
     // Exact object equality above prohibits end frames, reference arrays, video,
@@ -185,10 +192,11 @@ for (const id of photoIds) {
     assert.deepEqual(tooMany.lookedUp, []);
   });
 
-  test(`R4 fixed: withPhoto=true preserves exact prompt bytes: ${id}`, async () => {
+  test(`R4 fixed: withPhoto=true preserves source bytes after the priority line: ${id}`, async () => {
     const result = photoResults.get(id) || (await runPhoto(id)).result;
-    exactBytes(result.payload.prompt, boundPrompt(id));
-    assert.equal(sha(result.payload.prompt), isBound(id) ? templateContract(id).boundHash : hashes[id]);
+    exactBytes(result.payload.prompt, photoPrompt(id));
+    assert.equal(sha(result.payload.prompt), sha(photoPrompt(id)));
+    assert.ok(result.payload.prompt.endsWith(isBound(id) ? boundPrompt(id).slice(TEMPLATE_REFERENCE_PRIORITY.length + 2) : lockedPrompt(id)));
     assert.equal(result.payload.prompt.includes('main character'), false);
   });
 }

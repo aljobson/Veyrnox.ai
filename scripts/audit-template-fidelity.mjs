@@ -17,7 +17,7 @@ import { NEGATIVE_PROMPT_MAX } from '../lib/generationPromptLimits.js';
 import { SHOWCASE_CLIPS } from '../app/veyrnox/_lib/showcase.js';
 import { longPromptTarget } from '../lib/templateLongPromptTarget.js';
 import { SEEDANCE_LONG_MODEL_ID } from '../lib/seedanceLongTemplates.js';
-import { ORIGINAL_SEEDANCE_ORIGIN } from '../app/veyrnox/_lib/originalSeedanceTemplates.js';
+import { withTemplateReferencePriority } from '../lib/templateReferencePriority.js';
 
 export const hash = text => createHash('sha256').update(text).digest('hex');
 export function auditTemplate(p) {
@@ -38,10 +38,7 @@ export function auditTemplate(p) {
   if (!slots.length && /<[^>]+>/.test(sourcePrompt)) reasons.push('unmapped-placeholder');
   const defaultTarget = slots.length && !binding.error ? PEOPLE_BINDING_MODEL : legacyModelId;
   // Over Kling 3.0's prompt cap, a one-photo recipe moves to the long-prompt offer when its exact text fits there (ADR-0309 am. 3).
-  // Veyrnox's own Seedance templates were written and paid-tested for this offer, so they stay on it at any length.
-  const target = p.sourcePromptOrigin === ORIGINAL_SEEDANCE_ORIGIN && defaultTarget === PEOPLE_BINDING_MODEL && slots.length === 1
-    ? SEEDANCE_LONG_MODEL_ID
-    : longPromptTarget(defaultTarget, (binding.text || sourcePrompt).length, slots.length);
+  const target = longPromptTarget(defaultTarget, (binding.text || sourcePrompt).length, slots.length);
   let cap = fallbackCapabilitiesFor(target);
   if (!cap || p.sourcePromptStatus === 'exact-truncated') reasons.push('unsupported-source-or-model');
   const wanted = p.aspect || p.clip?.aspectRatio || SHOWCASE_CLIPS[p.clipKey]?.aspectRatio || p.previewAspect;
@@ -51,17 +48,22 @@ export function auditTemplate(p) {
   const duration = cap?.kind === 'video' ? p.durationSeconds ?? 5 : null;
   if (duration && !cap?.lengths?.includes(duration)) reasons.push('unsupported-duration');
   if ((binding.text || sourcePrompt).length > Math.min(GENERATION_PROMPT_MAX, cap?.inputs?.prompt?.max || 0)) reasons.push('prompt-limit');
+  const candidateText = slots.length && !binding.error ? binding.text : sourcePrompt;
+  const hasPhoto = !!cap?.media?.image;
+  const guardedCandidate = withTemplateReferencePriority(candidateText, hasPhoto, cap?.inputs?.prompt?.max);
+  if (hasPhoto && guardedCandidate === null) reasons.push('reference-priority-over-prompt-limit');
   const classification = video ? 'blocked-needs-video' : reasons.length ? 'unsupported' : slots.length ? 'bound' : 'like-for-like-safe';
   const bound = classification === 'bound';
   const modelId = bound ? target : legacyModelId;
   cap = fallbackCapabilitiesFor(modelId);
-  const text = bound ? binding.text : sourcePrompt;
-  const hasPhoto = !!cap?.media?.image;
+  const baseText = bound ? binding.text : sourcePrompt;
+  const guardedText = withTemplateReferencePriority(baseText, hasPhoto, cap?.inputs?.prompt?.max);
+  const text = guardedText ?? baseText;
   return { contractVersion: 1, id: p.id, class: classification,
     modelId, allowedModels: [modelId], sourcePrompt, sourceHash: hash(sourcePrompt),
     prompt: text, promptHash: hash(text), photoPrompt: text, photoPromptHash: hash(text),
     ...(bound ? { boundHash: hash(text), tokenMap: binding.map, slotCount: slots.length } : {}),
-    identityLine: false, requiredReferences: { imageMin: bound ? slots.length : cap?.media?.image?.required || imageCount ? 1 : 0, imageMax: bound ? slots.length : hasPhoto ? 1 : 0, video },
+    identityLine: hasPhoto && text !== baseText, requiredReferences: { imageMin: bound ? slots.length : cap?.media?.image?.required || imageCount ? 1 : 0, imageMax: bound ? slots.length : hasPhoto ? 1 : 0, video },
     duration, aspect: bound ? aspect : nearestOption(wanted, cap?.inputs?.aspect_ratio?.values || []) || cap?.inputs?.aspect_ratio?.values?.[0] || null,
     negativeMax: cap?.inputs?.negative_prompt?.max ?? NEGATIVE_PROMPT_MAX,
     negativePrompt: cap?.inputs?.negative_prompt ? (p.negativePrompt?.trim() || '').slice(0, cap.inputs.negative_prompt.max ?? NEGATIVE_PROMPT_MAX).trimEnd() : '',
@@ -80,7 +82,7 @@ export function packContracts(contracts) {
   return { contractVersion: 1, prompts, templates };
 }
 export function audit() {
-  const contracts = Object.fromEntries(PRESETS.filter(p => p.sourcePromptOrigin === 'community-source-exact' || p.sourcePromptOrigin === ORIGINAL_SEEDANCE_ORIGIN).map(p => [p.id, auditTemplate(p)]));
+  const contracts = Object.fromEntries(PRESETS.filter(p => p.sourcePromptOrigin === 'community-source-exact').map(p => [p.id, auditTemplate(p)]));
   const totals = { 'like-for-like-safe': 0, bound: 0, 'blocked-needs-video': 0, unsupported: 0 };
   for (const c of Object.values(contracts)) totals[c.class]++;
   const unsupportedReasons = {};
@@ -104,11 +106,11 @@ Offline structural audit, contract version 1. Reproduce with \`node scripts/audi
 
 ${Object.entries(report.totals).map(([k,v]) => `- ${k}: ${v}`).join('\n')}
 
-Original source hashes remain unchanged. Only recognized image tokens change in bound text; bound hashes and occurrence maps are recorded in \`lib/templateFidelityContracts.json\`. Bound templates use Seedance reference with 1–9 ordered photos, fixed generated audio, and catalog pricing. No external source audio can be supplied by an active template route.
+Original source hashes remain unchanged. Every runnable photo-driven video contract prepends the shared reference-priority instruction while preserving the complete source prompt after it; contracts that cannot fit the instruction inside the target model's prompt limit are classified unsupported. Only recognized image tokens change in bound source text; final prompt hashes and occurrence maps are recorded in \`lib/templateFidelityContracts.json\`. Bound templates use Seedance reference with 1–9 ordered photos, fixed generated audio, and catalog pricing. No external source audio can be supplied by an active template route.
 
 A2-3 routes all ${report.totals.bound} bound templates by the contract model on feed, card, detail and Create. Web and mobile show exactly N required, ordered photo slots; only complete valid photo selections carry template_id. The web handoff holds up to nine photos in memory only; the mobile handoff uses the existing short-lived, owner-scoped memory store. Unsupported templates remain admitted with the notice. Source-video dependencies are blocked, including harmless prompt edits; independent custom text is admitted.
 
-Structurally validated, not output-verified. No paid provider call, migration, flag or price configuration change. TemplateRecipe and detail markup remain unchanged for non-bound, non-blocked recipes; bound detail model links/names and obsolete crop hints follow the effective model; prose-only video-blocked recipes now show the existing source-video note. Edited-prompt PHOTO_CHARACTER_LINE is preserved.
+Structurally validated, not output-verified. No paid provider call, migration, flag or price configuration change. TemplateRecipe and detail markup remain unchanged for non-bound, non-blocked recipes; bound detail model links/names and obsolete crop hints follow the effective model; prose-only video-blocked recipes now show the existing source-video note. The same reference-priority instruction is applied by both Create and inline template generation for any selected image-to-video model, including Kling, Seedance and Veo.
 
 Owner decision, 7 November 2026: higher Seedance-reference quotes for token-bearing templates are ACCEPTED: one-photo 19 → 85 Credits / 5s and 64 → 170 Credits / 10s; multi-photo templates likewise use the active reference-model quote. No pricing configuration changed.
 

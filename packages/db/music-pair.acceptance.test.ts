@@ -40,6 +40,10 @@ describe('music pair foundation (0250)', { skip: !DATABASE_URL && 'DATABASE_URL 
     // 0611 unlists ACE in production; this historical proof runs in a transaction and must
     // opt its original catalog fixture back in explicitly.
     await client.query("UPDATE public.model_catalog SET active=true WHERE id IN ('ace-step','ace-step-1.5')");
+    // This suite proves the historical 0457 pair contract in isolation. The current 0620
+    // trigger intentionally converts ordinary live Create quotes to one track, so suspend
+    // only that trigger inside this rolled-back historical fixture.
+    await client.query('ALTER TABLE public.music_generation_quotes DISABLE TRIGGER music_quote_aaa_single_generation');
   });
 
   after(async () => {

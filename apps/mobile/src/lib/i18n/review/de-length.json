@@ -192,18 +192,6 @@
     "ratio": 1.67
   },
   {
-    "id": "bestCut.settings",
-    "english": "Best Cut",
-    "translation": "Bester Schnitt",
-    "ratio": 1.75
-  },
-  {
-    "id": "bestCut.auto",
-    "english": "Auto-detect",
-    "translation": "Automatisch erkennen",
-    "ratio": 1.82
-  },
-  {
     "id": "bestCut.tryAnyway",
     "english": "Try Anyway",
     "translation": "Trotzdem versuchen",
@@ -3606,6 +3594,12 @@
     "ratio": 3.33
   },
   {
+    "id": "editorSimple.aiEdit",
+    "english": "AI Edit",
+    "translation": "Schnellwerkzeuge",
+    "ratio": 2.29
+  },
+  {
     "id": "editorSimple.close",
     "english": "Close",
     "translation": "Schließen",
@@ -3766,6 +3760,30 @@
     "english": "Custom",
     "translation": "Individuell",
     "ratio": 1.83
+  },
+  {
+    "id": "music.create.track",
+    "english": "Track",
+    "translation": "Musikstück",
+    "ratio": 2
+  },
+  {
+    "id": "music.create.smart.genre",
+    "english": "Genre",
+    "translation": "Musikrichtung",
+    "ratio": 2.6
+  },
+  {
+    "id": "music.create.smart.mood",
+    "english": "Mood",
+    "translation": "Stimmung",
+    "ratio": 2
+  },
+  {
+    "id": "music.create.smart.tempo",
+    "english": "Tempo",
+    "translation": "Geschwindigkeit",
+    "ratio": 3
   },
   {
     "id": "music.create.advanced.bpm",
@@ -4008,6 +4026,12 @@
     "ratio": 2.75
   },
   {
+    "id": "beat.home.empty",
+    "english": "No music edits yet",
+    "translation": "Noch keine Musikbearbeitungen",
+    "ratio": 1.61
+  },
+  {
     "id": "beat.play",
     "english": "Play",
     "translation": "Abspielen",
@@ -4111,7 +4135,7 @@
   },
   {
     "id": "beat.local.loadError",
-    "english": "Could not load saved beats. Retry loading.",
+    "english": "Could not load saved songs. Retry loading.",
     "translation": "Gespeicherte Beats konnten nicht geladen werden. Versuche es erneut.",
     "ratio": 1.62
   },
@@ -4428,12 +4452,6 @@
     "ratio": 3.22
   },
   {
-    "id": "beatAi.extend",
-    "english": "Extend",
-    "translation": "Verlängern",
-    "ratio": 1.67
-  },
-  {
     "id": "beatAi.key",
     "english": "Key",
     "translation": "Tonart",
@@ -4570,6 +4588,12 @@
     "english": "Gain (dB)",
     "translation": "Verstärkung (dB)",
     "ratio": 1.78
+  },
+  {
+    "id": "beatMix.dock.mix",
+    "english": "Mix",
+    "translation": "Mischen",
+    "ratio": 2.33
   },
   {
     "id": "beatMix.param.low",
@@ -5184,6 +5208,162 @@
     "ratio": 1.71
   },
   {
+    "id": "onboarding.result.tool.edit",
+    "english": "Smart editor",
+    "translation": "Intelligenter Editor",
+    "ratio": 1.67
+  },
+  {
+    "id": "onboarding.result.tool.publish",
+    "english": "Publisher",
+    "translation": "Veröffentlichen",
+    "ratio": 1.67
+  },
+  {
+    "id": "onboarding.result.save",
+    "english": "Save my setup and continue",
+    "translation": "Meine Konfiguration speichern und fortfahren",
+    "ratio": 1.69
+  },
+  {
+    "id": "onboarding.notifications.now",
+    "english": "now",
+    "translation": "jetzt",
+    "ratio": 1.67
+  },
+  {
+    "id": "projects.unfiled",
+    "english": "Unfiled",
+    "translation": "Nicht abgelegt",
+    "ratio": 2
+  },
+  {
+    "id": "projects.move",
+    "english": "Move",
+    "translation": "Verschieben",
+    "ratio": 2.75
+  },
+  {
+    "id": "app.smartCut.feedback.sending",
+    "english": "Sending…",
+    "translation": "Wird gesendet…",
+    "ratio": 1.75
+  },
+  {
+    "id": "app.smartCut.feedback.error",
+    "english": "Feedback was not saved. Try again.",
+    "translation": "Das Feedback wurde nicht gespeichert. Versuche es erneut.",
+    "ratio": 1.68
+  },
+  {
+    "id": "app.smartCut.draft.restore",
+    "english": "Restore setup",
+    "translation": "Einrichtung wiederherstellen",
+    "ratio": 2.15
+  },
+  {
+    "id": "editorCaptionTools.stylePicker",
+    "english": "Caption preset",
+    "translation": "Untertitel-Voreinstellung",
+    "ratio": 1.79
+  },
+  {
+    "id": "editorCaptionTools.style.box",
+    "english": "Box",
+    "translation": "Kasten",
+    "ratio": 2
+  },
+  {
+    "id": "editorCover.save",
+    "english": "Save",
+    "translation": "Speichern",
+    "ratio": 2.25
+  },
+  {
+    "id": "editorCover.textPlaceholder",
+    "english": "Add text",
+    "translation": "Text hinzufügen",
+    "ratio": 1.88
+  },
+  {
+    "id": "editorSimple.cut",
+    "english": "Cut",
+    "translation": "Schnitt",
+    "ratio": 2.33
+  },
+  {
+    "id": "editorSimple.polish",
+    "english": "Polish",
+    "translation": "Optimieren",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorSimple.editText",
+    "english": "Edit Text",
+    "translation": "Text bearbeiten",
+    "ratio": 1.67
+  },
+  {
+    "id": "projects.smartCutBatch.clear",
+    "english": "Clear completed queue",
+    "translation": "Abgeschlossene Warteschlange löschen",
+    "ratio": 1.71
+  },
+  {
+    "id": "projects.smartCutBatch.discard",
+    "english": "Discard queue",
+    "translation": "Warteschlange verwerfen",
+    "ratio": 1.77
+  },
+  {
+    "id": "projects.smartCutBatch.next",
+    "english": "Next: {name}",
+    "translation": "Als Nächstes: {name}",
+    "ratio": 1.67
+  },
+  {
+    "id": "projects.smartCutBatch.open",
+    "english": "Open next",
+    "translation": "Nächstes öffnen",
+    "ratio": 1.67
+  },
+  {
+    "id": "projects.smartCutBatch.complete",
+    "english": "Mark complete",
+    "translation": "Als abgeschlossen markieren",
+    "ratio": 2.08
+  },
+  {
+    "id": "projects.smartCutBatch.fail",
+    "english": "Needs retry",
+    "translation": "Erneuter Versuch nötig",
+    "ratio": 2
+  },
+  {
+    "id": "projects.smartCutBatch.retry",
+    "english": "Retry",
+    "translation": "Erneut versuchen",
+    "ratio": 3.2
+  },
+  {
+    "id": "projects.smartCutBatch.state.failed",
+    "english": "Needs retry",
+    "translation": "Erneuter Versuch nötig",
+    "ratio": 2
+  },
+  {
+    "id": "projectCloud.title",
+    "english": "Cloud sync",
+    "translation": "Cloud-Synchronisierung",
+    "ratio": 2.2
+  },
+  {
+    "id": "projectCloud.error",
+    "english": "Could not change cloud sync.",
+    "translation": "Die Cloud-Synchronisierung konnte nicht geändert werden.",
+    "ratio": 2
+  },
+  {
     "id": "musicAlbums.addTrack",
     "english": "Add",
     "translation": "Hinzufügen",
@@ -5218,6 +5398,24 @@
     "english": "No connection. Reconnect and try again.",
     "translation": "Keine Verbindung. Stelle die Verbindung wieder her und versuche es erneut.",
     "ratio": 1.9
+  },
+  {
+    "id": "music.lyricAssistant.profilesError",
+    "english": "Could not load your Lyricists. Try again.",
+    "translation": "Deine Songtexter konnten nicht geladen werden. Versuche es erneut.",
+    "ratio": 1.61
+  },
+  {
+    "id": "music.lyricAssistant.retry",
+    "english": "Try again",
+    "translation": "Erneut versuchen",
+    "ratio": 1.78
+  },
+  {
+    "id": "music.lyricAssistant.emptyDraft",
+    "english": "No lyrics yet.",
+    "translation": "Noch kein Songtext vorhanden.",
+    "ratio": 2.07
   },
   {
     "id": "studioAssistant.value_on",

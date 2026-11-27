@@ -16,6 +16,8 @@ import { SmartCutAnalyse } from './SmartCutAnalyse';
 import { SmartCutWorkbench } from './SmartCutWorkbench';
 import { applySmartCutState, commitSmartCutGroupedEditState, endSmartCutEditGroupState, patchSmartCutMetadataState, redoSmartCutEditState, smartCutHasEdits, undoSmartCutEditState, undoSmartCutState } from '../_lib/smartCut';
 import { gatewayFetch, GatewayError, makeIdempotencyKey } from '../_lib/gateway';
+import { getStoredUserId } from '../../lib/authClient';
+import { removeSmartCutSetupDraft } from '../_lib/smartCutSetupDraft.mjs';
 
 // Clip Editor sheet (docs/editor/PRD.md §4). The server re-checks every
 // number here against the stored files (lib/clipEditSources.js); this only
@@ -200,6 +202,10 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
         body: JSON.stringify({ model_id: 'clip-edit', idempotency_key: makeIdempotencyKey(), inputs }),
       });
       pushJobHistory({ job_id: r.job_id, idempotent: r.idempotent, model_id: 'clip-edit', credits: cost });
+      if (smartCut) {
+        try { removeSmartCutSetupDraft(window.localStorage, getStoredUserId() || 'guest'); }
+        catch { /* A completed paid job must still hand off if browser storage is blocked. */ }
+      }
       onSubmitted({ job_id: r.job_id, idempotent: r.idempotent, credits: cost, balance_after: r.balance_after, name: t(pluralKey(t, locale, 'app.editor.sheet.job', items.length), { count: number(items.length) }) });
     } catch (e) {
       setError(e instanceof GatewayError ? e.code : INTERNAL_ERROR);

@@ -7,8 +7,8 @@ import { CATALOGS, LOCALE_CODES, createTranslator } from '../src/lib/i18n';
 const source = readFileSync(resolve(__dirname, '../../../lib/musicDiscover.js'), 'utf8').replace(/export /g, '');
 // The web module is pure and import-free. Evaluate this repo file only; never import it in the app bundle.
 const web = new Function(`${source}; return { seeds: MUSIC_DISCOVER_LISTED_BEATS, prompt: buildMusicSamplePrompt };`)();
-test('all 13 listed seeds match every copied web field, including recipes', () => {
-    expect(DISCOVER_SEEDS).toHaveLength(13);
+test('all listed seeds match every copied web field, including recipes', () => {
+    expect(DISCOVER_SEEDS).toHaveLength(web.seeds.length);
     expect(DISCOVER_SEEDS).toEqual(web.seeds.map((seed: Record<string, unknown>) => Object.fromEntries(Object.keys(DISCOVER_SEEDS[0]).map(key => [key, seed[key]]))));
 });
 test('prompt equals default mix output, bounded at 500 characters', () => {

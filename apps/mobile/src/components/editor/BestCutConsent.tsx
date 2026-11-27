@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Modal, ScrollView, Switch, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { rawText, t } from '../../lib/i18n';
-import { colors } from '../../theme';
+import { studioColors as colors } from '../../theme';
 import { Button, Text } from '../ui';
 import { brandText } from '../BrandText';
 

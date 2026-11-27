@@ -10,6 +10,24 @@ export type CaptionResult = { timeline: Timeline; count?: number } | { refused: 
 export type TranscriptSelection = { first: string; last: string } | null;
 export type CaptionFile = { name: 'captions.srt' | 'captions.vtt' | 'transcript.txt'; mimeType: string; uti: string; body: string };
 type WebResult = Timeline | { error: string };
+export type CaptionStylePresetId = 'clean' | 'classic' | 'highlight' | 'box' | 'neon' | 'subtitle';
+export const CAPTION_STYLE_PRESETS: readonly { id: CaptionStylePresetId; style: TextClip['style'] }[] = Object.freeze([
+    { id: 'clean', style: Object.freeze({ ...TEXT_DEFAULTS, color: '#ffffff', backgroundOpacity: 0, strokeWidth: 2 }) },
+    { id: 'classic', style: Object.freeze({ ...TEXT_DEFAULTS, color: '#ffffff', background: '#000000', backgroundOpacity: .72, strokeWidth: 0 }) },
+    { id: 'highlight', style: Object.freeze({ ...TEXT_DEFAULTS, color: '#ffe66d', background: '#000000', backgroundOpacity: .35, strokeWidth: 2 }) },
+    { id: 'box', style: Object.freeze({ ...TEXT_DEFAULTS, color: '#101827', background: '#ffffff', backgroundOpacity: .92, strokeWidth: 0 }) },
+    { id: 'neon', style: Object.freeze({ ...TEXT_DEFAULTS, color: '#32d6c5', background: '#101827', backgroundOpacity: .78, stroke: '#000000', strokeWidth: 1 }) },
+    { id: 'subtitle', style: Object.freeze({ ...TEXT_DEFAULTS, color: '#ffffff', background: '#000000', backgroundOpacity: .55, strokeWidth: 0, weight: 'normal' }) },
+]);
+export function captionStylePresetId(style: TextClip['style']): CaptionStylePresetId | null {
+    if (!style) return null;
+    const keys = Object.keys(style);
+    return CAPTION_STYLE_PRESETS.find(preset => {
+        const wanted = preset.style!;
+        return Object.keys(wanted).length === keys.length
+            && keys.every(key => style[key as keyof typeof style] === wanted[key as keyof typeof wanted]);
+    })?.id ?? null;
+}
 const result = (next: WebResult): CaptionResult => 'error' in next ? { refused: captionRefusal(next.error) } : { timeline: next };
 function run(edit: () => WebResult): CaptionResult {
     try { return result(edit()); } catch { return { refused: { key: 'editorEditGate.invalid' } }; }

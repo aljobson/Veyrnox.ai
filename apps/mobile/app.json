@@ -2,7 +2,7 @@
   "expo": {
     "name": "Veyrnox.ai",
     "slug": "veyrnoxai",
-    "version": "1.0.18",
+    "version": "1.0.21",
     "orientation": "default",
     "platforms": [
       "ios",
@@ -230,6 +230,13 @@
     },
     "plugins": [
       "./modules/veyrnox-vision/app.plugin.js",
+      "./plugins/withIosSourceExpoModules.js",
+      [
+        "expo-widgets",
+        {
+          "frequentUpdates": true
+        }
+      ],
       "expo-router",
       [
         "expo-secure-store",

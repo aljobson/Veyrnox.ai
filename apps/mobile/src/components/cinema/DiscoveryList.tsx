@@ -11,7 +11,7 @@ import { editorialSeriesList, type EditorialSeries } from '../../lib/cinemaSerie
 import { formatLocale, plural, t } from '../../lib/i18n';
 import { MIN_TARGET } from '../../lib/a11y';
 import { colors } from '../../theme';
-import { VeyLoader } from '../VeyLoader';
+import { LoadingSkeleton } from '../LoadingSkeleton';
 
 interface Props {
     readonly mode: BrowseMode;
@@ -69,7 +69,7 @@ export function DiscoveryList({ mode, category }: Props) {
 
     const refresh = useCallback(() => { void load(null, true); }, [load]);
 
-    if (state === 'loading') return <View style={styles.center}><VeyLoader label={t('common.loading')} showLabel /></View>;
+    if (state === 'loading') return <View style={styles.center}><LoadingSkeleton label={t('common.loading')} variant="grid" /></View>;
     if (state === 'closed' && !editorial.length) return <View style={styles.center}><Text variant="inherit" style={styles.muted} accessibilityRole="text">{t(mode === 'voting' ? 'cinemaBrowse.voteClosed' : 'cinemaBrowse.viewingClosed')}</Text></View>;
     if (state === 'error' && !editorial.length) {
         return (

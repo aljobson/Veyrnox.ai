@@ -302,7 +302,7 @@ try {
         'content_appeals', 'content_reports', 'credit_balances', 'credit_subscriptions', 'jobs', 'music_albums', 'music_album_items',
         'music_daily_allowance_claims', 'music_daily_allowance_reservations',
         'checkin_streaks', 'creator_profiles', 'first_goals', 'library_favourites', 'create_drafts', 'ledger_entries', 'push_tokens', 'referral_codes', 'referrals', 'social_brands',
-        'social_posts', 'social_publish_subscriptions', 'top_ups', 'user_blocks', 'voice_profiles',
+        'smart_cut_feedback', 'social_posts', 'social_publish_subscriptions', 'top_ups', 'user_blocks', 'voice_profiles',
     ]);
     const NOT_EXPORTED = new Set([
         'account_deletions', 'account_read_rate_limits', 'api_requests', 'asset_link_rate_limits', 'chat_closed_sends',
@@ -323,6 +323,8 @@ try {
         'speech_analyses', 'speech_analysis_cache', 'speech_analysis_requests', 'speech_source_probes',
         // Best Cut (ADR-0334): a per-user daily no-speech counter, not user content; erased with the account.
         'speech_gate_daily',
+        // Content-free first-edit entitlement tombstone; no media, prompt or transcript.
+        'smart_cut_first_edits',
         // Provider reference links contain public metadata only, are available in-app,
         // and are erased with the account. The generic export has no Music section yet.
         // Music actors and blocks (ADR-0367) follow the existing Music exclusion: no generic Music export section.
