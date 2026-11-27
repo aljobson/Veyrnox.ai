@@ -44,7 +44,7 @@ const JOB_FAIL_CODES = { failed: 'provider_error', cancelled: 'provider_cancelle
 // to it so billing cannot drift from price.
 const MODELS = {
     'bytedance/seedance-2.0-fast': {
-        // 5 s, 720p, 16:9 — $0.4536 at $4.20/M video tokens. Other aspect
+        // 5 s, 720p, 16:9 — $0.6048 at $5.60/M video tokens. Other aspect
         // ratios change the token count, so only 16:9 and 9:16 are sold.
         durations: { 5: 5, 10: 10 },
         resolution: '720p',
