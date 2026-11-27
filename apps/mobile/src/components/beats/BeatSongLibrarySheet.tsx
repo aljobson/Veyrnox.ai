@@ -1,5 +1,5 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
-import { AppState, FlatList, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AppState, FlatList, View, useWindowDimensions } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useAuth } from '../../auth/AuthProvider';
 import { Button, Icon, Text, TextField, themedStyles, useThemedStyles } from '../ui';
@@ -25,9 +25,13 @@ export type BeatSongPlacement = { start: number; trackId: string | null };
 export type BeatSongLibrarySheetProps = {
     layout: BeatEditorLayout;
     disabled: boolean;
+    disabledReason?: string;
+    inline?: boolean;
+    compact?: boolean;
     placement(): BeatSongPlacement;
     onCommit(asset: AudioAsset, intent: BeatSongPlacement): boolean;
     onClose(): void;
+    onAdded?(): void;
     onDismiss?(): void;
 };
 
@@ -57,8 +61,9 @@ function errorKey(code: BeatSongLibraryErrorCode) {
     }
 }
 
-export function BeatSongLibrarySheet({ layout, disabled, placement, onCommit, onClose, onDismiss }: BeatSongLibrarySheetProps) {
+export function BeatSongLibrarySheet({ layout, disabled, disabledReason, inline = false, compact = false, placement, onCommit, onClose, onAdded, onDismiss }: BeatSongLibrarySheetProps) {
     const s = useThemedStyles(sheets);
+    const { width, height } = useWindowDimensions();
     const auth = useAuth();
     const [query, setQuery] = useState('');
     const [items, setItems] = useState<readonly BeatLibrarySong[]>([]);
@@ -119,7 +124,16 @@ export function BeatSongLibrarySheet({ layout, disabled, placement, onCommit, on
         return () => { focused = false; appState.remove(); dispose(); };
     }, [auth.api, auth.beginSessionTask, auth.generation, dispose, load]));
 
+    useEffect(() => {
+        if (!disabled || adding.kind !== 'adding') return;
+        ++actionTicket.current;
+        actionAbort.current?.abort(); actionAbort.current = null;
+        session.current?.stopPreview();
+        setAdding({ id: adding.id, kind: 'refused', position: adding.position });
+    }, [adding.id, adding.kind, adding.position, disabled]);
+
     const close = useCallback(() => { dispose(); onClose(); }, [dispose, onClose]);
+    const finish = useCallback(() => { dispose(); (onAdded ?? onClose)(); }, [dispose, onAdded, onClose]);
     const term = query.trim().toLocaleLowerCase();
     const shown = useMemo(() => !term ? items : items.filter(item => item.name.toLocaleLowerCase().includes(term)), [items, term]);
     const selected = items.find(item => item.id === selectedId) ?? null;
@@ -169,23 +183,27 @@ export function BeatSongLibrarySheet({ layout, disabled, placement, onCommit, on
             if (!onCommit(prepared.asset, intent)) {
                 setAdding({ id: item.id, kind: 'refused', position: at }); return;
             }
-            close();
+            finish();
         } catch (reason) {
             if (ticket !== actionTicket.current || controller.signal.aborted) return;
             const error = classifyBeatSongLibraryError(reason, 'media');
             if (error.code !== 'aborted') setAdding({ id: item.id, kind: 'error', position: at, error });
         }
-    }, [adding.kind, close, disabled, onCommit, placement]);
+    }, [adding.kind, disabled, finish, onCommit, placement]);
 
     const status = statusText(loadState, items.length, shown.length, preview, adding, items);
     useAnnouncement(status);
     const empty = loadState.kind !== 'loading' && items.length === 0;
     const showStatus = loadState.kind !== 'ready' || preview.kind !== 'idle' || adding.kind !== 'idle';
+    const regular = layout === 'regular' && !inline;
+    const compactInline = inline && (compact || (width > height && height < 500));
+    const search = <TextField testID="beat-song-library-search" accessibilityLabel={t('beat.library.search')} placeholder={t('beat.library.search')}
+        value={query} onChangeText={setQuery} autoCorrect={false} returnKeyType="search" clearButtonMode="while-editing" />;
     const list = <View testID="beat-song-library-list-pane" style={s.listPane}>
         <FlatList data={shown} keyExtractor={item => item.id} testID="beat-song-library-list"
-            contentContainerStyle={s.listContent} keyboardShouldPersistTaps="handled"
+            contentContainerStyle={s.listContent} keyboardShouldPersistTaps="handled" nestedScrollEnabled
             refreshing={loadState.kind === 'refreshing'} onRefresh={() => void load(true)}
-            renderItem={({ item }) => <BeatSongLibraryRow item={item} destination={destination} selectionControl={layout === 'regular'}
+            renderItem={({ item }) => <BeatSongLibraryRow item={item} destination={destination} selectionControl={regular} compact={compactInline}
                 disabled={disabled} selected={item.id === selectedId} preview={preview} adding={adding}
                 onSelect={() => setSelectedId(item.id)} onAudition={() => void audition(item)} onAdd={() => void add(item)} />}
             ListEmptyComponent={loadState.kind === 'loading' ? <VeyLoader label={t('beat.library.loading')} showLabel />
@@ -195,11 +213,52 @@ export function BeatSongLibrarySheet({ layout, disabled, placement, onCommit, on
                     <Button size="md" variant="secondary" label={t('beat.library.clear')} onPress={() => setQuery('')} /></View> : undefined} />
     </View>;
 
-    return <BeatModal title={t('beat.library.open')} closeLabel={t('beat.library.close')} testID="beat-song-library-sheet"
-        onClose={close} onDismiss={onDismiss} scrollable={false}>
-        <TextField testID="beat-song-library-search" accessibilityLabel={t('beat.library.search')} placeholder={t('beat.library.search')}
-            value={query} onChangeText={setQuery} autoCorrect={false} returnKeyType="search" clearButtonMode="while-editing" />
-        {layout !== 'regular' ? <View style={s.destination} accessible accessibilityLabel={t('beat.library.destination', { position: destination })}>
+    if (inline && compactInline) {
+        const compactEmpty = loadState.kind === 'loading'
+            ? <View style={s.compactRailEmpty}><VeyLoader label={t('beat.library.loading')} showLabel={false} /></View>
+            : loadState.kind === 'error' ? undefined
+            : empty && !term ? <View style={s.compactRailEmpty}><Text numberOfLines={1} tone="secondary">{t('beat.library.empty.title')}</Text></View>
+            : term ? <View style={s.compactRailEmpty}>
+                <Text numberOfLines={1} tone="secondary">{t('beat.library.searchEmpty', { query })}</Text>
+                <Button size="md" variant="tertiary" label={t('beat.library.clear')} onPress={() => setQuery('')} />
+            </View> : undefined;
+        return <View testID="beat-song-library-inline" style={[s.inline, s.inlineCompact]}>
+            <FlatList horizontal data={shown} keyExtractor={item => item.id} testID="beat-song-library-compact-rail"
+                contentContainerStyle={s.compactRailContent} keyboardShouldPersistTaps="handled"
+                showsHorizontalScrollIndicator accessibilityLabel={t('beat.library.open')}
+                ListHeaderComponent={<View style={s.compactRailHeader}>
+                    <Button testID="beat-song-library-back" size="md" variant="tertiary" icon="arrowLeft" iconOnly
+                        label={t('beat.back')} onPress={close} containerStyle={s.inlineBack} />
+                    <View style={s.compactRailSearch}>{search}</View>
+                    {showStatus ? <View testID="beat-song-library-status" style={s.compactRailMessage} accessible accessibilityLabel={status}
+                        accessibilityLiveRegion="polite" accessibilityRole={loadState.kind === 'error' ? 'alert' : undefined}>
+                        <Text variant="footnote" numberOfLines={2} tone={loadState.kind === 'error' ? 'danger' : 'secondary'}>{status}</Text>
+                    </View> : null}
+                    {disabled ? <View style={s.compactRailMessage}>
+                        <Text testID="beat-song-library-read-only" variant="footnote" numberOfLines={2} tone="secondary">
+                            {disabledReason ?? t('beat.library.readOnly')}
+                        </Text>
+                    </View> : null}
+                    {loadState.kind === 'error' && loadState.error.retryable ? <Button testID="beat-song-library-retry" size="md"
+                        variant="secondary" label={t('beat.library.retry')} onPress={() => void load(true)} /> : null}
+                </View>}
+                renderItem={({ item }) => <View style={[s.compactRailRow, { width: Math.min(320, Math.max(250, width * 0.42)) }]}>
+                    <BeatSongLibraryRow item={item} destination={destination} selectionControl={false} compact
+                        disabled={disabled} selected={item.id === selectedId} preview={preview} adding={adding}
+                        onSelect={() => setSelectedId(item.id)} onAudition={() => void audition(item)} onAdd={() => void add(item)} />
+                </View>}
+                ListEmptyComponent={compactEmpty} />
+        </View>;
+    }
+
+    const body = <>
+        {inline ? <View style={s.inlineHeader}>
+            <Button testID="beat-song-library-back" size="md" variant="tertiary" icon="arrowLeft" iconOnly
+                label={t('beat.back')} onPress={close} containerStyle={s.inlineBack} />
+            <View style={s.inlineSearch}>{search}</View>
+        </View> : null}
+        {!inline ? search : null}
+        {!regular && !compactInline ? <View style={s.destination} accessible accessibilityLabel={t('beat.library.destination', { position: destination })}>
             <Icon name="plus" size={16} tint={s.destinationText.color} />
             <Text variant="footnote" tone="accent" style={s.destinationText}>{t('beat.library.destination', { position: destination })}</Text>
         </View> : null}
@@ -207,17 +266,20 @@ export function BeatSongLibrarySheet({ layout, disabled, placement, onCommit, on
             accessibilityRole={loadState.kind === 'error' ? 'alert' : undefined}>
             {showStatus ? <Text variant="footnote" tone={loadState.kind === 'error' ? 'danger' : 'secondary'}>{status}</Text> : null}
         </View>
-        {disabled ? <Text testID="beat-song-library-read-only" variant="callout" tone="secondary">{t('beat.library.readOnly')}</Text> : null}
-        {loadState.kind === 'error' && loadState.error.retryable ? <Button size="md" variant="secondary" label={t('beat.library.retry')} onPress={() => void load(true)} /> : null}
-        <View testID={`beat-song-library-layout-${layout}`} style={layout === 'regular' ? s.regular : s.column}>
+        {disabled ? <Text testID="beat-song-library-read-only" variant="callout" tone="secondary">{disabledReason ?? t('beat.library.readOnly')}</Text> : null}
+        {loadState.kind === 'error' && loadState.error.retryable ? <Button testID="beat-song-library-retry" size="md" variant="secondary" label={t('beat.library.retry')} onPress={() => void load(true)} /> : null}
+        <View testID={`beat-song-library-layout-${inline ? 'inline' : layout}`} style={regular ? s.regular : s.column}>
             {list}
-            {layout === 'regular' ? <BeatSongLibraryDetail item={selected} destination={destination} preview={preview} adding={adding} /> : null}
+            {regular ? <BeatSongLibraryDetail item={selected} destination={destination} preview={preview} adding={adding} /> : null}
         </View>
-    </BeatModal>;
+    </>;
+    if (inline) return <View testID="beat-song-library-inline" style={s.inline}>{body}</View>;
+    return <BeatModal title={t('beat.library.open')} closeLabel={t('beat.library.close')} testID="beat-song-library-sheet"
+        onClose={close} onDismiss={onDismiss} scrollable={false}>{body}</BeatModal>;
 }
 
-function BeatSongLibraryRow({ item, destination, disabled, selected, selectionControl, preview, adding, onSelect, onAudition, onAdd }: {
-    item: BeatLibrarySong; destination: string; disabled: boolean; selected: boolean; selectionControl: boolean;
+function BeatSongLibraryRow({ item, destination, disabled, selected, selectionControl, compact, preview, adding, onSelect, onAudition, onAdd }: {
+    item: BeatLibrarySong; destination: string; disabled: boolean; selected: boolean; selectionControl: boolean; compact: boolean;
     preview: PreviewState; adding: AddState; onSelect(): void; onAudition(): void; onAdd(): void;
 }) {
     const s = useThemedStyles(sheets);
@@ -239,7 +301,7 @@ function BeatSongLibraryRow({ item, destination, disabled, selected, selectionCo
                 tone={preview.kind === 'error' || adding.kind === 'error' || adding.kind === 'refused' ? 'danger' : 'accent'}>{cue}</Text> : null}
         </View>
     </View>;
-    return <View testID={`beat-song-library-row-${item.id}`} style={[s.row, selected && s.selected]}>
+    return <View testID={`beat-song-library-row-${item.id}`} style={[s.row, compact && s.rowCompact, selected && s.selected]}>
         {selectionControl ? <Button size="md" variant="tertiary" label={item.name} onPress={onSelect} accessibilityState={{ selected }}
             containerStyle={s.titleButton} style={s.titleControl}>{song}</Button> : song}
         <View style={s.controls}>
@@ -284,16 +346,28 @@ function statusText(load: LoadState, count: number, shown: number, preview: Prev
 }
 
 const sheets = themedStyles(p => ({
+    inline: { height: '100%', flex: 1, minHeight: 0, gap: ds.space.xs, paddingTop: ds.space.xs },
+    inlineCompact: { gap: 0, paddingTop: 0 },
+    inlineHeader: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: ds.space.xs },
+    inlineBack: { width: 44 },
+    inlineSearch: { flex: 1, minWidth: 0 },
     column: { flex: 1, minHeight: 0 },
     regular: { flex: 1, minHeight: 0, flexDirection: 'row', alignItems: 'stretch', gap: ds.space.lg },
     listPane: { flex: 1, minWidth: 0, minHeight: 0 },
     detailPane: { flex: 0.8, minWidth: 0, gap: ds.space.md, padding: ds.space.lg, borderRadius: ds.radius.lg, backgroundColor: p.surface },
     listContent: { paddingBottom: ds.space.xl },
+    compactRailContent: { minHeight: 44, alignItems: 'center', gap: 2, paddingHorizontal: 2 },
+    compactRailHeader: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 2 },
+    compactRailSearch: { width: 220, minWidth: 160 },
+    compactRailMessage: { minHeight: 44, minWidth: 140, maxWidth: 220, justifyContent: 'center', paddingHorizontal: ds.space.sm },
+    compactRailRow: { height: 44, minWidth: 250 },
+    compactRailEmpty: { minHeight: 44, minWidth: 180, flexDirection: 'row', alignItems: 'center', gap: ds.space.xs, paddingHorizontal: ds.space.sm },
     destination: { minHeight: 28, alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: ds.space.xs,
         paddingHorizontal: ds.space.sm, borderRadius: ds.radius.pill, backgroundColor: p.accentSubtle },
     destinationText: { color: p.accent },
     row: { minWidth: 0, minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: ds.space.xs,
         paddingVertical: ds.space.sm, borderBottomWidth: 1, borderBottomColor: p.borderSubtle },
+    rowCompact: { minHeight: 44, paddingVertical: 0 },
     selected: { backgroundColor: p.surface },
     song: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: ds.space.sm },
     artwork: { width: 40, height: 40, flexShrink: 0, alignItems: 'center', justifyContent: 'center', borderRadius: ds.radius.md,

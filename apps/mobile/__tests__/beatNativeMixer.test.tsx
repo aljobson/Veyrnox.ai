@@ -19,6 +19,8 @@ const mockApi = { request: jest.fn(async () => ({ projects: [] })) };
 const mockAudio = { play: jest.fn(async (..._args: unknown[]) => 'started' as const), stop: jest.fn(), isPlaying: () => true, hitPad: jest.fn(() => 0), nearestStepAt: jest.fn(() => null), setTrackMix: jest.fn(), close: jest.fn(async () => undefined), meterTap: () => null, context: {} };
 let mockParams = { id: 'x' };
 let mockReduced = true;
+let mockDimensions = { width: 390, height: 844, scale: 3, fontScale: 1 };
+jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({ default: () => mockDimensions }));
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi, getAccessToken: mockGetAccessToken, generation: 0, beginSessionTask: () => ({}) }) }));
 jest.mock('expo-router', () => ({ Link: ({ children }: { children: unknown }) => children, Stack: { Screen: () => null }, useLocalSearchParams: () => mockParams }));
 jest.mock('../src/lib/beatNative/audio', () => ({ createBeatAudio: () => mockAudio }));
@@ -47,36 +49,52 @@ const current = () => getBeat(mockParams.id) as MixDoc;
 const track = () => current().tracks[0] as MixTrack;
 const trackDetails = () => t('beatMix.lane.title', { track: track().name, lane: t('beat.track.controls') });
 const masterDetails = () => t('beatMix.lane.title', { track: t('beatMix.master'), lane: t('beat.track.controls') });
+const openMixer = async (advanced = false) => {
+    await press(t('beatMix.title'));
+    if (advanced) await press(t('beatMix.advanced.show'));
+};
 beforeEach(() => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     root = createRoot(); resetBeats(); jest.clearAllMocks(); mockReduced = true;
+    mockDimensions = { width: 390, height: 844, scale: 3, fontScale: 1 };
     jest.spyOn(RN.AppState, 'addEventListener').mockImplementation(() => ({ remove: jest.fn() }));
 });
 afterEach(async () => { await act(async () => root.unmount()); jest.restoreAllMocks(); });
 
-test('opens the full sheet, adds effects through the store/history, and undo restores', async () => {
+test('short-landscape inline mixer keeps history controls reachable without closing the tray', async () => {
+    mockDimensions = { width: 874, height: 402, scale: 3, fontScale: 1 };
+    await open();
+    await openMixer();
+    expect(root.container.queryAll(n => n.props.testID === 'music-mixer-tray')).toHaveLength(1);
+    expect(root.container.queryAll(n => n.props.testID === 'beat-editor-compact-toolbar')).toHaveLength(1);
+    expect(root.container.queryAll(n => n.props.testID === 'beat-editor-compact-history')).toHaveLength(1);
+    expect(button(t('beat.undo'))).toBeDefined();
+    expect(button(t('beat.redo'))).toBeDefined();
+});
+
+test('opens the inline advanced mixer, adds effects through history, and undo restores', async () => {
     const recorded = jest.spyOn(history, 'record'); await open();
-    await press(t('beatMix.title')); expect(button(t('beatMix.close'))).toBeDefined();
+    await openMixer(true); expect(root.container.queryAll(n => n.props.testID === 'music-mixer-advanced-panel')).toHaveLength(1);
     expect(text(t('beatMix.fx.empty'))).toHaveLength(0);
     await press(trackDetails());
     expect(text(t('beatMix.fx.empty')).length).toBeGreaterThan(0);
     await press(t('beatMix.fx.add', { effect: t('beatMix.fx.eq') }));
     expect(track().fx?.[0].type).toBe('eq'); expect(validateBeat(current()).ok).toBe(true);
     expect(recorded).toHaveBeenCalledTimes(1); expect(recorded.mock.results[0].value.past).toHaveLength(1);
-    await press(t('beatMix.close')); await press(t('beat.undo')); expect(track().fx).toBeUndefined();
+    await press(t('beatMix.title')); await press(t('beat.undo')); expect(track().fx).toBeUndefined();
 });
 test('channel mute and solo use visible selected cues as well as accessibility state', async () => {
-    await open(); await press(t('beatMix.title'));
+    await open(); await openMixer();
     await press(t('beat.mute', { track: track().name }));
     await press(t('beat.solo', { track: track().name }));
     expect(track().mute).toBe(true); expect(track().solo).toBe(true);
-    expect(root.container.queryAll(n => n.props.testID === `channel-mute-selected-${track().id}`)).toHaveLength(1);
-    expect(root.container.queryAll(n => n.props.testID === `channel-solo-selected-${track().id}`)).toHaveLength(1);
+    expect(root.container.queryAll(n => n.props.testID === 'music-mixer-mute')).toHaveLength(1);
+    expect(root.container.queryAll(n => n.props.testID === 'music-mixer-solo')).toHaveLength(1);
     expect(button(t('beat.mute', { track: track().name }))?.props.accessibilityState.selected).toBe(true);
     expect(button(t('beat.solo', { track: track().name }))?.props.accessibilityState.selected).toBe(true);
 });
 test('Drive and compressor DSP settings use native topology rebuilds without stand-in notices', async () => {
-    await open(); await press(t('beatMix.title'));
+    await open(); await openMixer(true);
     await press(trackDetails());
     await press(t('beatMix.fx.add', { effect: t('beatMix.fx.distortion') }));
     const drive = t('beatMix.fx.param', { effect: t('beatMix.fx.name', { effect: t('beatMix.fx.distortion'), n: 1 }), param: t('beatMix.param.drive') });
@@ -110,36 +128,35 @@ test('compressor topology settings preview during a drag and commit only once on
     await act(async () => control.props.onResponderRelease());
     expect(commit).toHaveBeenCalledTimes(1); expect(commit).toHaveBeenCalledWith(-15);
 });
-test('both mixer entry points disable automated gain and pan with translated reasons', async () => {
+test('inline mixer disables automated gain and pan with translated reasons', async () => {
     await open(d => addAutomationPoint(addAutomationPoint(d, 't1', 'gain', 0, 0.8), 't1', 'pan', 0, 0));
-    await press(t('beat.track.controls'));
+    await openMixer();
     for (const lane of ['gain', 'pan'] as const) {
-        const old = t(`beat.${lane}`, { track: t('beat.track', { n: 1 }) });
-        expect(slider(old).props.accessibilityState.disabled).toBe(true);
-        await adjust(old, 'decrement'); expect(track()[lane]).toBe(lane === 'gain' ? 1 : 0);
+        const label = t(`beat.${lane}`, { track: track().name });
+        expect(slider(label).props.accessibilityState.disabled).toBe(true);
+        await adjust(label, 'decrement'); expect(track()[lane]).toBe(lane === 'gain' ? 1 : 0);
     }
-    await press(t('beatMix.title'));
-    await press(trackDetails());
+    await press(t('beatMix.advanced.show'));
     for (const lane of ['gain', 'pan'] as const) {
-        expect(slider(t(`beat.${lane}`, { track: track().name })).props.accessibilityState.disabled).toBe(true);
+        expect(nodes(t(`beat.${lane}`, { track: track().name })).filter(n => n.props.accessibilityRole === 'adjustable')).toHaveLength(1);
         expect(text(t(`beatMix.locked.${lane}`)).length).toBeGreaterThan(0);
     }
 });
-test.each([false, true])('slider edits coalesce into one history entry and undo restores (sheet %s)', async sheet => {
+test.each([false, true])('slider edits coalesce into one history entry and undo restores (advanced %s)', async advanced => {
     const recorded = jest.spyOn(history, 'record'); await open();
     jest.spyOn(Date, 'now').mockReturnValue(Date.now());
-    if (sheet) await press(t('beatMix.title')); else await press(t('beat.track.controls'));
-    const label = t('beat.gain', { track: sheet ? track().name : t('beat.track', { n: 1 }) });
+    await openMixer(advanced);
+    const label = t('beat.gain', { track: track().name });
     await adjust(label, 'decrement'); await adjust(label, 'decrement'); await adjust(label, 'decrement');
     expect(track().gain).toBe(0.7); expect(recorded).toHaveBeenCalledTimes(3);
     for (const call of recorded.mock.calls) expect(call[2]?.key).toBe('t1:gain');
     expect(recorded.mock.results.at(-1)!.value.past).toHaveLength(1);
-    if (sheet) await press(t('beatMix.close'));
+    await press(t('beatMix.title'));
     await press(t('beat.undo')); expect(track().gain).toBe(1);
     await press(t('beat.redo')); expect(track().gain).toBe(0.7);
 });
 test('adds/selects/moves/curves/deletes automation points and clears the lock', async () => {
-    await open(); await press(t('beatMix.title')); await press(trackDetails()); await press(t('beatMix.lane.show.gain'));
+    await open(); await openMixer(true); await press(trackDetails()); await press(t('beatMix.lane.show.gain'));
     await press(t('beatMix.lane.add')); expect(track().automation?.gain).toEqual([[0, 1, 0]]);
     await press(t('beatMix.lane.add')); expect(track().automation?.gain?.map(p => p[0])).toEqual([0, 240]);
     const label = t('beatMix.lane.point', { lane: t('beatMix.lane.gain'), n: 2, bar: 1, beat: 1.25, value: t('beatMix.unit.percent', { value: 100 }) });
@@ -154,7 +171,7 @@ test('adds/selects/moves/curves/deletes automation points and clears the lock', 
     await press(t('beatMix.lane.hide')); expect(button(t('beatMix.lane.add'))).toBeUndefined();
 });
 test('effect order, bypass, removal and four-effect limit use shared operations', async () => {
-    await open(); await press(t('beatMix.title'));
+    await open(); await openMixer(true);
     await press(trackDetails());
     for (const type of ['eq', 'compressor', 'delay', 'reverb']) await press(t('beatMix.fx.add', { effect: t(`beatMix.fx.${type}`) }));
     expect(button(t('beatMix.fx.add', { effect: t('beatMix.fx.eq') }))?.props.accessibilityState.disabled).toBe(true);
@@ -166,7 +183,7 @@ test('effect order, bypass, removal and four-effect limit use shared operations'
     expect(track().fx).toHaveLength(3);
 });
 test('send, effect parameter and master drags carry separate history keys', async () => {
-    const recorded = jest.spyOn(history, 'record'); await open(d => addEffect(d, 't1', 'eq')); await press(t('beatMix.title'));
+    const recorded = jest.spyOn(history, 'record'); await open(d => addEffect(d, 't1', 'eq')); await openMixer(true);
     await press(trackDetails());
     const trackChanges = [
         [t('beatMix.send.reverb'), 't1:send:reverb'], [t('beatMix.send.delay'), 't1:send:delay'],

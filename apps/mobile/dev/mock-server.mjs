@@ -23,7 +23,25 @@ const depthAccountId = '7c1f0d7e-2b4a-4c55-9a8e-3f1d2c6b5a40';
 const reportFlags = { scheduledReportsEnabled: process.env.MOCK_REPORT_FLAGS !== 'noschedule',
     reportDeliveryEnabled: process.env.MOCK_REPORT_FLAGS !== 'nodelivery', reportExportsEnabled: true };
 const reportRole = process.env.MOCK_REPORT_ROLE || 'owner';
+const MUSIC_SONGS = [
+    { id: '66666666-6666-4666-8666-666666666661', title: 'Midnight Keys', job_id: '77777777-7777-4777-8777-777777777771', version_id: '55555555-5555-4555-8555-555555555551', lifecycle_status: 'active', revision: 1 },
+    { id: '66666666-6666-4666-8666-666666666662', title: 'Neon Guitar', job_id: '77777777-7777-4777-8777-777777777772', version_id: '55555555-5555-4555-8555-555555555552', lifecycle_status: 'active', revision: 1 },
+];
+const MUSIC_SONG_DETAILS = new Map(MUSIC_SONGS.map((song) => {
+    const version = {
+        id: song.version_id, version_number: 1, operation: 'generate', parent_version_id: null,
+        created_at: '2026-11-26T12:00:00.000Z', mime_type: 'audio/mpeg',
+        capabilities: { playback: true, download: true, render: true, crop: true, stems: true, target_stem: true, extend: true, replace_section: true },
+    };
+    return [song.id, {
+        ...song, audio_url: `/api/v1/jobs/${song.job_id}/asset`, current_version: version,
+        versions: [{ ...version, is_current: true }], actions: ['stems', 'target_stems', 'extend', 'replace'],
+        provenance: { source: 'development_fixture' },
+    }];
+}));
 const state = {
+    musicLibraryFixture: 'default',
+    musicGenerations: new Map(),
     reports: ['manual', 'weekly', 'weekly'].map((cadence, i) => ({
         id: `ab000000-0000-4000-8000-00000000000${i + 1}`, brand_id: 'b1',
         name: ['Portfolio snapshot', 'Weekly summary', 'Legacy weekly summary'][i], account_id: null,
@@ -39,6 +57,8 @@ const state = {
     personas: [{ id: randomUUID(), name: 'Editor', instructions: 'Be concise. Tighten every sentence and keep the brand voice.', model_id: 'claude-sonnet', thinking: false, web: false }],
     folders: [{ id: randomUUID(), name: 'Launch' }],
     jobs: [
+        { id: '77777777-7777-4777-8777-777777777771', model_id: 'ace-step-loop', credits: 3, created: Date.now() - 20_000, label: 'Midnight Keys', kind: 'text-to-audio' },
+        { id: '77777777-7777-4777-8777-777777777772', model_id: 'ace-step-loop', credits: 3, created: Date.now() - 20_000, label: 'Neon Guitar', kind: 'text-to-audio' },
         { id: '99999999-9999-4999-8999-999999999991', model_id: 'nano-banana', credits: 4, created: Date.now() - 20_000, label: 'A glossy product portrait in soft studio light', kind: 'text-to-image' },
         { id: '99999999-9999-4999-8999-999999999992', model_id: 'kling-3', credits: 9, created: Date.now() - 20_000, label: 'A cinematic product reveal with a slow camera move', kind: 'text-to-video' },
     ],
@@ -183,6 +203,13 @@ createServer(async (req, res) => {
         return res.end();
     }
 
+    if (path === '/__mock/music-library' && ['GET', 'POST'].includes(req.method)) {
+        const fixture = url.searchParams.get('fixture') || body.fixture || 'default';
+        if (!['default', 'empty'].includes(fixture)) return send(res, 400, { error: 'invalid_fixture' });
+        state.musicLibraryFixture = fixture;
+        return send(res, 200, { fixture });
+    }
+
     if (path.startsWith('/auth/v1/token') || path === '/auth/v1/signup') return send(res, 200, tokens());
     if (path === '/auth/v1/logout') { res.writeHead(204); return res.end(); }
     if (path === '/auth/v1/settings' && req.method === 'GET') return send(res, 200, { passkeys_enabled: false });
@@ -212,6 +239,29 @@ createServer(async (req, res) => {
         return res.end(buf);
     }
     if (path === '/asset.png') { res.writeHead(200, { 'content-type': 'image/png' }); return res.end(PNG); }
+    if (path === '/api/v1/music/songs' && req.method === 'GET') return send(res, 200, { songs: state.musicLibraryFixture === 'empty' ? [] : MUSIC_SONGS });
+    if ((m = path.match(/^\/api\/v1\/music\/songs\/([0-9a-f-]+)$/i)) && req.method === 'GET') {
+        const song = MUSIC_SONG_DETAILS.get(m[1].toLowerCase());
+        return song ? send(res, 200, song) : send(res, 404, { error: 'not_found' });
+    }
+    if (path === '/api/v1/music/generation-quotes' && req.method === 'POST') {
+        if (Object.keys(body).length === 1 && body.model_id === 'ace-step-loop') return send(res, 400, { error: 'prompt_required' });
+        const credits = 3;
+        return send(res, 201, { quote_id: randomUUID(), total_credits: credits, balance: state.balance,
+            balance_after: state.balance - credits, affordable: state.balance >= credits,
+            expires_at: new Date(Date.now() + 10 * 60_000).toISOString() });
+    }
+    if (path === '/api/v1/music/generations' && req.method === 'POST') {
+        const generation_id = randomUUID();
+        state.musicGenerations.set(generation_id, { created: Date.now() });
+        return send(res, 202, { generation_id, state: 'queued' });
+    }
+    if ((m = path.match(/^\/api\/v1\/music\/generations\/([0-9a-f-]+)$/i)) && req.method === 'GET') {
+        if (!state.musicGenerations.has(m[1])) return send(res, 404, { error: 'not_found' });
+        return send(res, 200, { state: 'succeeded', candidates: [{ ordinal: 1, state: 'succeeded',
+            song_id: '66666666-6666-4666-8666-666666666661', version_id: '55555555-5555-4555-8555-555555555551',
+            job_id: '77777777-7777-4777-8777-777777777771', title: 'Midnight Keys' }] });
+    }
     if (path === '/api/cinema/titles') {
         const limit = Number(url.searchParams.get('limit') || 24), beforeId = url.searchParams.get('before_id');
         const start = beforeId ? CINEMA.findIndex((t) => t.id === beforeId) + 1 : 0;

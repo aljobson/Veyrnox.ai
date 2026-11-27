@@ -34,9 +34,14 @@ function statusOf(error: unknown): number | undefined {
     }
     return undefined;
 }
-function secureUrl(value: unknown): string {
+export function secureRemoteSongUrl(value: unknown): string {
     if (typeof value !== 'string') throw invalidSignedUrl();
-    try { if (new URL(value).protocol !== 'https:') throw invalidSignedUrl(); }
+    try {
+        const url = new URL(value);
+        const localDevelopment = typeof __DEV__ !== 'undefined' && __DEV__ && url.protocol === 'http:'
+            && (url.hostname === 'localhost' || url.hostname === '127.0.0.1');
+        if (url.protocol !== 'https:' && !localDevelopment) throw invalidSignedUrl();
+    }
     catch (error) { if ((error as { code?: string })?.code === 'invalid_signed_url') throw error; throw invalidSignedUrl(); }
     return value;
 }
@@ -59,7 +64,7 @@ export async function prepareRemoteSong(song: RemoteSongBase, deps: RemoteSongDe
             transportError(error);
         }
         assertRemoteSongActive(signal, deps.current);
-        const url = secureUrl(signed?.url);
+        const url = secureRemoteSongUrl(signed?.url);
         try {
             const prepared = await fetchAudioAsset(url, base, null, {
                 fetchAudio: async (target, options) => {
