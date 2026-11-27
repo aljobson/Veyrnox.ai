@@ -148,14 +148,6 @@ export const CREATION_RECIPES = Object.freeze([
     rights: ['synthetic-character', 'audio', 'adult-consent'], riskLevel: 'high',
   },
   {
-    id: 'talking-object', family: 'characters', title: 'Talking object', status: 'blocked', icon: 'blocked',
-    description: 'Talking objects are unavailable because the current avatar engine rejects object-only sources.',
-    outputKind: 'video', href: null, sourceSlots: ['Original object character', 'Speech'],
-    steps: ['Choose an original object character', 'Add text, owned audio, or a recording', 'Review the experimental 10-second contract', 'Render and reuse the result'],
-    rights: ['object-design', 'audio', 'brand-claims'], riskLevel: 'guarded',
-    blockedReason: 'Paid production testing confirmed that the current avatar engine requires a visible face.',
-  },
-  {
     id: 'ad-remix', family: 'product', title: 'Ad remix', status: 'live', icon: 'product',
     description: 'Use owned product assets and a creative brief to make original variations—not copies.',
     outputKind: 'image-or-video', href: '/app/ad-remix?recipe=ad-remix', sourceSlots: ['Product assets', 'Owned reference', 'Brief'],

@@ -59,12 +59,12 @@ test('Video Lip Sync offers an executable three-minute provider contract', () =>
   ], 'video-lip-sync').map((model) => model.id), ['latentsync', 'sync-lipsync-1.9-long']);
 });
 
-test('the preview exposes nine runnable performance workflows and labels the rest as plans', () => {
+test('the preview exposes eight runnable performance workflows and labels the rest as plans', () => {
   const available = PERFORMANCE_WORKFLOWS.filter((workflow) => workflow.status === 'available');
-  assert.deepEqual(available.map((workflow) => workflow.id), ['talking-photo', 'product-presenter', 'talking-cartoon', 'talking-animal', 'baby-podcast', 'talking-object', 'video-lip-sync', 'singing-photo', 'video-dubbing']);
-  assert.deepEqual(available.map((workflow) => workflow.modelId), ['kling-avatar-v2', 'kling-avatar-v2', 'kling-avatar-v2', 'kling-avatar-v2', 'kling-avatar-v2', 'kling-avatar-v2', 'latentsync', 'kling-avatar-v2', 'latentsync']);
-  assert.deepEqual(available.map((workflow) => workflow.maxSeconds), [10, 10, 10, 10, 10, 10, 40, 10, 40]);
-  assert.deepEqual(available.map((workflow) => workflow.scriptLimit), [1000, 600, 600, 600, 600, 600, 1000, 0, 360]);
+  assert.deepEqual(available.map((workflow) => workflow.id), ['talking-photo', 'product-presenter', 'talking-cartoon', 'talking-animal', 'baby-podcast', 'video-lip-sync', 'singing-photo', 'video-dubbing']);
+  assert.deepEqual(available.map((workflow) => workflow.modelId), ['kling-avatar-v2', 'kling-avatar-v2', 'kling-avatar-v2', 'kling-avatar-v2', 'kling-avatar-v2', 'latentsync', 'kling-avatar-v2', 'latentsync']);
+  assert.deepEqual(available.map((workflow) => workflow.maxSeconds), [10, 10, 10, 10, 10, 40, 10, 40]);
+  assert.deepEqual(available.map((workflow) => workflow.scriptLimit), [1000, 600, 600, 600, 600, 1000, 0, 360]);
   assert.equal(DEFAULT_TTS_MODEL_ID, 'qwen3-tts');
   assert.ok(PERFORMANCE_WORKFLOWS.filter((workflow) => workflow.status === 'planned').length >= 1);
   assert.deepEqual(workflowById('dialogue'), {
@@ -83,15 +83,6 @@ test('Product Presenter animates one approved composite with the real avatar con
   assert.equal(workflow.maxSeconds, 10);
   assert.equal(workflow.scriptLimit, 600);
   assert.match(sourceHint(workflow), /presenter-and-product composite/);
-  assert.deepEqual(speechSourcesFor(workflow).map((source) => source.id), ['script', 'upload', 'record']);
-});
-
-test('Talking Object uses the executable character path with an explicit compatibility boundary', () => {
-  const workflow = workflowById('talking-object');
-  assert.equal(workflow.modelId, 'kling-avatar-v2');
-  assert.equal(workflow.maxSeconds, 10);
-  assert.equal(workflow.scriptLimit, 600);
-  assert.match(sourceHint(workflow), /object character with a clear designed face and mouth/);
   assert.deepEqual(speechSourcesFor(workflow).map((source) => source.id), ['script', 'upload', 'record']);
 });
 

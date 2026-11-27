@@ -26,7 +26,7 @@ describe('guided features entry and play badge', () => {
         expect(CREATIVE_FEATURE_DIRECTORY.map(feature => feature.slug)).toEqual(expect.arrayContaining([
             'ai-avatar-generator', 'talking-avatar', 'ai-human-generator', 'ai-influencer-generator',
             'ai-voice-cloning', 'avatar-dialogue', 'talking-cartoon', 'talking-animals',
-            'ai-baby-podcast', 'talking-objects', 'ai-ad-clone', 'product-avatar',
+            'ai-baby-podcast', 'ai-ad-clone', 'product-avatar',
             'product-video-generator', 'product-image-generator',
         ]));
     });
