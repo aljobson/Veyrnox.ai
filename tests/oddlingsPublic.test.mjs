@@ -274,13 +274,13 @@ const GALLERY_QUESTION = 'Meet the Oddlings: browse free, then recreate one as y
 test('the generated inventory holds the gallery routes, and the closed gate hides them from Vey', () => {
     const generated = AUTO_PRODUCT_INVENTORY.filter((entry) => GALLERY_ROUTE.test(entry.route)).map((entry) => entry.route).sort();
     assert.deepEqual(generated, ['/oddlings', '/oddlings/[id]'], 'the sync still records both gallery routes');
-    for (const env of [{}, { ODDLINGS_PUBLIC_ENABLED: 'false' }, { ODDLINGS_PUBLIC_ENABLED: 'TRUE' }, undefined]) {
+    for (const env of [{ PHOTO_STUDIO_ENABLED: 'true' }, { ODDLINGS_PUBLIC_ENABLED: 'false', PHOTO_STUDIO_ENABLED: 'true' }, { ODDLINGS_PUBLIC_ENABLED: 'TRUE', PHOTO_STUDIO_ENABLED: 'true' }]) {
         const visible = publicProductInventory(env);
         assert.ok(!visible.some((entry) => GALLERY_ROUTE.test(entry.route)), JSON.stringify(env));
         assert.equal(visible.length, AUTO_PRODUCT_INVENTORY.length - 2, 'the gallery is removed');
         assert.ok(visible.some((entry) => entry.route === '/app/oddlings'), 'the signed-in studio stays known');
     }
-    const open = publicProductInventory({ ODDLINGS_PUBLIC_ENABLED: 'true' });
+    const open = publicProductInventory({ ODDLINGS_PUBLIC_ENABLED: 'true', PHOTO_STUDIO_ENABLED: 'true' });
     assert.equal(open.length, AUTO_PRODUCT_INVENTORY.length, 'nothing else is gated');
     assert.ok(open.some((entry) => entry.route === '/oddlings') && open.some((entry) => entry.route === '/oddlings/[id]'));
 });

@@ -12,7 +12,7 @@ import { t } from '../../lib/i18n';
 import { colors } from '../../theme';
 import { KeyboardScreen } from '../KeyboardScreen';
 import { KeyboardFormScrollView } from '../KeyboardFormScrollView';
-import { VeyLoader } from '../VeyLoader';
+import { LoadingSkeleton } from '../LoadingSkeleton';
 import { Text } from '../ui/Text';
 
 // The Cinema profile tab: make a profile (username, display name, bio), see it, and apply to become a creator. Both
@@ -26,7 +26,7 @@ export function CinemaProfile() {
     }, [api]);
     useEffect(() => { void load(); }, [load]);
 
-    if (!profile) return <View style={styles.center}><VeyLoader label={t('common.loading')} showLabel /></View>;
+    if (!profile) return <View style={styles.center}><LoadingSkeleton label={t('common.loading')} variant="dashboard" /></View>;
     if (profile.kind === 'closed') return <View style={styles.center}><Text variant="inherit" style={styles.muted}>{t('cinemaCreator.closed.profile')}</Text></View>;
     if (profile.kind === 'error') return <Pressable accessibilityRole="button" style={styles.center} onPress={load}><Text variant="inherit" style={styles.error}>{t(profile.key)} {t('cinemaSocial.tapRetry')}</Text></Pressable>;
     return (

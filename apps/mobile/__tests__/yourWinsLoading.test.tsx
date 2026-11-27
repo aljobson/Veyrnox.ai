@@ -10,21 +10,21 @@ jest.mock('../src/lib/appCache', () => ({ getCacheUser: () => 'loading-viewer', 
 jest.mock('../src/lib/yourWins', () => ({ YOUR_WINS_ENABLED: true, subscribeYourWinsStale: () => () => {}, fetchYourWins: (...args: unknown[]) => mockFetch(...args) }));
 jest.mock('../src/lib/yourWinsCelebrations', () => ({ winsCoordinator: { update: jest.fn() } }));
 jest.mock('expo-router', () => ({ useFocusEffect: (fn: () => unknown) => require('react').useEffect(fn, [fn]), Stack: { Screen: () => null } }));
-jest.mock('../src/components/VeyCharacter', () => ({ VeyCharacter: (props: object) => require('react').createElement(require('react-native').View, { ...props, testID: 'loading-vey' }) }));
 void [RN.View, RN.Text, RN.ScrollView, RN.Pressable];
 let root: Root;
 beforeEach(() => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; root = createRoot(); mockFetch.mockReset(); });
 afterEach(async () => { await act(async () => root.unmount()); });
 const unavailable = () => root.container.queryAll(n => n.children.includes('Not available yet'));
-test.each(['success', 'unavailable'])('real wins hook shows the working loader until the initial %s response settles', async result => {
+test.each(['success', 'unavailable'])('real wins hook shows the structural loader until the initial %s response settles', async result => {
     let finish!: (value: YourWins | null) => void;
     mockFetch.mockImplementation(() => new Promise<YourWins | null>(resolve => { finish = resolve; }));
     await act(async () => root.render(<YourWinsScreen />));
     expect(unavailable()).toHaveLength(0);
-    expect(root.container.queryAll(n => n.props.accessibilityRole === 'progressbar' && n.props.accessibilityState?.busy)).toHaveLength(1);
-    expect(root.container.queryAll(n => n.props.testID === 'loading-vey')[0].props.mood).toBe('working');
+    const loading = () => root.container.queryAll(n => n.props.accessibilityRole === 'progressbar' && n.props.accessibilityState?.busy);
+    expect(loading()).toHaveLength(1);
+    expect(root.container.queryAll(n => n.props.testID === 'loading-vey')).toHaveLength(0);
     const period = { creations: { total: 0, by_type: { image: 0, video: 0, audio: 0, other: 0 } }, video_seconds: 0, credits_used: 0, posts: 0, views: null };
     await act(async () => finish(result === 'success' ? { ok: true, week_start: '2026-10-26', week: period, all: period, milestones: [] } : null));
-    expect(root.container.queryAll(n => n.props.testID === 'loading-vey')).toHaveLength(0);
+    expect(loading()).toHaveLength(0);
     expect(unavailable().length > 0).toBe(result === 'unavailable');
 });

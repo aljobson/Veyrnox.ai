@@ -215,6 +215,37 @@ export function featureHue(hue: FeatureHue, value: Scheme) {
     const ink = hue === 'amber' ? (value === 'light' ? light : dark).warning : accentPairs[hue][value][0];
     return { ink, wash: alpha(ink, value === 'dark' ? 0.16 : 0.1), edge: alpha(ink, value === 'dark' ? 0.28 : 0.2) };
 }
+
+// High-energy navigation cards. These are intentionally separate from status colours:
+// a green destination is not a success message, and an orange tool is not a warning.
+// Every fill keeps at least 4.5:1 contrast with white so captions remain readable.
+export type VividHue = 'blue' | 'orange' | 'purple' | 'green' | 'pink' | 'teal';
+export const VIVID_HUES: readonly VividHue[] = ['blue', 'orange', 'purple', 'green', 'pink', 'teal'];
+const vividPrimitives: Record<VividHue, { readonly fill: string; readonly glow: string }> = {
+    blue: { fill: '#2B6FCB', glow: '#83C5FF' },
+    orange: { fill: '#B95612', glow: '#FFBE73' },
+    purple: { fill: '#6A4CDA', glow: '#B7A5FF' },
+    green: { fill: '#1C7B3A', glow: '#8BE09B' },
+    pink: { fill: '#C3446A', glow: '#FF9DAE' },
+    teal: { fill: '#167E8F', glow: '#78DAE6' },
+};
+export function vividHue(hue: VividHue, value: Scheme) {
+    const primitive = vividPrimitives[hue];
+    return {
+        ...primitive,
+        foreground: '#FFFFFF',
+        foregroundMuted: value === 'dark' ? 'rgba(255,255,255,0.84)' : 'rgba(255,255,255,0.88)',
+        iconSurface: value === 'dark' ? 'rgba(255,255,255,0.16)' : 'rgba(255,255,255,0.20)',
+        edge: alpha(primitive.glow, value === 'dark' ? 0.48 : 0.34),
+    };
+}
+export function vividFromFeatureHue(hue: FeatureHue): VividHue {
+    if (hue === 'mint') return 'green';
+    if (hue === 'iris') return 'purple';
+    if (hue === 'sky') return 'blue';
+    if (hue === 'rose') return 'pink';
+    return 'orange';
+}
 export type Palette = {
     readonly [K in 'background' | 'surface' | 'border' | 'borderStrong' | 'text' | 'body' | 'muted' | 'accent' | 'accentInk' | 'accentSoft' | 'money' | 'danger']: string;
 };

@@ -29,6 +29,15 @@ test('professional templates add editable clips without replacing existing work'
     const quote=insertEditTemplate(tl,'Social quote',[],'Make the cut',0);
     assert.equal(validateSequence(quote),null);assert.equal(quote.video.length,existing);assert.equal(quote.text.at(-1).style.background,'#ffe66d');
 });
+test('picture in picture creates a valid top layer at the playhead and trims at the sequence boundary',()=>{
+    let tl=insertGraphic(emptySequence(),'circle','#ffffff',0);const source=tl.video.at(-1).mediaId;
+    const middle=insertEditTemplate(tl,'Picture in picture',[source],'Overlay',45);
+    assert.equal(validateSequence(middle),null);assert.equal(middle.tracks.at(-1).kind,'video');
+    assert.deepEqual(middle.video.at(-1),{...middle.video.at(-1),start:45,len:90,trackId:middle.tracks.at(-1).id});
+    assert.deepEqual(sequenceLayers(middle,45).visuals.map(layer=>layer.clip.id),[tl.video[0].id,middle.video.at(-1).id]);
+    const boundary=insertEditTemplate(tl,'Picture in picture',[source],'Overlay',18000);
+    assert.equal(validateSequence(boundary),null);assert.equal(boundary.video.at(-1).start,17999);assert.equal(boundary.video.at(-1).len,1);
+});
 test('transitions require adjacency, respect locks and expose shared compositor timing', () => {
     let tl = insertGraphic(emptySequence(), 'circle', '#ffffff', 0);
     assert.match(setSequenceTransition(tl, 'v2', 'wipe-left', 15).error, /immediately/);

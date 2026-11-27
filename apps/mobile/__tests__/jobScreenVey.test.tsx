@@ -41,17 +41,16 @@ beforeEach(() => {
     root = createRoot();
 });
 afterEach(async () => { await act(async () => root.unmount()); jest.useRealTimers(); });
-test('waiting uses interactive working Vey, no spinner, and unchanged status and waiting controls', async () => {
-    await render(); expect(vey()).toHaveLength(1); expect(vey()[0].props).toMatchObject({ mood: 'working', width: 96, interactive: true });
-    expect(root.container.queryAll(n => n.type.includes('ActivityIndicator'))).toHaveLength(0);
+test('waiting stays quiet, with progress and unchanged status and waiting controls', async () => {
+    await render(); expect(vey()).toHaveLength(0);
     live(t('job.queued'));
     await act(async () => update('running')); live(t('job.running'));
-    expect(vey()[0].props.mood).toBe('working');
+    expect(vey()).toHaveLength(0);
     expect(root.container.queryAll(n => n.props.accessibilityLabel === t('job.stopWaiting'))).toHaveLength(1);
     expect(root.container.queryAll(n => n.children.includes(t('job.waiting', { elapsed: formatElapsed(0) })))).toHaveLength(1);
 });
-test('poll-ended still-working status retains working Vey', async () => {
-    await render(); await complete('running'); expect(vey()[0].props.mood).toBe('working'); live(t('job.stillWorking'));
+test('poll-ended still-working status stays quiet', async () => {
+    await render(); await complete('running'); expect(vey()).toHaveLength(0); live(t('job.stillWorking'));
 });
 test('failure uses worried Vey above the unchanged live error', async () => {
     await render(); await complete('failed'); expect(vey()[0].props.mood).toBe('worried'); live(t('job.failed'));

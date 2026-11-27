@@ -5,8 +5,10 @@ import { t } from '../../lib/i18n';
 import { calibrateTake } from '../../lib/beatNative/calibration';
 import { latencyStorage } from '../../lib/beatNative/latencyStore';
 import type { Capture } from '../../lib/beatNative/takeShared';
+import { useReducedMotion } from '../ui/useReducedMotion';
 export function BeatCalibrationSheet({ capture, onClose }: { capture: Capture; onClose(): void }) {
     const s = useThemedStyles(sheets), abort = useRef(new AbortController());
+    const reducedMotion = useReducedMotion();
     const [running, setRunning] = useState(false), [error, setError] = useState(false), [ms, setMs] = useState<number | null>(null);
     useEffect(() => () => abort.current.abort(), []);
     const start = async () => {
@@ -15,7 +17,7 @@ export function BeatCalibrationSheet({ capture, onClose }: { capture: Capture; o
         catch { if (!abort.current.signal.aborted) setError(true); }
         finally { if (!abort.current.signal.aborted) setRunning(false); }
     };
-    return <Modal visible transparent animationType="slide" onRequestClose={onClose}>
+    return <Modal visible transparent animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={onClose}>
         <View style={s.backdrop}><View style={s.sheet} accessibilityViewIsModal>
             <Text accessibilityRole="header">{t('beatTakes.calibrate')}</Text>
             <Text>{t('beatTakes.calibrationHint')}</Text>

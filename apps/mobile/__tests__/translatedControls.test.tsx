@@ -76,7 +76,7 @@ test.each(locales)('%s: actual bottom tabs and header captions retain one line w
     setLocaleFromDevice([locale]);
     await act(async () => root.render(<><SafeAreaProvider initialMetrics={safeMetrics}><TabsLayout /></SafeAreaProvider><CreditsChip /></>));
     const labels = nativeText();
-    for (const key of ['tabs.explore', 'tabs.create', 'tabs.studio', 'tabs.library', 'tabs.publish']) {
+    for (const key of ['tabs.explore', 'tabs.create', 'editor.title', 'tabs.library', 'tabs.publish']) {
         const node = labels.find(n => textOf(n) === t(key));
         expect(node).toBeDefined();
         expectFit(node!, 1);
@@ -99,7 +99,7 @@ test('English controls and tabs retain their original text layout defaults', asy
     for (const node of nativeText()) {
         expect(node.props.adjustsFontSizeToFit).toBeUndefined();
         expect(node.props.minimumFontScale).toBeUndefined();
-        expect(node.props.numberOfLines).toBe(['Explore', 'Create', 'Studio', 'Library', 'Publish'].includes(textOf(node)) ? 1 : undefined);
+        expect(node.props.numberOfLines).toBe(['Explore', 'Create', 'Editor', 'Library', 'Publish'].includes(textOf(node)) ? 1 : undefined);
     }
 });
 

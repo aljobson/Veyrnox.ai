@@ -10,7 +10,7 @@ import type { BeatAiClient } from '../../../lib/beatAi/client';
 import { uuid } from '../../../lib/beatAi/client';
 import type { AiDoc, Candidate, Layer, MagicPending } from '../../../lib/beatAi/types';
 import { RequestControls } from './RequestControls';
-export function BeatMagicBar({ doc, client, owner, current, off }: { doc: AiDoc; client: BeatAiClient; owner: string; current(): boolean; off(): void }) {
+export function BeatMagicBar({ doc, client, owner, current, off, disabled = false }: { doc: AiDoc; client: BeatAiClient; owner: string; current(): boolean; off(): void; disabled?: boolean }) {
     const layersStore = useMemo(() => magicLayers(), []);
     const request = useMemo(() => new ReceiptRequest<MagicPending>({ owner, beatId: doc.id, client, current, off, storage: magicPendingStore(),
         async finish(row, status) {
@@ -35,7 +35,7 @@ export function BeatMagicBar({ doc, client, owner, current, off }: { doc: AiDoc;
         }));
     };
     const editLayers = async (edit: (rows: Layer[]) => Layer[]) => {
-        if (!current()) return;
+        if (disabled || !current()) return;
         setError(false);
         try {
             await layersStore.change(owner, doc.id, edit, current);
@@ -46,7 +46,7 @@ export function BeatMagicBar({ doc, client, owner, current, off }: { doc: AiDoc;
     };
     const add = async (candidate: Candidate) => {
         const row = request.snapshot().record;
-        if (!row || !current() || adding || !uuid(candidate.song_id) || !uuid(candidate.job_id)) return;
+        if (disabled || !row || !current() || adding || !uuid(candidate.song_id) || !uuid(candidate.job_id)) return;
         setAdding(true); setError(false);
         const layer: Layer = { songId: candidate.song_id, audioUrl: `/api/v1/jobs/${candidate.job_id}/asset`, title: candidate.title || row.prompt, bars: row.bars, bpm: row.bpm, muted: false };
         try {
@@ -64,17 +64,17 @@ export function BeatMagicBar({ doc, client, owner, current, off }: { doc: AiDoc;
     const locked = view.busy || !!view.quote || !!view.record;
     return <>
         <Text variant="title3">{t('beatAi.magic')}</Text>
-        <TextField label={t('beatAi.prompt')} value={view.record?.prompt ?? prompt} maxLength={400} editable={!locked} onChangeText={setPrompt} />
-        {!locked ? barChoices(doc.tempo.bpm).map(value => <Button key={value} variant={bars === value ? 'primary' : 'secondary'} label={t('beatAi.bars', { bars: value, seconds: requestSeconds(doc.tempo.bpm, value) })} onPress={() => setBars(value)} />) : null}
-        {!view.quote && !view.record ? <Button label={t('beatAi.priceLoops')} disabled={!valid || view.busy || view.offline} onPress={price} /> : null}
-        {view.rows.map(row => <Button key={row.key} label={t('beatAi.resume', { name: row.prompt })} disabled={view.busy || adding} onPress={() => void request.resume(row)} />)}
-        <RequestControls request={request} view={view} elapsed={view.elapsed} offline={view.offline} />
-        {(view.record?.candidates ?? view.status?.candidates)?.map(candidate => <ReactCandidate key={candidate.ordinal} candidate={candidate} disabled={adding || !view.record?.terminal || layers.length >= MAGIC_LAYER_LIMIT || view.busy} onAdd={() => void add(candidate)} />)}
+        <TextField label={t('beatAi.prompt')} value={view.record?.prompt ?? prompt} maxLength={400} editable={!locked && !disabled} onChangeText={setPrompt} />
+        {!locked ? barChoices(doc.tempo.bpm).map(value => <Button key={value} variant={bars === value ? 'primary' : 'secondary'} label={t('beatAi.bars', { bars: value, seconds: requestSeconds(doc.tempo.bpm, value) })} disabled={disabled} onPress={() => setBars(value)} />) : null}
+        {!view.quote && !view.record ? <Button label={t('beatAi.priceLoops')} disabled={disabled || !valid || view.busy || view.offline} onPress={price} /> : null}
+        {view.rows.map(row => <Button key={row.key} label={t('beatAi.resume', { name: row.prompt })} disabled={disabled || view.busy || adding} onPress={() => void request.resume(row)} />)}
+        <RequestControls request={request} view={view} elapsed={view.elapsed} offline={view.offline} disabled={disabled} />
+        {(view.record?.candidates ?? view.status?.candidates)?.map(candidate => <ReactCandidate key={candidate.ordinal} candidate={candidate} disabled={disabled || adding || !view.record?.terminal || layers.length >= MAGIC_LAYER_LIMIT || view.busy} onAdd={() => void add(candidate)} />)}
         <Text>{t('beatAi.noPlayback')}</Text>
         {layers.map(layer => <Fragment key={layer.songId}>
             <Text key={`title-${layer.songId}`}>{layer.title}</Text>
-            <Button key={`mute-${layer.songId}`} label={t(layer.muted ? 'beatAi.unmute' : 'beatAi.mute', { name: layer.title })} onPress={() => void editLayers(rows => rows.map(r => r.songId === layer.songId ? { ...r, muted: !r.muted } : r))} />
-            <Button key={`remove-${layer.songId}`} label={t('beatAi.remove', { name: layer.title })} onPress={() => void editLayers(rows => rows.filter(r => r.songId !== layer.songId))} />
+            <Button key={`mute-${layer.songId}`} label={t(layer.muted ? 'beatAi.unmute' : 'beatAi.mute', { name: layer.title })} disabled={disabled} onPress={() => void editLayers(rows => rows.map(r => r.songId === layer.songId ? { ...r, muted: !r.muted } : r))} />
+            <Button key={`remove-${layer.songId}`} label={t('beatAi.remove', { name: layer.title })} disabled={disabled} onPress={() => void editLayers(rows => rows.filter(r => r.songId !== layer.songId))} />
         </Fragment>)}
         {layers.length >= MAGIC_LAYER_LIMIT ? <Text>{t('beatAi.layerLimit')}</Text> : null}
         {error ? <Text accessibilityRole="alert">{t('beatAi.error')}</Text> : null}

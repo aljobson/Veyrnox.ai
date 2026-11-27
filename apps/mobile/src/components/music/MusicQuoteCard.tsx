@@ -5,7 +5,9 @@ export function MusicQuoteCard({ quote }: { quote: MusicQuote }) {
     const covered = quote.daily_free_candidates ?? 0;
     const list = quote.list_credits ?? quote.total_credits;
     return <Card>
-        <Text variant="title3">{t('music.create.price', { each: quote.credits_per_candidate, count: quote.output_count, total: list })}</Text>
+        <Text variant="title3">{quote.output_count === 1
+            ? t('music.create.price.one', { total: list })
+            : t('music.create.price', { each: quote.credits_per_candidate, count: quote.output_count, total: list })}</Text>
         {covered > 0 ? <Text>{t(covered === 1
             ? 'music.create.dailyAllowance.one' : 'music.create.dailyAllowance.other', { count: covered })}</Text> : null}
         {covered > 0 ? <Text>{quote.total_credits === 0

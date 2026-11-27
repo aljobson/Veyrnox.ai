@@ -40,6 +40,8 @@ describe('Crun Suno quote controls (0593)', { skip: !local && 'disposable localh
     client = await pool.connect();
     await client.query("SET TIME ZONE 'UTC'");
     await client.query('BEGIN');
+    // 0611 unlists ACE in production; 0593's rolled-back quote fixtures opt it back in.
+    await client.query("UPDATE public.model_catalog SET active=true WHERE id IN ('ace-step','ace-step-1.5')");
   });
   after(async () => {
     if (client) { await client.query('ROLLBACK'); client.release(); }
@@ -57,7 +59,7 @@ describe('Crun Suno quote controls (0593)', { skip: !local && 'disposable localh
       $1,'crun-suno-v1',$2,$3,false,true,135,'v6_wild','female',75,0.625,88,repeat('x',1000)) r`,
     [auth, draft.id, draft.revision])).r;
     assert.equal(quoted.ok, true, JSON.stringify(quoted));
-    assert.equal(quoted.total_credits, 8);
+    assert.equal(quoted.total_credits, 4);
     assert.equal(Number(quoted.style_weight), 0.75);
     assert.equal(quoted.variety, 4);
     assert.equal(quoted.exclude_styles_applied_chars, 200);

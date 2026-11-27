@@ -23,7 +23,7 @@ export type PcmTimingSegment = { offsetFrames: number; timestampUs: number; fram
 export type PcmArtifact = EditorMediaArtifact & { kind: 'pcm'; sampleRate: 48000; channels: 1 | 2; frames: number; encoding: 'f32le-interleaved';
     mixMode?: 'web-average'; segments?: PcmTimingSegment[] };
 export type Mp4Artifact = EditorMediaArtifact & { kind: 'mp4'; width: number; height: number; fps: number; frames: number; durationUs: number;
-    videoCodec: 'avc1' | 'hvc1-alpha'; audioCodec?: 'mp4a'; audioSampleRate?: 48000; audioChannels?: 2 };
+    videoCodec: 'avc1' | 'hvc1' | 'hvc1-alpha'; audioCodec?: 'mp4a'; audioSampleRate?: 48000; audioChannels?: 2 };
 export type SampleFramesRequest = { uri: string; fromSeconds: number; toSeconds: number; maxFrames: number; resizeMode?: 'contain' | 'fill';
     samplingMode?: 'all'; maximumFrameRate?: 60 };
 export type DecodePcmRequest = { uri: string; fromSeconds: number; toSeconds: number; sampleRate: 48000; channels: 1 | 2; mixMode?: 'web-average' };
@@ -37,11 +37,12 @@ export type AdvancedAudioMixClip = { mediaId: string; start: number; in: number;
     pan: number; eq: { low: number; mid: number; high: number } };
 export type AudioMixClip = LegacyAudioMixClip | AdvancedAudioMixClip;
 export type AudioMixRequest = { clips: readonly AudioMixClip[]; sources: Readonly<Record<string, string>>; frames: number; fps: number };
-export type BeginEncodeRequest = { width: number; height: number; fps: number; videoBitRate: number; audioBitRate?: number; audioArtifactId?: string; alpha?: boolean };
+export type BeginEncodeRequest = { width: number; height: number; fps: number; videoBitRate: number; audioBitRate?: number; audioArtifactId?: string;
+    codec?: 'h264' | 'hevc'; alpha?: boolean };
 export type FrameDescriptor = { version: 1; uri: string; index: number; timestampUs: number; byteLength: number; width: number; height: number; stride: number;
     pixelFormat: 'rgba8'; colorSpace: 'srgb' };
 export type EncodeSession = { sessionId: string; token: string; project: string; generation: number; width: number; height: number; fps: number; nextIndex: number;
-    audioArtifactId?: string; alpha?: boolean };
+    audioArtifactId?: string; codec?: 'h264' | 'hevc'; alpha?: boolean };
 export type EditorMediaProbeReport = {
     version: 1; run: 'first-process' | 'warm'; ingress: 'skia-rgba8-file-batches'; firstProcessMethod: string; frameCount: 900; width: 1280; height: 720; fps: 30;
     timingsMs: { renderReadback: number; fileWrite: number; nativeAppendEncode: number; finalize: number; total: number };
@@ -117,12 +118,13 @@ export function validateAudioMixRequest(value: unknown): value is AudioMixReques
     return value.clips.every(clip => object(clip) && (legacy(clip) || advanced(clip)));
 }
 export function validateBeginEncodeRequest(value: unknown): value is BeginEncodeRequest {
-    if (!object(value) || !exact(value, ['width', 'height', 'fps', 'videoBitRate', 'audioBitRate', 'audioArtifactId', 'alpha']) || !positiveInteger(value.width) || !positiveInteger(value.height)
+    if (!object(value) || !exact(value, ['width', 'height', 'fps', 'videoBitRate', 'audioBitRate', 'audioArtifactId', 'codec', 'alpha']) || !positiveInteger(value.width) || !positiveInteger(value.height)
         || value.width > 1280 || value.height > 1280 || value.width * value.height > 1280 * 720 || !positiveInteger(value.fps) || value.fps > 60
         || !positiveInteger(value.videoBitRate) || value.videoBitRate < 100_000 || value.videoBitRate > 50_000_000
         || value.audioBitRate !== undefined && (!positiveInteger(value.audioBitRate) || value.audioBitRate < 64_000 || value.audioBitRate > 512_000)
         || value.audioArtifactId !== undefined && !identifier(value.audioArtifactId) || value.audioBitRate !== undefined && value.audioArtifactId === undefined
-        || value.alpha !== undefined && typeof value.alpha !== 'boolean') return false;
+        || value.codec !== undefined && !['h264', 'hevc'].includes(String(value.codec))
+        || value.alpha !== undefined && typeof value.alpha !== 'boolean' || value.alpha === true && value.codec !== undefined) return false;
     const projectedMaximum = (value.videoBitRate + (value.audioArtifactId === undefined ? 0 : value.audioBitRate ?? 192_000))
         * EDITOR_MEDIA_LIMITS.durationSeconds / 8 + 1_048_576;
     return projectedMaximum <= EDITOR_MEDIA_LIMITS.mp4ArtifactBytes;
@@ -216,12 +218,12 @@ export function parseMp4Artifact(value: unknown): Mp4Artifact | null {
     const base = parseArtifactBase(value, 'mp4', EDITOR_MEDIA_LIMITS.mp4ArtifactBytes); if (!base || !object(value) || !positiveInteger(value.width) || !positiveInteger(value.height)
         || value.width > 1280 || value.height > 1280 || value.width * value.height > 1280 * 720 || !positiveInteger(value.fps) || value.fps > 60
         || !positiveInteger(value.frames) || value.frames > value.fps * 30 || !positiveInteger(value.durationUs) || value.durationUs > 30_000_000
-        || value.durationUs !== frameTimestampUs(value.frames, value.fps) || !['avc1', 'hvc1-alpha'].includes(String(value.videoCodec))
+        || value.durationUs !== frameTimestampUs(value.frames, value.fps) || !['avc1', 'hvc1', 'hvc1-alpha'].includes(String(value.videoCodec))
         || value.audioCodec !== undefined && value.audioCodec !== 'mp4a' || value.audioSampleRate !== undefined && value.audioSampleRate !== 48000
         || value.audioChannels !== undefined && value.audioChannels !== 2
         || value.audioCodec === undefined !== (value.audioSampleRate === undefined && value.audioChannels === undefined)) return null;
     return { ...base, kind: 'mp4', width: value.width, height: value.height, fps: value.fps, frames: value.frames, durationUs: value.durationUs,
-        videoCodec: value.videoCodec as 'avc1' | 'hvc1-alpha',
+        videoCodec: value.videoCodec as 'avc1' | 'hvc1' | 'hvc1-alpha',
         ...(value.audioCodec === 'mp4a' ? { audioCodec: 'mp4a' as const, audioSampleRate: 48000 as const, audioChannels: 2 as const } : {}) };
 }
 export function parseProgress(value: unknown): EditorMediaProgress | null {

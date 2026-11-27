@@ -3,6 +3,7 @@ import { createGenerationSubmit, generationMessage } from '../src/lib/generation
 import { inlineBlockReason, photoSlot, templateRequest } from '../src/lib/templateGenerate';
 import type { Preset } from '../src/lib/presets';
 import type { CatalogModel } from '../src/lib/media';
+import { TEMPLATE_REFERENCE_PRIORITY } from '../../../lib/templateReferencePriority.js';
 
 const mockCreate = jest.fn();
 jest.mock('expo-crypto', () => { let n = 0; return { randomUUID: () => `key-${++n}` }; });
@@ -94,32 +95,32 @@ describe('a template whose only media is one photo', () => {
         expect(inlineBlockReason(needing, twoImages, { photo: true })).toBe('media');
     });
 
-    test('a non-exact request carries the upload reference, rights tick and photo guidance', () => {
+    test('a non-exact request carries the upload reference, rights tick and reference-first guidance', () => {
         const request = templateRequest(needing, photoModel, { ...choice, references: photo, sourceRights: true });
         expect(request.references).toEqual(photo);
         expect(request.sourceRights).toBe(true);
-        expect(request.prompt.startsWith('a rap battle\n\n')).toBe(true);
-        expect(request.prompt).toMatch(/person in the attached photo is the main character/);
+        expect(request.prompt).toMatch(/^REFERENCE PRIORITY:/);
+        expect(request.prompt.endsWith('\n\na rap battle')).toBe(true);
         expect(templateRequest(needing, photoModel, { ...choice, references: photo }).sourceRights).toBe(false);
         const plain = templateRequest(preset, model, choice);
         expect(plain.prompt).toBe('a rap battle');
         expect(plain.sourceRights).toBeUndefined();
     });
 
-    test('an unedited exact prompt stays byte-for-byte unchanged with or without a photo', () => {
+    test('an unedited exact prompt gains reference priority only when a photo is attached', () => {
         const source = ' \r\nKeep the red swimsuit.\r\n ';
         const exact = { ...needing, prompt: 'fallback text', sourcePrompt: source, sourcePromptOrigin: 'community-source-exact' } as Preset;
         for (const references of [undefined, photo]) {
             const request = templateRequest(exact, photoModel, { ...choice, prompt: source, references, sourceRights: true });
-            expect(request.prompt).toBe(source);
+            expect(request.prompt).toBe(references ? `${TEMPLATE_REFERENCE_PRIORITY}\n\n${source}` : source);
             expect(request.prompt.includes('main character')).toBe(false);
             expect(request.references).toEqual(references ?? []);
             expect(request.sourceRights).toBe(references ? true : undefined);
         }
         for (const prompt of ['  An edited scene.  ', source.trim()]) {
             const request = templateRequest(exact, photoModel, { ...choice, prompt, references: photo, sourceRights: true });
-            expect(request.prompt.startsWith(`${prompt.trim()}\n\n`)).toBe(true);
-            expect(request.prompt).toMatch(/person in the attached photo is the main character/);
+            expect(request.prompt).toMatch(/^REFERENCE PRIORITY:/);
+            expect(request.prompt.endsWith(`\n\n${prompt.trim()}`)).toBe(true);
             expect(templateRequest(exact, photoModel, { ...choice, prompt }).prompt).toBe(prompt.trim());
         }
     });

@@ -23,6 +23,13 @@ test('locked tracks refuse split, trim, move, delete and duplicate without chang
         duplicateSequence(tl, { track: 'video', id: 'v1' })]) assert.match(result.error, /Unlock/);
     assert.equal(JSON.stringify(tl), snapshot);
 });
+test('duplicate appends after the whole sequence instead of covering the following clip', () => {
+    let tl = fixture();
+    tl = ok(addSequenceClip(tl, 'video', media.id, { start: 120, len: 90 }));
+    const next = ok(duplicateSequence(tl, { track: 'video', id: 'v1' }));
+    assert.equal(next.video.at(-1).start, 210);
+    assert.equal(next.video.at(-1).len, 120);
+});
 test('rate-aware splits and trims preserve source alignment; bounds are refused atomically', () => {
     let tl = ok(updateSequenceClip(fixture(), 'video', 'v1', { rate: 2, len: 60 }));
     tl = ok(splitSequenceClip(tl, 'video', 'v1', 15)); assert.equal(tl.video[1].in, 30); assert.equal(tl.video[1].start, 15);
@@ -57,6 +64,16 @@ test('overlapping caption layers render in their track order after a reorder', (
     const index = tl.tracks.findIndex(t => t.id === lane), tracks = [...tl.tracks];
     [tracks[index], tracks[index - 1]] = [tracks[index - 1], tracks[index]];
     assert.deepEqual(sequenceLayers({ ...tl, tracks }, 30).texts.map(t => t.text), ['Second', 'First']);
+});
+test('hiding a caption track keeps every cue intact and removes only its rendered layer', () => {
+    let tl = ok(addSequenceText(emptySequence(), { text: 'Keep this cue', start: 0, len: 90 }));
+    const trackId = tl.text[0].trackId;
+    assert.equal(sequenceLayers(tl, 30).texts[0].text, 'Keep this cue');
+    tl = ok(updateSequenceTrack(tl, trackId, { hidden: true }));
+    assert.equal(sequenceLayers(tl, 30).texts.length, 0);
+    assert.equal(tl.text[0].text, 'Keep this cue');
+    tl = ok(updateSequenceTrack(tl, trackId, { hidden: false }));
+    assert.equal(sequenceLayers(tl, 30).texts[0].text, 'Keep this cue');
 });
 test('splitSequenceAtFrames cuts a clip at several frames as one edit, last to first, and is all or nothing', () => {
     const tl = ok(addSequenceClip(ok(addSequenceMedia(emptySequence(), media)), 'video', media.id, { len: 240 }));

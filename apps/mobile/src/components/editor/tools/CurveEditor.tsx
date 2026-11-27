@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { PanResponder, Pressable, View, StyleSheet } from 'react-native';
 import { colourDefaults } from '../../../../../../app/veyrnox/_lib/editorColour.mjs';
-import { colors, ds, type } from '../../../theme';
+import { studioColors as colors, ds, type } from '../../../theme';
 import { t, plural, rawText, formatNumber } from '../../../lib/i18n';
 import { movePoint, addPoint, removePoint, nearestPoint, fromView, toView, segment, type CurvePoint } from '../../../lib/editorCurvePoints';
 import { Action } from '../EditorControls';

@@ -13,6 +13,7 @@ const { modelIdForName, templateModelId } = await import('../app/veyrnox/_lib/to
 const { ERROR_COPY } = await import('../app/veyrnox/_lib/createErrors.js');
 const { allocationSnapshot } = await import('../app/veyrnox/_lib/imageBatch.js');
 const { cachedSources, fileIdentity, keepUpload, UPLOAD_REUSE_MS, inlineBlockReason, photoOnlyModel, templateInputs, templateRun, submitTemplate, templateRunDead } = await import('../app/veyrnox/_lib/templateGenerate.js');
+const { TEMPLATE_REFERENCE_PRIORITY } = await import('../lib/templateReferencePriority.js');
 
 const preset = ALL_TEMPLATES.find(p => modelIdForName(p.model) && p.prompt && !p.needs);
 const modelId = templateModelId(preset);
@@ -135,39 +136,51 @@ test('a template whose only media is one photo generates here when the page can 
   assert.equal(inlineBlockReason(needing, model, { photo: true }), 'media', 'a model with no photo slot cannot use a photo');
 });
 
-test('with a photo an unedited exact prompt stays unchanged, and the request carries the upload key and the rights tick', async () => {
-  const withPhoto = templateInputs(preset, model, { prompt: preset.prompt, aspect: '9:16', durationSeconds: 5, aspectOptions: ['9:16'], withPhoto: true });
+test('with a photo every exact prompt gets reference priority, and the request carries the upload key and the rights tick', async () => {
+  const photoModel = { ...model, promptMax: 2500, media: { image: { required: true } } };
+  const withPhoto = templateInputs(preset, photoModel, { prompt: preset.prompt, aspect: '9:16', durationSeconds: 5, aspectOptions: ['9:16'], withPhoto: true });
   assert.equal(preset.sourcePromptOrigin, 'community-source-exact');
-  assert.equal(withPhoto.prompt, preset.sourcePrompt);
-  assert.equal(withPhoto.prompt.includes('main character'), false);
+  assert.equal(withPhoto.prompt, `${TEMPLATE_REFERENCE_PRIORITY}\n\n${preset.sourcePrompt}`);
   assert.equal(inputs().prompt, preset.prompt, 'no photo, no added line');
   const h = harness([{ job_id: 'job-9' }]);
   const run = templateRun(null, 'a', 4, makeKey);
   let uploads = 0;
   h.deps.sources = async () => { uploads += 1; return { references: [{ slot: 'image', origin: 'upload', key: 'u/1' }] }; };
-  await submitTemplate({ run, quote: allocationSnapshot(run, 4, 0), model, preset, inputs: withPhoto, makeKey, deps: h.deps });
+  await submitTemplate({ run, quote: allocationSnapshot(run, 4, 0), model: photoModel, preset, inputs: withPhoto, makeKey, deps: h.deps });
   assert.deepEqual(h.requests[0].body.references, [{ slot: 'image', origin: 'upload', key: 'u/1' }]);
   assert.equal(h.requests[0].body.consent, true);
-  await submitTemplate({ run, quote: allocationSnapshot(run, 4, 0), model, preset, inputs: withPhoto, makeKey, deps: h.deps });
+  await submitTemplate({ run, quote: allocationSnapshot(run, 4, 0), model: photoModel, preset, inputs: withPhoto, makeKey, deps: h.deps });
   assert.equal(uploads, 1, 'a retry of the same request reuses the uploaded file');
 });
 
-test('photo guidance is skipped only for unedited exact source bytes, including whitespace', () => {
+test('photo guidance applies to exact and edited source bytes, including whitespace', () => {
   const source = ' \r\nKeep the red swimsuit.\r\n ';
   const exact = { ...preset, prompt: 'fallback text', sourcePrompt: source, sourcePromptOrigin: 'community-source-exact' };
-  const prepare = (p, prompt, withPhoto = true) => templateInputs(p, model, {
+  const photoModel = { ...model, promptMax: 2500, media: { image: { required: true } } };
+  const prepare = (p, prompt, withPhoto = true) => templateInputs(p, photoModel, {
     prompt, withPhoto, aspect: '9:16', durationSeconds: 5, aspectOptions: ['9:16'],
   }).prompt;
-  for (const withPhoto of [false, true]) assert.equal(prepare(exact, source, withPhoto), source);
+  assert.equal(prepare(exact, source, false), source);
+  assert.equal(prepare(exact, source, true), `${TEMPLATE_REFERENCE_PRIORITY}\n\n${source}`);
   for (const [p, prompt] of [
     [{ ...exact, sourcePromptOrigin: 'veyrnox-adaptation' }, exact.prompt],
     [exact, '  An edited scene.  '],
     [exact, source.trim()], // A whitespace edit is still an edit, even after trimming.
   ]) {
     const sent = prepare(p, prompt);
-    assert.ok(sent.startsWith(`${prompt.trim()}\n\n`));
-    assert.match(sent, /person in the attached photo is the main character/);
+    assert.equal(sent, `${TEMPLATE_REFERENCE_PRIORITY}\n\n${prompt.trim()}`);
     assert.equal(prepare(p, prompt, false), prompt.trim());
+  }
+});
+
+test('Kling, Seedance and Veo template swaps share the reference-priority instruction', () => {
+  const source = 'A creator walks through a dramatic city scene.';
+  const swapPreset = { id: 'cross-model-reference', prompt: source, sourcePrompt: source, sourcePromptOrigin: 'community-source-exact' };
+  for (const id of ['kling-3.0-i2v', 'seedance-2.0-fast', 'veo-3.1-fast-kie']) {
+    const swapped = templateInputs(swapPreset, {
+      id, kind: 'video', promptMax: 2500, media: { image: { required: true, maxFiles: 1 } },
+    }, { prompt: source, aspectOptions: [], withPhoto: true });
+    assert.equal(swapped.prompt, `${TEMPLATE_REFERENCE_PRIORITY}\n\n${source}`, id);
   }
 });
 

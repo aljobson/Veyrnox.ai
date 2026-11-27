@@ -7,11 +7,11 @@ const pageUrl = new URL('../app/veyrnox/app/music/sounds/page.js', import.meta.u
 const catalogMigrationUrl = new URL('../packages/db/schema/supabase/0088_speech_sfx_and_background_removal.sql', import.meta.url);
 const sfxActivationUrl = new URL('../packages/db/schema/supabase/0042_activate_elevenlabs_sfx_v2.sql', import.meta.url);
 
-test('Music Sounds exposes the admitted looping model without inventing BPM or key controls', async () => {
+test('Music Sounds exposes the admitted CRUN looping model without inventing BPM or key controls', async () => {
   const page = await readFile(pageUrl, 'utf8');
-  assert.match(page, /model=elevenlabs-sfx-v2/);
-  assert.match(page, /model=mmaudio-v2/);
-  assert.match(page, /Looping is available on ElevenLabs Sound Effects/);
+  assert.match(page, /model=suno-sounds/);
+  assert.doesNotMatch(page, /model=(elevenlabs-sfx-v2|mmaudio-v2)/);
+  assert.match(page, /Looping is available on Suno Sound Effects/);
   assert.match(page, /Seamless loop/);
   assert.match(page, /BPM and musical key are prompt directions/);
   assert.doesNotMatch(page, /bpm=|key=/i);

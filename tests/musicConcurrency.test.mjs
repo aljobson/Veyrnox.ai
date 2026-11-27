@@ -19,12 +19,12 @@ test('shared Music admission serializes owners and rejects a fifth active pair b
   assert.match(sql, /REVOKE ALL ON FUNCTION private\.music_submit_pair_unbounded[\s\S]*service_role/);
 });
 
-test('client retains and independently polls multiple accepted pair requests', async () => {
+test('client retains and independently polls multiple accepted track requests', async () => {
   const [studio, state] = await Promise.all([readFile(studioUrl, 'utf8'), readFile(stateUrl, 'utf8')]);
   assert.match(state, /const \[generations, setGenerations\] = useState\(\[\]\)/);
   assert.match(state, /Promise\.all\(ids\.map/);
   assert.match(state, /\[accepted, \.\.\.current\.filter/);
-  assert.match(studio, /Shared pairs \{activeGenerationCount\}\/\{concurrencyLimit\}/);
+  assert.match(studio, /Active tracks \{activeGenerationCount\}\/\{concurrencyLimit\}/);
   assert.match(studio, /generations\.map\(\(generation, index\)/);
   assert.match(studio, /All four shared request slots are active/);
 });

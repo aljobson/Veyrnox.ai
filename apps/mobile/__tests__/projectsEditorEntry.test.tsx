@@ -11,20 +11,26 @@ const mockPush = jest.fn();
 const mockBack = jest.fn();
 const mockRemove = jest.fn().mockResolvedValue(undefined);
 jest.mock('../src/lib/editorDeviceMedia', () => ({ removeProjectMedia: (...args: unknown[]) => mockRemove(...args) }));
+jest.mock('../src/lib/editorFontFiles', () => ({ removeProjectFonts: jest.fn().mockResolvedValue(undefined) }));
 let mockHeader: any;
 jest.mock('expo-router', () => ({ Stack: { Screen: ({ options }: any) => { mockHeader = options; return options.headerRight?.() ?? null; } }, useLocalSearchParams: () => ({ id: 'project' }), useRouter: () => ({ push: mockPush, back: mockBack }), usePreventRemove: () => () => {}, useIsFocused: () => true, useFocusEffect: (callback: () => void) => require('react').useEffect(() => { callback(); }, []) }));
 jest.mock('../src/lib/editorFlag', () => ({ __esModule: true, EDITOR_ENABLED: false }));
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi, beginSessionTask: mockBeginSessionTask }) }));
 const mockBeginSessionTask = () => ({ current: () => true });
-const mockApi = { request: async (path: string) => {
+let listProjects: unknown[] = [];
+const requests: { path: string; method: string }[] = [];
+const mockApi = { request: async (path: string, init: { method?: string } = {}) => {
+    requests.push({ path, method: init.method ?? 'GET' });
     if (path.includes('/history')) return { versions: [] };
     if (path.includes('/document')) return { revision: 0, document: { schema_version: 1, project_id: 'project', brief: '', canvas: { aspect_ratio: '16:9', frame_rate: 30 } } };
     if (path === '/api/v1/workspaces') return { workspaces: [{ id: 'workspace' }] };
-    if (path.includes('?workspace_id=')) return { projects: [] };
+    if (path.startsWith('/api/v1/project-folders?')) return { folders: [] };
+    if (path.includes('?workspace_id=')) return { projects: listProjects };
+    if (init.method === 'DELETE') return {};
     return { project: { id: 'project', name: 'Project' } };
 } };
 let root: Root;
-beforeEach(() => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; root = createRoot(); mockPush.mockClear(); });
+beforeEach(() => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; root = createRoot(); mockPush.mockClear(); mockRemove.mockClear(); requests.length = 0; listProjects = []; });
 afterEach(async () => { await act(async () => root.unmount()); });
 const controls = () => root.container.queryAll(n => n.props.accessibilityRole === 'button' && ['Open in editor', 'New edit'].includes(n.props.accessibilityLabel));
 test('flag off preserves both screens without editor controls', async () => {
@@ -53,5 +59,19 @@ test('confirmed successful deletion starts best-effort media cleanup before navi
     await act(async () => action.onPress!());
     expect(mockRemove).toHaveBeenCalledWith('project'); expect(mockBack).toHaveBeenCalled();
     expect(mockRemove.mock.invocationCallOrder.at(-1)).toBeLessThan(mockBack.mock.invocationCallOrder.at(-1)!);
+    alert.mockRestore();
+});
+
+test('the project list exposes a confirmed delete action without opening an empty project', async () => {
+    listProjects = [{ id: 'blank', workspace_id: 'workspace', name: 'Untitled edit', version: 1 }];
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    await act(async () => root.render(<List />));
+    const button = root.container.queryAll(n => n.props.accessibilityLabel === 'Delete Untitled edit' && typeof n.props.onClick === 'function')[0];
+    expect(button).toBeDefined();
+    await act(async () => button.props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 }));
+    const action = alert.mock.calls.at(-1)![2]!.find(item => item.style === 'destructive')!;
+    await act(async () => action.onPress!());
+    expect(requests).toContainEqual({ path: '/api/v1/projects/blank', method: 'DELETE' });
+    expect(root.container.queryAll(n => n.props.accessibilityLabel === 'Delete Untitled edit')).toHaveLength(0);
     alert.mockRestore();
 });

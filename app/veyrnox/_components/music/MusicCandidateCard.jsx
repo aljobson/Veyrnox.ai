@@ -20,11 +20,12 @@ function tone(status) {
 
 export function MusicCandidateCard({ song, onCancel, library = false }) {
   const active = ['queued', 'composing', 'mastering'].includes(song.status);
+  const single = song.label === 'Track';
   return (
     <article data-testid={`music-candidate-${song.label}`} data-status={song.status} className="rounded-2xl border border-vx-border bg-vx-panel p-4 shadow-lg">
       <div className="flex min-w-0 items-start gap-3">
         <div aria-hidden="true" className="grid h-14 w-14 shrink-0 place-items-center rounded-xl border border-vx-border bg-vx-panel-raised font-vx text-2xl font-black text-vx-accent">
-          {song.label}
+          {single ? '♪' : song.label}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -36,19 +37,19 @@ export function MusicCandidateCard({ song, onCancel, library = false }) {
           <p className="mt-1 truncate text-sm text-vx-fg-muted">{song.styles || song.prompt}</p>
           {active && (
             <div className="mt-3">
-              <div className="h-1.5 overflow-hidden rounded-full bg-vx-border" role="progressbar" aria-label={`Version ${song.label} progress`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={song.progress}>
+              <div className="h-1.5 overflow-hidden rounded-full bg-vx-border" role="progressbar" aria-label={single ? 'Track progress' : `Version ${song.label} progress`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={song.progress}>
                 <span className="block h-full rounded-full bg-vx-warn transition-[width]" style={{ width: `${song.progress}%` }} />
               </div>
-              <p className="mt-2 text-xs text-vx-fg-muted">Version {song.label} progresses independently.</p>
+              <p className="mt-2 text-xs text-vx-fg-muted">{single ? 'Your track is being created.' : `Version ${song.label} progresses independently.`}</p>
             </div>
           )}
-          {song.status === 'ready' && !library && <MusicAudioPlayer songId={song.id} title={`${song.title}, version ${song.label}`} compact />}
+          {song.status === 'ready' && !library && <MusicAudioPlayer songId={song.id} title={single ? song.title : `${song.title}, version ${song.label}`} compact />}
           {(song.status === 'failed' || song.status === 'cancelled') && (
             <p className="mt-3 text-sm font-semibold text-vx-danger">{song.refunded ? '5 credits returned to the preview balance.' : 'Refund pending.'}</p>
           )}
         </div>
         {active && onCancel ? (
-          <button type="button" onClick={() => onCancel(song.id)} aria-label={`Cancel ${song.title}, version ${song.label}`} className="vx-press min-h-10 rounded-full border border-vx-border px-3 text-xs font-bold text-vx-fg-muted hover:border-vx-danger hover:text-vx-danger">
+          <button type="button" onClick={() => onCancel(song.id)} aria-label={single ? `Cancel ${song.title}` : `Cancel ${song.title}, version ${song.label}`} className="vx-press min-h-10 rounded-full border border-vx-border px-3 text-xs font-bold text-vx-fg-muted hover:border-vx-danger hover:text-vx-danger">
             Cancel
           </button>
         ) : null}

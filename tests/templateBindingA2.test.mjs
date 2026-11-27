@@ -21,6 +21,7 @@ import { swapNeedsSourceVideo } from '../lib/templateSwapGuard.js';
 import { PEOPLE_BINDING_MODEL } from '../lib/templateBinding.js';
 import { SEEDANCE_LONG_MODEL_ID } from '../lib/seedanceLongTemplates.js';
 import { publicModelId } from '../lib/publicModelIds.js';
+import { TEMPLATE_REFERENCE_PRIORITY } from '../lib/templateReferencePriority.js';
 const sha = text => createHash('sha256').update(text).digest('hex');
 for (const token of ['@image1', '@Image 1', '@IMAGE_1', '@image-1', '<<<image_1>>>', '<<< IMAGE 1 >>>', '<<<image-1>>>', 'Image 1:', 'image_1.png', 'image-1.jpeg']) {
   test(`binding grammar: ${token}`, () => {
@@ -45,13 +46,16 @@ test('shared detectors distinguish source dependencies from generated or negated
 });
 test('audit classification, reasons, source hashes and non-token bytes are locked', () => {
   const report = audit();
-  assert.deepEqual(report.totals, {"like-for-like-safe":232 - 12,"bound":70 + 3 + 30 + 59 - 49 + 49 + 8 + 12,"blocked-needs-video":355 + 37,"unsupported":92 + 6 + 61 - 49} /* 61 over the Kling 3.0 prompt cap moved to unsupported; 49 of them (one photo, at most 20,000 characters) bind to kie Seedance (ADR-0309 amendment 3) */);
-  assert.deepEqual(report.unsupportedReasons, { 'multi-photo-needs-people-model': 96, 'unsupported-aspect': 9 - 2, 'prompt-limit': 115 - 49 }); // ADR-0309 amendment 3
+  assert.deepEqual(report.totals, {"like-for-like-safe":220,"bound":161,"blocked-needs-video":392,"unsupported":111});
+  assert.deepEqual(report.unsupportedReasons, { 'multi-photo-needs-people-model': 96, 'unsupported-aspect': 7, 'prompt-limit': 66, 'reference-priority-over-prompt-limit': 67 });
   for (const p of PRESETS) {
     const c = report.contracts[p.id];
     if (!c) continue;
     assert.equal(c.sourceHash, sha(p.sourcePrompt));
-    if (c.class !== 'bound') { assert.equal(c.prompt, p.sourcePrompt); continue; }
+    if (c.class !== 'bound') {
+      assert.equal(c.prompt, c.identityLine ? `${TEMPLATE_REFERENCE_PRIORITY}\n\n${p.sourcePrompt}` : p.sourcePrompt);
+      continue;
+    }
     assert.ok(c.slotCount >= 1 && c.slotCount <= 9);
     assert.equal(c.boundHash, sha(c.prompt));
     let cursor = 0, output = '';
@@ -60,7 +64,8 @@ test('audit classification, reasons, source hashes and non-token bytes are locke
       output += p.sourcePrompt.slice(cursor, m.offset) + m.target;
       cursor = m.offset + m.token.length;
     }
-    assert.equal(output + p.sourcePrompt.slice(cursor), c.prompt);
+    const boundText = output + p.sourcePrompt.slice(cursor);
+    assert.equal(c.prompt, c.identityLine ? `${TEMPLATE_REFERENCE_PRIORITY}\n\n${boundText}` : boundText);
   }
   const synthetic = { id: 'a2-synthetic', model: 'Kling 3.0 · I2V', sourcePrompt: '@image1', durationSeconds: 5 };
   assert.ok(auditTemplate({ ...synthetic, aspect: '2:3' }).reasons.includes('unsupported-aspect'));
@@ -72,7 +77,7 @@ test('default feed/detail/Create routing, price, attribution and exact-count adm
     const c = templateContract(p.id);
     if (c?.class !== 'bound') continue;
     const id = templateModelId(p), cap = fallbackCapabilitiesFor(id);
-    const model = { ...MODELS.find(m => m.id === id), modality: cap.media.image ? 'image-to-video' : 'text-to-video', aspects: cap.inputs.aspect_ratio?.values, credits: 32 };
+    const model = { ...MODELS.find(m => m.id === id), modality: cap.media.image ? 'image-to-video' : 'text-to-video', media: cap.media, promptMax: cap.inputs.prompt?.max, aspects: cap.inputs.aspect_ratio?.values, credits: 32 };
     const [feed] = toPublicPresets([model], [p]);
     const href = new URL(presetHref(p), 'https://veyrnox.test');
     const arrival = templateArrival(p, [model], href.searchParams, null);
@@ -96,13 +101,13 @@ test('default feed/detail/Create routing, price, attribution and exact-count adm
 test('the generated contract covers all exact-source templates', () => {
   // The repository's English markup baseline exercises rendering separately.
   const { templates } = contractData(JSON.parse(readFileSync(new URL('../lib/templateFidelityContracts.json', import.meta.url))));
-  assert.equal(Object.keys(templates).length, 749 + 46 + 30 + 59 + 8 + 12);
+  assert.equal(Object.keys(templates).length, 749 + 46 + 30 + 59);
 });
 
 test('reviewed overlapping reason counts are pinned across all classes', () => {
   const counts = {};
   for (const c of Object.values(audit().contracts)) for (const reason of c.reasons) counts[reason] = (counts[reason] || 0) + 1;
-  assert.deepEqual(counts, { 'reference-video-required': 355 + 37, 'source-audio-not-audited': 62 + 9, 'unmapped-image-reference': 27, 'unmapped-placeholder': 122, 'too-many-image-slots': 2, 'multi-photo-needs-people-model': 180, 'unsupported-aspect': 12 - 4, 'prompt-limit': 280 - 97 }); // ADR-0309 amendment 3: one-photo recipes up to 20,000 characters now target kie Seedance (aspect allowed); 49 became bound, the rest stay blocked for video
+  assert.deepEqual(counts, { 'reference-video-required': 392, 'source-audio-not-audited': 71, 'unmapped-image-reference': 27, 'unmapped-placeholder': 122, 'too-many-image-slots': 2, 'multi-photo-needs-people-model': 180, 'unsupported-aspect': 8, 'prompt-limit': 183, 'reference-priority-over-prompt-limit': 190 });
 });
 
 test('all bound detail pages offer exactly N fixed required slots', async t => {

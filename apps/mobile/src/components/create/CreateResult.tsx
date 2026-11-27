@@ -6,7 +6,6 @@ import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Text, Button, Card, themedStyles, useThemedStyles } from '../ui';
 import { useReducedMotion } from '../ui/useReducedMotion';
-import { VeyCharacter } from '../VeyCharacter';
 import { GenerationProgress } from '../GenerationProgress';
 import { ds } from '../../theme';
 import { InlineMedia } from '../InlineMedia';
@@ -84,7 +83,7 @@ function ResultTile({ api, id, batch, catalog, onTerminal, onSuccess }: { api: A
                 : file ? <>{file.output_stems?.length ? <Text>{t('libraryCreate.stems')}</Text> : file.mime_type.startsWith('image/') ? <Image source={{ uri: file.url }} cachePolicy="memory" contentFit="contain" style={styles.image} accessible accessibilityRole="image" accessibilityLabel={t('job.title')} /> : <InlineMedia url={file.url} audio={!file.mime_type.startsWith('video/')} label={t(file.mime_type.startsWith('video/') ? 'job.playVideo' : 'job.playAudio')} />}<GeneratedChip /></>
                 : result.state === 'failed' ? <Text tone="danger">{result.job?.error_code === 'user_cancelled'
                     ? failure : failedJobMessage(result.job?.error_code, refunded, failure)}</Text>
-                : <><View accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><VeyCharacter width={batchTile ? 40 : 48} mood="working" /></View><Text style={styles.centred}>{t(result.state === 'queued' ? 'job.queued' : 'job.running')}</Text><GenerationProgress jobId={id} modelId={batch.modelId} kind={batch.kind} compact={batchTile} leaveNote={false} /><Text style={styles.centred}>{t('job.keepsRunning')}</Text></>}
+                : <><Text style={styles.centred}>{t(result.state === 'queued' ? 'job.queued' : 'job.running')}</Text><GenerationProgress jobId={id} modelId={batch.modelId} kind={batch.kind} compact={batchTile} leaveNote={false} /><Text style={styles.centred}>{t('job.keepsRunning')}</Text></>}
         </View>
         {result.state === 'succeeded' && file?.mime_type.startsWith('video/') && !result.held ? <FinishedShapeWarning api={api} id={id} requested={requestedAspect} /> : null}
         <Button variant="secondary" label={t('publishReporting.open')} onPress={open} />

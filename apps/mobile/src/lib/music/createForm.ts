@@ -12,6 +12,9 @@ export function modelCounterLimit(model: MusicModel, field: 'prompt' | 'title' |
     const value = model.counters?.[field]?.max ?? model.limits?.[field];
     return Number.isSafeInteger(value) && Number(value) > 0 ? Number(value) : null;
 }
+export function effectiveLyricsLimit(model: MusicModel, entitlements: MusicEntitlements): number | null {
+    return isSunoModel(model) ? modelCounterLimit(model, 'lyrics') : Math.min(3000, entitlements.custom_drafts.lyrics_max);
+}
 export function clampDuration(value: number, model: MusicModel): number {
     const bounds = model.controls.duration_seconds;
     if (!bounds) return value;
@@ -71,7 +74,7 @@ export function quoteBlockers(o: {
     const suno = !!model && isSunoModel(model);
     const promptMax = model && suno ? modelCounterLimit(model, 'prompt') : 500;
     const titleMax = model && suno ? modelCounterLimit(model, 'title') : Math.min(80, e.custom_drafts.title_max);
-    const lyricsMax = model && suno ? modelCounterLimit(model, 'lyrics') : Math.min(3000, e.custom_drafts.lyrics_max);
+    const lyricsMax = model ? effectiveLyricsLimit(model, e) : Math.min(3000, e.custom_drafts.lyrics_max);
     const stylesMax = model && suno ? modelCounterLimit(model, 'styles') : Math.min(500, e.custom_drafts.styles_max);
     const excludeMax = model && suno ? modelCounterLimit(model, 'exclude_styles') : MUSIC_EXCLUDE_STYLES_MAX;
     if (((input.mode === 'custom' || !suno) && titleMax !== null && Array.from(input.title).length > titleMax)

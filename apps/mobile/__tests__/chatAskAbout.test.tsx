@@ -22,7 +22,8 @@ const mockAsset = jest.fn(), mockStop = jest.fn();
 let mockSettings: any;
 jest.mock('expo-crypto', () => ({ randomUUID: () => '12345678-1234-1234-1234-123456789abc' }));
 jest.mock('react-native-safe-area-context', () => ({ ...jest.requireActual('react-native-safe-area-context'), useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
-jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useRouter: () => mockRouter, useLocalSearchParams: () => mockParams }));
+jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useRouter: () => mockRouter, useLocalSearchParams: () => mockParams,
+    useFocusEffect: (cb: () => void) => require('react').useEffect(cb, [cb]) }));
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi }) }));
 jest.mock('../src/lib/chat', () => ({ ...jest.requireActual('../src/lib/chat'), chatApi: () => mockChat }));
 jest.mock('../src/lib/chatStop', () => ({ ...jest.requireActual('../src/lib/chatStop'), resolveStoppedSend: (...args: any[]) => mockStop(...args) }));

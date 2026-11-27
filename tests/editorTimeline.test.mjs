@@ -199,8 +199,11 @@ test('time helpers round to whole frames and format as minutes and seconds', () 
 test('aspect is one of the presets and defaults to the first clip shape', () => {
     const tl = withTwoClips();
     assert.equal(tl.aspect, 'source');
-    assert.deepEqual(ASPECTS, ['source', '16:9', '9:16', '1:1']);
+    assert.deepEqual(ASPECTS, ['source', '16:9', '9:16', '1:1', '4:5']);
     assert.equal(ok(setAspect(tl, '9:16')).aspect, '9:16');
+    assert.equal(ok(setAspect(tl, '4:5')).aspect, '4:5');
+    assert.equal(ok(setAspect(tl, 'custom:5x8')).aspect, 'custom:5x8');
+    assert.match(setAspect(tl, 'custom:10x16').error, /shape/);
     assert.match(setAspect(tl, '4:3').error, /shape/);
 });
 

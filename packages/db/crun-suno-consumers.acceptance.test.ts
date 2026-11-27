@@ -47,6 +47,8 @@ describe('Crun Suno shared consumers (0592)', { skip: !local && 'disposable loca
     client = await pool.connect();
     await client.query("SET TIME ZONE 'UTC'");
     await client.query('BEGIN');
+    // 0611 unlists ACE in production; 0592's rolled-back consumer fixtures require it active.
+    await client.query("UPDATE public.model_catalog SET active=true WHERE id IN ('ace-step','ace-step-1.5')");
   });
   after(async () => {
     if (client) { await client.query('ROLLBACK'); client.release(); }

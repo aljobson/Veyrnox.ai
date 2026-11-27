@@ -11,7 +11,7 @@ import { formatLocale, t, plural } from '../../../lib/i18n';
 import { approveBatch, batchGroups, discardDrafts, draftActionErrorKey, draftsErrorKey, fetchDrafts, groupNetworks, type Draft } from '../../../lib/publishDrafts';
 import { usePublishApi } from '../../../lib/usePublishApi';
 import { colors } from '../../../theme';
-import { VeyLoader } from '../../../components/VeyLoader';
+import { LoadingSkeleton } from '../../../components/LoadingSkeleton';
 
 const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString(formatLocale()) : null);
 
@@ -83,7 +83,7 @@ export default function Drafts() {
         {error ? (
             <View style={[styles.screen, styles.state]}><LoadError message={error} onRetry={() => { void load(); }} /></View>
         ) : !drafts ? (
-            <View style={[styles.screen, styles.state]}><VeyLoader label={t('common.loading')} showLabel /></View>
+            <View style={[styles.screen, styles.state]}><LoadingSkeleton label={t('common.loading')} variant="list" /></View>
         ) : (
             <SectionList
                 style={styles.screen}

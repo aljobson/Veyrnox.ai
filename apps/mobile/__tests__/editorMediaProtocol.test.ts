@@ -49,7 +49,11 @@ test('audio mix admits the strict canonical advanced contract and retains the le
 
 test('encode schema fixes pixel layout, exact timestamp rounding and batch bounds', () => {
     expect(validateBeginEncodeRequest({ width: 1280, height: 720, fps: 30, videoBitRate: 6_000_000 })).toBe(true);
+    expect(validateBeginEncodeRequest({ width: 1280, height: 720, fps: 30, videoBitRate: 6_000_000, codec: 'h264' })).toBe(true);
+    expect(validateBeginEncodeRequest({ width: 1280, height: 720, fps: 30, videoBitRate: 6_000_000, codec: 'hevc' })).toBe(true);
     expect(validateBeginEncodeRequest({ width: 1280, height: 720, fps: 30, videoBitRate: 6_000_000, alpha: true })).toBe(true);
+    expect(validateBeginEncodeRequest({ width: 1280, height: 720, fps: 30, videoBitRate: 6_000_000, codec: 'vp9' })).toBe(false);
+    expect(validateBeginEncodeRequest({ width: 1280, height: 720, fps: 30, videoBitRate: 6_000_000, codec: 'hevc', alpha: true })).toBe(false);
     expect(validateBeginEncodeRequest({ width: 1280, height: 720, fps: 30, videoBitRate: 6_000_000, alpha: 'yes' })).toBe(false);
     expect(validateBeginEncodeRequest({ width: 1280, height: 720, fps: 30, videoBitRate: 6_000_000, audioBitRate: 192_000,
         audioArtifactId: 'vx-pcm-audio-1' })).toBe(true);
@@ -108,6 +112,8 @@ test('native results are strictly bounded and native prose never escapes', () =>
         audioCodec: 'mp4a', audioSampleRate: 48000, audioChannels: 2 })?.frames).toBe(900);
     expect(parseMp4Artifact({ ...base, kind: 'mp4', width: 1280, height: 720, fps: 30, frames: 900, durationUs: 30_000_000,
         videoCodec: 'hvc1-alpha' })?.videoCodec).toBe('hvc1-alpha');
+    expect(parseMp4Artifact({ ...base, kind: 'mp4', width: 1280, height: 720, fps: 30, frames: 900, durationUs: 30_000_000,
+        videoCodec: 'hvc1' })?.videoCodec).toBe('hvc1');
     expect(parseMp4Artifact({ ...base, kind: 'mp4', width: 1280, height: 720, fps: 30, frames: 900, durationUs: 29_999_999, videoCodec: 'avc1' })).toBeNull();
     expect(parseMp4Artifact({ ...base, kind: 'mp4', width: 1280, height: 720, fps: 30, frames: 900, durationUs: 30_000_000, videoCodec: 'avc1',
         audioCodec: 'mp4a' })).toBeNull();

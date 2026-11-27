@@ -61,7 +61,60 @@ describe('Smart Cut planning', () => {
         expect(plan.segments.length).toBeLessThanOrEqual(10);
         expect(plan.totalDuration).toBeLessThanOrEqual(60);
         expect(smartCutPlanWithinLimits(plan)).toBe(true);
-        expect(plan.warnings.some((warning) => warning.includes('10-section'))).toBe(true);
+        expect(plan.warningDetails?.some((warning) => warning.code === 'segment_limit_reached')).toBe(true);
+    });
+
+    test('speech-aware planning aligns the script and preserves notes', () => {
+        const analysis: SpeechAnalysis = {
+            version: 1, assetId: 'asset-a', duration: 20, provider: 'fal-scribe-v2', transcript: 'hello', language: 'en', timingQuality: 'word',
+            chunks: [{ start: 1, end: 2, text: 'hello' }],
+        };
+        const plan = buildSpeechAwareCutPlan({ clips: [takes[0]], analyses: new Map([['asset-a', analysis]]), script: '  hello  ', notes: '  Prefer opening  ' });
+        expect(plan.scriptProvided).toBe(true);
+        expect(plan.notes).toBe('Prefer opening');
+        expect(plan.segments[0]).toMatchObject({ matchCode: 'script_line_matched', matchParameters: { line: 1, confidence: .95, coverage: 1, precision: 1 } });
+        expect(plan.warningDetails).not.toContainEqual(expect.objectContaining({ code: 'script_not_aligned' }));
+    });
+
+    test('speech-aware script plans swap only to analysed alternate ranges', () => {
+        const analysis = (assetId: string, start: number): SpeechAnalysis => ({
+            version: 1, assetId, duration: 20, provider: 'fal-scribe-v2', transcript: 'same complete line.', language: 'en', timingQuality: 'word',
+            chunks: [{ start, end: start + .3, text: 'same' }, { start: start + .4, end: start + .7, text: 'complete' }, { start: start + .8, end: start + 1.1, text: 'line.' }],
+        });
+        const plan = buildSpeechAwareCutPlan({ clips: takes, analyses: new Map([['asset-a', analysis('asset-a', 1)], ['asset-b', analysis('asset-b', 3)]]), script: 'same complete line.' });
+        const original = plan.segments[0].takeId;
+        const alternate = plan.segments[0].alternates[0];
+        const swapped = swapSmartCutTake(plan, plan.segments[0].id, alternate);
+        expect(swapped.segments[0].takeId).toBe(alternate);
+        expect(swapped.segments[0].alternates).toContain(original);
+        expect(swapped.segments[0].reasonParameters).toMatchObject({ manual: true });
+        expect(swapped.qualityChecks).toContainEqual(expect.objectContaining({ code: 'source_ranges_non_overlapping' }));
+        expect(swapSmartCutTake(plan, plan.segments[0].id, 'not-analysed')).toBe(plan);
+    });
+
+    test('more than ten groups across three takes merge without losing speech', () => {
+        const sources: SmartCutSource[] = Array.from({ length: 3 }, (_, index) => ({ id: `take-${index}`, assetId: `asset-${index}`, name: `Take ${index}`, duration: 10 }));
+        const analyses = new Map(sources.map((source, takeIndex) => [source.assetId, {
+            version: 1, assetId: source.assetId, duration: 10, provider: 'fal-scribe-v2', transcript: 'four groups', language: 'en', timingQuality: 'word',
+            chunks: Array.from({ length: 4 }, (_, groupIndex) => ({ start: groupIndex * 2, end: groupIndex * 2 + .4, text: `take${takeIndex}-word${groupIndex}` })),
+        } satisfies SpeechAnalysis]));
+        const plan = buildSpeechAwareCutPlan({ clips: sources, analyses });
+        const warning = plan.warningDetails?.find((item) => item.code === 'segment_limit_reached');
+        expect(plan.segments).toHaveLength(10);
+        expect(warning?.parameters).toMatchObject({ mergedGroups: 2, omittedGroups: 0 });
+        expect(plan.segments.flatMap((segment) => segment.label.split(' '))).toEqual(
+            Array.from({ length: 3 }, (_, take) => Array.from({ length: 4 }, (_, word) => `take${take}-word${word}`)).flat());
+    });
+
+    test('more than ten source clips return a distinct structured source-limit error', () => {
+        const sources = Array.from({ length: 11 }, (_, index) => ({ id: `take-${index}`, assetId: `asset-${index}`, name: `Take ${index}`, duration: 2 }));
+        const analyses = new Map(sources.map((source) => [source.assetId, {
+            version: 1, assetId: source.assetId, duration: 2, provider: 'fal-scribe-v2', transcript: 'word', language: 'en', timingQuality: 'word',
+            chunks: [{ start: .2, end: 1, text: 'word' }],
+        } satisfies SpeechAnalysis]));
+        expect(() => buildSpeechAwareCutPlan({ clips: sources, analyses })).toThrow(expect.objectContaining({
+            code: 'source_clip_limit_reached', parameters: expect.objectContaining({ sourceClips: 11 }),
+        }));
     });
 
     test('speech removals are scoped to the selected take window and speech sections cannot swap takes', () => {
@@ -78,8 +131,7 @@ describe('Smart Cut planning', () => {
         expect(plan.removalsApplied).toBe(1);
         expect(plan.segments.every((segment) => segment.start >= 4 && segment.end <= 8)).toBe(true);
         const swapped = swapSmartCutTake(plan, plan.segments[0].id, 'take-b');
-        expect(swapped.segments).toEqual(plan.segments);
-        expect(swapped.warnings.at(-1)).toContain('analysed source take');
+        expect(swapped).toBe(plan);
     });
 
     test('the output cap never reports omitted speech as removed silence', () => {
@@ -92,8 +144,64 @@ describe('Smart Cut planning', () => {
             chunks: [{ start: 0, end: 40, text: 'continuous' }],
         } satisfies SpeechAnalysis]));
         const plan = buildSpeechAwareCutPlan({ clips: sources, analyses });
-        expect(plan.totalDuration).toBe(60);
+        expect(plan.totalDuration).toBe(40);
         expect(plan.silenceRemoved).toBe(0);
+        expect(plan.warningDetails?.some((warning) => warning.code === 'output_limit_reached')).toBe(true);
+    });
+
+    test('the output cap stops at the last complete word', () => {
+        const source: SmartCutSource = { id: 'take-a', assetId: 'asset-a', name: 'Take A', duration: 70, rangeStart: 0, rangeEnd: 70 };
+        const analysis: SpeechAnalysis = {
+            version: 1, assetId: 'asset-a', duration: 70, provider: 'fal-scribe-v2', transcript: 'first crossing', language: 'en', timingQuality: 'word',
+            chunks: [{ start: 0, end: 59, text: 'first' }, { start: 59.7, end: 60.3, text: 'crossing' }],
+        };
+        const plan = buildSpeechAwareCutPlan({ clips: [source], analyses: new Map([['asset-a', analysis]]) });
+        expect(plan.totalDuration).toBe(59);
+        expect(plan.segments.at(-1)?.end).toBe(59);
+        expect(plan.warningDetails?.some((warning) => warning.code === 'output_limit_reached')).toBe(true);
+    });
+
+    test('a non-hundredth word end at the cap is canonicalized without clipping the word', () => {
+        const source: SmartCutSource = { id: 'take-a', assetId: 'asset-a', name: 'Take A', duration: 70, rangeStart: 0, rangeEnd: 70 };
+        const analysis: SpeechAnalysis = {
+            version: 1, assetId: 'asset-a', duration: 70, provider: 'fal-scribe-v2', transcript: 'first crossing', language: 'en', timingQuality: 'word',
+            chunks: [{ start: 0, end: 59.123, text: 'first' }, { start: 59.7, end: 60.3, text: 'crossing' }],
+        };
+        const plan = buildSpeechAwareCutPlan({ clips: [source], analyses: new Map([['asset-a', analysis]]) });
+        expect(plan.segments.at(-1)?.end).toBe(59.12);
+        expect(Number(((plan.segments.at(-1)?.end ?? 0) * 100).toFixed(8)) % 1).toBe(0);
+    });
+
+    test('a trim through a word drops the partial word and reports it', () => {
+        const source: SmartCutSource = { id: 'take-a', assetId: 'asset-a', name: 'Take A', duration: 8, rangeStart: 2, rangeEnd: 6 };
+        const analysis: SpeechAnalysis = {
+            version: 1, assetId: 'asset-a', duration: 8, provider: 'fal-scribe-v2', transcript: 'partial kept', language: 'en', timingQuality: 'word',
+            chunks: [{ start: 1.8, end: 2.4, text: 'partial' }, { start: 3, end: 3.5, text: 'kept' }],
+        };
+        const plan = buildSpeechAwareCutPlan({ clips: [source], analyses: new Map([['asset-a', analysis]]) });
+        expect(plan.segments.every((segment) => segment.start >= 2 && segment.end <= 6)).toBe(true);
+        expect(plan.segments.some((segment) => segment.label.includes('partial'))).toBe(false);
+        expect(plan.warningDetails?.find((warning) => warning.code === 'trim_intersects_unit')?.parameters.count).toBe(1);
+    });
+
+    test('a trim through a phrase drops the partial phrase and keeps complete speech', () => {
+        const source: SmartCutSource = { id: 'take-a', assetId: 'asset-a', name: 'Take A', duration: 8, rangeStart: 2, rangeEnd: 6 };
+        const analysis: SpeechAnalysis = {
+            version: 1, assetId: 'asset-a', duration: 8, provider: 'fal-wizper', transcript: 'partial kept', language: 'en', timingQuality: 'phrase',
+            chunks: [{ start: 1.8, end: 2.4, text: 'partial phrase' }, { start: 3, end: 3.5, text: 'kept phrase' }],
+        };
+        const plan = buildSpeechAwareCutPlan({ clips: [source], analyses: new Map([['asset-a', analysis]]) });
+        expect(plan.segments.some((segment) => segment.label.includes('partial'))).toBe(false);
+        expect(plan.warningDetails?.find((warning) => warning.code === 'trim_intersects_unit')?.parameters.count).toBe(1);
+    });
+
+    test('an over-budget phrase is rejected instead of cut mid-phrase', () => {
+        const source: SmartCutSource = { id: 'take-a', assetId: 'asset-a', name: 'Take A', duration: 70, rangeStart: 0, rangeEnd: 70 };
+        const analysis: SpeechAnalysis = {
+            version: 1, assetId: 'asset-a', duration: 70, provider: 'fal-wizper', transcript: 'one long phrase', language: 'en', timingQuality: 'phrase',
+            chunks: [{ start: 0, end: 61, text: 'one long phrase' }],
+        };
+        expect(() => buildSpeechAwareCutPlan({ clips: [source], analyses: new Map([['asset-a', analysis]]) })).toThrow('longer than the Clip Editor output budget');
     });
 
     test('billing uses server evidence and a later refund overrides an earlier charge', () => {

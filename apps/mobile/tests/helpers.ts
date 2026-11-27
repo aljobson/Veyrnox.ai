@@ -6,7 +6,7 @@ const FIRST_RUN_TITLE = 'What do you want to make first?';
 // Opens a clean first-run journey without using openSignedIn(), whose job is to skip onboarding. The simulator
 // keychain and local app state are both cleared before a fresh launch; the mock server's demo sign-in remains the
 // deterministic fallback when no session is available.
-export async function openFirstRun(app: App, device: Device, screen: Screen) {
+export async function openFirstRun(app: App, device: Device, screen: Screen, afterTouch?: (name: string) => Promise<void>) {
   await device.clearKeychain();
   await app.clearState();
   await app.open();
@@ -19,12 +19,19 @@ export async function openFirstRun(app: App, device: Device, screen: Screen) {
     if (await firstQuestion.isVisible()) return;
     if (await english.isVisible()) {
       await english.tap();
+      await afterTouch?.('language-english');
       await screen.getByRole('button', 'Continue', { exact: true }).tap();
+      await afterTouch?.('language-continue');
     } else if (await agreement.isVisible()) {
-      if (!(await agreement.isChecked())) await agreement.tap({ position: { x: 18, y: 22 } });
+      if (!(await agreement.isChecked())) {
+        await agreement.tap({ position: { x: 18, y: 22 } });
+        await afterTouch?.('agreement-accepted');
+      }
       await screen.getByRole('button', 'Preview with demo data').tap();
+      await afterTouch?.('demo-preview');
     } else if (await decline.isVisible()) {
       await decline.tap();
+      await afterTouch?.('decline-dismissed');
     }
     await new Promise(resolve => setTimeout(resolve, 250));
   }

@@ -21,6 +21,7 @@ interface Props {
     readonly links: AssetLinks;
     readonly jobId: string;
     readonly size?: number;
+    readonly posterTimeSeconds?: number;
 }
 
 const is = (mime: string | undefined, prefix: string): boolean => typeof mime === 'string' && mime.startsWith(prefix);
@@ -28,7 +29,7 @@ const GLYPH = { video: '▶', audio: '♫', image: '▧' } as const;
 
 // The picture of one of the person's creations: the image itself, a frame from a video, or a note for audio.
 // Resolved only when the row is on screen, so a long list does not fetch every file.
-export function JobThumb({ links, jobId, size = 56 }: Props) {
+export function JobThumb({ links, jobId, size = 56, posterTimeSeconds }: Props) {
     const [link, setLink] = useState<AssetLink | undefined>(() => links.peek(jobId));
     const [poster, setPoster] = useState<VideoThumbnail | null>(null);
     // A video whose frame could not be made keeps the play glyph; it must not spin for ever.
@@ -40,14 +41,14 @@ export function JobThumb({ links, jobId, size = 56 }: Props) {
             if (!live) return;
             setLink(result);
             if (result.kind === 'file' && is(result.mime, 'video/')) {
-                void posterFor(jobId, result.url).then(
+                void posterFor(jobId, result.url, undefined, posterTimeSeconds).then(
                     (frame) => { if (live) { setPoster(frame); setPosterTried(true); } },
                     () => { if (live) setPosterTried(true); },
                 );
             }
         });
         return () => { live = false; };
-    }, [links, jobId]);
+    }, [links, jobId, posterTimeSeconds]);
 
     const file = link?.kind === 'file' ? link : null;
     const box = { width: size, height: size };

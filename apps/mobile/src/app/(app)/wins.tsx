@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { Card, Text, themedStyles, useThemedStyles } from '../../components/ui';
-import { VeyLoader } from '../../components/VeyLoader';
+import { LoadingSkeleton } from '../../components/LoadingSkeleton';
 import { useYourWins } from '../../lib/useYourWins';
 import { t, plural, formatNumber, getLocale } from '../../lib/i18n';
 import { ds } from '../../theme';
@@ -15,7 +15,7 @@ export default function YourWinsScreen() {
     return <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
         <Stack.Screen options={{ title: t('wins.title') }} />
         <Text variant="title1" accessibilityRole="header">{t('wins.title')}</Text>
-        {loading ? <VeyLoader showLabel /> : !value ? <Text>{t('wins.unavailable')}</Text> : <>
+        {loading ? <LoadingSkeleton variant="dashboard" /> : !value ? <Text>{t('wins.unavailable')}</Text> : <>
             <View style={styles.switch}>{(['week', 'all'] as const).map(key => <Pressable key={key} accessibilityRole="button" accessibilityState={{ selected: range === key }} onPress={() => setRange(key)} style={[styles.choice, range === key && styles.selected]}><Text>{t(`wins.${key}`)}</Text></Pressable>)}</View>
             <Card style={styles.panel}>
                 <Text accessibilityRole="header">{t('wins.creations')}</Text>

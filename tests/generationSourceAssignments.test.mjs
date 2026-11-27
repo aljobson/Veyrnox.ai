@@ -136,8 +136,12 @@ test('LatentSync rejects the real QA duration mismatch before any debit or provi
     await rejected({ model_id: latent.id,source_assets: [ref(VIDEO,'video'),ref(AUDIO,'audio')],inputs: {} },'lipsync_video_length_unknown',{ model: latent,overrides: { [VIDEO]: { bytes: lipSyncMp4().subarray(0,16) } } });
 });
 test('equal or shorter lip-sync speech keeps the approved provider payload and exact catalog price',async () => {
-    for (const seconds of [7.2,5]) {
-        const net = network({ model: latent,overrides: { [VIDEO]: { bytes: lipSyncMp4() },[AUDIO]: { bytes: wav(seconds) } } });
+    const videos = [
+        lipSyncMp4(),
+        lipSyncMp4({ video: 7.2, sampleCount: 4, compositionOffsets: [3.6,5.4,1.8,3.6], edit: { seconds: 7.2,start: 3.6 } }),
+    ];
+    for (const [seconds,video] of [[7.2,videos[0]],[5,videos[0]],[7.2,videos[1]]]) {
+        const net = network({ model: latent,overrides: { [VIDEO]: { bytes: video },[AUDIO]: { bytes: wav(seconds) } } });
         try {
             assert.equal((await post({ model_id: latent.id,source_assets: [ref(VIDEO,'video'),ref(AUDIO,'audio')],inputs: {} })).status,200);
             assert.deepEqual(Object.keys(submits(net)[0].body).sort(),['audio_url','video_url']);

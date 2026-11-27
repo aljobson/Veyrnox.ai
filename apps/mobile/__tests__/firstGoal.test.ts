@@ -20,10 +20,10 @@ describe('the first-goal question', () => {
         expect(FIRST_GOAL_SLOT).toBe('veyrnox.firstGoal.v1');
     });
 
-    test('creation goals open the starter form, Edit and Publish go to their tabs, "not sure" stays', () => {
+    test('image and video open Create; Audio, Edit and Publish use their canonical areas', () => {
         expect(firstGoalTarget('image')).toEqual({ kind: 'create', goal: 'image' });
         expect(firstGoalTarget('video')).toEqual({ kind: 'create', goal: 'video' });
-        expect(firstGoalTarget('audio')).toEqual({ kind: 'create', goal: 'audio' });
+        expect(firstGoalTarget('audio')).toEqual({ kind: 'tab', href: '/audio' });
         expect(firstGoalTarget('edit')).toEqual({ kind: 'tab', href: '/editor' });
         expect(firstGoalTarget('publish')).toEqual({ kind: 'tab', href: '/publish' });
         expect(firstGoalTarget('unsure')).toEqual({ kind: 'stay' });
@@ -48,7 +48,8 @@ describe('the first-goal question', () => {
 
     test('"not sure" offers one example for each creation area', () => {
         expect([...FIRST_GOAL_EXAMPLES]).toEqual(['image', 'video', 'audio']);
-        for (const goal of FIRST_GOAL_EXAMPLES) expect(firstGoalTarget(goal)).toEqual({ kind: 'create', goal });
+        for (const goal of ['image', 'video'] as const) expect(firstGoalTarget(goal)).toEqual({ kind: 'create', goal });
+        expect(firstGoalTarget('audio')).toEqual({ kind: 'tab', href: '/audio' });
     });
 
     test('the server reply is read strictly: a listed word, none yet, or unavailable', () => {

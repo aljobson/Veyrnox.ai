@@ -131,6 +131,15 @@ test('text controls have names, and a disabled custom-font feature explains the 
         'Shadow opacity', 'Shadow blur', 'Shadow X', 'Shadow Y']) expect(labelled(label).length).toBeGreaterThan(0);
     expect(visible('This title uses a custom font from the website. The phone shows a standard font.')).toBe(true);
 });
+test('text guide controls align the selected layer to shared safe-edge and centre anchors', async () => {
+    const tl = webSequenceV3(), patchSelected = jest.fn();
+    await act(async () => root.render(<TextPanel timeline={tl} selection={{ track: 'text', id: 't3' }} selected={tl.text[0]}
+        addText={jest.fn()} updateSelectedText={jest.fn()} patchSelected={patchSelected} />));
+    for (const [label, patch] of [['X axis 10%', { x: .1 }], ['X axis 50%', { x: .5 }], ['X axis 90%', { x: .9 }],
+        ['Y axis 10%', { y: .1 }], ['Y axis 50%', { y: .5 }], ['Y axis 90%', { y: .9 }]] as const) {
+        await press(label); expect(patchSelected).toHaveBeenLastCalledWith(patch);
+    }
+});
 test('audio selection keeps animation untouched and has no Apply', async () => {
     const tl = webSequenceV3(), audio = { ...tl.video[0], id: 'a1', trackId: 'audio-0' };
     await act(async () => root.render(<AnimationPanel selection={{ track: 'audio', id: 'a1' }} selected={audio} />));

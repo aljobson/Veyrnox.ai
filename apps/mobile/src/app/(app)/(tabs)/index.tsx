@@ -1,18 +1,18 @@
 import { YourWinsCard } from '../../../components/wins/YourWinsCard';
 import { categoryLabel } from '../../../lib/presetCategoryLabel';
 import { CheckInEntry } from '../../../components/credits/CheckInEntry';
-import { Link, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { Link, useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { type ComponentRef, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { celebrateFinished } from '../../../lib/celebrate';
-import { ALL_CATEGORIES, ALL_TYPES, filterPresets, firstModelFor, pickUp, promptHref, recentCreations, type TypeFilter } from '../../../lib/explore';
-import { plural, t } from '../../../lib/i18n';
+import { ALL_CATEGORIES, ALL_TYPES, filterPresets, pickUp, promptHref, recentCreations, type TypeFilter } from '../../../lib/explore';
+import { formatNumber, plural, t } from '../../../lib/i18n';
 import { templateCountLabel } from '../../../lib/templateCountLabel';
 import { rawText } from '../../../lib/i18n/translate';
 import { useAnnouncement } from '../../../lib/useAnnouncement';
-import { fetchCatalogCached, mediaApi, type CatalogModel, type Job, type Kind } from '../../../lib/media';
+import { fetchCatalogCached, mediaApi, type CatalogModel, type Job } from '../../../lib/media';
 import { LowBalanceNote } from '../../../components/LowBalanceNote';
 import { CREATOR_PROFILE_ENABLED } from '../../../lib/creatorProfile';
 import { runVibeSync, vibeOffered } from '../../../lib/creatorProfileStore';
@@ -25,10 +25,11 @@ import { useBalance } from '../../../lib/useBalance';
 import { fetchPresets, type Preset } from '../../../lib/presets';
 import { fetchImageTemplates, type ImageTemplate } from '../../../lib/imageTemplates';
 import { fetchAudioTemplates, type AudioTemplate } from '../../../lib/audioTemplates';
+import { fetchCrunTemplateSummary } from '../../../lib/crunTemplateSummary';
 import { isDirectTemplate, listedTemplates, mixKinds } from '../../../lib/exploreTemplates';
 import { fetchPopularIds, templateChips, templatesFor, templatePageHref } from '../../../lib/templateFilters';
 import { colors, ds, LIST_END_PADDING } from '../../../theme';
-import { Button, Card, Text, TextField, Chip, themedStyles, useThemedStyles, useAppearance } from '../../../components/ui';
+import { Button, Text, TextField, Chip, themedStyles, useThemedStyles, useAppearance } from '../../../components/ui';
 
 import { recordHomeStart } from '../../../lib/firstGoalStore';
 import { hasRealAnswer, phoneStarts } from '../../../lib/firstProfile';
@@ -38,7 +39,7 @@ import { EntryRow } from '../../../components/home/EntryRow';
 import { ExploreTemplateGrid } from '../../../components/home/ExploreTemplateGrid';
 import { SwapRow } from '../../../components/home/SwapRow';
 import { OddlingsBanner } from '../../../components/home/OddlingsBanner';
-import { VeyLoader } from '../../../components/VeyLoader';
+import { LoadingSkeleton } from '../../../components/LoadingSkeleton';
 
 // How many templates the home shows; the rest are on the Templates screen.
 // Templates shown at once on Home; Show more adds the next page (the gallery behind See all pages the same way).
@@ -56,19 +57,6 @@ export default function Explore() {
     const { api, generation, beginSessionTask } = useAuth();
     const profile = useFirstProfile();
     const router = useRouter();
-    const { focusIdea } = useLocalSearchParams<{ focusIdea?: string }>();
-    const ideaField = useRef<ComponentRef<typeof TextInput>>(null);
-    const page = useRef<ComponentRef<typeof ScrollView>>(null);
-    const ideaY = useRef(0);
-    useFocusEffect(useCallback(() => {
-        if (focusIdea !== '1') return;
-        const timer = setTimeout(() => {
-            page.current?.scrollTo({ y: ideaY.current, animated: true });
-            ideaField.current?.focus();
-            router.setParams({ focusIdea: undefined });
-        }, 350);
-        return () => clearTimeout(timer);
-    }, [focusIdea, router]));
     // The start order is decided once and then kept, so a row never moves under a finger: by the first-run answers when
     // they arrive, or the default order if they take longer than START_ORDER_WAIT_MS.
     const [timedOut, setTimedOut] = useState(false);
@@ -81,10 +69,8 @@ export default function Explore() {
     const starts = timedOut
         ? { keys: phoneStarts(null, null), suggested: false }
         : profile.ready ? { keys: phoneStarts(profile.role, profile.goal), suggested: hasRealAnswer(profile) } : null;
-    const [prompt, setPrompt] = useState('');
     // null until the catalog arrives; only a confirmed (not stale saved) catalog, even an empty one, decides which templates are listed.
     const [catalog, setCatalog] = useState<CatalogModel[] | null>(null), [catalogConfirmed, setCatalogConfirmed] = useState(false);
-    const [note, setNote] = useState<string | null>(null);
     const [presets, setPresets] = useState<Preset[] | null>(null);
     const [popularIds, setPopularIds] = useState<string[]>([]);
     const [presetsFailed, setPresetsFailed] = useState(false);
@@ -117,10 +103,12 @@ export default function Explore() {
     // Image and audio templates come from the same lists as Create > Templates; if one fails, Explore keeps the rest.
     const [imageList, setImageList] = useState<ImageTemplate[]>([]);
     const [audioList, setAudioList] = useState<AudioTemplate[]>([]);
+    const [crunPreviewCount, setCrunPreviewCount] = useState<number | null>(null);
     useEffect(() => {
         let live = true;
         fetchImageTemplates().then((list) => live && setImageList(list)).catch(() => {});
         fetchAudioTemplates().then((list) => live && setAudioList(list)).catch(() => {});
+        fetchCrunTemplateSummary().then((summary) => live && setCrunPreviewCount(summary.total)).catch(() => {});
         return () => { live = false; };
     }, []);
     const models = useMemo(() => new Map((catalog ?? []).map((m) => [m.id, m])), [catalog]);
@@ -194,13 +182,6 @@ export default function Explore() {
     const resume = useMemo(() => pickUp(jobs), [jobs]);
     const recent = useMemo(() => recentCreations(jobs, RECENT), [jobs]);
 
-    function make(kind: Kind) {
-        const model = firstModelFor(catalog ?? [], kind);
-        if (!model) return setNote(t('explore.noModel'));
-        setNote(null);
-        router.push(promptHref(model.id, prompt));
-    }
-
     function openPreset(p: Preset) {
         // Image and audio templates have no template page; like Create > Templates they open Create with their prompt.
         if (!isDirectTemplate(p.id)) { router.push(templatePageHref(p)); return; }
@@ -219,7 +200,6 @@ export default function Explore() {
         setCategory(ALL_CATEGORIES);
     }
 
-    const empty = prompt.trim().length === 0;
     const label = (j: Job) => j.label || t('edit.untitled');
     const cost = (j: Job) => (j.credits > 0 ? plural('library.cost', j.credits) : t('library.costFree'));
 
@@ -228,7 +208,7 @@ export default function Explore() {
     return (
         <>
             <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-            <ScrollView ref={page} automaticallyAdjustKeyboardInsets style={styles.scroll} contentContainerStyle={styles.screen} keyboardShouldPersistTaps="handled">
+            <ScrollView automaticallyAdjustKeyboardInsets style={styles.scroll} contentContainerStyle={styles.screen} keyboardShouldPersistTaps="handled">
                 <View style={styles.intro}>
                     <Text variant="title1" style={styles.pageTitle} accessibilityRole="header">
                         {t('explore.start.title')}
@@ -240,7 +220,7 @@ export default function Explore() {
 
                 <YourWinsCard />
                 {/* Until the order is settled the rows hold their space unseen and untappable. */}
-                <Card style={[styles.startGroup, !starts && styles.unsettled]} accessibilityLabel={t('explore.start.title')} accessibilityElementsHidden={!starts} importantForAccessibility={starts ? 'auto' : 'no-hide-descendants'} pointerEvents={starts ? 'auto' : 'none'}>
+                <View style={[styles.startGroup, !starts && styles.unsettled]} accessibilityLabel={t('explore.start.title')} accessibilityElementsHidden={!starts} importantForAccessibility={starts ? 'auto' : 'no-hide-descendants'} pointerEvents={starts ? 'auto' : 'none'}>
                     {(starts?.keys ?? phoneStarts(null, null)).map((key, index) => {
                         // The first-run answers (ADR-0339) set the order; the first option says it is suggested.
                         const badge = index === 0 && starts?.suggested ? t('create.firstRun.suggested') : undefined;
@@ -251,30 +231,8 @@ export default function Explore() {
                         if (key === 'chat') return <StartOption href="/chat" hue="sky" key={key} onPress={onPress} style={styles.startOption} icon="chat" title={t('menu.chat')} body={t('explore.start.chat.body')} hint={t('explore.chat.hint')} divided={divided} badge={badge} />;
                         return <StartOption href="/film" hue="iris" key={key} onPress={onPress} style={styles.startOption} icon="slate" title={t('menu.film')} body={t('explore.start.film.body')} hint={t('explore.start.film.hint')} divided={divided} badge={badge} />;
                     })}
-                    <StartOption href="/instruments" hue="rose" style={styles.startOption} icon="pianoKeys" title={t('instruments.title')} body={t('instruments.homeBody')} hint={t('instruments.homeHint')} divided />
-                </Card>
-
-
-                <Card style={styles.composer} onLayout={event => { ideaY.current = event.nativeEvent.layout.y; }}>
-                    <Text variant="title3" style={styles.composerTitle}>
-                        {t('explore.ideaTitle')}
-                    </Text>
-                    <TextField
-                        ref={ideaField}
-                        accessibilityLabel={t('explore.ideaTitle')}
-                        placeholder={t('explore.promptPlaceholder')}
-                        placeholderTextColor={colors.muted}
-                        style={styles.prompt}
-                        multiline
-                        value={prompt}
-                        onChangeText={setPrompt}
-                    />
-                    <View style={styles.actions}>
-                        <Button variant="secondary" size="md" label={t('explore.makeVideo')} disabled={empty} onPress={() => make('video')} />
-                        <Button variant={empty ? 'secondary' : 'primary'} size="md" label={t('explore.makeImage')} disabled={empty} onPress={() => make('image')} />
-                    </View>
-                </Card>
-
+                    <StartOption href="/instruments" hue="amber" style={styles.startOption} icon="pianoKeys" title={t('instruments.title')} body={t('instruments.homeBody')} hint={t('instruments.homeHint')} divided />
+                </View>
                 <OddlingsBanner
                     href="/oddlings"
                     accessibilityLabel={t('explore.oddlings.title')}
@@ -286,12 +244,6 @@ export default function Explore() {
                 />
                 <CheckInEntry unclaimedOnly />
                 {balance !== null && isLowBalance(balance, cheapestCredits(presets?.filter((p) => p.available))) ? <LowBalanceNote balance={balance} /> : null}
-                {note ? (
-                    <Text style={styles.note} accessibilityLiveRegion="polite">
-                        {note}
-                    </Text>
-                ) : null}
-
                 <View style={styles.headerRow}>
                     <View style={styles.templateHeading}>
                         <Text variant="title2" style={styles.heading} accessibilityRole="header">
@@ -299,7 +251,7 @@ export default function Explore() {
                         </Text>
                         {presets ? (
                             <Text variant="footnote" style={styles.count}>
-                                {templateCountLabel({ t, plural }, allTemplates?.length ?? presets.length)}
+                                {templateCountLabel({ t, plural, formatNumber }, allTemplates?.length ?? presets.length, crunPreviewCount)}
                             </Text>
                         ) : null}
                     </View>
@@ -322,7 +274,7 @@ export default function Explore() {
                         <Button variant="secondary" size="md" label={t('recovery.retry')} onPress={loadPresets} />
                     </View>
                 ) : presets === null ? (
-                    <VeyLoader />
+                    <LoadingSkeleton variant="grid" />
                 ) : (
                     <>
                         <SwapRow />{searchShown ? (
@@ -435,21 +387,9 @@ const sheets = themedStyles((p, ramp) => ({
     intro: { gap: 8, marginBottom: 4 },
     pageTitle: { color: p.textPrimary },
     pageIntro: { color: p.textSecondary, maxWidth: 520 },
-    startGroup: { overflow: 'hidden', padding: 0 },
+    startGroup: { gap: ds.space.sm },
     unsettled: { opacity: 0 },
     startOption: { minHeight: 80 },
-    composer: { gap: ds.space.md },
-    composerTitle: { color: p.textPrimary },
-    prompt: {
-        ...ramp.body,
-        minHeight: 62,
-        textAlignVertical: 'top',
-        color: p.textPrimary,
-        paddingHorizontal: 0,
-        paddingTop: 2,
-    },
-    actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: ds.space.sm },
-    note: { color: p.textSecondary },
     headerRow: {
         flexDirection: 'row',
         alignItems: 'flex-end',

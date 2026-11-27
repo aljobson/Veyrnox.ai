@@ -48,7 +48,8 @@ test('the latest O1 catalog migration and fallback keep the offer inactive', asy
  const migrations = fs.readdirSync(directory).filter(name=>name.endsWith('.sql')).sort()
   .map(name=>fs.readFileSync(path.join(directory,name),'utf8')).filter(sql=>sql.includes("'kling-o1-reference'"));
  assert.ok(migrations.length);
- const inserts = migrations.filter(sql=>/INSERT INTO public\.model_catalog/.test(sql));
+ const inserts = migrations.flatMap(sql => [...sql.matchAll(/INSERT INTO public\.model_catalog[\s\S]*?;/g)].map(match => match[0]))
+  .filter(statement => statement.includes("'kling-o1-reference'"));
  assert.equal(inserts.length, 1);
  assert.match(inserts[0], /'video-to-video',47,0\.8400,'per_second',5,false,false/);
  assert.match(inserts[0], /active=EXCLUDED\.active/);

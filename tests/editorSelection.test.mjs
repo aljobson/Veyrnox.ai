@@ -23,6 +23,20 @@ test('copy/paste recreates missing media, issues distinct ids and groups, and pr
     assert.notEqual(again.video[1].groupId, again.video[0].groupId);
     assert.equal(original.video.length, 1);
 });
+test('all-track paste inserts time before existing captions and refuses locked caption tracks atomically', () => {
+    let tl = fixture();
+    tl = { ...tl, text: tl.text.map(c => ({ ...c, start: 90, len: 60, caption: true, words: [{ text: 'Example', start: 0, len: 60 }], wordsEstimated: false })) };
+    const clipboard = copySelection(tl, [{ track: 'video', id: 'v1' }]), before = JSON.stringify(tl);
+    const pasted = pasteSelection(tl, clipboard, 0, true);
+    assert.equal(pasted.error, undefined);
+    assert.deepEqual(pasted.video.map(c => c.start).sort((a, b) => a - b), [0, 90]);
+    assert.equal(pasted.text[0].start, 180);
+    assert.equal(pasted.text[0].text, 'Example');
+    assert.deepEqual(pasted.text[0].words, [{ text: 'Example', start: 0, len: 60 }]);
+    const locked = updateSequenceTrack(tl, 'text-0', { locked: true });
+    assert.match(pasteSelection(locked, clipboard, 0, true).error, /Unlock the affected tracks/);
+    assert.equal(JSON.stringify(tl), before);
+});
 test('a locked member rejects grouped deletion and movement; overlapping ripple ranges are removed once', () => {
     const locked = updateSequenceTrack(fixture(), 'text-0', { locked: true });
     assert.ok(deleteSelection(locked, selected).error); assert.ok(moveSelection(locked, selected, selected[0], 60, 'video-0', false, 0).error);

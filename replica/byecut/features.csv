@@ -2,78 +2,83 @@ feature,area,priority,original,clone,notes
 Sign in with Apple,onboarding,must,yes,no,Use Veyrnox auth rather than copying ByeCut identity flows
 Passwordless six-digit email sign-in,onboarding,should,yes,no,Use existing Veyrnox magic-code capability if available
 Explain audio/text AI sharing before first analysis,onboarding,must,yes,no,Consent must describe the actual Veyrnox processor and retention
-Projects home with recent work,projects,must,yes,no,
-Folders and subfolders,projects,should,yes,no,
-Move projects between folders,projects,should,yes,no,
-Editing-time-saved summary,projects,could,yes,no,Compute from raw vs accepted cut duration and explicit assumptions
-Local autosave,projects,must,yes,no,Implementation differs between web and native
-Optional cloud sync,projects,could,yes,no,Use Veyrnox storage rather than iCloud unless native requirements justify it
-Portable project backup,projects,should,yes,no,Use a versioned Veyrnox manifest
-Import one long talking-head recording,import,must,yes,no,
-Import multiple clips from Photos or Files,import,must,yes,no,
-Preserve original media quality,import,must,yes,no,
-Low-storage warning before import,import,should,yes,no,Native-only when device storage can be measured
-iCloud file wait and recovery,import,could,yes,no,Native-only documented Apple integration
+Decline AI processing and keep editing manually,onboarding,must,yes,not-device-verified,Remote analysis is visibly unavailable and the existing manual Clip Editor remains usable; an actual consent decline appears only when the future backend exists
+Projects home with recent work,projects,must,yes,not-device-verified,Existing Veyrnox Projects and Library surfaces cover owned work without copying ByeCut layout
+Start an AI Edit project card,projects,must,yes,yes,Original Veyrnox Smart Cut entry opens from Explore and the video-filtered Library
+Batch AI Edit entry,projects,could,yes,not-device-verified,"Owner/workspace-scoped durable queues admit 2–10 projects, serialize one active edit, recover after interruption and never start a paid call automatically; live journeys remain required"
+Folders and subfolders,projects,should,yes,not-device-verified,"Workspace-scoped four-level folders support list, create, nested create, rename, guarded delete and filtering on web and shared iOS/Android; migration 0618 passed disposable-database acceptance but remains unapplied, and live journeys remain required"
+Move projects between folders,projects,should,yes,not-device-verified,"Version-conflict-safe moves into any same-workspace folder or back to Unfiled are implemented on web and shared iOS/Android; live browser, iOS and Android journeys remain required"
+Editing-time-saved summary,projects,could,yes,not-device-verified,Derives a non-inflatable summary from unique referenced raw-video duration versus the accepted cut and shows it on web and shared iOS/Android project lists; live journeys remain required
+Local autosave,projects,must,yes,not-device-verified,Web and native Clip Editors plus Smart Cut setup autosave validated account-scoped local drafts and offer recovery or discard; live journeys remain required
+Optional cloud sync,projects,could,yes,not-device-verified,Veyrnox projects and version history sync through the shared cloud API on web and iOS/Android; per-account opt-out remains missing
+Portable project backup,projects,should,yes,not-device-verified,Versioned Veyrnox JSON round-trips edits and source metadata on web and shared iOS/Android without embedding media bytes or private URLs; live journeys remain required
+Import one long talking-head recording,import,must,yes,yes,Uses the existing owned-video Library and Clip Editor path
+Import multiple clips from Photos or Files,import,must,yes,yes,Existing Library selection admits up to 10 completed owned videos
+Preserve original media quality,import,must,yes,not-device-verified,Web retains original Blob bytes and unchanged render uploads; native Best Cut and Clip Editor request current/passthrough Photos assets and copy original files without transcoding; live journeys remain required
+Low-storage warning before import,import,should,yes,not-device-verified,Shared iOS and Android editor preflight reserves 100 MB before Photos or Files media is copied; live low-storage journeys remain required
+iCloud file wait and recovery,import,could,yes,not-device-verified,"Shared native import waits for a readable non-empty provider file, keeps a bounded recovery card, prevents duplicate picks and offers retry or Files recovery; a live iCloud journey remains required"
 No-speech detection,import,should,yes,no,Allow choose another video or continue manually
-Optional intended script,smart-cut,must,yes,no,
-Optional editing notes,smart-cut,must,yes,no,
-Automatic spoken-language detection,smart-cut,should,yes,no,
-Manual spoken-language override,smart-cut,should,yes,no,
-Snappy-to-Relaxed pacing control,smart-cut,must,yes,no,
-Preflight duration and credit quote,smart-cut,must,yes,no,Pin Veyrnox quote before spend
-Background analysis with progress stages,smart-cut,should,yes,no,
-Lock Screen Live Activity for progress,smart-cut,could,yes,no,Native-only
-Automatic retry after connection interruption,smart-cut,should,yes,no,
-Recoverable failed analysis,smart-cut,must,yes,no,Do not consume credits for a never-started or failed Veyrnox job
-Remove long silences,smart-cut,must,yes,no,Independent algorithm/provider required
+Optional intended script,smart-cut,must,yes,yes,Browser-local local-preview input
+Optional editing notes,smart-cut,must,yes,yes,Browser-local local-preview input
+Automatic spoken-language detection,smart-cut,should,yes,yes,Provider language is normalized and shown in the shared web and native Smart Cut language control
+Manual spoken-language override,smart-cut,should,yes,not-device-verified,Shared matching override plus language-aware paid transcription on web and native; migration and journeys remain unapplied
+Snappy-to-Relaxed pacing control,smart-cut,must,yes,yes,Snappy Balanced and Relaxed deterministic preview pacing
+Preflight duration and credit quote,smart-cut,must,yes,yes,Plan duration is reviewable and the existing Clip Editor prices the render before creation
+Background analysis with progress stages,smart-cut,should,yes,not-device-verified,"Accepted analysis continues server-side while web and shared native surfaces expose queued, transcribing, retrying and checking stages; live suspension journeys remain required"
+Lock Screen Live Activity for progress,smart-cut,could,yes,not-device-verified,"Shared native uses a privacy-minimal Lock Screen/notification fallback that respects existing opt-in and permission; custom iOS ActivityKit remains unimplemented"
+Automatic retry after connection interruption,smart-cut,should,yes,not-device-verified,"Owner-only polling retries bounded network/5xx interruptions with the accepted key without repeating the paid POST; live interruption journeys remain required"
+Recoverable failed analysis,smart-cut,must,yes,not-device-verified,Durable keys recover uncertain requests without another charge; confirmed failures refund before a fresh explicit retry
+Remove long silences,smart-cut,must,yes,not-device-verified,Validated timed-speech planner removes real inter-group gaps but user-triggered remote analysis remains disabled pending backend privacy billing and refund work
 Remove filler words and false starts,smart-cut,must,yes,no,Independent algorithm/provider required
 Group repeated takes by intended line,smart-cut,must,yes,no,Core differentiator
 Choose a best take for each line,smart-cut,must,yes,no,Use explainable independently designed scoring
 Match footage to supplied script,smart-cut,should,yes,no,
-Quality checks for clipped words and awkward joins,smart-cut,must,yes,no,
-RAW versus CUT comparison,review,must,yes,no,
-Show raw and cut duration,review,must,yes,no,
-Review transcript sections,review,must,yes,no,
-Preview alternate takes,review,must,yes,no,
-Swap an alternate take,review,must,yes,no,
-Warnings for incomplete script match,review,should,yes,no,
-Restart analysis,review,should,yes,no,
-Discard analysis result,review,should,yes,no,
-Apply accepted plan non-destructively,review,must,yes,no,All applied operations must remain undoable
-Thumbs rating and optional feedback,review,could,yes,no,Only collect with clear privacy and support purpose
+Quality checks for clipped words and awkward joins,smart-cut,must,yes,not-device-verified,Timed-unit boundaries now fail closed padded ranges stop at adjacent-unit midpoints and reviewed removals cannot clip words; rendered device joins still need journey verification
+RAW versus CUT comparison,review,must,yes,yes,Review toggles between complete source windows and proposed sections
+Show raw and cut duration,review,must,yes,yes,Source cards and plan summary show duration
+Review transcript sections,review,must,yes,not-device-verified,Timed transcript sections are supported for valid internal analysis records; remote analysis is not exposed
+Preview alternate takes,review,must,yes,yes,Each local-plan section has an in/out-bounded video preview
+Swap an alternate take,review,must,yes,yes,Local plans retime safely and refuse insufficient or overlapping ranges
+Warnings for incomplete script match,review,should,yes,yes,Local preview discloses that speech is not matched and names omitted selected clips
+Restart analysis,review,should,yes,not-device-verified,Users can restart the deterministic local plan; remote analysis remains unavailable
+Discard analysis result,review,should,yes,not-device-verified,Users can discard the local plan without mutating clips
+Apply accepted plan non-destructively,review,must,yes,yes,Apply rejects changed sources and keeps one original undo point across repeated applies; dirty undo requires confirmation
+Thumbs rating and optional feedback,review,could,yes,not-device-verified,"Web and shared native collect a bounded rating and optional comment under clear privacy copy, durable idempotency and retention controls; migration and live journeys remain unapplied/unverified"
 Multi-track timeline,editor,should,yes,no,Reuse the existing Veyrnox editor
-Trim split and merge,editor,should,yes,no,Reuse existing capability where present
+Mobile editor toolbar with AI Edit Cut Sound Text and Layers,editor,should,yes,no,Observed on Android; map to existing Veyrnox editor capabilities without copying the layout exactly
+Trim split and merge,editor,should,yes,not-device-verified,Existing Clip Editor trims reorders removes and stitches plan sections; interactive split is not added
 Timeline snapping and waveforms,editor,should,yes,no,
 Speed reverse and freeze frame,editor,could,yes,no,
 Titles and free text,editor,should,yes,no,
-Photo and video overlays,editor,should,yes,no,
+Photo and video overlays,editor,should,yes,not-device-verified,"Web Picture in picture and shared iOS/Android imports create timed upper visual layers, live preview renders every active layer in canonical order, 16-track and 10-minute limits fail or trim safely, and focused source tests plus Craft Anything review pass; live browser/iOS/Android save, reopen and export journeys remain"
 Music imported audio and voiceover,editor,should,yes,no,Only user-owned or independently licensed media
 Filters and colour controls,editor,could,yes,no,
 Stabilization,editor,could,yes,no,Requires independently licensed implementation
 Background removal masks and chroma key,editor,could,yes,no,Requires independently licensed implementation
-Text or images behind subject,editor,could,yes,no,Requires depth/background segmentation
-Face retouch,editor,could,yes,no,Consent and on-device/privacy review required
+Text or images behind subject,editor,could,yes,not-device-verified,"Exact web composition is implemented; server and native export fail closed, shared native labels its preview approximation, and Android segmentation remains gated"
+Face retouch,editor,could,yes,not-device-verified,"Local-only web and shared native surfaces require fresh rights acknowledgement and share one bounded preview/export renderer; live browser/device journeys remain required"
 Aspect ratios 9:16 16:9 1:1 and 4:5,editor,should,yes,no,
-Custom portrait and landscape canvases,editor,could,yes,no,
-Safe-area preview for short-form platforms,editor,should,yes,no,
-Plain-language editing assistant,assistant,should,yes,no,Show an inspectable plan before mutation
+Custom portrait and landscape canvases,editor,could,yes,not-device-verified,"Validated reduced custom ratios flow through web/shared native documents, preview, save, export and Pro interchange; server output is capped at 4096 pixels on the longest edge and live journeys remain required"
+Safe-area preview for short-form platforms,editor,should,yes,not-device-verified,
+Plain-language editing assistant,assistant,should,yes,not-device-verified,Optional script notes and reasons shape an inspectable local plan before mutation; no conversational agent is claimed
 Word-by-word automatic captions,captions,must,yes,no,
 Edit caption text,captions,must,yes,no,
-Caption language auto-detection and override,captions,should,yes,no,
-Caption style picker,captions,should,yes,no,Create original Veyrnox styles
-Show or hide captions without deleting,captions,should,yes,no,
-Keep captions aligned after timeline insertion,captions,should,yes,no,
-Resize and align text with guides,captions,could,yes,no,
-Export up to 4K 60 fps,export,should,yes,no,Capability depends on platform and renderer
-H.264 and HEVC export,export,should,yes,no,Capability depends on platform and licences
-Remember export settings,export,should,yes,no,
-Preview footage while export progresses,export,could,yes,no,
-Background export progress,export,should,yes,no,
-Save to Photos,export,should,yes,no,Native-only permissioned action
-Share to social apps,export,could,yes,no,Use operating-system share sheet
-Free first AI edit,monetization,could,yes,no,Use Veyrnox promotional-credit rules if adopted
-Recurring AI allowance,monetization,could,yes,no,Use Veyrnox credits or subscriptions not ByeCut plan names
+Caption language auto-detection and override,captions,should,yes,not-device-verified,Web Smart Cut and shared iOS/Android Best Cut support Auto plus explicit supported-language analysis; live journeys remain required
+Caption style picker,captions,should,yes,not-device-verified,Existing gated Clip Editor caption styles remain available where the preview switch is enabled
+Show or hide captions without deleting,captions,should,yes,not-device-verified,Web and shared native text-track visibility hides captions while preserving every cue; live journeys remain required
+Keep captions aligned after timeline insertion,captions,should,yes,not-device-verified,All-track ripple paste and duplicate insert an exact global gap on web and shared iOS/Android editor models; captions retain cue text and word timing, but live journeys remain required
+Resize and align text with guides,captions,could,yes,not-device-verified,Web text handles resize and snap to visible safe-edge/centre guides; shared iOS/Android preview respects size and position with matching guide controls; live journeys remain required
+Export up to 4K 60 fps,export,should,yes,not-device-verified,Web local export and the shared iOS/Android server-export path support 2160p at the saved 60 fps project rate; the unapplied database migration and live browser/device render journeys remain
+H.264 and HEVC export,export,should,yes,not-device-verified,H.264/AAC is implemented and inspected across web and server export; HEVC output remains blocked on a proved renderer contract and compatible delivery inspection
+Remember export settings,export,should,yes,not-device-verified,Web remembers resolution frame rate container and quality locally; shared iOS/Android export remembers the account-scoped cloud resolution; live relaunch journeys remain required
+Preview footage while export progresses,export,could,yes,not-device-verified,Web shows bounded JPEGs from the exact composited export frame; shared iOS/Android local and server sheets reuse the timeline preview at the active export frame; live journeys remain required
+Background export progress,export,should,yes,not-device-verified,Cloud exports continue after the sheet or app is backgrounded and recover from a durable job record; live OS progress and local-export background execution remain missing
+Save to Photos,export,should,yes,not-device-verified,Shared iOS/Android local and cloud exports use add-only Photos permission and save the finished MP4; live permission journeys remain
+Share to social apps,export,could,yes,not-device-verified,Shared iOS/Android local and cloud exports open the operating-system share sheet for the finished MP4; live target-app journeys remain
+Free first AI edit,monetization,could,yes,not-device-verified,Veyrnox grants 10 starter credits and prices Editor AI edit at 3 credits so an immediate first edit is covered; the grant is account-wide rather than reserved for Smart Cut
+Recurring AI allowance,monetization,could,yes,not-device-verified,Veyrnox monthly AI Generation subscriptions grant fresh expiring credits each billing cycle on web and shared iOS/Android; live purchase and renewal journeys remain
 Exact ByeCut Creator Pro Extreme plans,monetization,skip,yes,skip,Competitor commercial packaging is not cloned
+ByeCut trial paywall and plan selection UI,monetization,skip,yes,skip,Observed on Android; Veyrnox uses its own credit confirmation and subscription model
 ByeCut referral and offer-code network,monetization,skip,yes,skip,Competitor network and Apple offers are not part of the clone
 ByeCut branding icon and product copy,brand,skip,yes,skip,Protected identity and copy
 Exact ByeCut visual design,brand,skip,yes,skip,Build in Veyrnox design language
@@ -81,3 +86,4 @@ ByeCut caption presets fonts and artwork,licensed-content,skip,yes,skip,Create o
 ByeCut templates music and stock media,licensed-content,skip,yes,skip,Use owned or independently licensed assets only
 Proprietary best-take model prompts and heuristics,implementation,skip,yes,skip,Rebuild behavior with an independent explainable design
 Private APIs telemetry and account data,implementation,skip,yes,skip,Never inspect or copy
+

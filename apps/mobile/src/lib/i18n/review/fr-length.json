@@ -420,28 +420,10 @@
     "ratio": 1.62
   },
   {
-    "id": "bestCut.title",
-    "english": "Create Best Cut",
-    "translation": "Créer le meilleur montage",
-    "ratio": 1.67
-  },
-  {
     "id": "bestCut.library",
     "english": "From Library",
     "translation": "Depuis la bibliothèque",
     "ratio": 1.83
-  },
-  {
-    "id": "bestCut.settings",
-    "english": "Best Cut",
-    "translation": "Meilleur montage",
-    "ratio": 2
-  },
-  {
-    "id": "bestCut.auto",
-    "english": "Auto-detect",
-    "translation": "Détection automatique",
-    "ratio": 1.91
   },
   {
     "id": "bestCut.tryAnyway",
@@ -5052,6 +5034,12 @@
     "ratio": 4.5
   },
   {
+    "id": "editorSimple.projectFileOpen",
+    "english": "Open project backup",
+    "translation": "Ouvrir une sauvegarde de projet",
+    "ratio": 1.63
+  },
+  {
     "id": "cinema.pause",
     "english": "Pause",
     "translation": "Mettre en pause",
@@ -5406,6 +5394,12 @@
     "ratio": 2.33
   },
   {
+    "id": "editorSimple.aiEdit",
+    "english": "AI Edit",
+    "translation": "Outils rapides",
+    "ratio": 2
+  },
+  {
     "id": "editorSimple.closeGaps",
     "english": "Close gaps",
     "translation": "Combler les vides",
@@ -5688,6 +5682,24 @@
     "ratio": 2
   },
   {
+    "id": "music.create.smart.controls",
+    "english": "Smart music controls",
+    "translation": "Commandes musicales intelligentes",
+    "ratio": 1.65
+  },
+  {
+    "id": "music.create.smart.genre",
+    "english": "Genre",
+    "translation": "Style musical",
+    "ratio": 2.6
+  },
+  {
+    "id": "music.create.smart.mood",
+    "english": "Mood",
+    "translation": "Ambiance",
+    "ratio": 2
+  },
+  {
     "id": "music.create.advanced.auto",
     "english": "Auto",
     "translation": "Automatique",
@@ -5868,16 +5880,16 @@
     "ratio": 1.67
   },
   {
-    "id": "beat.title",
-    "english": "Beat maker",
-    "translation": "Créateur de beats",
-    "ratio": 1.7
+    "id": "beat.home.new",
+    "english": "New music edit",
+    "translation": "Nouveau montage musical",
+    "ratio": 1.64
   },
   {
     "id": "beat.home.empty",
-    "english": "No beats yet",
-    "translation": "Aucun beat pour l’instant",
-    "ratio": 2.08
+    "english": "No music edits yet",
+    "translation": "Aucun montage musical pour l’instant",
+    "ratio": 2
   },
   {
     "id": "beat.pattern.on",
@@ -5953,13 +5965,13 @@
   },
   {
     "id": "beat.midiRecord.recovery.saveNew",
-    "english": "Save as new beat",
+    "english": "Save as new song",
     "translation": "Sauvegarder comme nouveau beat",
     "ratio": 1.88
   },
   {
     "id": "beat.midiRecord.recovery.saveAsNew",
-    "english": "Save as new beat",
+    "english": "Save as new song",
     "translation": "Sauvegarder comme nouveau beat",
     "ratio": 1.88
   },
@@ -6061,7 +6073,7 @@
   },
   {
     "id": "beat.local.loadError",
-    "english": "Could not load saved beats. Retry loading.",
+    "english": "Could not load saved songs. Retry loading.",
     "translation": "Impossible de charger les beats enregistrés. Réessaie le chargement.",
     "ratio": 1.62
   },
@@ -6492,12 +6504,6 @@
     "ratio": 1.62
   },
   {
-    "id": "beatAi.stems",
-    "english": "Split stems",
-    "translation": "Séparer les pistes",
-    "ratio": 1.64
-  },
-  {
     "id": "beatAi.key",
     "english": "Key",
     "translation": "Tonalité",
@@ -6754,6 +6760,18 @@
     "english": "Moving cycle edge, drag then lift",
     "translation": "Déplacement du bord de la boucle, glissez puis relâchez",
     "ratio": 1.67
+  },
+  {
+    "id": "beatMix.dock.mix",
+    "english": "Mix",
+    "translation": "Mixage",
+    "ratio": 2
+  },
+  {
+    "id": "beatMix.dock.library",
+    "english": "Library",
+    "translation": "Bibliothèque",
+    "ratio": 1.71
   },
   {
     "id": "beatMix.master.room",
@@ -7458,6 +7476,12 @@
     "ratio": 1.63
   },
   {
+    "id": "editorLocalExport.codec.hevcHelp",
+    "english": "Smaller modern video. Some older apps and devices may not open it.",
+    "translation": "Vidéo moderne plus légère. Certaines applications et certains appareils plus anciens peuvent ne pas l’ouvrir.",
+    "ratio": 1.65
+  },
+  {
     "id": "editorLocalExport.cloud",
     "english": "Use cloud export instead",
     "translation": "Utiliser plutôt l’exportation dans le cloud",
@@ -7506,6 +7530,168 @@
     "ratio": 1.69
   },
   {
+    "id": "onboarding.result.kicker",
+    "english": "YOUR STARTER SETUP",
+    "translation": "VOTRE CONFIGURATION DE DÉPART",
+    "ratio": 1.61
+  },
+  {
+    "id": "onboarding.notifications.now",
+    "english": "now",
+    "translation": "maintenant",
+    "ratio": 3.33
+  },
+  {
+    "id": "onboarding.notifications.later",
+    "english": "Not now",
+    "translation": "Pas maintenant",
+    "ratio": 2
+  },
+  {
+    "id": "projects.move",
+    "english": "Move",
+    "translation": "Déplacer",
+    "ratio": 2
+  },
+  {
+    "id": "editor.safeArea.off",
+    "english": "Off",
+    "translation": "Désactivé",
+    "ratio": 3
+  },
+  {
+    "id": "editor.safeArea.keepInside",
+    "english": "Keep titles inside",
+    "translation": "Gardez les titres à l’intérieur",
+    "ratio": 1.72
+  },
+  {
+    "id": "app.smartCut.feedback.send",
+    "english": "Send feedback",
+    "translation": "Envoyer le commentaire",
+    "ratio": 1.69
+  },
+  {
+    "id": "app.smartCut.draft.restore",
+    "english": "Restore setup",
+    "translation": "Restaurer la configuration",
+    "ratio": 2
+  },
+  {
+    "id": "editorCaptionTools.stylePicker",
+    "english": "Caption preset",
+    "translation": "Préréglage des sous-titres",
+    "ratio": 1.86
+  },
+  {
+    "id": "editorCaptionTools.style.box",
+    "english": "Box",
+    "translation": "Encadré",
+    "ratio": 2.33
+  },
+  {
+    "id": "editorCover.title",
+    "english": "Choose Cover",
+    "translation": "Choisir la couverture",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorCover.save",
+    "english": "Save",
+    "translation": "Enregistrer",
+    "ratio": 2.75
+  },
+  {
+    "id": "editorCover.open",
+    "english": "Choose cover",
+    "translation": "Choisir la couverture",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorCover.scrub",
+    "english": "Cover frame",
+    "translation": "Image de couverture",
+    "ratio": 1.73
+  },
+  {
+    "id": "editorCover.text",
+    "english": "Cover text",
+    "translation": "Texte de couverture",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorCover.textPlaceholder",
+    "english": "Add text",
+    "translation": "Ajouter du texte",
+    "ratio": 2
+  },
+  {
+    "id": "editorCover.hideText",
+    "english": "Hide Cover Text",
+    "translation": "Masquer le texte de couverture",
+    "ratio": 2
+  },
+  {
+    "id": "editorSimple.cut",
+    "english": "Cut",
+    "translation": "Découper",
+    "ratio": 2.67
+  },
+  {
+    "id": "editorSimple.editText",
+    "english": "Edit Text",
+    "translation": "Modifier le texte",
+    "ratio": 1.89
+  },
+  {
+    "id": "editorSimple.reportIssue",
+    "english": "Report Issue",
+    "translation": "Signaler un problème",
+    "ratio": 1.67
+  },
+  {
+    "id": "projects.smartCutBatch.open",
+    "english": "Open next",
+    "translation": "Ouvrir le suivant",
+    "ratio": 1.89
+  },
+  {
+    "id": "projects.smartCutBatch.complete",
+    "english": "Mark complete",
+    "translation": "Marquer comme terminé",
+    "ratio": 1.62
+  },
+  {
+    "id": "projects.smartCutBatch.fail",
+    "english": "Needs retry",
+    "translation": "Nouvel essai requis",
+    "ratio": 1.73
+  },
+  {
+    "id": "projects.smartCutBatch.retry",
+    "english": "Retry",
+    "translation": "Réessayer",
+    "ratio": 1.8
+  },
+  {
+    "id": "projects.smartCutBatch.state.failed",
+    "english": "Needs retry",
+    "translation": "Nouvel essai requis",
+    "ratio": 1.73
+  },
+  {
+    "id": "projectCloud.title",
+    "english": "Cloud sync",
+    "translation": "Synchronisation cloud",
+    "ratio": 2.1
+  },
+  {
+    "id": "projectCloud.error",
+    "english": "Could not change cloud sync.",
+    "translation": "Impossible de modifier la synchronisation cloud.",
+    "ratio": 1.71
+  },
+  {
     "id": "musicAlbums.addTrack",
     "english": "Add",
     "translation": "Ajouter",
@@ -7540,6 +7726,12 @@
     "english": "Draft",
     "translation": "Brouillon",
     "ratio": 1.8
+  },
+  {
+    "id": "music.lyricAssistant.emptyDraft",
+    "english": "No lyrics yet.",
+    "translation": "Aucune parole pour le moment.",
+    "ratio": 2.07
   },
   {
     "id": "studioAssistant.value_on",

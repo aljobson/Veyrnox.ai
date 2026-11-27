@@ -23,7 +23,7 @@ function videoStarts(cards) {
 }
 
 /** Runnable starts for Create's selected medium: the gallery's video templates, curated image and audio ones; audio also links to Music Discover. */
-export function TemplatePicker({ models, goal, selectedKind, onPick, onClose, galleryCards }) {
+export function TemplatePicker({ models, goal, selectedKind, onPick, onClose, galleryCards, busy = false, error = '' }) {
   const { t, locale } = useI18n();
   const firstChoice = useRef(null);
   const closeButton = useRef(null);
@@ -52,6 +52,7 @@ export function TemplatePicker({ models, goal, selectedKind, onPick, onClose, ga
             {kind === 'video' && <Link href="/presets" onClick={onClose} className="vx-press mt-4 inline-flex min-h-11 items-center justify-center rounded-full bg-vx-accent px-5 text-sm font-extrabold text-vx-accent-ink">{t('app.create.templates.openGallery')}</Link>}
           </div>
         )}
+        {error && <p role="alert" data-testid="create-template-picker-error" className="mt-3 rounded-xl border border-vx-danger/40 bg-vx-danger/5 px-3 py-2 text-sm font-bold text-vx-danger">{error}</p>}
 
         {rows.length > 0 && <ul className="mt-5 grid gap-4 sm:grid-cols-3">
           {rows.map(({ preset, model, credits }, index) => {
@@ -63,7 +64,7 @@ export function TemplatePicker({ models, goal, selectedKind, onPick, onClose, ga
                     ? <VideoPreview src={preset.previewVideo} poster={preset.previewImage} title={title} />
                     : <img src={preset.previewImage} alt={title} loading="lazy" className="absolute inset-0 h-full w-full object-cover" />}
                 </div>
-                {kind === 'audio' && (
+                {kind === 'audio' && preset.previewAudio && (
                   <div className="border-b border-vx-border px-3 py-3">
                     <audio controls preload="metadata" src={preset.previewAudio} aria-label={preset.previewTitle} className="h-10 w-full" />
                     <p className="mt-2 text-[11px] leading-4 text-vx-fg-muted">
@@ -83,9 +84,9 @@ export function TemplatePicker({ models, goal, selectedKind, onPick, onClose, ga
                     {Number.isFinite(credits) ? ` · ${t(pluralKey(t, locale, 'model.credits', credits), { n: credits })}` : ''}
                   </p>
                   {kind !== 'video' && <p className="mt-2 line-clamp-3 text-xs leading-5 text-vx-fg-body">{preset.prompt ?? preset.promptPreview}</p>}
-                  <button ref={index === 0 ? firstChoice : undefined} type="button" onClick={() => onPick(preset)}
+                  <button ref={index === 0 ? firstChoice : undefined} type="button" onClick={() => onPick(preset)} disabled={busy}
                     aria-label={t('app.create.templates.use', { title })} data-testid={`create-template-${preset.id}`}
-                    className="vx-press mt-3 min-h-11 w-full rounded-full bg-vx-accent px-4 text-sm font-extrabold text-vx-accent-ink">
+                    className="vx-press mt-3 min-h-11 w-full rounded-full bg-vx-accent px-4 text-sm font-extrabold text-vx-accent-ink disabled:cursor-wait disabled:opacity-60">
                     {t('app.create.templates.use', { title })}
                   </button>
                 </div>
@@ -95,7 +96,7 @@ export function TemplatePicker({ models, goal, selectedKind, onPick, onClose, ga
         </ul>}
 
         {kind === 'video' && rows.length > 0 && <div className="mt-4 text-right text-xs"><Link href="/presets" onClick={onClose} className="font-bold text-vx-accent underline underline-offset-2">{t('app.create.templates.openGallery')}</Link></div>}
-        {kind === 'audio' && <div className="mt-4 text-right text-xs"><Link href="/app/music/discover" className="font-bold text-vx-accent underline underline-offset-2">{t('musicDiscover.title')}</Link></div>}
+        {kind === 'audio' && <div className="mt-4 text-right text-xs"><Link href="/app/music/sounds" className="font-bold text-vx-accent underline underline-offset-2">{t('app.audio.sounds.open')}</Link></div>}
       </div>
     </Modal>
   );
