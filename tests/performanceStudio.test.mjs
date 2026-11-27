@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import {
   DEFAULT_TTS_MODEL_ID,
   LIP_SYNC_ENGINE_CONTRACTS,
@@ -75,6 +76,11 @@ test('the preview exposes eight runnable performance workflows and labels the re
     status: 'tool',
     href: '/app/dialogue',
   });
+});
+
+test('the performance client contains no removed Talking Objects runtime branches', async () => {
+  const client = await readFile(new URL('../app/veyrnox/app/performance/PerformanceStudioClient.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(client, /\bisObject\b|talking-object|talking objects?/i);
 });
 
 test('Product Presenter animates one approved composite with the real avatar contract', () => {

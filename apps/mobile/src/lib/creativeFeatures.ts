@@ -30,7 +30,7 @@ const AUDIO_FEATURES = new Set([
 const feature = (value: CreativeFeature): CreativeFeature =>
     Object.freeze({ ...value, example: Object.freeze({ ...value.example }) });
 
-// Native presentation of the same 22 guided workflows as app/veyrnox/_lib/creativeFeatures.js.
+// Native presentation of the same guided workflows as app/veyrnox/_lib/creativeFeatures.js.
 // Keep model ids, required media, prompts and examples aligned; the drift test guards the shared contract.
 export const CREATIVE_FEATURES: readonly CreativeFeature[] = Object.freeze([
     feature({ slug: 'ai-avatar-generator', title: t('creativeFeatures.aIAvatarGenerator'), group: 'Avatars', model: 'nano-banana-pro-edit-grsai', kind: 'image', media: ['image'], input: t('creativeFeatures.describetheavatar'), placeholder: t('creativeFeatures.awarmconfidentpresenterinamodern'), prompt: 'Use the supplied reference image to create an original, photorealistic avatar. Preserve only the traits the user requests and keep the result brand-safe. ', steps: [t('creativeFeatures.uploadareferenceimageyoumayuse'), t('creativeFeatures.describetheavatarandframing'), t('creativeFeatures.generateandsavetheavatar')], example: { kind: 'image', url: 'https://veyrnox.ai/examples/ai-avatar-generator.webp' } }),
