@@ -5,12 +5,16 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, Share, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { attachMessage, attachReferral, fetchReferrals, friendsLine, referralLink, type ReferralInfo } from '../../lib/referrals';
-import { colors } from '../../theme';
+import { colors, vividHue } from '../../theme';
 import { KeyboardScreen } from '../../components/KeyboardScreen';
 import { KeyboardFormScrollView } from '../../components/KeyboardFormScrollView';
+import { useAppearance } from '../../components/ui';
 
 export default function Referrals() {
     const { api } = useAuth();
+    const { scheme } = useAppearance();
+    const codeTone = vividHue('purple', scheme);
+    const shareTone = vividHue('orange', scheme);
     const [info, setInfo] = useState<ReferralInfo | null>(null);
     const [failed, setFailed] = useState(false);
     const [typed, setTyped] = useState('');
@@ -59,14 +63,14 @@ export default function Referrals() {
                 ) : (
                     <>
                         <Text style={styles.body1}>{t('referrals.whenafriendyoureferbuystheir')} {t('referrals.afriendwhousesyourcodegetsno')}</Text>
-                        <View style={styles.codeBox}>
-                            <Text style={styles.label}>{t('referrals.yourcode')}</Text>
-                            <Text selectable style={styles.code} accessibilityLabel={rawText(t('referrals.yourreferralcode', { value1: info.code.split('').join(' ') }))}>
+                        <View style={[styles.codeBox, { backgroundColor: codeTone.fill, borderColor: codeTone.edge }]}>
+                            <Text style={[styles.label, { color: codeTone.foregroundMuted }]}>{t('referrals.yourcode')}</Text>
+                            <Text selectable style={[styles.code, { color: codeTone.foreground }]} accessibilityLabel={rawText(t('referrals.yourreferralcode', { value1: info.code.split('').join(' ') }))}>
                                 {info.code}
                             </Text>
                         </View>
-                        <Pressable accessibilityRole="button" style={styles.button} onPress={() => share(referralLink(info.code))}>
-                            <Text style={styles.buttonText}>{t('referrals.shareyourlink')}</Text>
+                        <Pressable accessibilityRole="button" style={[styles.button, { backgroundColor: shareTone.fill, borderColor: shareTone.edge }]} onPress={() => share(referralLink(info.code))}>
+                            <Text style={[styles.buttonText, { color: shareTone.foreground }]}>{t('referrals.shareyourlink')}</Text>
                         </Pressable>
                         <Text style={styles.muted}>{friendsLine(info.referred)}</Text>
                     </>
@@ -103,7 +107,7 @@ const styles = StyleSheet.create({
     codeBox: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 16, gap: 6 },
     label: { color: colors.muted, fontSize: 13, textTransform: 'uppercase' },
     code: { color: colors.text, fontSize: 28, fontWeight: '700', letterSpacing: 3 },
-    button: { backgroundColor: colors.accent, borderRadius: 12, paddingVertical: 16, alignItems: 'center' },
+    button: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 12, paddingVertical: 16, alignItems: 'center' },
     buttonText: { color: colors.accentInk, fontWeight: '700', fontSize: 16 },
     muted: { color: colors.muted },
     attach: { gap: 10, paddingTop: 12 },

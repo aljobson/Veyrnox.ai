@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { parseEndpoint, endpointKind, buildRequest, submitTask, interpretTask,
   classifyCreateTaskResponse, classifyTaskInfoResponse, sanitizeCrunFailure } from '../packages/adapters/crun.js';
 import { SOURCE_PROMPT_RECORDS } from '../app/veyrnox/_lib/sourcePromptRecords.js';
+import { validateInputs } from '../lib/generationInputValidation.js';
 
 const job = (over = {}) => ({ job_id: 'job_1', provider_endpoint: 'crun:google/veo3-1-lite-t2v', inputs: { prompt: 'a city at dusk' }, ...over });
 const reply = (status, body) => async () => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
@@ -53,6 +54,9 @@ test('Suno simple and custom payloads are strict, normalized, and bounded', () =
   assert.deepEqual(buildRequest(target, { mode: 'simple', prompt: 'rain on glass', instrumental: false, suno_model: 'chirp-v6' }), {
     ok: true, body: { model: 'suno/music-generate', input: { mode: 'simple', prompt: 'rain on glass', instrumental: false, model: 'v6' } },
   });
+  assert.deepEqual(buildRequest(target, { prompt: 'rain on glass' }), {
+    ok: true, body: { model: 'suno/music-generate', input: { mode: 'simple', prompt: 'rain on glass', instrumental: true, model: 'v6' } },
+  }, 'the generic Create form defaults to its advertised instrumental contract instead of returning HTTP 400');
   assert.deepEqual(buildRequest(target, { mode: 'custom', instrumental: false, suno_model: 'v6_wild', title: 'Afterlight',
     tags: 'dream pop', lyrics: 'Stay', negative_tags: 'harsh'.repeat(40), vocal_gender: 'f', style_weight: .75,
     weirdness_constraint: .25, duration: 135, variety: 4 }).body.input, {
@@ -61,9 +65,28 @@ test('Suno simple and custom payloads are strict, normalized, and bounded', () =
   });
   assert.equal(buildRequest(target, { mode: 'custom', instrumental: false, tags: 'rock' }).error, 'inputs_invalid:lyrics');
   assert.equal(buildRequest(target, { mode: 'simple', instrumental: true, prompt: 'x', lyrics: 'not simple' }).error, 'inputs_invalid:mode');
-  assert.equal(buildRequest(target, { mode: 'custom', instrumental: true, tags: 'x', duration: 136 }).error, 'inputs_invalid:duration');
+  assert.equal(buildRequest(target, { mode: 'custom', instrumental: true, tags: 'x', duration: 360 }).ok, true);
+  assert.equal(buildRequest(target, { mode: 'custom', instrumental: true, tags: 'x', duration: 361 }).error, 'inputs_invalid:duration');
   assert.equal(buildRequest(target, { mode: 'simple', instrumental: true, prompt: '🎵'.repeat(500) }).ok, true);
   assert.equal(buildRequest(target, { mode: 'simple', instrumental: true, prompt: '🎵'.repeat(501) }).error, 'inputs_invalid:prompt');
+});
+
+test('Suno Sounds maps the broken SFX controls to the documented CRUN payload', () => {
+  const target = parseEndpoint('crun:suno/sounds-generate');
+  assert.deepEqual(target, { model: 'suno/sounds-generate' });
+  assert.equal(endpointKind('crun:suno/sounds-generate'), 'audio');
+  assert.deepEqual(buildRequest(target, { prompt: 'Cinematic whoosh and soft impact', loop: true }), {
+    ok: true,
+    body: { model: 'suno/sounds-generate', input: {
+      model: 'v6', prompt: 'Cinematic whoosh and soft impact', sound_loop: true, grab_lyrics: false,
+    } },
+  });
+  assert.equal(buildRequest(target, { prompt: '' }).error, 'inputs_invalid:prompt');
+  assert.equal(buildRequest(target, { prompt: 'x', loop: 'yes' }).error, 'inputs_invalid:loop');
+  assert.equal(buildRequest(target, { prompt: 'x', duration_seconds: 8 }).error, 'inputs_key_not_allowed:duration_seconds');
+  assert.deepEqual(validateInputs({ prompt: 'x', loop: false }), { ok: true },
+    'the shared generation gateway accepts the public seamless-loop control');
+  assert.deepEqual(validateInputs({ prompt: 'x', loop: 'false' }), { ok: false, error: 'inputs_invalid:loop' });
 });
 
 test('CreateTask and TaskInfo classifiers never retain vendor text', () => {

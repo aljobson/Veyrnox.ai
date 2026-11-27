@@ -116,6 +116,13 @@ function studioHarness(challengeSeed) {
     './useMusicDuration': { useMusicDuration: () => [60, () => {}] },
     './useMusicCustomDraft': { useMusicCustomDraft: () => custom },
     './MusicTempoKeyControls': { tempoKeyInvalid: () => false, tempoKeyQuoteFields: () => ({}) },
+    './MusicAdvancedDirectionFields': {
+      buildMusicDirection: base => base,
+      canMergeMusicStyleDirection: () => true,
+      EMPTY_MUSIC_DIRECTION: Object.freeze({ voice: '', genre: '', mood: '', tempo: '', structure: '' }),
+      mergeMusicStyleDirection: base => base,
+      MusicAdvancedDirectionFields: () => null,
+    },
     '../../../../lib/licensedTrackTemplates.js': templates,
     '../../../../lib/musicDiscover.js': { buildMusicSamplePrompt: () => '', MUSIC_SAMPLE_DIRECTION_MAX: 200 },
     './MusicPublicPrompt': { MUSIC_PUBLIC_DRAFT_KEY: 'veyrnox.music.public-draft.v1' },

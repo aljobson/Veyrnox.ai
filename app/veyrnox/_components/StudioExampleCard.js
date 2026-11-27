@@ -3,7 +3,7 @@
 import { useI18n } from '../../../components/I18nProvider';
 import { creativeFeatureExample } from '../_lib/creativeFeatures';
 
-// One example card for the studios (Lip Sync, Text to speech, Talking objects). It renders only media we host
+// One example card for guided studios. It renders only media we host
 // ourselves (a path under /examples/); a studio with no owned example shows nothing rather than a borrowed clip.
 export default function StudioExampleCard({ slug, title, poster }) {
   const { t } = useI18n();

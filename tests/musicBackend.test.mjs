@@ -77,7 +77,7 @@ test('one Music runtime binding opens the production-safe surface and legacy fla
   assert.equal(musicGenerationEnabled({ MUSIC_RUNTIME_FLAGS: '{invalid' }), false);
 });
 
-test('music entitlements expose verified pair models and fail closed on paid access', () => {
+test('music entitlements expose verified single-track models and fail closed on paid access', () => {
   const result = musicEntitlementProjection({
     models: [
       { id: 'ace-step', name: 'ACE-Step', modality: 'text-to-audio', credits: 5, gated: false, capabilities: { inputs: { prompt: { type: 'string' }, seed: { type: 'number' } } } },
@@ -94,7 +94,7 @@ test('music entitlements expose verified pair models and fail closed on paid acc
     id: 'ace-step',
     name: 'ACE-Step',
     credits_per_candidate: 5,
-    total_credits: 10,
+    total_credits: 5,
     instrumental_only: true,
     generation_modes: ['simple'],
     controls: {
@@ -115,7 +115,7 @@ test('music entitlements expose verified pair models and fail closed on paid acc
     id: 'ace-step-1.5',
     name: 'ACE-Step 1.5',
     credits_per_candidate: 3,
-    total_credits: 6,
+    total_credits: 3,
     instrumental_only: false,
     generation_modes: ['simple', 'custom'],
     controls: {
@@ -134,7 +134,7 @@ test('music entitlements expose verified pair models and fail closed on paid acc
     available: false,
   }]);
   assert.equal(result.available, false);
-  assert.equal(result.output_count, 2);
+  assert.equal(result.output_count, 1);
   assert.equal(result.concurrency_limit, 4);
   assert.equal(result.balance, 23);
   assert.equal(result.free_credits, 4);

@@ -7,7 +7,6 @@ import { MidiClipPreview } from './MidiClipPreview';
 import { pianoStyles } from './pianoStyles';
 import { instrumentLabel, midiTrackSections } from '../../lib/beatNative/midi';
 import type { BeatDoc, Edit } from '../../lib/beatNative/doc';
-import type { BeatAudio } from '../../lib/beatNative/audio';
 import { t } from '../../lib/i18n';
 // Export navigation beside the section so the editor needs only one additive import.
 export const openPiano = (id: string, region: string) => router.push({ pathname: '/beats/piano/[id]', params: { id, region } });
@@ -19,7 +18,7 @@ export function restoreInstrumentLibraryTriggerFocus(
     const node = resolve(trigger);
     if (node) focus(node);
 }
-export function BeatInstrumentsSection({ doc, apply, audio, onOpen, disabled = false, notice }: { doc: BeatDoc; apply(op: Edit, label?: string): boolean; audio(): BeatAudio | null; onOpen(region: string): void; disabled?: boolean; notice?: string | null }) {
+export function BeatInstrumentsSection({ doc, apply, onOpen, disabled = false, notice }: { doc: BeatDoc; apply(op: Edit, label?: string): boolean; onOpen(region: string): void; disabled?: boolean; notice?: string | null }) {
     const [library, setLibrary] = useState(false);
     const trigger = useRef<ComponentRef<typeof Pressable>>(null);
     const restored = useRef(false);
@@ -34,15 +33,22 @@ export function BeatInstrumentsSection({ doc, apply, audio, onOpen, disabled = f
     }, [restoreFocus]);
     const s = useThemedStyles(pianoStyles);
     return <View style={s.section}>
-        <Text accessibilityRole="header">{t('beatPiano.library.title')}</Text>
-        <Button ref={trigger} label={t('beatPiano.library.add')} disabled={disabled} onPress={() => { restored.current = false; setLibrary(true); }} />
+        <View style={s.sectionHeader}>
+            <Text accessibilityRole="header">{t('beatPiano.library.title')}</Text>
+            <Button ref={trigger} label={t('beatPiano.library.add')} accessibilityLabel={t('beatPiano.library.add')}
+                icon="plus" iconOnly size="md" variant="secondary" disabled={disabled}
+                onPress={() => { restored.current = false; setLibrary(true); }} />
+        </View>
         {midiTrackSections(doc).map(({ track, clips }) => <View key={track.id} style={s.instrumentGroup}>
-            <Text accessibilityRole="header">{track.name}</Text><Text>{instrumentLabel(track.instrument)}</Text>
+            <View style={s.sectionHeader}><View style={s.presetName}>
+                <Text accessibilityRole="header" variant="bodyStrong">{track.name}</Text><Text tone="secondary">{instrumentLabel(track.instrument)}</Text>
+            </View>{clips[0] ? <Button label={t('beatPiano.library.edit', { name: `${track.name}: ${clips[0].clip.name}` })}
+                accessibilityLabel={t('beatPiano.library.edit', { name: `${track.name}: ${clips[0].clip.name}` })}
+                icon="pianoKeys" iconOnly size="md" variant="tertiary" disabled={disabled} onPress={() => onOpen(clips[0].region.id)} /> : null}</View>
             {clips.map(({ region, clip }) => <View key={region.id} style={s.section}>
                 <MidiClipPreview clip={clip} />
-                <Button label={t('beatPiano.library.edit', { name: `${track.name}: ${clip.name}` })} disabled={disabled} onPress={() => onOpen(region.id)} />
             </View>)}
         </View>)}
-        {library && <BeatInstrumentLibrary apply={apply} audio={audio} onClose={closeLibrary} onDismiss={restoreFocus} refusal={notice} />}
+        {library && <BeatInstrumentLibrary apply={apply} onClose={closeLibrary} onDismiss={restoreFocus} refusal={notice} />}
     </View>;
 }

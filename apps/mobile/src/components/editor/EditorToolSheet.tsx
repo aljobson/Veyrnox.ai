@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState, type ReactNode } from 'react';
 import { Keyboard, KeyboardAvoidingView, Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { SafeAreaInsetsContext } from 'react-native-safe-area-context';
-import { colors } from '../../theme';
+import { studioColors as colors } from '../../theme';
 
 /** Share of the window a tool panel may use; the preview and timeline stay visible above it. */
 const SHEET_SHARE = 0.46, SHEET_MIN = 250, SHEET_MAX = 420, TOP_ROOM = 96;

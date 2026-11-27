@@ -5,7 +5,7 @@ import { Text, useAppearance } from '../../components/ui';
 import { CelebrationHost } from '../../components/CelebrationHost';
 import { CheckInModal } from '../../components/CheckInModal';
 import { ReferralAttach } from '../../components/ReferralAttach';
-import { Redirect, Stack } from 'expo-router';
+import { Redirect, Stack, useCanGoBack } from 'expo-router';
 import { useEffect } from 'react';
 import { forgetPendingLink } from '../../lib/pendingLink';
 import { useAuth } from '../../auth/AuthProvider';
@@ -23,11 +23,16 @@ import { paletteForScheme } from '../../theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { needsStackHorizontalSafeArea } from '../../lib/appScreenSafeArea';
 import { PersistentAudioQueueProvider } from '../../components/music/PersistentAudioQueue';
+import { NotificationPrimerGate } from '../../components/NotificationPrimerGate';
 
 export const unstable_settings = { anchor: '(tabs)' };
 
 export default function AppLayout() {
     useOfflineRecovery();
+    // Reading navigation.canGoBack() inside screenOptions happens during render and React
+    // Navigation warns that the value may be stale. The router hook subscribes to the
+    // navigation state, so every pushed screen reliably gets either native Back or Home Back.
+    const canGoBack = useCanGoBack();
     const { status, generation } = useAuth();
     // Live theme: the back chevron takes headerTintColor, so a palette read once would leave it dark-on-dark after a switch.
     const { settings, scheme } = useAppearance();
@@ -42,6 +47,7 @@ export default function AppLayout() {
             <MfaGate key={generation}>
                 <AgeConfirmationGate>
                 <FirstRunGate />
+                <NotificationPrimerGate />
                 <ReferralAttach />
                 <CheckInModal />
                 <PaywallPrompt />
@@ -57,14 +63,14 @@ export default function AppLayout() {
                                 : children}
                         </>
                     )}
-                    screenOptions={({ navigation }) => ({
+                    screenOptions={() => ({
                         headerStyle: { backgroundColor: palette.background },
                         headerTintColor: palette.text,
                         headerTitle: ({ children }) => <Text variant="title3" numberOfLines={1}>{children}</Text>,
                         headerBackButtonDisplayMode: 'minimal',
                         contentStyle: { backgroundColor: palette.background },
                         // Every screen has a way back: the native back when there is history, otherwise a button to Explore.
-                        ...(navigation.canGoBack() ? {} : { headerLeft: () => <HomeBackButton /> }),
+                        ...(canGoBack ? {} : { headerLeft: () => <HomeBackButton /> }),
                     })}
                 >
                     <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -72,6 +78,7 @@ export default function AppLayout() {
                     <Stack.Screen name="privacy-choices" options={{ title: t('analyticsConsent.choices') }} />
                     <Stack.Screen name="welcome" options={{ headerShown: false }} />
                     <Stack.Screen name="first-run" options={{ headerShown: false, gestureEnabled: false }} />
+                    <Stack.Screen name="notification-primer" options={{ headerShown: false, gestureEnabled: false }} />
                     <Stack.Screen name="vibe" options={{ headerShown: false }} />
                     <Stack.Screen name="rate" options={{ title: t('rate.title'), headerShown: false, presentation: 'modal' }} />
                     <Stack.Screen name="paywall" options={{ title: t('billing.paywall.title'), headerShown: false, presentation: 'modal' }} />

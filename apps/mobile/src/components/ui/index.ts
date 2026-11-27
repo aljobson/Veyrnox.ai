@@ -13,4 +13,5 @@ export * from './ChoiceCard';
 export * from './AppearanceContext';
 export * from './PriceText';
 export * from './IconBadge';
+export * from './VividCard';
 export * from './usePressStyle';

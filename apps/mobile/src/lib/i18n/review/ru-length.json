@@ -234,12 +234,6 @@
     "ratio": 2
   },
   {
-    "id": "bestCut.settings",
-    "english": "Best Cut",
-    "translation": "Лучший монтаж",
-    "ratio": 1.63
-  },
-  {
     "id": "bestCut.tryAnyway",
     "english": "Try Anyway",
     "translation": "Всё равно попробовать",
@@ -3342,6 +3336,18 @@
     "ratio": 1.79
   },
   {
+    "id": "editorSimple.projectFileShare",
+    "english": "Share project backup",
+    "translation": "Поделиться резервной копией проекта",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorSimple.projectFileOpen",
+    "english": "Open project backup",
+    "translation": "Открыть резервную копию проекта",
+    "ratio": 1.63
+  },
+  {
     "id": "mediaKind.image",
     "english": "Image",
     "translation": "Изображение",
@@ -3571,9 +3577,9 @@
   },
   {
     "id": "editorSimple.aiEdit",
-    "english": "Quick tools",
+    "english": "AI Edit",
     "translation": "Быстрые инструменты",
-    "ratio": 1.73
+    "ratio": 2.71
   },
   {
     "id": "editorAi.apply",
@@ -3718,6 +3724,12 @@
     "english": "Lyrics",
     "translation": "Текст песни",
     "ratio": 1.83
+  },
+  {
+    "id": "music.create.smart.mood",
+    "english": "Mood",
+    "translation": "Настроение",
+    "ratio": 2.5
   },
   {
     "id": "music.create.advanced.variety",
@@ -3892,6 +3904,24 @@
     "english": "Hot",
     "translation": "Жарко",
     "ratio": 1.67
+  },
+  {
+    "id": "beat.title",
+    "english": "Music editor",
+    "translation": "Музыкальный редактор",
+    "ratio": 1.67
+  },
+  {
+    "id": "beat.home.new",
+    "english": "New music edit",
+    "translation": "Новый музыкальный монтаж",
+    "ratio": 1.71
+  },
+  {
+    "id": "beat.home.empty",
+    "english": "No music edits yet",
+    "translation": "Пока нет музыкальных монтажей",
+    "ratio": 1.61
   },
   {
     "id": "beat.transport",
@@ -4270,12 +4300,6 @@
     "english": "Unpublish",
     "translation": "Снять с публикации",
     "ratio": 2
-  },
-  {
-    "id": "beatAi.stems",
-    "english": "Split stems",
-    "translation": "Разделить на стемы",
-    "ratio": 1.64
   },
   {
     "id": "beatAi.key",
@@ -4926,10 +4950,130 @@
     "ratio": 1.67
   },
   {
+    "id": "editorLocalExport.quality.high",
+    "english": "High",
+    "translation": "Высокое",
+    "ratio": 1.75
+  },
+  {
     "id": "editorPersonMask.category",
     "english": "Keep",
     "translation": "Оставить",
     "ratio": 2
+  },
+  {
+    "id": "onboarding.notifications.now",
+    "english": "now",
+    "translation": "сейчас",
+    "ratio": 2
+  },
+  {
+    "id": "onboarding.notifications.previewBody",
+    "english": "Open Veyrnox to see it.",
+    "translation": "Откройте Veyrnox, чтобы посмотреть её.",
+    "ratio": 1.65
+  },
+  {
+    "id": "projects.move",
+    "english": "Move",
+    "translation": "Переместить",
+    "ratio": 2.75
+  },
+  {
+    "id": "editor.safeArea",
+    "english": "Safe-area preview",
+    "translation": "Предпросмотр безопасной области",
+    "ratio": 1.82
+  },
+  {
+    "id": "editor.safeArea.off",
+    "english": "Off",
+    "translation": "Выкл.",
+    "ratio": 1.67
+  },
+  {
+    "id": "editor.safeArea.shortForm",
+    "english": "Short-form safe guide",
+    "translation": "Безопасная область для коротких видео",
+    "ratio": 1.76
+  },
+  {
+    "id": "app.smartCut.draft.title",
+    "english": "Pick up where you left off?",
+    "translation": "Продолжить с того места, где вы остановились?",
+    "ratio": 1.67
+  },
+  {
+    "id": "app.smartCut.draft.restore",
+    "english": "Restore setup",
+    "translation": "Восстановить настройку",
+    "ratio": 1.69
+  },
+  {
+    "id": "bestCut.files",
+    "english": "From Files",
+    "translation": "Из приложения «Файлы»",
+    "ratio": 2.1
+  },
+  {
+    "id": "editorCaptionTools.style.classic",
+    "english": "Classic",
+    "translation": "Классический",
+    "ratio": 1.71
+  },
+  {
+    "id": "editorCaptionTools.style.box",
+    "english": "Box",
+    "translation": "Рамка",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorCover.save",
+    "english": "Save",
+    "translation": "Сохранить",
+    "ratio": 2.25
+  },
+  {
+    "id": "editorCover.help",
+    "english": "Drag to pick the frame shown on this project.",
+    "translation": "Перетащите ползунок, чтобы выбрать кадр, который будет показан для этого проекта.",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorCover.textPlaceholder",
+    "english": "Add text",
+    "translation": "Добавить текст",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorSimple.cut",
+    "english": "Cut",
+    "translation": "Монтаж",
+    "ratio": 2
+  },
+  {
+    "id": "editorSimple.title",
+    "english": "Title",
+    "translation": "Заголовок",
+    "ratio": 1.8
+  },
+  {
+    "id": "projects.smartCutBatch.open",
+    "english": "Open next",
+    "translation": "Открыть следующий",
+    "ratio": 1.89
+  },
+  {
+    "id": "projects.smartCutBatch.retry",
+    "english": "Retry",
+    "translation": "Повторить",
+    "ratio": 1.8
+  },
+  {
+    "id": "projectCloud.title",
+    "english": "Cloud sync",
+    "translation": "Облачная синхронизация",
+    "ratio": 2.2
   },
   {
     "id": "musicAlbums.addTrack",
@@ -4978,6 +5122,12 @@
     "english": "Examples you wrote or own",
     "translation": "Примеры, которые вы написали или которыми владеете",
     "ratio": 2
+  },
+  {
+    "id": "music.lyricAssistant.title",
+    "english": "Lyricist",
+    "translation": "Автор текстов",
+    "ratio": 1.63
   },
   {
     "id": "studioAssistant.apply",

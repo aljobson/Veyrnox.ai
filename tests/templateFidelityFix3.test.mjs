@@ -63,7 +63,7 @@ test('raw capability lengths are mapped objects; public fallback exposes numeric
   assert.deepEqual(fallbackCapabilitiesFor('kling-3.0-i2v').lengths, [5, 10]);
 });
 
-for (const [label, modelId] of [['Veo text-only', 'veo-3.1-fast-kie'], ['image-kind', 'nano-banana-kie'], ['audio-kind', 'mmaudio-v2']]) {
+for (const [label, modelId] of [['Veo text-only', 'veo-3.1-fast-kie'], ['image-kind', 'nano-banana-kie'], ['audio-kind', 'suno-sounds']]) {
   test(`${label} audited template goes through web builder and route without a photo`, async t => {
     const c = fixture(`fix3-${label}`, modelId);
     const cap = fallbackCapabilitiesFor(modelId);
@@ -168,7 +168,7 @@ test('duration fixes move zero inventory templates to unsupported and preserve 3
   const { audit } = await import('../scripts/audit-template-fidelity.mjs');
   const report = audit();
   // Baseline classifications plus the independently audited 46-video split (syntx100Templates.test.mjs).
-  assert.deepEqual(report.totals, {"like-for-like-safe":232 - 12,"bound":70 + 3 + 30 + 59 - 49 + 49 + 8 + 12,"blocked-needs-video":355 + 37,"unsupported":92 + 6 + 61 - 49} /* 61 over the Kling 3.0 prompt cap moved to unsupported; 49 of them (one photo, at most 20,000 characters) bind to kie Seedance (ADR-0309 amendment 3) */);
+  assert.deepEqual(report.totals, {"like-for-like-safe":220,"bound":161,"blocked-needs-video":392,"unsupported":111} /* One former Kling binding cannot fit the reference-priority line; the 20 withdrawn Veyrnox originals are excluded. */);
   const cs = Object.values(report.contracts);
   assert.equal(cs.filter(c => c.reasons.includes('unsupported-duration')).length, 0);
   for (const c of cs.filter(c => c.class === 'exact-transport-unbound-tokens')) {

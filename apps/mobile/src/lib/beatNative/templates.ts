@@ -1,4 +1,4 @@
-import { validateBeat, type BeatDoc } from './doc';
+import { setView, validateBeat, type BeatDoc } from './doc';
 import type { BeatStore } from './store';
 import { createBeatFromTemplate, type TemplateId } from './labs';
 export type CreationStore = Pick<BeatStore, 'newBeat' | 'putBeat' | 'flushBeat' | 'dropBeat' | 'getBeat' | 'saveState'>;
@@ -20,5 +20,18 @@ export async function createBeatRecord(store: CreationStore, title: string, buil
     }
 }
 export function createTemplateBeat(store: CreationStore, template: TemplateId, title: string) {
-    return createBeatRecord(store, title, initial => createBeatFromTemplate({ template, id: initial.id, title, now: initial.createdAt }));
+    return createBeatRecord(store, title, initial => setView(
+        createBeatFromTemplate({ template, id: initial.id, title, now: initial.createdAt }), 'song'));
+}
+
+/** Start a music edit with an empty audio lane, not a drum pattern. */
+export function createMusicEdit(store: CreationStore, title: string) {
+    return createBeatRecord(store, title, initial => {
+        const first = initial.tracks[0]!;
+        const { kit: _kit, ...track } = first;
+        return setView({
+            ...initial,
+            tracks: [{ ...track, name: 'Audio 1', kind: 'audio', regions: [] }],
+        }, 'song');
+    });
 }

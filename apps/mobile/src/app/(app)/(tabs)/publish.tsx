@@ -2,7 +2,7 @@ import { rawText } from '../../../lib/i18n/translate';
 import { fetchPublishPlan } from '../../../lib/publishPlan';
 import { planManagementKey } from '../../../lib/publishWorkflows';
 import { directionalStyle } from '../../../lib/rtl';
-import { Button, Card, Text, PriceText, themedStyles, useThemedStyles } from '../../../components/ui';
+import { Button, Card, Text, PriceText, VividCard, themedStyles, useThemedStyles } from '../../../components/ui';
 import { Image } from 'expo-image';
 import { Stack, useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useCallback, useMemo, useState, useSyncExternalStore } from 'react';
@@ -18,8 +18,8 @@ import { brandStore, fetchBrands, reconcileBrand, roleLabel, type Brand } from '
 import { canConnectAccounts, canPublish, hasPublishPlan, publishDestinations, publishSummary, type PublishDestinationId } from '../../../lib/publishDashboard';
 import { usePublishApi } from '../../../lib/usePublishApi';
 import { VeyCardPeek, peekRoom } from '../../../components/VeyCardPeek';
-import { VeyLoader } from '../../../components/VeyLoader';
-import { ds } from '../../../theme';
+import { LoadingSkeleton } from '../../../components/LoadingSkeleton';
+import { ds, VIVID_HUES, type VividHue } from '../../../theme';
 
 const PLAN_LABEL: Record<Interval, string> = { week: 'unlock.plan.week', month: 'unlock.plan.month', year: 'unlock.plan.year' };
 const store = Platform.OS === 'ios' ? 'ios' : 'android';
@@ -176,7 +176,7 @@ export default function Publish() {
                 </View> : null}
             </View>
 
-            {!data && !error ? <View style={styles.loading}><VeyLoader label={t('publishHome.loading')} showLabel /></View> : null}
+            {!data && !error ? <View style={styles.loading}><LoadingSkeleton label={t('publishHome.loading')} variant="dashboard" /></View> : null}
             {error ? (
                 <View style={styles.errorCard}>
                     <Text variant="footnote" style={styles.error} accessibilityRole="alert">{error}</Text>
@@ -249,7 +249,7 @@ export default function Publish() {
                                 <Text variant="title2" accessibilityRole="header" style={styles.groupTitle}>{t(`publishHome.group.${group}`)}</Text>
                                 <Text variant="footnote" style={styles.groupLead}>{t(`publishHome.group.${group}.lead`)}</Text>
                                 <View style={styles.grid}>
-                                    {items.map((id) => <ToolCard key={id} destination={DESTINATIONS[id]} onPress={() => router.push(DESTINATIONS[id].path)} />)}
+                                    {items.map((id, index) => <ToolCard key={id} hue={VIVID_HUES[(GROUPS.indexOf(group) * 2 + index) % VIVID_HUES.length]} destination={DESTINATIONS[id]} onPress={() => router.push(DESTINATIONS[id].path)} />)}
                                 </View>
                             </View>
                         );
@@ -265,19 +265,11 @@ function Stat({ value, label, danger = false }: { readonly value: number; readon
     return <Card style={styles.stat}><Text variant="title1" accessibilityRole={undefined} style={[styles.statValue, danger && styles.statDanger]}>{value}</Text><Text variant="footnote" style={styles.statLabel}>{label}</Text></Card>;
 }
 
-function ToolCard({ destination, onPress }: { readonly destination: Destination; readonly onPress: () => void }) {
-    const styles = useThemedStyles(sheets);
-    return (
-        <Card accessibilityRole="button" accessibilityLabel={t(destination.title)} accessibilityHint={t(destination.body)} style={[styles.tool]} onPress={onPress}>
-            <View style={styles.toolTop}>
-                <View style={styles.toolIconBox}><Image source={MENU_ICONS[destination.icon]} style={styles.toolIcon} tintColor={styles.accentInk.color} contentFit="contain" accessibilityElementsHidden /></View>
-                <Image source={MENU_ICONS.caretRight} style={[styles.smallCaret, directionalStyle()]} tintColor={styles.mutedInk.color} contentFit="contain" accessibilityElementsHidden />
-            </View>
-            <Text variant="bodyStrong" style={styles.toolTitle}>{t(destination.title)}</Text>
-            <Text variant="footnote" style={styles.toolBody} numberOfLines={3}>{t(destination.body)}</Text>
-        </Card>
-    );
+function ToolCard({ destination, hue, onPress }: { readonly destination: Destination; readonly hue: VividHue; readonly onPress: () => void }) {
+    return <VividCard hue={hue} icon={destination.icon} title={t(destination.title)} detail={t(destination.body)} accessibilityHint={t(destination.body)} style={stylesStatic.tool} onPress={onPress} />;
 }
+
+const stylesStatic = { tool: { width: '48.5%' as const, minHeight: 160 } };
 
 const sheets = themedStyles((p) => ({
     textInk: { color: p.textPrimary },
@@ -340,11 +332,5 @@ const sheets = themedStyles((p) => ({
     groupLead: { color: p.textSecondary },
     // Two 48.5% tiles pushed to the two edges, so the right column ends on the gutter; the 3% left over is the gap.
     grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: ds.space.sm },
-    tool: { width: '48.5%', minHeight: 140, borderWidth: 1, borderColor: p.borderSubtle, backgroundColor: p.surface, borderRadius: ds.radius.md, padding: ds.space.md, gap: ds.space.sm },
-    toolTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    toolIconBox: { width: 38, height: 38, borderRadius: ds.radius.sm, alignItems: 'center', justifyContent: 'center', backgroundColor: p.accentSubtle },
     toolIcon: { width: 21, height: 21 },
-    smallCaret: { width: 13, height: 13 },
-    toolTitle: { color: p.textPrimary },
-    toolBody: { color: p.textSecondary },
 }));

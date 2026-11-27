@@ -12,7 +12,7 @@ export async function fetchSpeechQuote(fetcher) {
   try {
     const result = await fetcher(`${SPEECH_PATH}/quote`);
     if (!Number.isSafeInteger(result?.credits) || result.credits < 1 || !Number.isSafeInteger(result.max_seconds) || result.max_seconds < 1 || !Array.isArray(result.languages)) throw fail(200, 'bad_response');
-    return { credits: result.credits, maxSeconds: result.max_seconds };
+    return { credits: result.credits, maxSeconds: result.max_seconds, languages: result.languages };
   } catch (error) {
     if (error?.status === 501) return null;
     throw error;
@@ -33,12 +33,12 @@ function outcome(value) {
 const recover = async (fetcher, key) => outcome(await fetcher(`${SPEECH_PATH}/by-key/${encodeURIComponent(key)}`));
 
 /** One charge per key. A definite refusal throws; an unclear failure looks the key up instead of sending again. */
-export async function startSpeech(fetcher, { jobId, duration, key, credits }) {
+export async function startSpeech(fetcher, { jobId, duration, key, credits, language = 'auto' }) {
   try {
     return outcome(await fetcher(SPEECH_PATH, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ source: { type: 'job', jobId }, duration, idempotencyKey: key, expectedCredits: credits }),
+      body: JSON.stringify({ source: { type: 'job', jobId }, duration, idempotencyKey: key, expectedCredits: credits, ...(language === 'auto' ? {} : { language }) }),
     }));
   } catch (error) {
     if (error?.body?.refunded === true || (error?.status > 0 && error.status < 500 && error.code !== 'bad_response')) throw error;
@@ -53,7 +53,21 @@ export async function pollSpeech(fetcher, key, { signal, onProgress = () => {}, 
   let delay = 1000;
   for (;;) {
     if (signal?.aborted) throw fail(0, 'cancelled');
-    const value = await recover(fetcher, key);
+    let value;
+    try {
+      value = await recover(fetcher, key);
+    } catch (error) {
+      // Polling is an owner-only read: retry a dropped connection/server interruption with the
+      // same accepted key. Never repeat the paid POST or create another charge.
+      const networkFailure = error instanceof TypeError && error?.status == null;
+      if (!(networkFailure || error?.status === 0 || error?.status >= 500)) throw error;
+      onProgress('retrying');
+      await sleep(delay);
+      if (signal?.aborted) throw fail(0, 'cancelled');
+      if (now() - started > POLL_DEADLINE_MS) throw fail(408, 'poll_timeout');
+      delay = Math.min(10000, delay * 1.6);
+      continue;
+    }
     if (value.status !== 'queued') return value;
     onProgress(value.progress === 'transcribing' ? 'transcribing' : 'queued');
     await sleep(delay);

@@ -13,6 +13,7 @@ export default {
     'explore.templateCount.other': '{count} templates on {models}',
     'explore.templateTotal.one': '{count} template',
     'explore.templateTotal.other': '{count} templates',
+    'explore.templateTotalWithCrun': '{previews} templates',
     'explore.modelCount.one': '{count} model',
     'explore.modelCount.other': '{count} models',
     'explore.templateCountNone': '0 templates',

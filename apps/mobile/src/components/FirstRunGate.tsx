@@ -1,9 +1,11 @@
 import { usePathname, useRootNavigationState, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { AppState } from 'react-native';
-import { firstRunDestination, isFirstRunPending, useFirstRunUser } from '../lib/firstRunPending';
 import { useAuth } from '../auth/AuthProvider';
+import { firstRunDestination, isFirstRunPending, useFirstRunUser } from '../lib/firstRunPending';
 import { loadFirstOnboarding } from '../lib/firstProfileStore';
+import { markWelcomeSeen } from '../lib/markWelcomeSeen';
+import { applyPendingPreAuthOnboarding } from '../lib/preAuthOnboarding';
 
 const OWNED_FIRST_RUN_ROUTES = new Set(['/analytics-consent', '/welcome', '/first-run']);
 
@@ -23,7 +25,15 @@ export function FirstRunGate() {
         let alive = true;
         let retryTimer: ReturnType<typeof setTimeout> | undefined;
         const task = beginSessionTask();
-        void firstRunDestination().then(async destination => {
+        void (async () => {
+            if (await applyPendingPreAuthOnboarding(api, task)) {
+                if (!alive || !task.current()) return;
+                await markWelcomeSeen();
+                const consentDestination = await firstRunDestination();
+                if (alive && task.current()) router.replace(consentDestination ?? '/');
+                return;
+            }
+            const destination = await firstRunDestination();
             if (!alive || !task.current()) return;
             if (destination) { router.replace(destination); return; }
             // A checked consent/welcome phase returns null on later foreground passes but remains pending until its
@@ -35,7 +45,7 @@ export function FirstRunGate() {
             // A broken/offline account read must not leave launch in a permanent retry loop. Three bounded
             // attempts are enough for the ordinary token-refresh window; the next foreground event tries again.
             else if (!onboarding && retry < 3) retryTimer = setTimeout(() => setRetry(value => value + 1), Math.min(15000, 2000 * (retry + 1)));
-        });
+        })();
         return () => { alive = false; clearTimeout(retryTimer); };
     }, [api, beginSessionTask, pathname, ready, retry, router, user]);
     useEffect(() => {

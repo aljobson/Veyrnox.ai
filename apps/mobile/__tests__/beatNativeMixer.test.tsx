@@ -45,6 +45,8 @@ const open = async (prepare?: (d: MixDoc) => MixDoc) => {
 };
 const current = () => getBeat(mockParams.id) as MixDoc;
 const track = () => current().tracks[0] as MixTrack;
+const trackDetails = () => t('beatMix.lane.title', { track: track().name, lane: t('beat.track.controls') });
+const masterDetails = () => t('beatMix.lane.title', { track: t('beatMix.master'), lane: t('beat.track.controls') });
 beforeEach(() => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     root = createRoot(); resetBeats(); jest.clearAllMocks(); mockReduced = true;
@@ -55,6 +57,8 @@ afterEach(async () => { await act(async () => root.unmount()); jest.restoreAllMo
 test('opens the full sheet, adds effects through the store/history, and undo restores', async () => {
     const recorded = jest.spyOn(history, 'record'); await open();
     await press(t('beatMix.title')); expect(button(t('beatMix.close'))).toBeDefined();
+    expect(text(t('beatMix.fx.empty'))).toHaveLength(0);
+    await press(trackDetails());
     expect(text(t('beatMix.fx.empty')).length).toBeGreaterThan(0);
     await press(t('beatMix.fx.add', { effect: t('beatMix.fx.eq') }));
     expect(track().fx?.[0].type).toBe('eq'); expect(validateBeat(current()).ok).toBe(true);
@@ -73,6 +77,7 @@ test('channel mute and solo use visible selected cues as well as accessibility s
 });
 test('Drive and compressor DSP settings use native topology rebuilds without stand-in notices', async () => {
     await open(); await press(t('beatMix.title'));
+    await press(trackDetails());
     await press(t('beatMix.fx.add', { effect: t('beatMix.fx.distortion') }));
     const drive = t('beatMix.fx.param', { effect: t('beatMix.fx.name', { effect: t('beatMix.fx.distortion'), n: 1 }), param: t('beatMix.param.drive') });
     expect(root.container.queryAll(n => n.props.accessibilityRole === 'adjustable' && n.props.accessibilityLabel === drive)).toHaveLength(1);
@@ -107,12 +112,14 @@ test('compressor topology settings preview during a drag and commit only once on
 });
 test('both mixer entry points disable automated gain and pan with translated reasons', async () => {
     await open(d => addAutomationPoint(addAutomationPoint(d, 't1', 'gain', 0, 0.8), 't1', 'pan', 0, 0));
+    await press(t('beat.track.controls'));
     for (const lane of ['gain', 'pan'] as const) {
         const old = t(`beat.${lane}`, { track: t('beat.track', { n: 1 }) });
         expect(slider(old).props.accessibilityState.disabled).toBe(true);
         await adjust(old, 'decrement'); expect(track()[lane]).toBe(lane === 'gain' ? 1 : 0);
     }
     await press(t('beatMix.title'));
+    await press(trackDetails());
     for (const lane of ['gain', 'pan'] as const) {
         expect(slider(t(`beat.${lane}`, { track: track().name })).props.accessibilityState.disabled).toBe(true);
         expect(text(t(`beatMix.locked.${lane}`)).length).toBeGreaterThan(0);
@@ -121,7 +128,7 @@ test('both mixer entry points disable automated gain and pan with translated rea
 test.each([false, true])('slider edits coalesce into one history entry and undo restores (sheet %s)', async sheet => {
     const recorded = jest.spyOn(history, 'record'); await open();
     jest.spyOn(Date, 'now').mockReturnValue(Date.now());
-    if (sheet) await press(t('beatMix.title'));
+    if (sheet) await press(t('beatMix.title')); else await press(t('beat.track.controls'));
     const label = t('beat.gain', { track: sheet ? track().name : t('beat.track', { n: 1 }) });
     await adjust(label, 'decrement'); await adjust(label, 'decrement'); await adjust(label, 'decrement');
     expect(track().gain).toBe(0.7); expect(recorded).toHaveBeenCalledTimes(3);
@@ -132,7 +139,7 @@ test.each([false, true])('slider edits coalesce into one history entry and undo 
     await press(t('beat.redo')); expect(track().gain).toBe(0.7);
 });
 test('adds/selects/moves/curves/deletes automation points and clears the lock', async () => {
-    await open(); await press(t('beatMix.title')); await press(t('beatMix.lane.show.gain'));
+    await open(); await press(t('beatMix.title')); await press(trackDetails()); await press(t('beatMix.lane.show.gain'));
     await press(t('beatMix.lane.add')); expect(track().automation?.gain).toEqual([[0, 1, 0]]);
     await press(t('beatMix.lane.add')); expect(track().automation?.gain?.map(p => p[0])).toEqual([0, 240]);
     const label = t('beatMix.lane.point', { lane: t('beatMix.lane.gain'), n: 2, bar: 1, beat: 1.25, value: t('beatMix.unit.percent', { value: 100 }) });
@@ -148,6 +155,7 @@ test('adds/selects/moves/curves/deletes automation points and clears the lock', 
 });
 test('effect order, bypass, removal and four-effect limit use shared operations', async () => {
     await open(); await press(t('beatMix.title'));
+    await press(trackDetails());
     for (const type of ['eq', 'compressor', 'delay', 'reverb']) await press(t('beatMix.fx.add', { effect: t(`beatMix.fx.${type}`) }));
     expect(button(t('beatMix.fx.add', { effect: t('beatMix.fx.eq') }))?.props.accessibilityState.disabled).toBe(true);
     expect(text(t('beatMix.fx.limit')).length).toBeGreaterThan(0);
@@ -159,12 +167,17 @@ test('effect order, bypass, removal and four-effect limit use shared operations'
 });
 test('send, effect parameter and master drags carry separate history keys', async () => {
     const recorded = jest.spyOn(history, 'record'); await open(d => addEffect(d, 't1', 'eq')); await press(t('beatMix.title'));
-    const changes = [
+    await press(trackDetails());
+    const trackChanges = [
         [t('beatMix.send.reverb'), 't1:send:reverb'], [t('beatMix.send.delay'), 't1:send:delay'],
         [t('beatMix.fx.param', { effect: t('beatMix.fx.name', { effect: t('beatMix.fx.eq'), n: 1 }), param: t('beatMix.param.low') }), 't1:fx:f1:low'],
-        [t('beatMix.master.gain'), 'master:gain'], [t('beatMix.master.time'), 'master:delay.time'], [t('beatMix.master.feedback'), 'master:delay.feedback'],
     ];
-    for (const [label, key] of changes) {
+    for (const [label, key] of trackChanges) {
+        await adjust(label, 'increment'); expect(recorded.mock.calls.at(-1)?.[2]?.key).toBe(key);
+    }
+    await adjust(t('beatMix.master.gain'), 'increment'); expect(recorded.mock.calls.at(-1)?.[2]?.key).toBe('master:gain');
+    await press(masterDetails());
+    for (const [label, key] of [[t('beatMix.master.time'), 'master:delay.time'], [t('beatMix.master.feedback'), 'master:delay.feedback']]) {
         await adjust(label, 'increment'); expect(recorded.mock.calls.at(-1)?.[2]?.key).toBe(key);
     }
     expect(track().sends?.reverb).toBe(0.1); expect(track().fx?.[0].params.low).toBe(2); expect(current().master).toBeDefined();

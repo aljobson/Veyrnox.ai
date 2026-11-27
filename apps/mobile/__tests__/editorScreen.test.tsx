@@ -48,14 +48,14 @@ test('flag off has no WebView or API requests for either route', async () => {
 test.each([false, true])('enabled editor is native regardless of full-editor flag %s and forwards all route params', async full => {
     Object.assign(flag, { FULL_EDITOR_ENABLED: full });
     const cuts = [{ jobId: copyId, start: 1, end: 3 }];
-    mockParams = { projectId: id, jobId: copyId, bestCut: '1', cuts: encodeCuts(cuts) };
+    mockParams = { projectId: id, jobId: copyId, bestCut: '1', add: '1', cuts: encodeCuts(cuts) };
     await act(async () => root.render(<Editor />));
-    expect(mockFullEditor).toHaveBeenCalledWith({ projectId: id, jobId: copyId, cuts, startBestCut: true });
+    expect(mockFullEditor).toHaveBeenCalledWith({ projectId: id, jobId: copyId, cuts, startBestCut: true, startAdd: true });
 });
 test('absent or invalid optional params preserve native editor defaults', async () => {
     mockParams = { projectId: id, bestCut: '0', cuts: 'invalid' };
     await act(async () => root.render(<Editor />));
-    expect(mockFullEditor).toHaveBeenCalledWith({ projectId: id, jobId: undefined, cuts: null, startBestCut: false });
+    expect(mockFullEditor).toHaveBeenCalledWith({ projectId: id, jobId: undefined, cuts: null, startBestCut: false, startAdd: false });
 });
 test('new empty project creates in default workspace with a stable key and routes to the editor', async () => {
     await act(async () => root.render(<NewEditor />)); await press('Empty project');
@@ -65,10 +65,10 @@ test('new empty project creates in default workspace with a stable key and route
 });
 
 test('direct New edit creates a blank project and opens the editor without an intermediate choice', async () => {
-    mockParams = { blank: '1' };
+    mockParams = { blank: '1', add: '1' };
     await act(async () => root.render(<NewEditor />));
     const post = mockRequest.mock.calls.find(([, init]) => init?.method === 'POST')!;
     expect(JSON.parse(post[1].body)).toEqual({ workspace_id: 'w', name: 'Untitled edit' });
-    expect(mockRouter.replace).toHaveBeenCalledWith({ pathname: '/editor/[projectId]', params: { projectId: copyId } });
+    expect(mockRouter.replace).toHaveBeenCalledWith({ pathname: '/editor/[projectId]', params: { projectId: copyId, add: '1' } });
     expect(root.container.queryAll(n => n.props.accessibilityLabel === 'Empty project')).toHaveLength(0);
 });

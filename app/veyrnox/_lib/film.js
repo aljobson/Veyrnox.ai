@@ -13,7 +13,7 @@ export const LANDING_FILM = {
   height: 720,
   // The hash of scripts/landing-film the MP4 was rendered from (render.mjs
   // prints it). The test fails when the source has moved on without a render.
-  renderedFrom: '05f0af6d8450e378',
+  renderedFrom: '0dfb834d616414d6',
 };
 
 // Owner-supplied promo (veyrnox_promo_one_app_v2): one 49 s portrait film used

@@ -1,11 +1,15 @@
 import type { ReactNode } from 'react';
-import { Card as Surface, Text, themedStyles, useThemedStyles } from '../ui';
+import { Card as Surface, Text, VividCard, themedStyles, useThemedStyles } from '../ui';
+import type { MenuIcon } from '../../lib/menuIcons';
+import type { VividHue } from '../../theme';
 
-export function Card({ title, help, children }: { title: string; help?: string; children: ReactNode }) {
+export function Card({ title, help, icon, hue, children }: { title: string; help?: string; icon?: MenuIcon; hue?: VividHue; children: ReactNode }) {
     const s = useThemedStyles(sheets);
     return <Surface style={s.card}>
-        <Text variant="footnote" tone="secondary" accessibilityRole="header">{title}</Text>
-        {help ? <Text variant="footnote" tone="secondary">{help}</Text> : null}
+        {icon && hue
+            ? <VividCard hue={hue} icon={icon} title={title} detail={help} layout="row" accessibilityRole="header" />
+            : <><Text variant="footnote" tone="secondary" accessibilityRole="header">{title}</Text>
+                {help ? <Text variant="footnote" tone="secondary">{help}</Text> : null}</>}
         {children}
     </Surface>;
 }

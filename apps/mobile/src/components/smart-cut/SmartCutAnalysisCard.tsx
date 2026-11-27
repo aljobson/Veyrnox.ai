@@ -19,7 +19,9 @@ import {
 } from '../../lib/speechAnalysis';
 import { parseSmartCutAnalysis, type SpeechAnalysis } from '../../lib/speechCut';
 import { smartCutNetCredits } from '../../lib/smartCutBilling';
+import { createSmartCutProgressNotifier, smartCutProgressStageKey, type SmartCutProgressNotifier, type SmartCutProgressStage } from '../../lib/smartCutProgressNotification';
 import { validSmartCutAnalysis } from '../../lib/smartCut';
+import { usePush } from '../../push/pushContext';
 import { ds } from '../../theme';
 import { Button, Card, Text, themedStyles, useThemedStyles } from '../ui';
 
@@ -36,16 +38,19 @@ export function SmartCutAnalysisCard({ clips, analyses, onAnalysed, onBusyChange
 }) {
     const styles = useThemedStyles(sheets);
     const { api } = useAuth();
+    const { enabled: progressNotificationsEnabled } = usePush();
     const account = useSyncExternalStore(subscribeCacheUser, getCacheUser, getCacheUser) || '';
     const [quote, setQuote] = useState<SpeechQuote | null | undefined>(() => EDITOR_SPEECH_CUT_ENABLED && account ? undefined : null);
     const [quoteError, setQuoteError] = useState(false);
     const [quoteAttempt, setQuoteAttempt] = useState(0);
     const [running, setRunning] = useState(false);
     const [progress, setProgress] = useState({ done: 0, total: 0 });
+    const [progressStage, setProgressStage] = useState<SmartCutProgressStage>('queued');
     const [messages, setMessages] = useState<readonly string[]>([]);
     const [recovery, setRecovery] = useState<Recovery | null>(null);
     const [terminalMessages, setTerminalMessages] = useState<ReadonlyMap<string, string>>(() => new Map());
     const controller = useRef<AbortController | null>(null);
+    const progressNotification = useRef<SmartCutProgressNotifier | null>(null);
     const creditsByKey = useRef(new Map<string, number>());
     const conflictingCredits = useRef(new Set<string>());
     const live = useRef(true);
@@ -84,7 +89,10 @@ export function SmartCutAnalysisCard({ clips, analyses, onAnalysed, onBusyChange
             if (!live.current || signatureRef.current !== signature) return;
             setRunning(false);
             setProgress({ done: 0, total: 0 });
+            setProgressStage('queued');
             if (accountChanged) {
+                progressNotification.current?.dismiss();
+                progressNotification.current = null;
                 setMessages([]);
                 setRecovery(null);
                 setTerminalMessages(new Map());
@@ -203,6 +211,9 @@ export function SmartCutAnalysisCard({ clips, analyses, onAnalysed, onBusyChange
         setRunning(true);
         setMessages([]);
         setProgress({ done: 0, total: actionable.length });
+        setProgressStage('queued');
+        progressNotification.current = createSmartCutProgressNotifier(progressNotificationsEnabled);
+        progressNotification.current.update('queued', 0, actionable.length);
         let attempted: Recovery | null = null;
         try {
             for (const [index, clip] of actionable.entries()) {
@@ -210,15 +221,26 @@ export function SmartCutAnalysisCard({ clips, analyses, onAnalysed, onBusyChange
                 const key = speechKeyFor(account, clip.jobId, clip.duration, randomUUID);
                 attempted = { clip, key };
                 setRecovery(attempted);
+                setProgressStage('queued');
+                progressNotification.current?.update('queued', index, actionable.length);
                 let first = await startSpeech(api, { account, jobId: clip.jobId, duration: clip.duration, key, credits: activeQuote.credits }, abort.signal);
                 if (!creditsByKey.current.has(key) && typeof first.credits === 'number' && first.credits >= 0) creditsByKey.current.set(key, first.credits);
                 attempted = { clip, key };
                 setRecovery(attempted);
-                if (first.status === 'queued') first = await pollSpeech(api, key, account, abort.signal, () => undefined);
+                if (first.status === 'queued') first = await pollSpeech(api, key, account, abort.signal, (stage) => {
+                    setProgressStage(stage);
+                    progressNotification.current?.update(stage, index, actionable.length);
+                });
                 if (signatureRef.current !== startedFor || getCacheUser() !== account) throw new ApiError(0, 'cancelled');
-                if (!settle(clip, first, key)) break;
+                setProgressStage('checking');
+                progressNotification.current?.update('checking', index, actionable.length);
+                if (!settle(clip, first, key)) { progressNotification.current?.dismiss(); progressNotification.current = null; break; }
                 attempted = null;
                 setProgress({ done: index + 1, total: actionable.length });
+            }
+            if (!attempted && live.current && signatureRef.current === startedFor) {
+                progressNotification.current?.complete();
+                progressNotification.current = null;
             }
         } catch (error) {
             const cancelled = abort.signal.aborted || (error instanceof ApiError && error.code === 'cancelled') || (error instanceof Error && error.name === 'AbortError');
@@ -233,16 +255,26 @@ export function SmartCutAnalysisCard({ clips, analyses, onAnalysed, onBusyChange
                         creditsByKey.current.delete(attempted.key);
                         conflictingCredits.current.delete(attempted.key);
                         setRecovery(null);
+                        progressNotification.current?.dismiss();
+                        progressNotification.current = null;
                         setMessages((current) => [...current, t('app.smartCut.native.analyse.refunded', { name: attempted!.clip.label })]);
                     } else if (error instanceof ApiError && error.code === 'price_changed' && Number.isSafeInteger(error.body.credits) && Number(error.body.credits) > 0) {
                         setQuote((current) => current ? { ...current, credits: Number(error.body.credits) } : current);
                         setRecovery(null);
+                        progressNotification.current?.dismiss();
+                        progressNotification.current = null;
                         setMessages((current) => [...current, speechMessage(error)]);
                     } else if (error instanceof ApiError && ['bad_response', 'analysis_invalid'].includes(error.code) && attempted) {
                         settleBadResponse(attempted, error.code);
+                        progressNotification.current?.dismiss();
+                        progressNotification.current = null;
                     } else {
                         const canRecover = error instanceof ApiError && (['outcome_pending', 'poll_timeout'].includes(error.code) || error.status === 0 || error.status >= 500);
-                        if (!canRecover) setRecovery(null);
+                        if (!canRecover) {
+                            setRecovery(null);
+                            progressNotification.current?.dismiss();
+                            progressNotification.current = null;
+                        }
                         if (error instanceof ApiError && error.code === 'result_expired' && attempted) {
                             forgetSpeechKey(account, attempted.clip.jobId);
                             creditsByKey.current.delete(attempted.key);
@@ -265,11 +297,23 @@ export function SmartCutAnalysisCard({ clips, analyses, onAnalysed, onBusyChange
         const abort = new AbortController();
         controller.current = abort;
         setRunning(true);
+        progressNotification.current = createSmartCutProgressNotifier(progressNotificationsEnabled);
+        setProgressStage('queued');
+        progressNotification.current.update('queued', progress.done, Math.max(progress.total, 1));
         try {
             let outcome = await recoverSpeech(api, recovery.key, account, abort.signal);
-            if (outcome.status === 'queued') outcome = await pollSpeech(api, recovery.key, account, abort.signal, () => undefined);
+            if (outcome.status === 'queued') outcome = await pollSpeech(api, recovery.key, account, abort.signal, (stage) => {
+                setProgressStage(stage);
+                progressNotification.current?.update(stage, progress.done, Math.max(progress.total, 1));
+            });
             if (signatureRef.current !== startedFor || getCacheUser() !== account) throw new ApiError(0, 'cancelled');
-            if (settle(recovery.clip, outcome, recovery.key, true)) setProgress((current) => ({ done: Math.min(current.done + 1, current.total), total: current.total }));
+            setProgressStage('checking');
+            progressNotification.current?.update('checking', progress.done, Math.max(progress.total, 1));
+            if (settle(recovery.clip, outcome, recovery.key, true)) {
+                setProgress((current) => ({ done: Math.min(current.done + 1, current.total), total: current.total }));
+                progressNotification.current?.complete();
+            } else progressNotification.current?.dismiss();
+            progressNotification.current = null;
         } catch (error) {
             const cancelled = abort.signal.aborted || (error instanceof ApiError && error.code === 'cancelled') || (error instanceof Error && error.name === 'AbortError');
             if (!cancelled && live.current && signatureRef.current === startedFor) {
@@ -278,6 +322,8 @@ export function SmartCutAnalysisCard({ clips, analyses, onAnalysed, onBusyChange
                     creditsByKey.current.delete(recovery.key);
                     conflictingCredits.current.delete(recovery.key);
                     setRecovery(null);
+                    progressNotification.current?.dismiss();
+                    progressNotification.current = null;
                     setMessages((current) => [...current, t('app.smartCut.native.analyse.refunded', { name: recovery.clip.label })]);
                 } else {
                     if (error instanceof ApiError && error.code === 'request_not_found') {
@@ -285,15 +331,21 @@ export function SmartCutAnalysisCard({ clips, analyses, onAnalysed, onBusyChange
                         creditsByKey.current.delete(recovery.key);
                         conflictingCredits.current.delete(recovery.key);
                         setRecovery(null);
+                        progressNotification.current?.dismiss();
+                        progressNotification.current = null;
                         setMessages((current) => [...current, t('app.smartCut.native.analyse.notAccepted', { name: recovery.clip.label })]);
                     } else if (error instanceof ApiError && error.code === 'result_expired') {
                         forgetSpeechKey(account, recovery.clip.jobId);
                         creditsByKey.current.delete(recovery.key);
                         conflictingCredits.current.delete(recovery.key);
                         setRecovery(null);
+                        progressNotification.current?.dismiss();
+                        progressNotification.current = null;
                         setMessages((current) => [...current, speechMessage(error)]);
                     } else if (error instanceof ApiError && ['bad_response', 'analysis_invalid'].includes(error.code)) {
                         settleBadResponse(recovery, error.code);
+                        progressNotification.current?.dismiss();
+                        progressNotification.current = null;
                     } else {
                         setMessages((current) => [...current, speechMessage(error)]);
                     }
@@ -316,6 +368,9 @@ export function SmartCutAnalysisCard({ clips, analyses, onAnalysed, onBusyChange
         {[...terminalMessages].map(([jobId, message]) => <Text key={jobId} variant="footnote" tone="danger" accessibilityRole="alert">{message}</Text>)}
         {ready ? <Text accessibilityLiveRegion="polite">{t('app.smartCut.native.analyse.done')}</Text> : ineligible.length > 0 || !actionable.length ? null : running ? <>
             <Button label={t('app.smartCut.native.analyse.running', { done: Math.min(progress.done + 1, progress.total), total: progress.total })} loading onPress={() => undefined} />
+            <Text testID="smart-cut-analysis-stage" accessibilityLiveRegion="polite" variant="footnote" tone="secondary">
+                {t(smartCutProgressStageKey(progressStage))}
+            </Text>
             <Button label={t('app.smartCut.native.analyse.cancel')} variant="tertiary" onPress={() => controller.current?.abort()} />
         </> : recovery ? <Button label={t('app.smartCut.native.analyse.checkStatus')} variant="secondary" onPress={() => void checkStatus()} /> : <>
             <Text tone="secondary">{t('app.smartCut.native.analyse.privacy')}</Text>

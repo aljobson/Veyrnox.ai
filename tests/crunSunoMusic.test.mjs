@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { capabilityFor } from '../lib/modelCapabilities.js';
+import { capabilityFor, publicCapabilities } from '../lib/modelCapabilities.js';
 import { FALLBACK_CONTRACT_ENDPOINTS } from '../lib/fallbackModelCapabilities.js';
 
 const sql = readFileSync(new URL('../packages/db/schema/supabase/0591_crun_suno_music_foundation.sql', import.meta.url), 'utf8');
@@ -13,7 +13,9 @@ test('Suno capability exists in the server registry and fallback contract copy',
   assert.equal(cap.kind, 'audio');
   assert.equal(cap.inputs.lyrics.max, 5000);
   assert.equal(cap.inputs.tags.max, 1000);
-  assert.equal(cap.inputs.duration.max, 135);
+  assert.equal(cap.inputs.duration.max, 360);
+  assert.equal(publicCapabilities(cap).inputs.duration, undefined,
+    'generic Create must not send custom-only duration into Suno simple mode');
   assert.equal(FALLBACK_CONTRACT_ENDPOINTS['crun-suno-v1'], 'crun:suno/music-generate');
 });
 

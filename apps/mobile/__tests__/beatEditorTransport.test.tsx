@@ -2,6 +2,7 @@ import { act } from 'react';
 import { createRoot, type Root } from 'test-renderer';
 import * as RN from 'react-native';
 import { BeatEditorTransport } from '../src/components/beats/BeatEditorTransport';
+import { t } from '../src/lib/i18n';
 
 let mockDimensions = { width: 390, height: 844, scale: 3, fontScale: 1 };
 let mockBottomInset = 34;
@@ -74,6 +75,55 @@ test.each([360, 390, 719])('compact width %ipt keeps every labelled 44pt action 
     }
 });
 
+test('phone transport keeps MIDI record as a labelled icon in the main action row', async () => {
+    const onMidiRecord = jest.fn();
+    await act(async () => root.render(<BeatEditorTransport {...props} midiRecordPhase="idle" onMidiRecord={onMidiRecord} />));
+    const controls = root.container.queryAll(n => n.props.testID === 'beat-editor-transport-controls-compact')[0];
+    const record = controls.queryAll(n => n.props.testID === 'beat-midi-record-control' && typeof (n.props.onClick ?? n.props.onPress) === 'function')[0];
+    expect(record.props.accessibilityLabel).toBeTruthy();
+    expect(RN.StyleSheet.flatten(record.props.style)).toMatchObject({ minWidth: 44, minHeight: 44 });
+    expect(root.container.queryAll(n => n.props.testID === 'beat-midi-record-row')).toHaveLength(0);
+});
+
+test('phone transport exposes add and export as labelled icon actions', async () => {
+    const onAdd = jest.fn(), onExport = jest.fn();
+    await act(async () => root.render(<BeatEditorTransport {...props} showPatterns={false} onAdd={onAdd} onExport={onExport} />));
+    expect(root.container.queryAll(n => n.props.testID === 'beat-editor-pattern-selector')).toHaveLength(0);
+    for (const [id, action] of [['beat-editor-add-track', onAdd], ['beat-editor-export', onExport]] as const) {
+        const button = root.container.queryAll(n => n.props.testID === id && typeof (n.props.onClick ?? n.props.onPress) === 'function')[0];
+        expect(button.props.accessibilityLabel).toBeTruthy();
+        expect(RN.StyleSheet.flatten(button.props.style)).toMatchObject({ minWidth: 44, minHeight: 44 });
+        await act(async () => (button.props.onClick ?? button.props.onPress)({ nativeEvent: {} }));
+        expect(action).toHaveBeenCalledTimes(1);
+    }
+});
+
+test('focused music dock exposes add, AI, play and mixer without history chrome', async () => {
+    const onAdd = jest.fn(), onAi = jest.fn();
+    await act(async () => root.render(<BeatEditorTransport {...props} showPatterns={false} showHistory={false} onAdd={onAdd} onAi={onAi} />));
+    expect(root.container.queryAll(n => n.props.testID === 'beat-editor-history-controls')).toHaveLength(0);
+    for (const [id, action] of [['beat-editor-add-track', onAdd], ['beat-editor-ai', onAi]] as const) {
+        const button = root.container.queryAll(n => n.props.testID === id && typeof (n.props.onClick ?? n.props.onPress) === 'function')[0];
+        expect(button.props.accessibilityLabel).toBeTruthy();
+        await act(async () => (button.props.onClick ?? button.props.onPress)({ nativeEvent: {} }));
+        expect(action).toHaveBeenCalledTimes(1);
+    }
+    const ai = root.container.queryAll(n => n.props.testID === 'beat-editor-ai' && typeof (n.props.onClick ?? n.props.onPress) === 'function')[0];
+    expect(RN.StyleSheet.flatten(ai.props.style)).toMatchObject({ borderWidth: 1 });
+    expect(ai.props.accessibilityLabel).toBe(t('beatAi.title'));
+    expect(ai.queryAll(n => n.props.children === 'AI')).toHaveLength(0);
+});
+
+test('selected bottom tool owns one inline submenu directly below the dock', async () => {
+    const onAdd = jest.fn();
+    await act(async () => root.render(<BeatEditorTransport {...props} showPatterns={false} showHistory={false}
+        addOpen onAdd={onAdd} subMenu={<RN.View testID="inline-add-tools" />} />));
+    const add = root.container.queryAll(n => n.props.testID === 'beat-editor-add-track' && typeof (n.props.onClick ?? n.props.onPress) === 'function')[0];
+    expect(add.props.accessibilityState.selected).toBe(true);
+    expect(root.container.queryAll(n => n.props.testID === 'beat-editor-submenu')).toHaveLength(1);
+    expect(root.container.queryAll(n => n.props.testID === 'inline-add-tools')).toHaveLength(1);
+});
+
 test('regular width uses the row layout and protects landscape sides plus the bottom safe-area edge', async () => {
     mockDimensions = { ...mockDimensions, width: 1024 };
     await render();
@@ -96,6 +146,13 @@ test('phone landscape stays compact and MIDI stop is a stable labelled control o
     await act(async () => root.render(<BeatEditorTransport {...props} midiRecordPhase="finishing" midiRecordDisabled onMidiRecord={onMidiRecord} />));
     const finishing = root.container.queryAll(n => n.props.testID === 'beat-midi-record-control' && typeof (n.props.onClick ?? n.props.onPress) === 'function')[0];
     expect(finishing.props.accessibilityState).toMatchObject({ disabled: false, busy: true });
+});
+
+test('short landscape removes transport status chrome to preserve the timeline', async () => {
+    mockDimensions = { ...mockDimensions, width: 844, height: 390, fontScale: 1 };
+    await render();
+    expect(root.container.queryAll(n => n.props.testID === 'beat-editor-transport-status')).toHaveLength(0);
+    expect(root.container.queryAll(n => n.props.testID === 'beat-editor-transport-controls-compact')).toHaveLength(1);
 });
 
 test('recovery lock disables a new MIDI take and the non-live mixer entry semantically', async () => {

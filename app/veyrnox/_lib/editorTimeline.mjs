@@ -1,6 +1,7 @@
 import { helperEnglish } from '../../../lib/helperMessages.mjs';
 import { sequenceTransition } from './editorSequence.mjs';
 import { validateSequence } from './editorSequenceValidation.mjs';
+import { EDITOR_CANVAS_PRESETS, validCanvasAspect } from './editorCanvasFormat.mjs';
 // Browser timeline editor, slice 1 (ADR-0080). Pure model: no React, no network, no browser APIs, so every rule here is unit-testable.
 //
 // Time is whole FRAMES at the project rate, so there is no floating-point drift to reconcile at export.
@@ -15,7 +16,7 @@ export const LIMITS = Object.freeze({
     maxTexts: 10, maxTextChars: 120, minTextSize: 2, maxTextSize: 20, maxTransitionSeconds: 2,
 });
 /** Output shape: the first clip's own shape, or a preset; anything that does not fit is letterboxed or pillarboxed. */
-export const ASPECTS = Object.freeze(['source', '16:9', '9:16', '1:1']);
+export const ASPECTS = EDITOR_CANVAS_PRESETS;
 export const MAX_FRAMES = LIMITS.maxSeconds * FPS;
 
 export function emptyTimeline() {
@@ -169,7 +170,7 @@ export function validateTimeline(doc) {
     if (doc.schemaVersion !== SCHEMA_VERSION) return helperEnglish('unsupported_timeline_version');
     if (doc.fps !== FPS) return helperEnglish('only_frames_a_second_is_supported', { value1: FPS });
     if (!isInt(doc.seq) || doc.seq < 0 || doc.seq > 1e6) return helperEnglish('bad_counter');
-    if (!ASPECTS.includes(doc.aspect)) return helperEnglish('bad_aspect');
+    if (!validCanvasAspect(doc.aspect, { allowSource: true })) return helperEnglish('bad_aspect');
     if (!Array.isArray(doc.text)) return helperEnglish('bad_text_list');
     if (!doc.media || typeof doc.media !== 'object' || Array.isArray(doc.media)) return helperEnglish('bad_media_list');
     if (!Array.isArray(doc.video) || !Array.isArray(doc.audio)) return helperEnglish('bad_tracks');
@@ -217,7 +218,7 @@ export function validateTimeline(doc) {
 export const MAX_TRANSITION = LIMITS.maxTransitionSeconds * FPS;
 
 export function setAspect(tl, aspect) {
-    return ASPECTS.includes(aspect) ? { ...tl, aspect } : err('Choose a shape from the list.');
+    return validCanvasAspect(aspect, { allowSource: true }) ? { ...tl, aspect } : err('Choose a valid canvas shape.');
 }
 
 /**

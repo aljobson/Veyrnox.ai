@@ -21,7 +21,7 @@ jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({
 jest.mock('../src/components/ui', () => {
     const React = require('react');
     const component = (name: string) => ({ children, ...props }: any) => React.createElement(name, props, children);
-    return { Text: component('text'), Card: component('card'), ListRow: component('row'), Button: component('button'), Chip: component('chip'), PriceText: component('price'), TextField: component('field'), ChoiceCard: component('choice'),
+    return { Text: component('text'), Card: component('card'), ListRow: component('row'), VividCard: component('vivid-card'), Button: component('button'), Chip: component('chip'), PriceText: component('price'), TextField: component('field'), ChoiceCard: component('choice'),
         themedStyles: (fn: any) => fn(require('../src/theme').tokensForScheme('dark')), useThemedStyles: (s: any) => s };
 });
 void [RN.View, RN.ScrollView, RN.KeyboardAvoidingView];
@@ -37,7 +37,7 @@ test('Arabic Account uses its translated Credits section heading', async () => {
 test.each([{ active: [] }, { active: ['en'] }, { active: ['en', 'es'] }])('Account Language row visibility follows $active', async ({ active }) => {
     mockActive = active; (ACTIVE_LOCALES as string[]).splice(0, Infinity, ...active);
     await act(async () => root.render(<Account />));
-    expect(root.container.queryAll(n => n.type === 'row' && n.props.title === t('language.title'))).toHaveLength(mockActive.length > 1 ? 1 : 0);
+    expect(root.container.queryAll(n => (n.type === 'row' || n.type === 'vivid-card') && n.props.title === t('language.title'))).toHaveLength(mockActive.length > 1 ? 1 : 0);
 });
 test.each([
     { active: ['en'], stored: null, ask: false },

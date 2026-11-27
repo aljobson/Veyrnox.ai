@@ -23,7 +23,6 @@ import { ModelPicker } from '../../../components/chat/ModelPicker';
 import { MakePanel } from '../../../components/chat/MakePanel';
 import { LibraryImagePicker } from '../../../components/chat/LibraryImagePicker';
 import { ApiError } from '../../../lib/api';
-import { MIN_TARGET } from '../../../lib/a11y';
 import { chatApi, cleanOptions, cleanTitle, imagesExtra, retryRefusalIsUnsettled, isLongText, isModelSwitch, longTextState, NO_OPTIONS, replyPrice, sendKeyFor, type ChatMessage, type ChatModel, type PendingSend, type ReplyOptions } from '../../../lib/chat';
 import { imagesBlocked, MAX_ATTACHMENTS, photoNoticeKey, refsForSend, roomFor, type AttachmentRef, type ChatImage, type SentRefs } from '../../../lib/chatAttach';
 import { pickFiles, pickPhotos, pickVideoFrames, uploadChatImages } from '../../../lib/chatPhotos';
@@ -35,10 +34,12 @@ import { isQuiet, makeSendKey, resolveResumedSend, resolveStoppedSend, RESUME_QU
 import { plural, t } from '../../../lib/i18n';
 import { ERROR_TEXT } from '../../../lib/chatErrorText';
 import { ensureOnline, OFFLINE_PAID_MESSAGE, OfflineError } from '../../../lib/network';
-import { Text, TextField, Button, Icon, themedStyles, useThemedStyles } from '../../../components/ui';
+import { Text, TextField, Button, Icon, useThemedStyles } from '../../../components/ui';
+import { latestServerMusicLyricProposal, musicLyricChatSeed, musicLyricProposalLimit, stageMusicLyricProposal } from '../../../lib/music/lyricAssistantHandoff';
+import { conversationStyles } from '../../../components/chat/ConversationStyles';
 export default function Conversation() {
-    const styles = useThemedStyles(sheets);
-    const { id, starter, asset, prompt } = useLocalSearchParams<{ id: string; starter?: string; asset?: string; prompt?: string }>();
+    const styles = useThemedStyles(conversationStyles);
+    const { id, starter, asset, prompt, lyricHandoff } = useLocalSearchParams<{ id: string; starter?: string; asset?: string; prompt?: string; lyricHandoff?: string }>();
     const { api, generation } = useAuth();
     const router = useRouter();
     const insets = useSafeAreaInsets();
@@ -47,8 +48,13 @@ export default function Conversation() {
     const [pinned, setPinned] = useState(false);
     const [renaming, setRenaming] = useState<string | null>(null);
     const [messages, setMessages] = useState<ChatMessage[] | null>(null);
+    const serverMessageIds = useRef<ReadonlySet<string>>(new Set());
+    const setServerMessages = useCallback((next: ChatMessage[]) => {
+        serverMessageIds.current = new Set(next.map(message => message.id)); setMessages(next);
+    }, []);
     const deltas = useChatDeltas(setMessages);
-    const { draft, setDraft, flushDraft, stars, star, starredOnly, setStarredOnly, mounted } = useChatLocal(id, typeof prompt === 'string' ? prompt : undefined);
+    const [musicSeed] = useState(() => typeof lyricHandoff === 'string' ? musicLyricChatSeed(lyricHandoff, id) : undefined);
+    const { draft, setDraft, flushDraft, stars, star, starredOnly, setStarredOnly, mounted } = useChatLocal(id, musicSeed ?? (typeof prompt === 'string' ? prompt : undefined));
     const [round, setRound] = useState(0);
     const { left, loadedFor } = useChatFreeLeft(api, round);
     const [sending, setSending] = useState(false);
@@ -75,12 +81,25 @@ export default function Conversation() {
     const [savingSkills, setSavingSkills] = useState(false);
     const skillBusy = useRef(false);
     const oddLocked = !!parseOddlingInstructions(thread?.system_prompt);
+    const instructionsLocked = oddLocked || !!musicSeed;
     const selectedIds = selectedSkillIds(thread?.system_prompt);
     useAskAbout(api, asset, model, maxImages, setImages, setNotice);
     const abort = useRef<AbortController | null>(null);
     const live = useRef<{ key: string; text: string; knownIds: ReadonlySet<string>; jobId: string | null; lastEventAt: number } | null>(null);
     const resumed = useRef<StopOutcome | null>(null);
     const busy = useRef(false); // synchronous: a second tap must not start a second turn
+    const musicLimit = typeof lyricHandoff === 'string' ? musicLyricProposalLimit(lyricHandoff, id) : null;
+    const musicProposal = musicLimit ? latestServerMusicLyricProposal(messages ?? [], sending, musicLimit, serverMessageIds.current) : null;
+
+    function reviewLyricsInMusic() {
+        if (typeof lyricHandoff !== 'string' || !musicProposal
+            || !stageMusicLyricProposal(lyricHandoff, id, musicProposal.messageId,
+                (messages ?? []).find(message => message.id === musicProposal.messageId)?.content ?? '')) {
+            setNotice(t('music.lyricAssistant.expired'));
+            return;
+        }
+        router.dismissTo({ pathname: '/music/create', params: { lyricHandoff } });
+    }
 
     async function toggleSkill(skill: Skill) {
         if (skillBusy.current) return;
@@ -104,7 +123,7 @@ export default function Conversation() {
 
     const threadLoad = useChatThreadLoad(api, id, generation, {
         started: () => setError((current) => (current === t('chat.couldnotloadthischat') ? null : current)),
-        opened: (r) => { setTitle(r.thread.title || t('chat.chat2')); setPinned(r.thread.pinned); setMessages(r.messages); },
+        opened: (r) => { setTitle(r.thread.title || t('chat.chat2')); setPinned(r.thread.pinned); setServerMessages(r.messages); },
         listed: (r, listed) => {
             setModel(listed?.models.find((m) => m.id === r.thread.model_id) ?? null);
             setAllModels(listed?.models ?? []);
@@ -242,7 +261,7 @@ export default function Conversation() {
                 resumed.current = null;
                 if (outcome === 'saved' || outcome === 'unsaved') {
                     const r = await chatApi(api).getThread(id).catch(() => null);
-                    if (r) setMessages(r.messages);
+                    if (r) setServerMessages(r.messages);
                     setImages([]);
                 } else if (outcome === 'nothing') {
                     await giveBack();
@@ -267,7 +286,7 @@ export default function Conversation() {
                 setImages([]);
                 // The saved reply carries its real price.
                 const r = await chatApi(api).getThread(id).catch(() => null);
-                if (r) setMessages(r.messages);
+                if (r) setServerMessages(r.messages);
             }
             live.current = null;
             setSending(false);
@@ -278,7 +297,7 @@ export default function Conversation() {
 
     // Switching the model changes what the next reply costs; the choices the new model does not offer are dropped.
     async function saveSettings(patch: { model_id?: string; system_prompt?: string }) {
-        if (oddLocked) { const { system_prompt: _ignored, ...rest } = patch; patch = rest; }
+        if (instructionsLocked) { const { system_prompt: _ignored, ...rest } = patch; patch = rest; }
         if (!Object.keys(patch).length) return;
         const action = watchOddlingAction(mounted);
         try {
@@ -437,10 +456,12 @@ export default function Conversation() {
             {blocked ? <Text style={styles.notice} accessibilityRole="alert">{t('chat.attach.modelImages')}</Text> : null}
             {notice ? <Text style={styles.notice} accessibilityRole="alert">{notice}</Text> : null}
             {error ? <Text style={styles.error} accessibilityRole="alert">{error}</Text> : null}
+            {musicProposal ? <Button accessibilityRole="button" variant="secondary" label={t('music.lyricAssistant.reviewInMusic')}
+                onPress={reviewLyricsInMusic} /> : null}
             {threadLoad.failed ? <Button label={t('chat.tryagain')} accessibilityLabel={t('chat.tryagain')} variant="secondary" onPress={threadLoad.retry} /> : null}
             {error && lowBalance ? <Button label={t('lowBalance.buy')} accessibilityLabel={t('lowBalance.buy')} variant="secondary" onPress={() => router.push('/credits')} /> : null}
             {thread && pickerModelsOpen ? <ModelPicker visible currentId={thread.model_id} models={allModels} onPick={(mid) => void pickModel(mid)} onClose={() => setPickerModelsOpen(false)} /> : null}
-            {thread && settingsOpen ? <ChatSettings visible instructionsLocked={oddLocked} thread={thread} models={allModels} onSave={saveSettings} onClose={() => setSettingsOpen(false)} /> : null}
+            {thread && settingsOpen ? <ChatSettings visible instructionsLocked={instructionsLocked} thread={thread} models={allModels} onSave={saveSettings} onClose={() => setSettingsOpen(false)} /> : null}
             <MakePanel visible={makeOpen} initialKind={makeKind} initialPrompt={draft.trim()} onClose={() => setMakeOpen(false)} />
             <LibraryImagePicker visible={pickerOpen} chosen={images} max={maxImages} onClose={() => setPickerOpen(false)} onPick={(img) => setImages((cur) => (cur.length < maxImages && !cur.some((c) => c.assetId === img.assetId) ? [...cur, img] : cur))} />
             {model && price !== null ? (
@@ -474,25 +495,3 @@ export default function Conversation() {
         </KeyboardScreen>
     );
 }
-const sheets = themedStyles((p) => ({
-    field: { flex: 1 },
-    accentInk: { color: p.accent },
-    screen: { flex: 1, backgroundColor: p.bg },
-    center: { flex: 1 },
-    messageList: { flex: 1 },
-    conversationBar: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: p.borderSubtle, backgroundColor: p.bg },
-    conversationTitle: { flex: 1, minWidth: 0 },
-    threadTitle: { color: p.textPrimary },
-    modelMeta: { color: p.textSecondary },
-    headerControl: { minHeight: MIN_TARGET, justifyContent: 'center' },
-    headerControlText: { color: p.textPrimary },
-    moreControl: { width: MIN_TARGET, height: MIN_TARGET, alignItems: 'center', justifyContent: 'center' },
-    renameBar: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: p.borderSubtle },
-    renameInput: { minHeight: MIN_TARGET },
-    list: { flexGrow: 1, paddingHorizontal: 16, paddingVertical: 18, gap: 20 },
-    emptyList: { justifyContent: 'flex-start' },
-    error: { color: p.danger, paddingHorizontal: 16, paddingBottom: 4 },
-    notice: { color: p.textSecondary, paddingHorizontal: 16, paddingBottom: 4 },
-    again: { alignSelf: 'flex-start', minHeight: MIN_TARGET, justifyContent: 'center' },
-    composerDock: { paddingHorizontal: 12, paddingTop: 8, borderTopWidth: 1, borderTopColor: p.borderSubtle, backgroundColor: p.bg },
-}));

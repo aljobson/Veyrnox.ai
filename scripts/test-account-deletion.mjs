@@ -235,7 +235,7 @@ try {
     const ERASED = new Set(['music_mixdown_reservations', 'music_daily_allowance_reservations', 'speech_gate_daily', 'speech_analyses', 'speech_analysis_cache', 'speech_source_probes','support_intake_receipts', 'support_tickets', 'support_messages', // tombstoned by the deleted_at trigger (0432)
         'chat_threads', 'chat_folders', 'chat_personas', 'chat_closed_sends', 'cinema_profiles', 'cinema_memberships',
         'cinema_creator_applications', 'cinema_creator_follows', 'cinema_series_follows', 'cinema_saved_titles', 'cinema_retention_requests', 'cinema_watch_resume',
-        'referral_codes', 'upload_reservations', 'social_uploads', 'film_library_masters', 'editor_library_renders', 'music_inspiration_requests',
+        'referral_codes', 'upload_reservations', 'social_uploads', 'film_library_masters', 'editor_library_renders', 'music_inspiration_requests', 'smart_cut_feedback',
         'social_brands', 'social_api_keys', 'social_webhook_endpoints', 'social_posts', 'jobs', 'music_reference_links', 'music_actors', 'music_user_blocks', 'music_song_reactions', 'music_creator_follows', 'music_social_mutations', 'music_comments', 'music_comment_reports', 'music_comment_mutations', 'music_remix_sources', 'music_listen_history', 'music_hooks', 'music_song_covers', 'music_play_listens', 'music_song_reports', 'music_album_mutations', 'music_album_reports', 'labs_rank_pairs',
         'push_tokens', 'push_outbox', 'push_token_writes', 'user_blocks', 'creator_profiles', 'first_goals', 'library_favourites', 'create_drafts', 'checkin_streaks']);
     const WITH_AUTH_USER = new Set(['organisation_members', 'workspace_members', 'project_members', 'api_requests', 'editor_requests',
@@ -255,6 +255,7 @@ try {
         'music_workspace_invitations', 'music_workspace_members', 'music_workspace_moves', 'music_workspaces']);
     const RETAINED = new Set([
         'speech_analysis_requests', // content-free idempotency tombstones; no transcript
+        'smart_cut_first_edits', // content-free first-edit entitlement tombstone; no media, prompt or transcript
 
         'social_brand_kit_links', // linking audit only; deleted actors cannot expose kit data (0441)
         // Administrator accountability, including actor email, like account_actions (ADR-0083).

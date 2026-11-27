@@ -12,7 +12,7 @@ import { aiEditKeyFor, aiEditMessage, fetchAiEditQuote, recoverAiEdit, runAiEdit
 import type { PendingSend } from '../../lib/chat';
 import type { Timeline } from '../../lib/nativeEditorModel';
 import { useReducedMotion } from '../ui/useReducedMotion';
-import { colors, ds, text, tokensForScheme, getAppearance, resolveScheme } from '../../theme';
+import { studioColors as colors, ds, text, tokensForScheme } from '../../theme';
 import { Text } from '../ui/Text';
 import { useAnnouncement } from '../../lib/useAnnouncement';
 import { useOptionalSafeAreaInsets } from '../../lib/safeArea';
@@ -143,7 +143,7 @@ export function EditorAiEditSheet({ api, quote: initialQuote, snapshot, apply, o
     </Modal>;
 }
 const styles = StyleSheet.create({
-    backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: tokensForScheme(resolveScheme(getAppearance().theme, 'dark')).scrim },
+    backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: tokensForScheme('dark').scrim },
     sheet: { maxHeight: '90%', backgroundColor: colors.surface, borderTopLeftRadius: ds.radius.lg, borderTopRightRadius: ds.radius.lg },
     content: { padding: ds.space.gutter, paddingBottom: ds.space.xxxl, gap: ds.space.md },
     heading: { color: colors.text, ...text.title2 }, text: { color: colors.text, ...text.body }, muted: { color: colors.muted, ...text.footnote },

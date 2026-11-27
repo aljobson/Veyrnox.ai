@@ -123,6 +123,7 @@ export function createSwapActions(store, { makeKey, processPhoto, upload, gatewa
     const op = start(a, 'poll'); if (!op) return;
     if (a.job_id && !a.refusal && !(Number.isFinite(a.submitted_at) && a.submitted_at > 0)) started(a, undefined, true, true);
     if (a.state === 'unresolved') store.update(op.ticket, { state: a.refusal ? 'refund_pending' : 'unknown' });
+    let announcedJobState;
     try {
       const limit = () => (live(current(templateId, key)) ? LIVE_POLL_LIMIT : POLL_LIMIT);
       for (let index = 0; index < limit(); index++) {
@@ -153,7 +154,15 @@ export function createSwapActions(store, { makeKey, processPhoto, upload, gatewa
             const next = reduceAttempt(previous, { job });
             store.update(op.ticket, next);
             if (!previous.job_id && !previous.refusal) started(current(templateId, key), undefined, true, true);
-            if (['queued', 'running', 'succeeded', 'refunded'].includes(next.state)) jobSettled(next.job_id, next.state);
+            // The history watcher needs one transition into queued/running to
+            // clear replay suppression, not a broadcast on every identical
+            // status read. Repeated broadcasts wake this poll and previously
+            // made a healthy multi-minute job look unresolved after seconds.
+            if (['succeeded', 'refunded'].includes(next.state)
+                || (['queued', 'running'].includes(next.state) && announcedJobState !== next.state)) {
+              jobSettled(next.job_id, next.state);
+              announcedJobState = next.state;
+            }
             if (!unsettled(next)) {
               try {
                 if (!op.valid()) return;

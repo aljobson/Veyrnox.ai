@@ -21,7 +21,7 @@ jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, Link: ({ childr
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0 }) }));
 jest.mock('../src/components/ui', () => {
     const component = (name: string) => ({ children, ...props }: any) => require('react').createElement(name, props, children);
-    return { Text: component('text'), Card: component('card'), ListRow: component('row'), Button: component('button'), Chip: component('chip'), PriceText: component('price'), TextField: component('field'), ChoiceCard: component('choice'),
+    return { Text: component('text'), Card: component('card'), ListRow: component('row'), VividCard: component('vivid-card'), Button: component('button'), Chip: component('chip'), PriceText: component('price'), TextField: component('field'), ChoiceCard: component('choice'),
         themedStyles: (fn: any) => fn(require('../src/theme').tokensForScheme('dark'), {}), useThemedStyles: (s: any) => s, useAppearance: () => ({ scheme: 'dark' }) };
 });
 const answers: CreatorAnswers = { look: 'neon_rain', goal: 'story', pace: 'octopus', chaos: 2, destination: 'tiktok', audience: 'me', voice: 'calm' };

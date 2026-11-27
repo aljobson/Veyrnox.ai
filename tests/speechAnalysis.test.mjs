@@ -40,6 +40,25 @@ test('one admission and submit per key; replay bypasses generation capacity and 
     assert.equal(new URL(cfg.webhookBaseUrl).origin, 'https://worker.test'); assert.ok(new URL(cfg.webhookBaseUrl).searchParams.has('speech_token'));
     assert.equal(job.inputs.audio_url, 'https://r2.test/source?signature=PRIVATE');
 });
+test('explicit requested language reaches versioned admission and Scribe while auto stays legacy', async () => {
+    const manual = fixture();
+    const response = await manual.run(request({ ...body(), language: 'es' }));
+    assert.equal(response.status, 202);
+    assert.equal(manual.calls.find(c => c.name === 'speech_analysis_request_v3').args.p_requested_language, 'es');
+    assert.equal(manual.submissions[0][0].inputs.language_code, 'es');
+    assert.equal((await response.json()).requested_language, 'es');
+    const automatic = fixture(); await automatic.run(request({ ...body(), language: 'auto' }));
+    assert.ok(automatic.calls.some(c => c.name === 'speech_analysis_request'));
+    assert.equal(automatic.submissions[0][0].inputs.language_code, undefined);
+});
+test('unsupported requested language and a same-key language change fail before debit', async () => {
+    const invalid = fixture();
+    assert.equal((await invalid.run(request({ ...body(), language: 'und' }))).status, 400);
+    assert.equal(invalid.debit(), 0); assert.equal(invalid.submissions.length, 0);
+    const conflict = fixture({ rpc: { speech_analysis_by_key: async () => ({ ok: true, found: true, source_ref: body().source.jobId, accepts_no_speech: false, requested_language: 'en' }) } });
+    assert.equal((await conflict.run(request({ ...body(), language: 'es' }))).status, 409);
+    assert.equal(conflict.debit(), 0); assert.equal(conflict.submissions.length, 0);
+});
 test('pre-submit failure and definitive rejection refund once; replay cannot resubmit', async () => {
     for (const options of [{ sign: async () => { throw Error('PRIVATE'); } }, { submit: { outcome: 'rejected' } }]) {
         const f = fixture(options); const res = await f.run(request()); assert.equal(res.status, 502); assert.equal((await res.json()).refunded, true);

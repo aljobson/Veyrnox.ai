@@ -7,7 +7,7 @@ test('the signed-in shell exposes every primary workspace', { tags: ['smoke', 'n
   await openSignedIn(app, screen);
   await expect(screen.getByRole('button', 'Explore', { selected: true })).toBeVisible();
 
-  for (const [tab, route] of [['Create', 'create'], ['Studio', 'editor'], ['Library', 'library'], ['Publish', 'publish']] as const) {
+  for (const [tab, route] of [['Create', 'create'], ['Editor', 'editor'], ['Library', 'library'], ['Publish', 'publish']] as const) {
     await device.openLink(`ai.veyrnox.app://${route}`);
     await expect(screen.getByRole('button', tab, { selected: true })).toBeVisible();
   }
@@ -18,7 +18,7 @@ test('the menu exposes tools, assets and Social Cinema', { tags: ['smoke', 'navi
   await screen.getByRole('button', 'Open menu').tap();
 
   // The drawer is the production navigation contract. Retired Face Filters and build-disabled Film Studio stay out;
-  // Studio and Smart Cut are the supported editing entries.
+  // Editor and Smart Cut are the supported editing entries.
   for (const destination of NAVIGATION_MENU_LABELS) {
     await expect(screen.getByRole('link', destination)).toBeAttached();
   }
@@ -31,12 +31,13 @@ test('the menu exposes tools, assets and Social Cinema', { tags: ['smoke', 'navi
   await expect(screen.getByText('Continue watching')).toBeVisible({ timeout: 30_000 });
 });
 
-test('the Creative Tools directory renders the complete catalogue', { tags: ['smoke', 'creative-tools'] }, async ({ app, device, screen }) => {
+test('the simplified Creative Tools view starts with avatars and renders the complete catalogue', { tags: ['smoke', 'creative-tools'] }, async ({ app, device, screen }) => {
   await openSignedIn(app, screen);
   await device.openLink('ai.veyrnox.app://features');
 
-  await expect(screen.getByText('Make the exact thing you need')).toBeVisible();
-  await expect(screen.getByRole('button', { name: /AI Avatar Generator/ })).toBeAttached();
+  await expect(screen.getByRole('button', 'Back')).toBeVisible();
+  await expect(screen.getByText('Avatars')).toBeVisible();
+  await expect(screen.getByRole('button', { name: /AI Avatar Generator/ })).toBeVisible();
   await expect(screen.getByRole('button', { name: /Talking Avatar/ })).toBeAttached();
 
   const last = screen.getByRole('button', { name: /Product Image Generator/ });

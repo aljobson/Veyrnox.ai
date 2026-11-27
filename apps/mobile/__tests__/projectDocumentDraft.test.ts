@@ -16,6 +16,9 @@ test('readEditable reads brief and canvas and refuses values outside the sets', 
     expect(readEditable({ ...v1, canvas: { aspect_ratio: '4:3', frame_rate: 30 } })).toBeNull();
     expect(readEditable({ ...v1, canvas: { aspect_ratio: '16:9', frame_rate: '30' } })).toBeNull();
     expect(readEditable({ ...v1, canvas: undefined })).toBeNull();
+    expect(readEditable({ ...v1, canvas: { aspect_ratio: '4:5', frame_rate: 30 } })).toEqual({ brief: 'Hello', aspectRatio: '4:5', frameRate: 30 });
+    expect(readEditable({ ...v1, canvas: { aspect_ratio: 'custom:5x8', frame_rate: 30 } })).toEqual({ brief: 'Hello', aspectRatio: 'custom:5x8', frameRate: 30 });
+    expect(readEditable({ ...v1, canvas: { aspect_ratio: 'custom:10x16', frame_rate: 30 } })).toBeNull();
 });
 
 test('applyEditable returns a new document and keeps the timeline byte for byte on schema 2 and 3', () => {

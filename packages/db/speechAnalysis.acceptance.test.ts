@@ -1,4 +1,4 @@
-/** Disposable LOCAL Postgres, with 0450–0455 already applied by its owner.
+/** Disposable LOCAL Postgres, with 0450–0455 and 0602 already applied by its owner.
  * Never applies migrations. Tests normally roll back all fixtures. The concurrency test
  * commits isolated fixtures so two connections can see them, then erases the account;
  * its content-free financial audit rows remain (the ledger is append-only).
@@ -22,7 +22,7 @@ describe('speech analysis RPC acceptance', { skip: !url && 'SPEECH_ANALYSIS_TEST
         assert.ok(['localhost', '127.0.0.1', '[::1]'].includes(new URL(url!).hostname), 'Use a disposable local database only');
         Pg = (await import('pg')).default; client = new Pg.Client({ connectionString: url }); await client.connect();
         await client.query("SET statement_timeout='15s'");
-        assert.ok((await one("SELECT to_regprocedure('public.speech_analysis_request_v2(text,uuid,numeric,text,integer,text,text,text,bigint,numeric,text,boolean,boolean)') AS fn")).fn, 'Owner must provision current migrations first');
+        assert.ok((await one("SELECT to_regprocedure('public.speech_analysis_request_v3(text,uuid,numeric,text,integer,text,text,text,bigint,numeric,text,boolean,boolean,text)') AS fn")).fn, 'Owner must provision current migrations first');
     });
     beforeEach(async () => {
         committed = false; await client.query('BEGIN');
@@ -92,7 +92,7 @@ describe('speech analysis RPC acceptance', { skip: !url && 'SPEECH_ANALYSIS_TEST
         assert.equal((await rpc('speech_analysis_request', [other, source, 12, randomUUID(), 2])).code, 'NOT_FOUND');
         assert.equal((await request(randomUUID(), source, 11)).code, 'DURATION_MISMATCH');
         assert.equal((await request(randomUUID(), source, 12, 3)).code, 'PRICE_CHANGED');
-        const long = await makeSource(61); assert.equal((await request(randomUUID(), long.source)).code, 'SOURCE_TOO_LONG');
+        const long = await makeSource(601); assert.equal((await request(randomUUID(), long.source, 601)).code, 'SOURCE_TOO_LONG');
         const unsupported = await makeSource(12, 'image/png'); assert.equal((await request(randomUUID(), unsupported.source)).code, 'SOURCE_UNSUPPORTED');
         await client.query('DELETE FROM public.speech_source_probes WHERE asset_id=$1', [asset]);
         assert.equal((await request()).code, 'SOURCE_UNSUPPORTED');
@@ -264,7 +264,7 @@ describe('speech analysis RPC acceptance', { skip: !url && 'SPEECH_ANALYSIS_TEST
             const row = await one('SELECT relrowsecurity,relforcerowsecurity FROM pg_class WHERE oid=$1::regclass', [`public.${table}`]); assert.equal(row.relrowsecurity, true); assert.equal(row.relforcerowsecurity, true);
             for (const role of ['anon', 'authenticated']) assert.equal((await one("SELECT has_table_privilege($1,$2,'SELECT') AS allowed", [role, `public.${table}`])).allowed, false);
         }
-        for (const fn of ['speech_analysis_request(text,uuid,numeric,text,integer)', 'speech_analysis_get(text,uuid)', 'speech_analysis_by_key(text,text)', 'speech_analysis_complete(uuid,jsonb)', 'speech_analysis_fail(uuid,text)', 'sweep_speech_analyses()']) {
+        for (const fn of ['speech_analysis_request(text,uuid,numeric,text,integer)', 'speech_analysis_request_v3(text,uuid,numeric,text,integer,text,text,text,bigint,numeric,text,boolean,boolean,text)', 'speech_analysis_preflight_v2(text,text,uuid,text,bigint,text)', 'speech_analysis_get(text,uuid)', 'speech_analysis_by_key(text,text)', 'speech_analysis_complete(uuid,jsonb)', 'speech_analysis_fail(uuid,text)', 'sweep_speech_analyses()']) {
             const row = await one('SELECT prosecdef,proconfig FROM pg_proc WHERE oid=$1::regprocedure', [`public.${fn}`]); assert.equal(row.prosecdef, true); assert.ok(row.proconfig.includes('search_path=""'));
             for (const role of ['anon', 'authenticated']) assert.equal((await one("SELECT has_function_privilege($1,$2,'EXECUTE') AS allowed", [role, `public.${fn}`])).allowed, false);
         }
@@ -274,6 +274,34 @@ describe('speech analysis RPC acceptance', { skip: !url && 'SPEECH_ANALYSIS_TEST
         auth, options.upload ? null : source, 12, key, options.price ?? 2, options.upload ? 'upload' : 'job',
         options.upload ? options.uploadKey || `uploads/${auth}/${randomUUID()}.mov` : null, options.fingerprint || fingerprint, 500, 12, 'video/quicktime', options.accepts !== false, options.cacheOnly === true,
     ], conn);
+    const languageRequest = (language: string, key = randomUUID(), price = 2, conn = client) => rpc('speech_analysis_request_v3', [
+        auth, source, 12, key, price, 'job', null, fingerprint, 500, 12, 'video/mp4', true, false, language,
+    ], conn);
+    it('requested language scopes replay, in-flight joins, completed cache and preflight', async () => {
+        const automatic = await request(); await complete(automatic.id);
+        const spanishKey = randomUUID(), spanish = await languageRequest('es', spanishKey);
+        assert.equal(spanish.fresh, true); assert.notEqual(spanish.id, automatic.id);
+        assert.equal((await languageRequest('es')).id, spanish.id);
+        assert.equal((await languageRequest('en', spanishKey)).code, 'IDEMPOTENCY_CONFLICT');
+        assert.equal((await rpc('speech_analysis_by_key', [auth, spanishKey])).requested_language, 'es');
+        await complete(spanish.id);
+        const cached = await languageRequest('es'); assert.equal(cached.kind, 'reused_cache'); assert.equal(cached.credits, 0);
+        const autoQuote = await rpc('speech_analysis_preflight_v2', [auth, 'job', source, fingerprint, 500, 'auto']);
+        const esQuote = await rpc('speech_analysis_preflight_v2', [auth, 'job', source, fingerprint, 500, 'es']);
+        const deQuote = await rpc('speech_analysis_preflight_v2', [auth, 'job', source, fingerprint, 500, 'de']);
+        assert.deepEqual([autoQuote.cached, esQuote.cached, deQuote.cached], [true, true, false]);
+        assert.equal((await languageRequest('und')).code, 'INVALID_LANGUAGE');
+        assert.equal((await one('SELECT count(*)::int AS n FROM public.ledger_entries WHERE user_id=$1 AND delta<0', [user])).n, 2);
+    });
+    it('legacy Automatic quote and admission never reuse an explicit-language result', async () => {
+        const spanish = await languageRequest('es'); await complete(spanish.id);
+        const quote = await rpc('speech_analysis_preflight', [auth, 'job', source, fingerprint, 500]);
+        assert.equal(quote.cached, false); assert.equal(quote.credits, 2);
+        const automatic = await request();
+        assert.equal(automatic.fresh, true); assert.notEqual(automatic.id, spanish.id);
+        assert.equal(automatic.requested_language, 'auto');
+        assert.equal((await one('SELECT count(*)::int AS n FROM public.ledger_entries WHERE user_id=$1 AND delta<0', [user])).n, 2);
+    });
     for (const bestFirst of [true, false]) it(`silent shared source uses each receipt capability; best first=${bestFirst}`, async () => {
         const bestKey = randomUUID(), legacyKey = randomUUID();
         const first = bestFirst ? await bestRequest(bestKey) : await request(legacyKey);
