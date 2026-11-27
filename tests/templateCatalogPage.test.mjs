@@ -55,6 +55,8 @@ test('every catalog family shows a fail-closed Veyrnox Credit price', () => {
   assert.match(component, /function ReadyCard\(\{ item, badge, credits, t \}\)/);
   assert.match(component, /function VeoCard\(\{ item, credits, onUse, t \}\)/);
   assert.match(component, /function SunoCard\(\{ item, credits, playing, progress, onToggle, t \}\)/);
+  assert.match(component, /price \? <p[^>]*>\{t\('app\.templates\.customerCredits',[\s\S]*: <p[^>]*>\{t\('app\.templates\.priceUnavailable'\)\}<\/p>/);
+  assert.match(component, /price \? <CatalogTemplateRun[\s\S]*: <button type="button" disabled[^>]*>\{t\('app\.templates\.useTemplate'\)\}<\/button>/);
   assert.match(component, /app\.templates\.priceUnavailable/);
   assert.equal(appEnglish['app.templates.priceUnavailable'], 'Price unavailable');
 });
