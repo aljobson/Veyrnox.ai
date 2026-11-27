@@ -17,6 +17,7 @@ import { StepGrid } from '../../../components/beats/StepGrid';
 import { BeatInstrumentsSection, openPiano } from '../../../components/beats/BeatInstrumentsSection';
 import { BeatSaveControls } from '../../../components/beats/BeatSaveControls';
 import { MusicAddTrackTray } from '../../../components/beats/MusicAddTrackSheet';
+import { BeatSoundsTray } from '../../../components/beats/BeatSoundsSheet';
 import { MusicInstrumentTray } from '../../../components/beats/MusicInstrumentTray';
 import { MusicMixerTray } from '../../../components/beats/MusicMixerTray';
 import { BeatArrangement } from '../../../components/beats/BeatArrangement';
@@ -49,13 +50,13 @@ import type { MidiSoundTrack } from '../../../lib/beatNative/midi';
 import { getCacheUser } from '../../../lib/appCache';
 import { KeyboardScreen } from '../../../components/KeyboardScreen';
 import { KeyboardFormScrollView } from '../../../components/KeyboardFormScrollView';
-import { addAudioRegion as addAudioAssetRegion, type AudioAsset } from '../../../lib/beatNative/labs';
+import { addAudioRegion as addAudioAssetRegion, soundAsset, type AudioAsset, type BeatSound } from '../../../lib/beatNative/labs';
 import { pickDeviceAudio } from '../../../lib/beatNative/deviceAudioImport';
 import { position } from '../../../lib/beatNative/regionActions';
 import { HeaderAction } from '../../../components/HeaderAction';
 
 const clampBpm = (n: number) => Math.min(MAX_BPM, Math.max(MIN_BPM, n));
-type BottomTool = 'tracks' | 'library' | 'instruments' | 'ai' | 'mix' | 'save' | null;
+type BottomTool = 'tracks' | 'library' | 'instruments' | 'sounds' | 'ai' | 'mix' | 'save' | null;
 const playbackNotice = (error: unknown) => t((error as Error)?.message === 'audio_playback_too_large' ? 'beat.audioTooLarge' : 'beat.audioError');
 const midiErrorNotice = (error: unknown) => {
     const code = (error as { code?: string })?.code ?? (error as Error)?.message ?? '';
@@ -197,7 +198,7 @@ export default function BeatEditor() {
         requestAnimationFrame(() => restoreBottomToolFocus(closed));
     }, [bottomTool, restoreBottomToolFocus]);
     const openAddTools = useCallback(() => setBottomTool('tracks'), []);
-    const toggleAddTools = useCallback(() => setBottomTool(value => value === 'tracks' || value === 'instruments' ? null : 'tracks'), []);
+    const toggleAddTools = useCallback(() => setBottomTool(value => value === 'tracks' || value === 'instruments' || value === 'sounds' ? null : 'tracks'), []);
     const toggleMixTools = useCallback(() => { setMixerDeepOpen(false); setBottomTool(value => value === 'mix' ? null : 'mix'); }, []);
     const toggleLibraryTools = useCallback(() => setBottomTool(value => value === 'library' ? null : 'library'), []);
     useEffect(() => {
@@ -907,7 +908,7 @@ export default function BeatEditor() {
                 onUndo={() => navigateHistory('undo')} onRedo={() => navigateHistory('redo')}
                 onPlay={() => void (playing || starting ? stop() : play())}
                 addDisabled={false}
-                addOpen={bottomTool === 'tracks' || bottomTool === 'instruments'} aiOpen={bottomTool === 'ai'} aiDisabled={aiLocked}
+                addOpen={bottomTool === 'tracks' || bottomTool === 'instruments' || bottomTool === 'sounds'} aiOpen={bottomTool === 'ai'} aiDisabled={aiLocked}
                 aiHint={libraryDisabledReason}
                 mixerOpen={bottomTool === 'mix'} libraryOpen={bottomTool === 'library'} libraryDisabled={false}
                 onAdd={toggleAddTools} onAi={toggleAiTools}
@@ -917,19 +918,22 @@ export default function BeatEditor() {
                 onKeyboardEditingChange={setKeyboardEditing}
                 subMenuFocusRef={bottomToolHeading}
                 compactStatus={compactTransportStatus}
-                subMenuFillsBudget={bottomTool === 'library'}
+                subMenuFillsBudget={bottomTool === 'library' || bottomTool === 'sounds'}
                 subMenuEditing={bottomTool === 'mix' && mixerDeepOpen}
                 subMenuLabel={bottomTool === 'library' ? t('beat.library.open') : bottomTool === 'ai' ? t('beatAi.title')
                     : bottomTool === 'mix' ? t('beatMix.title') : bottomTool === 'instruments' ? t('beatPiano.library.title')
+                    : bottomTool === 'sounds' ? undefined
                     : bottomTool === 'tracks' ? t('beat.track.add') : bottomTool === 'save' ? t('beat.versions.title') : undefined}
-                subMenu={bottomTool === 'tracks' || bottomTool === 'instruments' ? (bottomTool === 'instruments'
+                subMenu={bottomTool === 'tracks' || bottomTool === 'instruments' || bottomTool === 'sounds' ? (bottomTool === 'instruments'
                         ? <MusicInstrumentTray apply={apply} disabled={patternLocked || doc.tracks.length >= MAX_TRACKS} reason={addTrackDisabledReason} refusal={notice} compact={compactViewport}
                         onBack={backToTrackChoices} onAdded={closeBottomTools} />
+                        : bottomTool === 'sounds' ? <BeatSoundsTray bpm={doc.tempo.bpm} onClose={backToTrackChoices}
+                            onAdd={(sound: BeatSound) => apply(current => addAudioAssetRegion(current, soundAsset(sound, current.tempo.bpm), undefined, arrangementLocator), t('beatLabs.added'))} />
                         : <MusicAddTrackTray disabled={patternLocked || doc.tracks.length >= MAX_TRACKS} reason={addTrackDisabledReason} busy={deviceImportBusy} compact={compactViewport}
                         instrumentControlRef={addInstrumentTrigger}
                         onDevice={() => { closeBottomTools(); void importDeviceAudio(); }}
                         onRecord={() => { closeBottomTools(); addAudioTrackFromSheet(); }}
-                        onInstrument={() => setBottomTool('instruments')} />)
+                        onInstrument={() => setBottomTool('instruments')} onSounds={() => setBottomTool('sounds')} />)
                     : bottomTool === 'library' ? <BeatSongLibrarySheet inline compact={compactViewport} layout={layout} disabled={patternLocked}
                         disabledReason={patternLocked ? libraryDisabledReason : undefined} placement={songPlacement}
                         onCommit={commitImportedAudio} onClose={closeBottomTools} onAdded={closeBottomTools} />

@@ -14,15 +14,17 @@ type Props = {
     onDevice(): void;
     onRecord(): void;
     onInstrument(): void;
+    onSounds?(): void;
 };
 
-export function MusicAddTrackTray({ disabled, reason, busy = false, compact = false, instrumentControlRef, onDevice, onRecord, onInstrument }: Props) {
+export function MusicAddTrackTray({ disabled, reason, busy = false, compact = false, instrumentControlRef, onDevice, onRecord, onInstrument, onSounds }: Props) {
     const s = useThemedStyles(sheets);
     const hint = disabled ? reason : busy ? t('beat.track.deviceBusy') : undefined;
     const choices = <>
         <TrackChoice testID="music-add-track-device" icon="arrowUp" title={t(busy ? 'beat.track.deviceBusy' : 'beat.track.device')} compact={compact} disabled={disabled || busy} hint={hint} onPress={onDevice} />
         <TrackChoice testID="music-add-track-record" icon="microphone" title={t('beatTakes.addTrack')} compact={compact} disabled={disabled || busy} hint={hint} onPress={onRecord} />
         <TrackChoice controlRef={instrumentControlRef} testID="music-add-track-instrument" icon="pianoKeys" title={t('beatPiano.library.title')} compact={compact} disabled={disabled || busy} hint={hint} onPress={onInstrument} />
+        {onSounds ? <TrackChoice testID="music-add-track-sounds" icon="waveSine" title={t('beatLabs.sounds')} compact={compact} disabled={disabled || busy} hint={hint} onPress={onSounds} /> : null}
     </>;
     const reasonText = disabled && reason ? <Text testID="music-add-track-disabled-reason" variant="footnote" tone="secondary" style={s.reason}>{reason}</Text> : null;
     if (compact) return <ScrollView horizontal testID="music-add-track-tray" accessibilityRole="toolbar" accessibilityLabel={t('beat.track.add')}

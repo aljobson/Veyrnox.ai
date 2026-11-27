@@ -184,9 +184,8 @@ test('preview preparation is visible, then natural finish restores Audition', as
     await act(async () => root.render(<BeatSoundsSheet bpm={92} onAdd={() => true} onClose={() => {}} />));
     const name = t('beatLabs.sound.pad');
     await press(t('beatLabs.auditionNamed', { name }));
-    expect(text(t('beatLabs.previewLoading')).length).toBeGreaterThan(0);
+    expect(byLabel(t('beatLabs.auditionNamed', { name })).props.accessibilityState.busy).toBe(true);
     await act(async () => { ready.resolve('pad'); });
-    expect(text(t('beatLabs.previewLoading'))).toHaveLength(0);
     expect(byLabel(t('beatLabs.stopNamed', { name }))).toBeDefined();
     await act(async () => mockPreviewFinish());
     expect(byLabel(t('beatLabs.auditionNamed', { name }))).toBeDefined();

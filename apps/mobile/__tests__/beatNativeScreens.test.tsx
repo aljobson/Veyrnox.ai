@@ -22,6 +22,7 @@ import type { ApiClient } from '../src/lib/api';
 import { createBeatAudioFromEngine } from '../src/lib/beatNative/audio';
 import { BeatRecordPanel } from '../src/components/beats/BeatRecordPanel';
 import { addInstrumentTrack, asMidiDoc } from '../src/lib/beatNative/midi';
+import { BEAT_SOUNDS } from '../src/lib/beatNative/labs';
 import { bindCacheUser } from '../src/lib/appCache';
 jest.mock('expo-crypto', () => ({
     CryptoDigestAlgorithm: { SHA256: 'SHA-256' },
@@ -319,6 +320,26 @@ describe('beat editor', () => {
         await press(t('beat.track.controls'));
         await press(t('beat.track.remove', { track: getBeat(doc.id)!.tracks[1].name }));
         expect(getBeat(doc.id)!.tracks).toHaveLength(1);
+    });
+    test('Sounds stays inline and adds one compact library choice at the current timeline position', async () => {
+        const doc = await open();
+        await press(t('beat.track.add'));
+        await act(async () => {
+            const sounds = testId('music-add-track-sounds')[0];
+            (sounds.props.onClick ?? sounds.props.onPress)({ nativeEvent: {} });
+        });
+        expect(testId('music-add-track-tray')).toHaveLength(0);
+        expect(testId('beat-sounds-tray')).toHaveLength(1);
+        expect(root.container.queryAll(node => node.props.transparent && node.props.presentationStyle === 'overFullScreen')).toHaveLength(0);
+
+        const sound = BEAT_SOUNDS[0];
+        const name = t(`beatLabs.sound.${sound.id}`);
+        await press(t('beatLabs.addNamed', { name }));
+        expect(testId('beat-sounds-tray')).toHaveLength(0);
+        const saved = getBeat(doc.id)!;
+        const addedTrack = saved.tracks.find(track => track.kind === 'audio');
+        expect(addedTrack?.regions).toEqual([expect.objectContaining({ start: 0, assetId: expect.any(String) })]);
+        expect(saved.assets?.[addedTrack!.regions[0].assetId!]).toEqual(expect.objectContaining({ source: 'sound', ref: sound.id }));
     });
     test('effect controls stay in the mixer sheet rather than the main strip', async () => {
         await open();
