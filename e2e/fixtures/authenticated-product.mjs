@@ -5,6 +5,7 @@ import { readdirSync } from 'node:fs';
 import { PAGE_TEMPLATES, templateMatches } from '../page-manifest.mjs';
 import { settleStreamedPage } from './streamed-page.mjs';
 import { FEATURE_TOURS, tourForPath } from '../../lib/featureTours.js';
+import { readyTemplateCatalog } from '../../app/veyrnox/_lib/templateCatalogReady.js';
 
 export { expect };
 export const SYNTHETIC_USER = Object.freeze({ id: '00000000-0000-4000-8000-000000000001', email: 'synthetic-feature-qa@example.invalid' });
@@ -48,6 +49,8 @@ export const SYNTHETIC_MODELS = [
   const record = capabilityFor(endpoint);
   return { id, name: `Synthetic ${id}`, modality, credits, gated: false, durations: lengthsFor(record), capabilities: publicCapabilities(record) };
 });
+
+export const SYNTHETIC_READY_TEMPLATE_CATALOG = readyTemplateCatalog();
 
 const COMPLETED_TOUR_IDS = [...new Set([
   ...FEATURE_TOURS.map(({ id }) => id),
@@ -151,8 +154,12 @@ export async function installProductFixtures(page, options = {}) {
       if (url.pathname.startsWith('/api/v1/library-sync')) return state.user ? json({ error: 'not_found' }, 404) : json({ error: 'not_authenticated' }, 401);
       if (method === 'GET') {
         if (url.pathname === '/api/catalog') return json({ models: options.models || SYNTHETIC_MODELS });
+        if (url.pathname === '/api/template-catalog/ready') return json(SYNTHETIC_READY_TEMPLATE_CATALOG);
         if (url.pathname === '/api/template-catalog' && url.searchParams.get('summary') === '1') {
           return json({ total: 1088, providers: { kling: 226, seedance: 341, vidu: 521 } });
+        }
+        if (url.pathname === '/api/template-catalog' && url.searchParams.has('provider')) {
+          return json({ provider: url.searchParams.get('provider'), templates: [], total: 0, page: 1, pageSize: 50 });
         }
         // The template gallery and one template in full: static data the browser no longer bundles (the same functions the
         // routes serve, so the cards and counts are the real ones); nothing per-user, no price.
