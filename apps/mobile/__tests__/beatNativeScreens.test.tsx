@@ -22,6 +22,7 @@ import type { ApiClient } from '../src/lib/api';
 import { createBeatAudioFromEngine } from '../src/lib/beatNative/audio';
 import { BeatRecordPanel } from '../src/components/beats/BeatRecordPanel';
 import { addInstrumentTrack, asMidiDoc } from '../src/lib/beatNative/midi';
+import { BEAT_SOUNDS } from '../src/lib/beatNative/labs';
 import { bindCacheUser } from '../src/lib/appCache';
 jest.mock('expo-crypto', () => ({
     CryptoDigestAlgorithm: { SHA256: 'SHA-256' },
@@ -166,7 +167,6 @@ describe('beat editor', () => {
         await act(async () => root.render(<BeatEditor />));
         await press(track.name);
         expect(testId('beat-midi-record-panel')).toHaveLength(1);
-        expect(testId('beat-midi-record-row')).toHaveLength(1);
         await press(t('beat.midiRecord.record'));
         await act(async () => { await Promise.resolve(); await Promise.resolve(); });
         expect(mockAudio.playRange).toHaveBeenCalledWith(expect.objectContaining({
@@ -287,22 +287,25 @@ describe('beat editor', () => {
     });
     test('mixer: mute folds into the audio mix, solo and kit change the document', async () => {
         const doc = await open();
-        const track = t('beat.track', { n: 1 });
-        await press(t('beat.track.controls'));
+        const track = doc.tracks[0].name;
+        await press(t('beatMix.title'));
         await press(t('beat.play'));
         await press(t('beat.mute', { track }));
         expect(getBeat(doc.id)!.tracks[0].mute).toBe(true);
-        expect(testId(`mute-selected-${doc.tracks[0].id}`)).toHaveLength(1);
+        expect(testId('music-mixer-mute')[0].props.accessibilityState.selected).toBe(true);
         expect(mockAudio.setTrackMix).toHaveBeenCalledWith(doc.tracks[0].id, { gain: 0, pan: 0 });
         await press(t('beat.solo', { track }));
         expect(getBeat(doc.id)!.tracks[0].solo).toBe(true);
-        expect(testId(`solo-selected-${doc.tracks[0].id}`)).toHaveLength(1);
+        expect(testId('music-mixer-solo')[0].props.accessibilityState.selected).toBe(true);
+        await press(t('beat.track.controls'));
         await press(t('beat.kit.lofi'));
         expect(getBeat(doc.id)!.tracks[0].kit).toBe('lofi');
     });
     test('add and remove a track', async () => {
         const doc = await open();
-        await press(t('beat.track.add'));
+        const timelineAdd = testId('arrangement-add-track')[0];
+        expect(timelineAdd.props.accessibilityLabel).toBe(t('beat.track.add'));
+        await act(async () => (timelineAdd.props.onClick ?? timelineAdd.props.onPress)({ nativeEvent: {} }));
         expect(testId('music-add-track-tray')).toHaveLength(1);
         await act(async () => {
             const instrument = testId('music-add-track-instrument')[0];
@@ -314,9 +317,31 @@ describe('beat editor', () => {
             (drum.props.onClick ?? drum.props.onPress)({ nativeEvent: {} });
         });
         expect(getBeat(doc.id)!.tracks).toHaveLength(2);
+        await press(t('beatMix.title'));
+        await press(getBeat(doc.id)!.tracks[1].name);
         await press(t('beat.track.controls'));
-        await press(t('beat.track.remove', { track: t('beat.track', { n: 2 }) }));
+        await press(t('beat.track.remove', { track: getBeat(doc.id)!.tracks[1].name }));
         expect(getBeat(doc.id)!.tracks).toHaveLength(1);
+    });
+    test('Sounds stays inline and adds one compact library choice at the current timeline position', async () => {
+        const doc = await open();
+        await press(t('beat.track.add'));
+        await act(async () => {
+            const sounds = testId('music-add-track-sounds')[0];
+            (sounds.props.onClick ?? sounds.props.onPress)({ nativeEvent: {} });
+        });
+        expect(testId('music-add-track-tray')).toHaveLength(0);
+        expect(testId('beat-sounds-tray')).toHaveLength(1);
+        expect(root.container.queryAll(node => node.props.transparent && node.props.presentationStyle === 'overFullScreen')).toHaveLength(0);
+
+        const sound = BEAT_SOUNDS[0];
+        const name = t(`beatLabs.sound.${sound.id}`);
+        await press(t('beatLabs.addNamed', { name }));
+        expect(testId('beat-sounds-tray')).toHaveLength(0);
+        const saved = getBeat(doc.id)!;
+        const addedTrack = saved.tracks.find(track => track.kind === 'audio');
+        expect(addedTrack?.regions).toEqual([expect.objectContaining({ start: 0, assetId: expect.any(String) })]);
+        expect(saved.assets?.[addedTrack!.regions[0].assetId!]).toEqual(expect.objectContaining({ source: 'sound', ref: sound.id }));
     });
     test('effect controls stay in the mixer sheet rather than the main strip', async () => {
         await open();

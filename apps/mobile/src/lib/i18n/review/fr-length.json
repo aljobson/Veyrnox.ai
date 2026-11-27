@@ -6762,6 +6762,18 @@
     "ratio": 1.67
   },
   {
+    "id": "beatMix.dock.mix",
+    "english": "Mix",
+    "translation": "Mixage",
+    "ratio": 2
+  },
+  {
+    "id": "beatMix.dock.library",
+    "english": "Library",
+    "translation": "Bibliothèque",
+    "ratio": 1.71
+  },
+  {
     "id": "beatMix.master.room",
     "english": "Reverb room size",
     "translation": "Taille de la pièce de réverbération",

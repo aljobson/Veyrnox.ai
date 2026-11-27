@@ -151,12 +151,15 @@ test.each(['hiphop', 'lofi'] as const)('%s template and added audio expose kit c
     expect(beatStore.putBeat(doc)).toBe(true);
     mockParams = { id: initial.id, song: PROJECT, revision: '2' };
     await act(async () => root.render(<BeatEditor />));
-    await press(t('beat.track.controls'));
-    doc.tracks.forEach((track, index) => {
-        const label = t('beat.kit', { track: t('beat.track', { n: index + 1 }) });
+    await press(t('beatMix.title'));
+    for (const track of doc.tracks) {
+        await press(track.name);
+        await press(t('beat.track.controls'));
+        const label = t('beat.kit', { track: track.name });
         const controls = root.container.queryAll(node => node.props.accessibilityLabel === label);
         expect(controls.length > 0).toBe(track.kind !== 'audio' && track.kind !== 'midi');
-    });
+        await press(t('beat.track.controls'));
+    }
 });
 test('non-trashed song detail opens the AI Music Editor next to the existing song actions', async () => {
     jest.spyOn(musicClient, 'getSong').mockResolvedValue({ ...songFixture, id: PROJECT, actions: [] } as MusicSongDetail);
@@ -181,9 +184,8 @@ test('preview preparation is visible, then natural finish restores Audition', as
     await act(async () => root.render(<BeatSoundsSheet bpm={92} onAdd={() => true} onClose={() => {}} />));
     const name = t('beatLabs.sound.pad');
     await press(t('beatLabs.auditionNamed', { name }));
-    expect(text(t('beatLabs.previewLoading')).length).toBeGreaterThan(0);
+    expect(byLabel(t('beatLabs.auditionNamed', { name })).props.accessibilityState.busy).toBe(true);
     await act(async () => { ready.resolve('pad'); });
-    expect(text(t('beatLabs.previewLoading'))).toHaveLength(0);
     expect(byLabel(t('beatLabs.stopNamed', { name }))).toBeDefined();
     await act(async () => mockPreviewFinish());
     expect(byLabel(t('beatLabs.auditionNamed', { name }))).toBeDefined();

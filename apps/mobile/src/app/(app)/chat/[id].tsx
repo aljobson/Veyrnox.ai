@@ -28,7 +28,7 @@ import { imagesBlocked, MAX_ATTACHMENTS, photoNoticeKey, refsForSend, roomFor, t
 import { pickFiles, pickPhotos, pickVideoFrames, uploadChatImages } from '../../../lib/chatPhotos';
 import { createVideoAttach } from '../../../lib/chatVideoAttempt';
 import { fetchCatalog, type CatalogModel, type Kind } from '../../../lib/media';
-import { skillsInstructions, fittingSkills, selectedSkillIds, skillById, MAX_SELECTED_SKILLS, type Skill } from '../../../lib/studioSkills';
+import { skillsInstructions, fittingSkills, selectedSkillIds, skillById, MAX_SELECTED_SKILLS, SKILLS, type Skill } from '../../../lib/studioSkills';
 import { useKeyboardOpen } from '../../../lib/useKeyboardOpen';
 import { isQuiet, makeSendKey, resolveResumedSend, resolveStoppedSend, RESUME_QUIET_MS, resumeNoticeKey, stopNoticeKey, type StopOutcome } from '../../../lib/chatStop';
 import { plural, t } from '../../../lib/i18n';
@@ -102,7 +102,7 @@ export default function Conversation() {
     }
 
     async function toggleSkill(skill: Skill) {
-        if (skillBusy.current) return;
+        if (musicSeed || skillBusy.current) return;
         const ids = selectedIds.includes(skill.id) ? selectedIds.filter(id => id !== skill.id) : [...selectedIds, skill.id];
         if (ids.length > MAX_SELECTED_SKILLS) return;
         skillBusy.current = true; setSavingSkills(true);
@@ -439,7 +439,9 @@ export default function Conversation() {
                     contentContainerStyle={[styles.list, (messages?.length ?? 0) === 0 && styles.emptyList]}
                     keyboardShouldPersistTaps="handled"
                     ListEmptyComponent={
-                        messages === null ? undefined : starredOnly ?<Text>{t('chatDepth.noStars')}</Text> : <ConversationEmpty lockedIds={oddLocked ? ['oddling-continuity'] : []} selectedIds={selectedIds} saving={savingSkills} onToggle={toggleSkill} />
+                        messages === null ? undefined : starredOnly ?<Text>{t('chatDepth.noStars')}</Text> : <ConversationEmpty
+                            lockedIds={musicSeed ? SKILLS.map(skill => skill.id) : oddLocked ? ['oddling-continuity'] : []}
+                            selectedIds={selectedIds} saving={savingSkills} onToggle={toggleSkill} />
                     }
                     ListFooterComponent={
                         lastUser && !sending && model && againPrice !== null ? (

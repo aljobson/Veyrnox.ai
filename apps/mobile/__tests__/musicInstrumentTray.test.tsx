@@ -23,9 +23,31 @@ test('starts with drums and adds a preset without preview or per-row plus contro
 });
 
 test('keeps instrument categories and presets inline and disables additions when locked', async () => {
-    await act(async () => root.render(<MusicInstrumentTray apply={() => true} disabled onBack={() => {}} onAdded={() => {}} />));
+    const reason = 'Recording is in progress. Stop recording to add a track.';
+    await act(async () => root.render(<MusicInstrumentTray apply={() => true} disabled reason={reason} onBack={() => {}} onAdded={() => {}} />));
     expect(root.container.queryAll(node => node.props.testID === 'music-instrument-groups')).toHaveLength(1);
     const presets = root.container.queryAll(node => String(node.props.testID).startsWith('music-instrument-add-'));
     expect(presets.length).toBeGreaterThan(0);
     expect(presets.every(node => node.props.accessibilityState.disabled)).toBe(true);
+    expect(presets.every(node => node.props.accessibilityHint === reason)).toBe(true);
+    expect(root.container.queryAll(node => node.props.testID === 'music-instrument-disabled-reason')[0].props.children).toBe(reason);
+    const tray = root.container.queryAll(node => node.props.testID === 'music-instrument-tray')[0];
+    expect(tray.props.horizontal).not.toBe(true);
+    expect(tray.props.nestedScrollEnabled).toBe(true);
+    expect(RN.StyleSheet.flatten(tray.props.style)).toMatchObject({ flexShrink: 1, minHeight: 0 });
+});
+
+test('flattens categories and presets into one accessible horizontal row when height is constrained', async () => {
+    await act(async () => root.render(<MusicInstrumentTray apply={() => true} disabled={false} compact onBack={() => {}} onAdded={() => {}} />));
+    const row = root.container.queryAll(node => node.props.testID === 'music-instrument-groups')[0];
+    expect(row.props.horizontal).toBe(true);
+    expect(root.container.queryAll(node => String(node.props.testID).startsWith('music-instrument-presets-'))).toHaveLength(0);
+    const preset = root.container.queryAll(node => String(node.props.testID).startsWith('music-instrument-add-'))[0];
+    expect(RN.StyleSheet.flatten(preset.props.style).minHeight).toBe(44);
+    expect(preset.props.accessibilityLabel).toBeTruthy();
+    const visibleLabels = root.container.queryAll(node => node.props.numberOfLines === 1)
+        .map(node => node.props.children)
+        .filter(value => typeof value === 'string');
+    expect(visibleLabels).toContain('Drum kits');
+    expect(visibleLabels).toContain('Acoustic kit');
 });

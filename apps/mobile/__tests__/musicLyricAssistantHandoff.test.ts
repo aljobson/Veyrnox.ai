@@ -61,6 +61,7 @@ test('parser requires exactly one complete bounded block', () => {
     expect(parseMusicLyricProposal(valid, 3000)).toBe('[Verse]\nNew line');
     expect(parseMusicLyricProposal(`${valid}\n${MUSIC_LYRIC_BEGIN}\nAgain\n${MUSIC_LYRIC_END}`, 3000)).toBe('');
     expect(parseMusicLyricProposal(`${MUSIC_LYRIC_BEGIN}\n${'x'.repeat(11)}\n${MUSIC_LYRIC_END}`, 10)).toBe('');
+    expect(parseMusicLyricProposal(`${MUSIC_LYRIC_BEGIN}\nUnsafe\u0000line\n${MUSIC_LYRIC_END}`, 3000)).toBe('');
 });
 
 test('only the latest completed assistant reply can become a proposal', () => {

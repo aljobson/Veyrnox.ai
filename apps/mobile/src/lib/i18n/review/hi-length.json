@@ -2466,6 +2466,12 @@
     "ratio": 3.75
   },
   {
+    "id": "beatMix.dock.mix",
+    "english": "Mix",
+    "translation": "मिक्स",
+    "ratio": 1.67
+  },
+  {
     "id": "beatMix.fx.eq",
     "english": "EQ",
     "translation": "ईक्यू",

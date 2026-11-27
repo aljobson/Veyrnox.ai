@@ -6,6 +6,7 @@ import { appCache, bindCacheUser, wipeCache } from '../src/lib/appCache';
 import { createMemoryStorage } from '../src/lib/cache';
 import { t } from '../src/lib/i18n';
 import { bindMusicLyricThread, MUSIC_LYRIC_BEGIN, MUSIC_LYRIC_END, resetMusicLyricHandoffsForTest, selectMusicLyricPersona, stageMusicLyricHandoff } from '../src/lib/music/lyricAssistantHandoff';
+import { skillById } from '../src/lib/studioSkills';
 
 const mockRouter = { push: jest.fn(), replace: jest.fn(), dismissTo: jest.fn() };
 let mockParams: Record<string, string> = { id: 'thread' };
@@ -99,4 +100,16 @@ test('a Music token bound to another thread never seeds or offers return', async
     await act(async () => root.render(<Conversation />));
     expect(control(t('music.lyricAssistant.reviewInMusic'))).toBeUndefined();
     expect(control(t('chat.composer.message')).props.value).toBe('');
+});
+test('a Lyricist conversation locks Studio skills so the private profile prompt cannot be replaced', async () => {
+    const token = stageMusicLyricHandoff({ draftId: null, draftRevision: 0, sourceLyrics: 'Old words', lyricLimit: 3000, request: 'Make it vivid.' })!;
+    selectMusicLyricPersona(token, 'persona'); bindMusicLyricThread(token, 'persona', 'thread');
+    mockParams = { id: 'thread', lyricHandoff: token };
+    mockChat.getThread.mockResolvedValue({ ...loaded, messages: [] });
+    await act(async () => root.render(<Conversation />));
+    const skill = skillById('storyboard')!;
+    const skillControl = control(`${skill.name}. ${skill.blurb}`);
+    expect(skillControl.props.accessibilityState.disabled).toBe(true);
+    await act(async () => skillControl.props.onClick(event));
+    expect(mockChat.updateThread).not.toHaveBeenCalled();
 });

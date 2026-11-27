@@ -47,6 +47,24 @@ test('every authenticated endpoint uses the owner fence and rejects malformed re
         expect(c.request.mock.calls.at(-1)?.[2]).toEqual({ owner });
     }
 });
+test('asset signing accepts exact development loopback while keeping remote HTTP closed', async () => {
+    const previous = Object.getOwnPropertyDescriptor(globalThis, '__DEV__');
+    const setDev = (value: boolean) => Object.defineProperty(globalThis, '__DEV__', { configurable: true, writable: true, value });
+    try {
+        const c = client();
+        setDev(true);
+        c.request.mockResolvedValue({ url: 'http://127.0.0.1:8802/audio.wav', size_bytes: 1000 });
+        await expect(c.client.sign(asset)).resolves.toMatchObject({ size_bytes: 1000 });
+        c.request.mockResolvedValue({ url: 'http://media.example.test/audio.wav', size_bytes: 1000 });
+        await expect(c.client.sign(asset)).rejects.toMatchObject({ code: 'bad_response' });
+        setDev(false);
+        c.request.mockResolvedValue({ url: 'http://127.0.0.1:8802/audio.wav', size_bytes: 1000 });
+        await expect(c.client.sign(asset)).rejects.toMatchObject({ code: 'bad_response' });
+    } finally {
+        if (previous) Object.defineProperty(globalThis, '__DEV__', previous);
+        else delete (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__;
+    }
+});
 test('the pure seam never reads browser storage at import time', () => {
     const previous = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
     Object.defineProperty(globalThis, 'localStorage', { configurable: true, get() { throw new Error('browser_storage_read'); } });
