@@ -51,10 +51,12 @@ test.each(['Account', 'Publish'])('%s refreshes on every focus while sales are c
         expect(mockBilling.refreshSales).toHaveBeenCalledTimes(i);
     }
 });
-test('Account uses vivid boxes for destinations but not destructive actions', async () => {
+test('Account uses restrained neutral rows for destinations and keeps destructive actions distinct', async () => {
     await act(async () => root.render(<Account />));
     const cards = root.container.queryAll(node => node.type === 'vivid-card');
-    expect(cards.map(node => node.props.hue)).toEqual(expect.arrayContaining(['blue', 'orange', 'purple', 'green', 'pink', 'teal']));
-    expect(cards.some(node => node.props.title === t('acct.securityRow'))).toBe(true);
-    expect(cards.some(node => node.props.title === t('public.account.signOut') || node.props.title === t('account.deleteAccount'))).toBe(false);
+    expect(cards).toHaveLength(0);
+    const rows = root.container.queryAll(node => node.type === 'row');
+    expect(rows.some(node => node.props.title === t('acct.securityRow'))).toBe(true);
+    expect(rows.some(node => node.props.title === t('account.history'))).toBe(true);
+    expect(rows.some(node => node.props.title === t('public.account.signOut') || node.props.title === t('account.deleteAccount'))).toBe(false);
 });
