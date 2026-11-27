@@ -12,11 +12,20 @@ import { resolveInitialDescription } from '../../../../lib/licensedTrackTemplate
 import { buildMusicSamplePrompt, MUSIC_SAMPLE_DIRECTION_MAX } from '../../../../lib/musicDiscover.js';
 import { useI18n } from '../../../../components/I18nProvider';
 import { MusicCreationModeTabs } from './MusicCreationModeTabs';
+import { MusicCreationTypeNav } from './MusicCreationTypeNav';
 import { buildMusicDirection, EMPTY_MUSIC_DIRECTION, MusicAdvancedDirectionFields } from './MusicAdvancedDirectionFields';
 
 export function MusicCreateStudio({ serverMode = false, sourcesEnabled = false, sampleSeed = null, sampleMix = null, licensedTemplate = null, challengeSeed = null }) {
-  if (serverMode) return <MusicServerStudio sourcesEnabled={sourcesEnabled} sampleSeed={sampleSeed} sampleMix={sampleMix} licensedTemplate={licensedTemplate} challengeSeed={challengeSeed} />;
-  return <MusicPreviewCreateStudio sampleSeed={sampleSeed} sampleMix={sampleMix} licensedTemplate={licensedTemplate} challengeSeed={challengeSeed} />;
+  return (
+    <>
+      <div className="mx-auto max-w-7xl px-4 pt-8 sm:px-6 sm:pt-10">
+        <MusicCreationTypeNav active="track" />
+      </div>
+      {serverMode
+        ? <MusicServerStudio sourcesEnabled={sourcesEnabled} sampleSeed={sampleSeed} sampleMix={sampleMix} licensedTemplate={licensedTemplate} challengeSeed={challengeSeed} />
+        : <MusicPreviewCreateStudio sampleSeed={sampleSeed} sampleMix={sampleMix} licensedTemplate={licensedTemplate} challengeSeed={challengeSeed} />}
+    </>
+  );
 }
 
 function MusicPreviewCreateStudio({ sampleSeed, sampleMix, licensedTemplate, challengeSeed }) {

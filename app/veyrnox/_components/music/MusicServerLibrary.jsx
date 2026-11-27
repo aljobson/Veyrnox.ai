@@ -130,18 +130,16 @@ function MusicUploadsCollection({ active }) {
 // Collections that replace the song list with their own panel.
 const PANEL_COLLECTIONS = ['uploads', 'trash', 'mixes', 'history', 'hooks', 'covers'];
 
-export function MusicServerLibrary({ workspaceView = false, sourcesEnabled = false, collaborationEnabled = false, tabsEnabled = false, beatEditor = false }) {
+export function MusicServerLibrary({ sourcesEnabled = false, collaborationEnabled = false, tabsEnabled = false, beatEditor = false }) {
   const library = useMusicLibraryState();
   const [query, setQuery] = useState('');
-  const [workspaceId, setWorkspaceId] = useState(workspaceView ? '' : 'all');
+  const [workspaceId, setWorkspaceId] = useState('all');
   const [newName, setNewName] = useState('');
   const [destinationId, setDestinationId] = useState('');
   const [collection, setCollection] = useState('all');
   const [view, setView] = useState('list');
 
-  const activeWorkspaceId = workspaceView && !workspaceId
-    ? library.workspaces[0]?.id || ''
-    : workspaceId;
+  const activeWorkspaceId = workspaceId;
 
   const visible = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -173,8 +171,8 @@ export function MusicServerLibrary({ workspaceView = false, sourcesEnabled = fal
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="font-vx-mono text-xs font-bold uppercase tracking-widest text-vx-accent">Private server Library</p>
-          <h1 className="mt-2 font-vx text-4xl font-black tracking-tight sm:text-5xl">{workspaceView ? 'Personal workspaces' : 'Music Library'}</h1>
-          <p className="mt-3 max-w-2xl text-vx-fg-body">{workspaceView ? 'Group owned versions without changing their audio or visibility.' : 'Find, play and organize every completed private version.'}</p>
+          <h1 className="mt-2 font-vx text-4xl font-black tracking-tight sm:text-5xl">Music Library</h1>
+          <p className="mt-3 max-w-2xl text-vx-fg-body">Find, play and organize every completed private version.</p>
         </div>
         <p className="font-vx-mono text-sm text-vx-fg-muted">{library.songs.length} owned {library.songs.length === 1 ? 'version' : 'versions'}</p>
       </header>
@@ -186,7 +184,7 @@ export function MusicServerLibrary({ workspaceView = false, sourcesEnabled = fal
           <div className="min-w-0 flex-1">
             <h2 className="font-vx text-xl font-black">Choose a workspace</h2>
             <div className="mt-3 flex gap-2 overflow-x-auto pb-1" role="group" aria-label="Filter by workspace">
-              {!workspaceView ? <button type="button" aria-pressed={activeWorkspaceId === 'all'} onClick={() => setWorkspaceId('all')} className={`min-h-10 shrink-0 rounded-full px-4 text-sm font-bold ${activeWorkspaceId === 'all' ? 'bg-vx-fg text-vx-base' : 'border border-vx-border text-vx-fg-body'}`}>All versions</button> : null}
+              <button type="button" aria-pressed={activeWorkspaceId === 'all'} onClick={() => setWorkspaceId('all')} className={`min-h-10 shrink-0 rounded-full px-4 text-sm font-bold ${activeWorkspaceId === 'all' ? 'bg-vx-fg text-vx-base' : 'border border-vx-border text-vx-fg-body'}`}>All versions</button>
               {library.workspaces.map((workspace) => <button key={workspace.id} type="button" aria-pressed={activeWorkspaceId === workspace.id} onClick={() => setWorkspaceId(workspace.id)} className={`min-h-10 shrink-0 rounded-full px-4 text-sm font-bold ${activeWorkspaceId === workspace.id ? 'bg-vx-fg text-vx-base' : 'border border-vx-border text-vx-fg-body'}`}>{workspace.name} · {workspace.song_count}</button>)}
             </div>
           </div>
@@ -248,7 +246,7 @@ export function MusicServerLibrary({ workspaceView = false, sourcesEnabled = fal
 
       {collection === 'trash' ? <div className="mt-6 rounded-2xl border border-vx-border bg-vx-base p-4 text-sm text-vx-fg-muted">Restore is available immediately. Permanent deletion remains unavailable while private asset cleanup is being validated.</div> : null}
 
-      {workspaceView && collaborationEnabled ? <MusicWorkspaceCollaboration /> : null}
+      {collaborationEnabled ? <MusicWorkspaceCollaboration /> : null}
 
       {!['uploads', 'mixes', 'history', 'hooks', 'covers'].includes(collection) ? <section aria-label={collection === 'trash' ? 'Trashed music versions' : 'Owned music versions'} className="mt-6">
         {collection === 'trash' && library.trashLoading ? (
