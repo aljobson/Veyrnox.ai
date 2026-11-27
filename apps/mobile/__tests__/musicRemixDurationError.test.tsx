@@ -19,6 +19,7 @@ const mockState = {
 
 jest.mock('expo-router', () => ({ Stack: { Screen: () => null } }));
 jest.mock('../src/lib/music/client', () => ({ listSongs: jest.fn(async () => []) }));
+jest.mock('../src/components/music/MusicPlayer', () => ({ MusicPlayer: () => null }));
 jest.mock('../src/components/music/useSongActionScreen', () => ({
     useSongActionScreen: () => ({ api: mockApi, flow: mockFlow, state: mockState, pending: null }),
 }));

@@ -2664,6 +2664,12 @@
     "ratio": 1.63
   },
   {
+    "id": "musicLyricist.retry",
+    "english": "Retry",
+    "translation": "إعادة المحاولة",
+    "ratio": 2.8
+  },
+  {
     "id": "music.lyricAssistant.retry",
     "english": "Try again",
     "translation": "المحاولة مجددًا",
