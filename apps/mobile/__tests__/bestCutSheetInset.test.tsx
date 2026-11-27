@@ -22,6 +22,15 @@ afterEach(async () => { await act(async () => root.unmount()); });
 function scroll() {
     return root.container.queryAll(n => n.props.keyboardShouldPersistTaps === 'handled')[0];
 }
+function ancestorStyle(node: NonNullable<ReturnType<typeof scroll>>, predicate: (style: Record<string, unknown>) => boolean) {
+    let parent = node.parent;
+    while (parent) {
+        const style = StyleSheet.flatten(parent.props.style) ?? {};
+        if (predicate(style)) return style;
+        parent = parent.parent;
+    }
+    throw new Error('Expected styled ancestor was not found');
+}
 function expectFixedInset() {
     const form = scroll();
     expect(form).toBeDefined();
@@ -60,7 +69,7 @@ test('full-screen Best Cut keeps portrait content below the status area while th
     const api = { getBalance: jest.fn().mockResolvedValue({ balance: 100 }) } as unknown as ApiClient;
     await act(async () => root.render(<BestCutSheet api={api} projectId="project" quote={{ credits: 1, max_seconds: 60, languages: ['en'] }} onClose={jest.fn()} onApply={() => ({ status: 'accepted' })} />));
     const form = scroll();
-    const wrapper = StyleSheet.flatten(form.parent!.parent!.parent!.props.style);
+    const wrapper = ancestorStyle(form, style => style.paddingTop === 62);
     expect(wrapper.paddingTop).toBe(62);
     const content = StyleSheet.flatten(form.props.contentContainerStyle);
     expect(content).toMatchObject({ paddingTop: 16, paddingLeft: 16, paddingRight: 16, paddingBottom: 50 });

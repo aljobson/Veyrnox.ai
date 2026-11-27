@@ -4,10 +4,10 @@ import { expect } from 'e2e';
 import { ERROR_STATE_ROUTE_TAGS, selectInventoryRoutes } from '../e2e.contracts.js';
 import { openSignedIn } from './helpers.js';
 
-// Error-state testing through dev/fault-proxy.mjs (:8799 -> mock :8800). For each fault mode and screen the app is
+// Error-state testing through the isolated crawl fault proxy. For each fault mode and screen the app is
 // restarted so it must fetch cold, then the screen is classified: crash, error-with-recovery, spinner-forever, blank,
 // content. After the fault is lifted the screen must recover (retry button or a fresh open).
-const CONTROL = 'http://localhost:8799/__fault';
+const CONTROL = `http://localhost:${process.env.E2E_PROXY_PORT ?? '8803'}/__fault`;
 const ROUTE_INVENTORY: string[] = JSON.parse(readFileSync(new URL('./crawl-routes.json', import.meta.url), 'utf8'));
 const SCREENS = selectInventoryRoutes(ROUTE_INVENTORY, ERROR_STATE_ROUTE_TAGS);
 const MODES = ['500', '401', '429', 'slow', 'drop', 'badjson', 'empty', 'html'];

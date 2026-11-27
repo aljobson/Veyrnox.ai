@@ -1,4 +1,4 @@
-import { act, type ComponentRef } from 'react';
+import { act } from 'react';
 import { createRoot, type Root } from 'test-renderer';
 import * as RN from 'react-native';
 import BeatEditor from '../src/app/(app)/beats/[id]';
@@ -12,10 +12,15 @@ import type { MeasureAndRevealLaneInput } from '../src/lib/beatNative/clipSearch
 import { BEAT_SOUNDS, soundAsset } from '../src/lib/beatNative/labs';
 import { beforeReplace } from '../src/lib/beatNative/recordingFinalizers';
 import * as recordingHook from '../src/lib/beatNative/useTakeRecording';
-import { restoreBeatLibraryTriggerFocus } from '../src/components/beats/BeatArrangement';
+import { ds, tokensForScheme } from '../src/theme';
+import { resolvedLaneHeight } from '../src/components/beats/BeatArrangement';
+import { regionTextureVisible } from '../src/components/beats/BeatRegionView';
+let mockWindowDimensions = { width: 390, height: 844, scale: 1, fontScale: 1 };
+jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({ default: () => mockWindowDimensions }));
 beforeAll(() => require('../src/lib/beatNative/store').beatStore.setOwner('test-owner'));
 
 let mockPutBeatBusy = false;
+let publishContrast: ((enabled: boolean) => void) | undefined;
 jest.mock('../src/lib/beatNative/store', () => {
     const actual = jest.requireActual('../src/lib/beatNative/store');
     return { ...actual, putBeat: (doc: BeatDoc) => mockPutBeatBusy ? false : actual.putBeat(doc) };
@@ -23,14 +28,10 @@ jest.mock('../src/lib/beatNative/store', () => {
 jest.mock('../src/lib/beatNative/persist', () => ({ ...jest.requireActual('../src/lib/beatNative/persist'), documentFiles: () => ({ read: async () => null, write: async () => {}, remove: async () => {}, list: async () => [] }) }));
 jest.mock('../src/components/beats/BeatSaveControls', () => ({ BeatSaveControls: () => null }));
 jest.mock('../src/components/beats/ai/BeatAiPanel', () => ({ BeatAiPanel: () => null }));
-let mockLibrarySheetProps: any, mockSoundsSheetProps: any;
+let mockLibrarySheetProps: any;
 jest.mock('../src/components/beats/BeatSongLibrarySheet', () => ({ BeatSongLibrarySheet: (props: any) => {
     mockLibrarySheetProps = props;
     return require('react').createElement(require('react-native').View, { testID: 'mock-beat-song-library-sheet' });
-} }));
-jest.mock('../src/components/beats/BeatSoundsSheet', () => ({ BeatSoundsSheet: (props: any) => {
-    mockSoundsSheetProps = props;
-    return require('react').createElement(require('react-native').View, { testID: 'mock-beat-sounds-sheet' });
 } }));
 jest.mock('../src/components/beats/BeatExportSheet', () => ({ BeatExportSheet: () => null }));
 jest.mock('../src/lib/beatNative/useLocalBeatLifecycle', () => ({ useLocalBeatLifecycle: () => {} }));
@@ -60,6 +61,7 @@ const press = async (label: string) => {
     const button = control(label); if (!button) throw new Error(`Missing ${label}`);
     await act(async () => (button.props.onClick ?? button.props.onPress)({ nativeEvent: {} }));
 };
+const openLibrary = async () => { await press(t('beat.track.library')); };
 const pressNode = async (id: string) => {
     const button = node(id); if (!button) throw new Error(`Missing ${id}`);
     await act(async () => (button.props.onClick ?? button.props.onPress)({ nativeEvent: {} }));
@@ -106,8 +108,23 @@ function searchManyDoc(doc: BeatDoc): BeatDoc {
     expect(validateBeat(next).ok).toBe(true);
     return next;
 }
-beforeEach(() => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; jest.useFakeTimers(); jest.clearAllMocks(); mockMeasureAndRevealLane.mockReset(); mockPutBeatBusy = false; mockLibrarySheetProps = null; mockSoundsSheetProps = null; setLocaleFromDevice(['en']); resetBeats(); root = createRoot(); });
-afterEach(async () => { mockPutBeatBusy = false; await act(async () => root.unmount()); setLocaleFromDevice(['en']); resetBeats(); jest.useRealTimers(); });
+beforeEach(() => {
+    (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+    jest.useFakeTimers(); jest.clearAllMocks(); mockMeasureAndRevealLane.mockReset();
+    mockWindowDimensions = { width: 390, height: 844, scale: 1, fontScale: 1 };
+    mockPutBeatBusy = false; mockLibrarySheetProps = null; publishContrast = undefined;
+    jest.spyOn(RN.AccessibilityInfo, 'addEventListener').mockImplementation(((event: string, listener: (enabled: boolean) => void) => {
+        if (event === 'darkerSystemColorsChanged') publishContrast = listener;
+        return { remove: jest.fn() };
+    }) as typeof RN.AccessibilityInfo.addEventListener);
+    setLocaleFromDevice(['en']); resetBeats(); root = createRoot();
+});
+afterEach(async () => {
+    mockPutBeatBusy = false;
+    await act(async () => root.unmount());
+    jest.restoreAllMocks();
+    setLocaleFromDevice(['en']); resetBeats(); jest.useRealTimers();
+});
 
 test('A1 an old pattern project is migrated into the Music Editor timeline without a view switch', async () => {
     await open(d => setView(d, 'pattern'));
@@ -118,13 +135,17 @@ test('A1 an old pattern project is migrated into the Music Editor timeline witho
     await act(async () => beatStore.flushBeats());
     expect(beatStore.saveState(mockId)).toBe('saved');
 });
-test('the timeline keeps readable beat, bar, and lane guides on the dark editor canvas', async () => {
+test('Increase Contrast gives beat and bar guides stronger palette tokens on the dark editor canvas', async () => {
     await open();
+    expect(publishContrast).toBeDefined();
+    await act(async () => publishContrast?.(true));
     expect(node('arrangement-grid')).toBeDefined();
     const beatLine = root.container.queryAll(n => n.props.testID === 'arrangement-beat-line')[0];
     const barLine = root.container.queryAll(n => n.props.testID === 'arrangement-bar-line')[0];
-    expect(RN.StyleSheet.flatten(beatLine.props.style)).toMatchObject({ backgroundColor: '#34343b', opacity: 0.9, width: 1 });
-    expect(RN.StyleSheet.flatten(barLine.props.style)).toMatchObject({ backgroundColor: '#5a5a64', opacity: 0.95, width: 2 });
+    const highContrast = tokensForScheme('dark', undefined, true);
+    expect(RN.StyleSheet.flatten(beatLine.props.style)).toMatchObject({ opacity: 1, width: 2, backgroundColor: highContrast.textSecondary });
+    expect(RN.StyleSheet.flatten(barLine.props.style)).toMatchObject({ opacity: 1, width: 3, backgroundColor: highContrast.textPrimary });
+    await act(async () => publishContrast?.(false));
 });
 test.each([
     ['move', 24, 0, (d: BeatDoc) => moveRegion(d, 'r1', 960, 't1')],
@@ -365,7 +386,7 @@ test.each([
     const before = await open(mixed);
     const track = selected(current());
     await press(track.name);
-    await press(t('beat.library.open'));
+    await openLibrary();
     expect(node('mock-beat-song-library-sheet')).toBeDefined();
     const editorLayout = root.container.queryAll(n => String(n.props.testID ?? '').startsWith('beat-editor-layout-'))[0].props.testID;
     expect(mockLibrarySheetProps.layout).toBe(String(editorLayout).replace('beat-editor-layout-', ''));
@@ -386,7 +407,7 @@ test.each([
 });
 test('two identical successful library Adds emit distinct announcement events', async () => {
     const before = await open();
-    await press(t('beat.library.open'));
+    await openLibrary();
     const asset = soundAsset(BEAT_SOUNDS[0], current().tempo.bpm);
     const intent = mockLibrarySheetProps.placement();
     const message = t('beat.library.added', { name: asset.name, position: position(intent.start) });
@@ -408,7 +429,7 @@ test('library Add preserves snapped locator and selected audio lane across defer
     await press(audioTrack.name);
     await press(t('beat.ruler.right')); await press(t('beat.ruler.right'));
     await press(t('beat.snap.quarter'));
-    await press(t('beat.library.open'));
+    await openLibrary();
     const intent = mockLibrarySheetProps.placement();
     const commit = mockLibrarySheetProps.onCommit;
     expect(intent).toEqual({ start: 960, trackId: audioTrack.id });
@@ -429,7 +450,7 @@ test('library Add preserves snapped locator and selected audio lane across defer
 test('a deleted captured audio lane refuses library commit without retargeting, history, selection, or close', async () => {
     await open(mixed);
     const audioTrack = current().tracks.find(track => track.kind === 'audio')!;
-    await press(audioTrack.name); await press(t('beat.library.open'));
+    await press(audioTrack.name); await openLibrary();
     const intent = mockLibrarySheetProps.placement(), commit = mockLibrarySheetProps.onCommit;
     await act(async () => putBeat(removeTrack(current(), audioTrack.id)));
     const afterDelete = JSON.stringify(current());
@@ -446,7 +467,7 @@ test('a deleted captured audio lane refuses library commit without retargeting, 
 });
 test('deferred library commit rechecks a writable document that became read-only without an English route refusal', async () => {
     await open(mixed);
-    await press(t('beat.library.open'));
+    await openLibrary();
     const commit = mockLibrarySheetProps.onCommit, intent = mockLibrarySheetProps.placement();
     await act(async () => putBeat({ ...current(), version: 5 }));
     expect(mockLibrarySheetProps.disabled).toBe(true);
@@ -460,7 +481,7 @@ test('deferred library commit rechecks a writable document that became read-only
 });
 test('max-track refusal leaves the library open without document or history mutation', async () => {
     await open(doc => { let next = doc; while (next.tracks.length < 16) next = addKitTrack(next); return next; });
-    await press(t('beat.library.open'));
+    await openLibrary();
     const full = JSON.stringify(current());
     mockAnnounce.mockClear();
     let committed = true;
@@ -471,7 +492,7 @@ test('max-track refusal leaves the library open without document or history muta
     expect(mockAnnounce).not.toHaveBeenCalled();
 });
 test('replacement and store-busy transitions silently refuse a deferred library commit', async () => {
-    await open(mixed); await press(t('beat.library.open'));
+    await open(mixed); await openLibrary();
     const commit = mockLibrarySheetProps.onCommit, intent = mockLibrarySheetProps.placement();
     const asset = soundAsset(BEAT_SOUNDS[0], current().tempo.bpm), before = JSON.stringify(current());
     let release!: () => void;
@@ -506,7 +527,7 @@ test('recording lock and vanished document silently refuse a captured library co
         return { ...result, controller: wrappedController! };
     });
     try {
-        await open(mixed); await press(t('beat.library.open'));
+        await open(mixed); await openLibrary();
         const commit = mockLibrarySheetProps.onCommit, intent = mockLibrarySheetProps.placement();
         const asset = soundAsset(BEAT_SOUNDS[0], current().tempo.bpm), before = JSON.stringify(current());
         recordingLocked = true; mockAnnounce.mockClear();
@@ -521,36 +542,19 @@ test('recording lock and vanished document silently refuse a captured library co
         expect(committed).toBe(false); expect(getBeat(mockId)).toBeUndefined(); expect(mockAnnounce).not.toHaveBeenCalled();
     } finally { hook.mockRestore(); }
 });
-test('Song starter Sounds use the snapped locator/audio lane at Add after editor placement drift and undo exactly once', async () => {
-    const before = await open(mixed);
-    await press(t('beatLabs.sounds'));
-    expect(node('mock-beat-sounds-sheet')).toBeDefined();
-    const addAfterDrift = mockSoundsSheetProps.onAdd;
-    const audioTrack = current().tracks.find(track => track.kind === 'audio')!;
-    await press(audioTrack.name);
-    await press(t('beat.ruler.right')); await press(t('beat.ruler.right')); await press(t('beat.snap.quarter'));
-    let committed = false;
-    await act(async () => { committed = addAfterDrift(BEAT_SOUNDS[0]); });
-    expect(committed).toBe(true);
-    const affected = current().tracks.find(track => track.id === audioTrack.id)!;
-    expect(affected.regions.some(region => region.start === 960 && current().assets?.[region.assetId!]?.source === 'sound')).toBe(true);
-    expect(control(audioTrack.name).props.accessibilityState.selected).toBe(true);
-    await press(t('beat.undo')); expect(same(current())).toEqual(same(before));
-    expect(control(t('beat.undo')).props.accessibilityState.disabled).toBe(true);
-});
-test('Song library dismissal restores trigger focus without exposing beat-maker controls', async () => {
-    const resolve = jest.fn(() => 42), focus = jest.fn();
-    restoreBeatLibraryTriggerFocus({} as ComponentRef<typeof RN.Pressable>, resolve, focus);
-    expect(resolve).toHaveBeenCalledTimes(1); expect(focus).toHaveBeenCalledWith(42);
+test('the arrangement no longer exposes duplicate starter Sounds or Library controls', async () => {
     await open();
-    expect(root.container.queryAll(n => n.props.accessibilityLabel === t('beatLabs.sounds') && typeof (n.props.onClick ?? n.props.onPress) === 'function')).toHaveLength(1);
-    await press(t('beat.library.open'));
-    const dismiss = mockLibrarySheetProps.onDismiss;
-    expect(typeof dismiss).toBe('function');
+    expect(root.container.queryAll(n => n.props.accessibilityLabel === t('beatLabs.sounds') && typeof (n.props.onClick ?? n.props.onPress) === 'function')).toHaveLength(0);
+    expect(root.container.queryAll(n => n.props.accessibilityLabel === t('beat.library.open') && typeof (n.props.onClick ?? n.props.onPress) === 'function')).toHaveLength(0);
+});
+test('Song library stays inline in the dock and closes without opening another tray', async () => {
+    await open();
+    await openLibrary();
+    expect(mockLibrarySheetProps.inline).toBe(true);
+    expect(mockLibrarySheetProps.onDismiss).toBeUndefined();
     await act(async () => mockLibrarySheetProps.onClose());
     expect(node('mock-beat-song-library-sheet')).toBeUndefined();
-    expect(() => dismiss()).not.toThrow();
-
+    expect(node('music-add-track-tray')).toBeUndefined();
     expect(control(t('beat.view.pattern'))).toBeUndefined();
     expect(node('beat-arrangement')).toBeDefined();
 });
@@ -652,6 +656,14 @@ test('A6 ruler locator is view state; cycle toggle, endpoints and invalid cycle 
     expect(mockAnnounce).toHaveBeenCalledWith(t('beat.refused', { reason: 'The cycle needs a start before its end, on the step grid.' }));
     expect(current().cycle.start).toBe(960); await press(t('beat.undo')); expect(current().cycle.end).toBe(before.cycle.end);
 });
+test('A6 tapping a cycle handle still moves the locator instead of swallowing the ruler touch', async () => {
+    await open();
+    await press(t('beat.ruler.next'));
+    expect(node('ruler-position').props.accessibilityValue.now).toBeGreaterThan(0);
+    const handle = node('cycle-start').props;
+    await act(async () => { handle.onTouchStart(touch()); handle.onTouchEnd(touch()); });
+    expect(node('ruler-position').props.accessibilityValue.now).toBe(0);
+});
 test.each(['start', 'end'])('A6 cycle %s hold drag commits once and undoes', async edge => {
     const before = await open(); await drag(`cycle-${edge}`, 24);
     expect(current().cycle).toEqual({ ...before.cycle, [edge]: before.cycle[edge as 'start' | 'end'] + 960 });
@@ -686,17 +698,53 @@ test('A8 audio gain, fades and reverse edit validated audio regions and undo', a
 });
 test('A9b mixed mixer gain and mute work on every kind and kit controls only exist on drums', async () => {
     await open(mixed);
-    await press(t('beat.track.controls'));
+    await press(t('beatMix.title'));
     for (let i = 0; i < 3; i++) {
-        const track = t('beat.track', { n: i + 1 });
-        const gain = root.container.queryAll(n => n.props.accessibilityLabel === t('beat.gain', { track }) && n.props.onAccessibilityAction)[0];
+        const track = current().tracks[i];
+        await pressNode(`music-mixer-track-${track.id}`);
+        const gain = root.container.queryAll(n => n.props.accessibilityLabel === t('beat.gain', { track: track.name }) && n.props.onAccessibilityAction)[0];
         await act(async () => gain.props.onAccessibilityAction({ nativeEvent: { actionName: 'decrement' } }));
-        expect(current().tracks[i].gain).toBe(0.9); await press(t('beat.mute', { track })); expect(current().tracks[i].mute).toBe(true);
-        expect(root.container.queryAll(n => n.props.accessibilityLabel === t('beat.kit', { track })).length > 0).toBe(i === 0);
+        expect(current().tracks[i].gain).toBe(0.9); await press(t('beat.mute', { track: track.name })); expect(current().tracks[i].mute).toBe(true);
+        await pressNode('music-mixer-track-tools');
+        expect(root.container.queryAll(n => n.props.accessibilityLabel === t('beat.kit', { track: track.name })).length > 0).toBe(i === 0);
     }
-    await press(t('beat.track.controls'));
-    await press(current().tracks[1].name); expect(control(t('beat.region.add')).props.accessibilityState.disabled).toBe(true);
+    await pressNode(`music-mixer-track-${current().tracks[1].id}`);
+    expect(control(t('beat.region.add')).props.accessibilityState.disabled).toBe(false); // Mixer selection never retargets the editor lane.
     await choose('rm'); expect(node('region-inspector')).toBeDefined(); expect(control(t('beat.audio.reverse'))).toBeUndefined();
+});
+test('A9b live Mix stays open during a take while structural controls lock', async () => {
+    let recordingLocked = false;
+    const original = recordingHook.useTakeRecording;
+    let sourceController: ReturnType<typeof recordingHook.useTakeRecording>['controller'] | null = null;
+    let wrappedController: ReturnType<typeof recordingHook.useTakeRecording>['controller'] | null = null;
+    const hook = jest.spyOn(recordingHook, 'useTakeRecording').mockImplementation((...args) => {
+        const result = original(...args);
+        if (sourceController !== result.controller) {
+            sourceController = result.controller;
+            wrappedController = new Proxy(result.controller, { get(target, key, receiver) {
+                if (key === 'locked') return () => recordingLocked;
+                const value = Reflect.get(target, key, receiver);
+                return typeof value === 'function' ? value.bind(target) : value;
+            } });
+        }
+        return { ...result, controller: wrappedController! };
+    });
+    try {
+        await open(mixed);
+        await press(t('beatMix.title'));
+        expect(node('music-mixer-tray')).toBeDefined();
+        recordingLocked = true;
+        await act(async () => root.render(<BeatEditor />));
+        expect(node('music-mixer-tray')).toBeDefined();
+        expect(node('beat-editor-mixer').props.accessibilityState.disabled).toBe(false);
+        const track = current().tracks[1];
+        await pressNode(`music-mixer-track-${track.id}`);
+        await press(t('beat.mute', { track: track.name }));
+        expect(current().tracks[1].mute).toBe(true);
+        expect(node('music-mixer-advanced').props.accessibilityState.disabled).toBe(true);
+        await pressNode('music-mixer-track-tools');
+        expect(node('music-mixer-remove-track').props.accessibilityState.disabled).toBe(true);
+    } finally { hook.mockRestore(); }
 });
 test('A9b add region explicitly uses the changed active snap', async () => {
     await open(); await press(t('beat.ruler.right')); await press(t('beat.ruler.right')); // locator 480
@@ -719,8 +767,10 @@ test('A7 narrow blocks keep musical width and 44pt hit areas; cycle handles rema
 });
 test('measured lane heights and initial finger position determine the drop lane', async () => {
     await open(d => addKitTrack(d, '808'));
-    const header = control(current().tracks[0].name);
-    await act(async () => header.props.onLayout({ nativeEvent: { layout: { height: 140 } } }));
+    const headerContent = node(`track-header-content-${current().tracks[0].id}`);
+    await act(async () => headerContent.props.onLayout({ nativeEvent: { layout: { height: 140 } } }));
+    expect(RN.StyleSheet.flatten(node(`track-lane-${current().tracks[0].id}`).props.style).height).toBe(140);
+    expect(RN.StyleSheet.flatten(node('region-frame-r1').props.style).height).toBe(140 - 2 * ds.space.xs);
     const props = node('region-r1').props;
     const event = (dy: number) => ({ nativeEvent: { identifier: 1, pageX: 0, pageY: 10 + dy, locationY: 10 }, stopPropagation: jest.fn() });
     await act(async () => { props.onTouchStart(event(0)); jest.advanceTimersByTime(350); });
@@ -730,6 +780,30 @@ test('measured lane heights and initial finger position determine the drop lane'
     expect(current().tracks[0].regions.some(region => region.id === 'r1')).toBe(true);
     await drag('region-r1', 0, 140);
     expect(current().tracks[1].regions.some(region => region.id === 'r1')).toBe(true);
+});
+test('measured accessible lane height survives compact timeline toggles', () => {
+    expect(resolvedLaneHeight(140, false)).toBe(140);
+    expect(resolvedLaneHeight(140, true)).toBe(140);
+    expect(resolvedLaneHeight(undefined, false)).toBe(64);
+    expect(resolvedLaneHeight(undefined, true)).toBe(56);
+});
+test('intrinsic header measurement lets the normal lane compact to 56 while preserving accessible height', async () => {
+    mockWindowDimensions = { width: 874, height: 402, scale: 1, fontScale: 1 };
+    await open();
+    const trackId = current().tracks[0].id;
+    await act(async () => node(`track-header-content-${trackId}`).props.onLayout({ nativeEvent: { layout: { height: 34 } } }));
+    expect(RN.StyleSheet.flatten(node(`track-lane-${trackId}`).props.style).height).toBe(64);
+    await press(t('beatMix.title'));
+    expect(RN.StyleSheet.flatten(node(`track-lane-${trackId}`).props.style).height).toBe(56);
+    await act(async () => node(`track-header-content-${trackId}`).props.onLayout({ nativeEvent: { layout: { height: 140 } } }));
+    expect(RN.StyleSheet.flatten(node(`track-lane-${trackId}`).props.style).height).toBe(140);
+});
+test('region texture accounts for in-app text scaling as well as system Dynamic Type', () => {
+    expect(regionTextureVisible(56, 1, 1)).toBe(true);
+    expect(regionTextureVisible(56, 1, 1.25)).toBe(false);
+    expect(regionTextureVisible(56, 1.2, 1.25)).toBe(false);
+    expect(regionTextureVisible(56, 1.4, 1)).toBe(false);
+    expect(regionTextureVisible(55, 1, 1)).toBe(false);
 });
 test('auto-scroll follows playback until a manual scroll and resets on the next run', async () => {
     await open();

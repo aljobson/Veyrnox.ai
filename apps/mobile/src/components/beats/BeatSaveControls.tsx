@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ScrollView } from 'react-native';
 import { Button, Text } from '../ui';
 import { t } from '../../lib/i18n';
 import type { BeatCloudSync } from '../../lib/beatNative/cloudSync';
@@ -7,11 +8,11 @@ import { beatStore } from '../../lib/beatNative/store';
 import type { Edit } from '../../lib/beatNative/doc';
 import { BeatCloudConflictModal } from './BeatCloudConflictModal';
 import { BeatVersionsSheet } from './BeatVersionsSheet';
-export function BeatSaveControls({ id, apply }: { id: string; apply(edit: Edit, label?: string): boolean }) {
+export function BeatSaveControls({ id, apply, compact = false }: { id: string; apply(edit: Edit, label?: string): boolean; compact?: boolean }) {
     const { sync, view } = useBeatSession(id);
     const [versions, setVersions] = useState<BeatCloudSync | null>(null);
     const saveState = beatStore.saveState(id);
-    return <>
+    const controls = <>
         <Text variant="footnote" accessibilityLiveRegion="polite">{t(`beat.local.${saveState}`)}</Text>
         {saveState === 'error' ? <Button label={t('beat.retry')} onPress={() => void beatStore.flushBeat(id).catch(() => undefined)} /> : null}
         <Text variant="footnote" accessibilityLiveRegion="polite">{t(`beat.cloud.${view.state}`)}</Text>
@@ -22,4 +23,10 @@ export function BeatSaveControls({ id, apply }: { id: string; apply(edit: Edit, 
         <BeatCloudConflictModal sync={sync} view={view} />
         {versions === sync ? <BeatVersionsSheet key={sync.id} sync={sync} view={view} apply={apply} onClose={() => setVersions(null)} /> : null}
     </>;
+    if (!compact) return controls;
+    return <ScrollView testID="beat-save-controls-compact" horizontal showsHorizontalScrollIndicator
+        style={compactViewport} contentContainerStyle={compactContent}>{controls}</ScrollView>;
 }
+
+const compactViewport = { height: 44, minHeight: 44, flexGrow: 0, flexShrink: 1 } as const;
+const compactContent = { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 4 } as const;

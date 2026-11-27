@@ -35,7 +35,7 @@ function CycleHandle({ edge, props, preview }: { edge: 'start' | 'end'; props: P
             const at = Math.max(0, Math.min(512 * barTicks, snapTick(props.cycle[edge] + xToTick(dx, props.zoom), props.snap)));
             return { ...props.cycle, [edge]: edge === 'start' ? Math.min(at, props.cycle.end - 240) : Math.max(at, props.cycle.start + 240) };
         },
-        preview, lock: props.lock, announce: props.announce, select: () => undefined, heldMessage: t('beat.cycle.moving'),
+        preview, lock: props.lock, announce: props.announce, select: () => props.setLocator(props.cycle[edge]), heldMessage: t('beat.cycle.moving'),
         commit: cycle => props.apply(d => setCycle(d, cycle), t('beat.cycle.changed')),
     });
     return <View pointerEvents="box-none" style={[s.handleHit, edge === 'start' ? { left: 0, top: 0 } : { right: 0, bottom: 0 }]}><View {...handlers} testID={`cycle-${edge}`} pointerEvents="box-only" hitSlop={10} accessible accessibilityRole="adjustable"
@@ -56,7 +56,7 @@ export function BeatRuler(props: Props) {
             onPress={event => props.setLocator(clampLocator(snapTick(xToTick(event.nativeEvent.locationX, props.zoom), props.snap), props.end))}>
             {Array.from({ length: props.bars }, (_, index) => <Text key={index} pointerEvents="none" accessible={false} style={{ position: 'absolute', left: index * props.zoom }} variant="caption">{index + 1}</Text>)}
         </Pressable>
-        <View pointerEvents="box-none" style={{ height: 16, left: tickToX(band.start, props.zoom), width: Math.max(44, tickToX(band.end - band.start, props.zoom)) }}>
+        <View pointerEvents="box-none" style={[s.cycle, { left: tickToX(band.start, props.zoom), width: Math.max(44, tickToX(band.end - band.start, props.zoom)) }]}>
             <View testID="cycle-band" pointerEvents="none" style={[s.band, { width: tickToX(band.end - band.start, props.zoom) }, band.on && s.on, preview && s.preview]} />
             {!props.disabled && <><CycleHandle edge="start" props={props} preview={setPreview} /><CycleHandle edge="end" props={props} preview={setPreview} /></>}
         </View>
@@ -66,8 +66,9 @@ export const RULER_HEIGHT = 44;
 const sheets = themedStyles(p => ({
     controls: { flexDirection: 'row', flexWrap: 'wrap', gap: ds.space.sm },
     ruler: { height: RULER_HEIGHT, borderBottomWidth: 1, borderColor: p.borderStrong, backgroundColor: p.bgElevated1 },
-    numbers: { height: 27, paddingTop: ds.space.xs },
-    band: { position: 'absolute', height: 12, borderWidth: 1, borderColor: p.borderSubtle, backgroundColor: p.surface, opacity: 0.65 },
+    numbers: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, minHeight: 44, paddingTop: ds.space.xs },
+    cycle: { position: 'absolute', bottom: 0, height: 44 },
+    band: { position: 'absolute', left: 0, bottom: 0, height: 12, borderWidth: 1, borderColor: p.borderSubtle, backgroundColor: p.surface, opacity: 0.65 },
     on: { borderColor: p.accent },
     preview: { opacity: 0.7 },
     handleHit: { position: 'absolute', width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
