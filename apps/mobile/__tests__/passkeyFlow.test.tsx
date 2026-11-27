@@ -90,7 +90,7 @@ async function token() { await act(async () => captchaProps().onMessage({ type: 
 
 // The real native wrapper is mocked only at its library boundary; platform gates remain real.
 test('flag-off card keeps list/remove and addLater without enrolment controls', async () => {
-    delete process.env.EXPO_PUBLIC_PASSKEYS_IOS_ENABLED;
+    process.env.EXPO_PUBLIC_PASSKEYS_IOS_ENABLED = 'false';
     jest.mocked(fetchPasskeys).mockResolvedValue([{ id: 'pk_12345678', name: 'Existing', createdAt: null, lastUsedAt: null }]);
     await render(<PasskeysCard />);
     expect(texts(t('pk.addLater'))).toHaveLength(1);
@@ -133,12 +133,12 @@ test('enrolment action rechecks the gate before doing anything', async () => {
     expect(addPasskey).not.toHaveBeenCalled();
 });
 
-test.each(['flag', 'unsupported', 'android'])('sign-in hides passkey entry when %s is closed', async reason => {
-    if (reason === 'flag') delete process.env.EXPO_PUBLIC_PASSKEYS_IOS_ENABLED;
+test.each(['flag', 'unsupported', 'android'])('sign-in keeps the passkey entry visible when %s is closed', async reason => {
+    if (reason === 'flag') process.env.EXPO_PUBLIC_PASSKEYS_IOS_ENABLED = 'false';
     if (reason === 'unsupported') jest.mocked(native.isSupported).mockReturnValue(false);
     if (reason === 'android') Object.defineProperty(RN.Platform, 'OS', { configurable: true, value: 'android' });
     await render(<SignIn />);
-    expect(controls(t('passkey.signIn'))).toHaveLength(0);
+    expect(controls(t('passkey.signIn'))).toHaveLength(1);
 });
 
 test('iOS entry is enabled only after agreement', async () => {
@@ -150,7 +150,7 @@ test('iOS entry is enabled only after agreement', async () => {
 });
 
 test.each(['flag', 'android', 'unsupported'])('direct route with %s gate closed starts no CAPTCHA or requests', async reason => {
-    if (reason === 'flag') delete process.env.EXPO_PUBLIC_PASSKEYS_IOS_ENABLED;
+    if (reason === 'flag') process.env.EXPO_PUBLIC_PASSKEYS_IOS_ENABLED = 'false';
     if (reason === 'android') Object.defineProperty(RN.Platform, 'OS', { configurable: true, value: 'android' });
     if (reason === 'unsupported') jest.mocked(native.isSupported).mockReturnValue(false);
     await render(<PasskeyAuth />);
@@ -224,7 +224,7 @@ test('provider enters the app when native session persistence is unavailable', a
 });
 
 test.each(['flag', 'android', 'unsupported'])('provider action with %s gate closed starts no authentication', async reason => {
-    if (reason === 'flag') delete process.env.EXPO_PUBLIC_PASSKEYS_IOS_ENABLED;
+    if (reason === 'flag') process.env.EXPO_PUBLIC_PASSKEYS_IOS_ENABLED = 'false';
     if (reason === 'android') Object.defineProperty(RN.Platform, 'OS', { configurable: true, value: 'android' });
     if (reason === 'unsupported') jest.mocked(native.isSupported).mockReturnValue(false);
     await provider();

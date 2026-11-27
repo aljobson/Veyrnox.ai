@@ -98,7 +98,7 @@ const domains: Record<string, readonly string[]> = {
     'musicPublic.reaction.{}': ['fire', 'love', 'wow', 'praise', 'like', 'cool', 'hot'],
     'musicPublic.genre.{}': ['pop', 'hip-hop', 'rock', 'electronic', 'house', 'lo-fi', 'jazz', 'rnb-soul', 'ambient', 'cinematic', 'country-folk', 'latin'],
     'music.player.{}': ['idle', 'loading', 'playing', 'paused', 'error', 'held', 'ended', 'background'],
-    'templates.kind.{}': ['video', 'audio'],
+    'templates.kind.{}': ['video', 'image', 'audio', 'crun'],
     'audioTemplates.cat.{}': ['MUSIC', 'VOICE-OVER', 'SOUND FX'],
     'app.create.error.{}': ['price_changed', 'admission_unknown', 'admission_unavailable'],
     'wins.{}': ['week', 'all', 'creations', 'posts', 'streak', 'image', 'videoType', 'audio', 'other', 'first_image', 'first_video', 'creations_10', 'creations_50', 'first_post', 'first_cinema_upload', 'streak_7'],

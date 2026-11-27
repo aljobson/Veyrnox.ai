@@ -3762,6 +3762,30 @@
     "ratio": 1.83
   },
   {
+    "id": "music.create.track",
+    "english": "Track",
+    "translation": "Musikstück",
+    "ratio": 2
+  },
+  {
+    "id": "music.create.smart.genre",
+    "english": "Genre",
+    "translation": "Musikrichtung",
+    "ratio": 2.6
+  },
+  {
+    "id": "music.create.smart.mood",
+    "english": "Mood",
+    "translation": "Stimmung",
+    "ratio": 2
+  },
+  {
+    "id": "music.create.smart.tempo",
+    "english": "Tempo",
+    "translation": "Geschwindigkeit",
+    "ratio": 3
+  },
+  {
     "id": "music.create.advanced.bpm",
     "english": "Tempo (BPM)",
     "translation": "Geschwindigkeit (BPM)",

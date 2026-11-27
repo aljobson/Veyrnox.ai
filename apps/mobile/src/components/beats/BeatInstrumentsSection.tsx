@@ -7,7 +7,6 @@ import { MidiClipPreview } from './MidiClipPreview';
 import { pianoStyles } from './pianoStyles';
 import { instrumentLabel, midiTrackSections } from '../../lib/beatNative/midi';
 import type { BeatDoc, Edit } from '../../lib/beatNative/doc';
-import type { BeatAudio } from '../../lib/beatNative/audio';
 import { t } from '../../lib/i18n';
 // Export navigation beside the section so the editor needs only one additive import.
 export const openPiano = (id: string, region: string) => router.push({ pathname: '/beats/piano/[id]', params: { id, region } });
@@ -19,7 +18,7 @@ export function restoreInstrumentLibraryTriggerFocus(
     const node = resolve(trigger);
     if (node) focus(node);
 }
-export function BeatInstrumentsSection({ doc, apply, audio, onOpen, disabled = false, notice }: { doc: BeatDoc; apply(op: Edit, label?: string): boolean; audio(): BeatAudio | null; onOpen(region: string): void; disabled?: boolean; notice?: string | null }) {
+export function BeatInstrumentsSection({ doc, apply, onOpen, disabled = false, notice }: { doc: BeatDoc; apply(op: Edit, label?: string): boolean; onOpen(region: string): void; disabled?: boolean; notice?: string | null }) {
     const [library, setLibrary] = useState(false);
     const trigger = useRef<ComponentRef<typeof Pressable>>(null);
     const restored = useRef(false);
@@ -50,6 +49,6 @@ export function BeatInstrumentsSection({ doc, apply, audio, onOpen, disabled = f
                 <MidiClipPreview clip={clip} />
             </View>)}
         </View>)}
-        {library && <BeatInstrumentLibrary apply={apply} audio={audio} onClose={closeLibrary} onDismiss={restoreFocus} refusal={notice} />}
+        {library && <BeatInstrumentLibrary apply={apply} onClose={closeLibrary} onDismiss={restoreFocus} refusal={notice} />}
     </View>;
 }

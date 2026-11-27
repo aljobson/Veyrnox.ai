@@ -65,6 +65,7 @@ export function selectInventoryRoutes(
 /** Accessible English names asserted by the signed-in drawer smoke test. */
 export const NAVIGATION_MENU_LABELS = [
     'Create',
+    'Creative tools',
     'Audio',
     'Smart Cut',
     'Editor',

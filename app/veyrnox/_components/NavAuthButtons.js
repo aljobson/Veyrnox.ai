@@ -78,11 +78,11 @@ export function NavAuthButtons({ account: given }) {
   function confirmSignOut() {
     setLeaving(true);
     signOut()
-      .then(() => window.location.replace(href('/')))
+      .then(() => window.location.replace(href('/?auth=sign_in')))
       .catch(() => {
         // Revoking upstream failed; the local session is gone either way,
-        // so land the visitor on the marketing site rather than a dead nav.
-        window.location.replace(href('/'));
+        // so land on the same sign-in surface rather than a dead nav.
+        window.location.replace(href('/?auth=sign_in'));
       });
   }
 

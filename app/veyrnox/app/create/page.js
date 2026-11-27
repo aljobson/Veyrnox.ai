@@ -72,7 +72,6 @@ import { aspectLabel } from '../../../../lib/platformFormats.js';
 import { TemplateHandoffCard } from '../../_components/TemplateHandoffCard';
 import { TemplatePicker } from '../../_components/TemplatePicker';
 import { CreateGoalPicker } from '../../_components/CreateGoalPicker';
-import { CreateStartFrom } from '../../_components/CreateStartFrom';
 import { FirstGoalCard } from '../../_components/FirstGoalCard';
 import { GeneratingProgress } from './GeneratingProgress';
 import { useFirstRunCreate } from '../../_lib/useFirstRunCreate';
@@ -1188,7 +1187,6 @@ function CreateStudio() {
         <aside className="flex flex-col gap-5 lg:col-start-2 lg:row-start-1 lg:row-span-3">
           {!oddlingTransfer && <FirstGoalCard hidden={!!presetParam || !!activeTemplate || swapId !== null} onPick={pickGoal} onExample={setPrompt} />}
           {!oddlingTransfer && <CreateGoalPicker goal={goal} onChange={pickGoal} />}
-          {!oddlingTransfer && <CreateStartFrom />}
           {oddlingTransfer ? (
             <section data-testid="oddling-generation-pipeline" className="rounded-2xl border border-vx-accent/40 bg-vx-accent/[0.06] p-5">
               <span className="font-vx-mono text-[10px] font-bold tracking-[0.14em] text-vx-accent">{t('app.create.oddlingPipeline')}</span>

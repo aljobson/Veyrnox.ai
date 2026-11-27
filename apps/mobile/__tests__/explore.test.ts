@@ -126,8 +126,8 @@ describe('a template tap', () => {
 describe('the Explore screen', () => {
     const screen = () => fs.readFileSync(path.join(__dirname, '..', 'src', 'app', '(app)', '(tabs)', 'index.tsx'), 'utf8');
 
-    test('starts a creation from words or from a template', () => {
-        expect(screen()).toContain('router.push(promptHref(model.id, prompt))');
+    test('starts a creation from a template without restoring the duplicate idea composer', () => {
+        expect(screen()).not.toContain('router.push(promptHref(model.id, prompt))');
         expect(screen()).toContain('templatePageHref(p)');
     });
 

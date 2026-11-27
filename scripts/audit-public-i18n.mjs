@@ -41,6 +41,7 @@ const exceptions = [
   { file: /^app\/s\/\[slug\]\/page\.js$/, pattern: /^(?:— Veyrnox(?:\.ai)?|bg-\[#080b14\] text-white|bg-\[#f5f5f2\] text-\[#171717\]|bg-gradient-to-br from-\[#35133d\] via-\[#9d3155\] to-\[#f49b55\] text-white)$/, reason: 'Brand suffix and the three exact theme CSS class lists; no visitor prose.' },
   { file: /\/_lib\/(?:showcase|sourceTemplateExpansion\d*|character|characterOptions|oddlingCatalog)\.js$/, pattern: /./, reason: 'source catalog names, descriptors and prompts remain unchanged (ADR-0107)' },
   { file: /\/_lib\/audioTemplates\.js$/, pattern: /./, reason: 'audio template names and generation prompts stay English, like the video template catalog (ADR-0107)' },
+  { file: /\/_lib\/veoTemplateRecipes\.js$/, pattern: /./, reason: 'Veo recipe names and canonical generation prompts stay English, like the video and audio template catalogs (ADR-0107)' },
   { file: /^lib\/musicDiscover\.js$/, pattern: /./, reason: 'original beat titles and canonical generation recipes are creative catalog data, matching the existing audio template policy (ADR-0107)' },
   { file: /^lib\/licensedMusicCatalog\.js$/, pattern: /./, reason: 'creator track titles and canonical CC BY attribution receipts must remain verbatim (ADR-0107)' },
   { file: /^lib\/licensedTrackTemplates\.js$/, pattern: /./, reason: 'category style directions are English generation prompts sent to the music model, not UI copy (ADR-0107)' },

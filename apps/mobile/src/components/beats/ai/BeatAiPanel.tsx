@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { useFocusEffect } from 'expo-router';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, ScrollView, View } from 'react-native';
 import { Button, Text, themedStyles, useThemedStyles } from '../../ui';
 import { useAuth } from '../../../auth/AuthProvider';
 import { userIdFromToken } from '../../../lib/appCache';
@@ -19,7 +19,6 @@ import { BeatMagicBar } from './BeatMagicBar';
 import { MAGIC_BAR_ON_PHONE } from '../../../lib/beatAi/magicGate';
 import type { MenuIcon } from '../../../lib/menuIcons';
 import { ds } from '../../../theme';
-import { BeatModal } from '../BeatModal';
 
 const AI_ACTIONS: readonly { op: Op; icon: MenuIcon }[] = [
     { op: 'generate', icon: 'magicWand' },
@@ -46,10 +45,10 @@ export function BeatAiPanel({ doc, apply, disabled = false, visible = true, onCl
     const current = useCallback(() => identity.current.generation === generation && identity.current.id === doc.id && visit.current === session?.visit, [generation, doc.id, session?.visit]);
     if (!visible) return null;
     if (!session || session.generation !== generation || session.id !== doc.id || session.visit !== visit.current) {
-        return <BeatModal title={t('beatAi.title')} testID="music-ai-editor" onClose={onClose}>
+        return <View style={inlineState} testID="music-ai-editor">
             <Button size="md" variant="tertiary" icon="close" iconOnly label={t('beat.pattern.cancel')} onPress={onClose} containerStyle={stylesClose} />
             {resolving ? <ActivityIndicator accessibilityLabel={t('beatAi.title')} /> : <Text>{t('beatAi.signedOut')}</Text>}
-        </BeatModal>;
+        </View>;
     }
     return <OwnerPanel key={`${session.owner}.${generation}.${doc.id}.${session.visit}`} api={api} owner={session.owner} doc={doc as AiDoc} apply={apply} current={current} disabled={disabled} onClose={onClose} />;
 }
@@ -65,51 +64,56 @@ function OwnerPanel({ api, owner, doc, apply, current, disabled, onClose }: { ap
     }), [owner, doc.id, client, valid, off, apply, session]);
     const view = useSyncExternalStore(request.subscribe, request.snapshot, request.snapshot);
     const [op, setOp] = useState<Op>('generate');
+    const [contextOpen, setContextOpen] = useState(false);
     useEffect(() => {
         void probeBeatAi(api, owner, session.controller.signal).then(async result => {
             if (!valid()) return;
             setProbe(result.state);
-            if (result.state === 'on') await request.initialize();
+            if (result.state === 'on') { await request.initialize(); if (valid()) request.open(); }
         });
         return () => { session.live = false; session.controller.abort(); request.dispose(); };
     }, [api, owner, request, session, valid]);
-    if (probe === 'off' || probe === 'signed_out') return <BeatModal title={t('beatAi.title')} testID="music-ai-editor" onClose={onClose}>
+    if (probe === 'off' || probe === 'signed_out') return <View style={inlineState} testID="music-ai-editor">
         <Button size="md" variant="tertiary" icon="close" iconOnly label={t('beat.pattern.cancel')} onPress={onClose} containerStyle={stylesClose} />
         <Text>{t(probe === 'signed_out' ? 'beatAi.signedOut' : 'beatAi.error')}</Text>
-    </BeatModal>;
-    if (probe === 'checking') return <BeatModal title={t('beatAi.title')} testID="music-ai-editor" onClose={onClose}>
+    </View>;
+    if (probe === 'checking') return <View style={inlineState} testID="music-ai-editor">
         <Button size="md" variant="tertiary" icon="close" iconOnly label={t('beat.pattern.cancel')} onPress={onClose} containerStyle={stylesClose} />
         <ActivityIndicator accessibilityLabel={t('beatAi.title')} />
-    </BeatModal>;
-    if (probe !== 'on') return <BeatModal title={t('beatAi.title')} testID="music-ai-editor" onClose={onClose}>
+    </View>;
+    if (probe !== 'on') return <View style={inlineState} testID="music-ai-editor">
         <Button size="md" variant="tertiary" icon="close" iconOnly label={t('beat.pattern.cancel')} onPress={onClose} containerStyle={stylesClose} />
         <Text>{t(probe === 'offline' ? 'beatAi.offline' : 'beatAi.error')}</Text>
-    </BeatModal>;
-    return <BeatModal title={t('beatAi.title')} testID="music-ai-editor" onClose={onClose}>
-        <Button size="md" variant="tertiary" icon="close" iconOnly label={t('beat.pattern.cancel')} onPress={onClose} containerStyle={stylesClose} />
-        <View style={s.panel}>
-        <View testID="music-ai-actions" style={s.actions}>
-            {AI_ACTIONS.map(action => <View key={action.op} style={s.action}>
-                <Button testID={`music-ai-${action.op}`} size="md" variant="secondary" tone="accent" icon={action.icon} iconOnly
-                    label={t(`beatAi.${action.op}`)} disabled={disabled || view.busy} containerStyle={s.actionIcon}
-                    onPress={() => { setOp(action.op); request.open(); }} />
-                <Text variant="micro" tone="secondary" numberOfLines={2} style={s.actionLabel}>{t(`beatAi.${action.op}`)}</Text>
-            </View>)}
+    </View>;
+    return <View style={s.panel} testID="music-ai-editor">
+        <View style={s.composerBar}>
+            <Button testID="music-ai-context" size="sm" variant={contextOpen ? 'secondary' : 'tertiary'} icon="plus" iconOnly
+                label={t('beatAi.title')} accessibilityState={{ expanded: contextOpen }} onPress={() => setContextOpen(value => !value)} />
+            <View style={s.activeContext}><Text variant="footnote" numberOfLines={1}>{t(`beatAi.${op}`)}</Text></View>
+            <Button size="sm" variant="tertiary" icon="close" iconOnly label={t('beat.pattern.cancel')} onPress={onClose} />
         </View>
+        {contextOpen ? <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.actions} testID="music-ai-actions">
+            {AI_ACTIONS.map(action => <Button key={action.op} testID={`music-ai-${action.op}`} size="sm"
+                variant={action.op === op ? 'secondary' : 'tertiary'} icon={action.icon} iconOnly label={t(`beatAi.${action.op}`)}
+                accessibilityState={{ selected: action.op === op }}
+                disabled={disabled || view.busy} onPress={() => { setOp(action.op); setContextOpen(false); request.close(); request.open(); }} />)}
+        </ScrollView> : null}
+        <View style={s.panel}>
         {view.rows.map(row => <Button key={row.key} label={t('beatAi.resume', { name: row.prompt || t(`beatAi.${row.op}`) })} disabled={disabled || view.busy} onPress={() => { setOp(row.op); void request.resume(row); }} />)}
         {view.error && !view.open ? <Text accessibilityRole="alert">{t(view.error, view.errorParams)}</Text> : null}
-        {view.open ? <BeatAiSheet key={`${op}.${view.record?.key ?? 'new'}`} request={request} client={client} doc={doc} op={op} onClose={request.close} /> : null}
+        {view.open ? <BeatAiSheet key={`${op}.${view.record?.key ?? 'new'}`} request={request} client={client} doc={doc} op={op} onClose={request.close} embedded /> : null}
         {MAGIC_BAR_ON_PHONE ? <BeatMagicBar doc={doc} client={client} owner={owner} current={valid} off={off} /> : null}
         </View>
-    </BeatModal>;
+    </View>;
 }
 
-const stylesClose = { alignSelf: 'flex-end' as const, marginTop: -56 };
+const stylesClose = { alignSelf: 'flex-end' as const };
+const inlineState = { minHeight: 56, flexDirection: 'row' as const, alignItems: 'center' as const, justifyContent: 'space-between' as const };
 
-const styles = themedStyles(() => ({
-    panel: { gap: ds.space.lg, paddingTop: ds.space.sm },
-    actions: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: ds.space.xs },
-    action: { flex: 1, maxWidth: 68, alignItems: 'center', gap: ds.space.xs },
-    actionIcon: { width: 52 },
-    actionLabel: { textAlign: 'center', minHeight: 30 },
+const styles = themedStyles(p => ({
+    panel: { gap: ds.space.xs, paddingTop: ds.space.xs },
+    composerBar: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: ds.space.xs, borderRadius: ds.radius.lg,
+        borderWidth: 1, borderColor: p.borderStrong, backgroundColor: p.bgElevated1, paddingHorizontal: ds.space.xs },
+    activeContext: { flex: 1, minWidth: 0 },
+    actions: { alignItems: 'center', gap: ds.space.xs, paddingHorizontal: ds.space.xs },
 }));

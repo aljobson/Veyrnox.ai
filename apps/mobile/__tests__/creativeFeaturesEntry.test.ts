@@ -1,6 +1,6 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { CREATIVE_FEATURES, examplePlaysOn } from '../src/lib/creativeFeatures';
+import { CREATIVE_FEATURE_DIRECTORY, CREATIVE_FEATURES, creativeFeatureOwner, examplePlaysOn } from '../src/lib/creativeFeatures';
 
 const read = (p: string) => readFileSync(join(__dirname, '..', p), 'utf8');
 
@@ -19,12 +19,26 @@ describe('guided features entry and play badge', () => {
         expect(examplePlaysOn(still!.example, 'ios')).toBe(false);
     });
 
-    it('the list drives its badge from examplePlaysOn, and Create links to the list', () => {
+    it('keeps one discovery owner for every guided capability', () => {
+        const audio = ['text-to-speech', 'lip-sync', 'ai-talking-photo-generator', 'singing-photo', 'video-dubbing'];
+        expect(CREATIVE_FEATURES.filter(feature => creativeFeatureOwner(feature) === 'audio').map(feature => feature.slug)).toEqual(audio);
+        expect(CREATIVE_FEATURE_DIRECTORY).toHaveLength(CREATIVE_FEATURES.length - audio.length);
+        expect(CREATIVE_FEATURE_DIRECTORY.map(feature => feature.slug)).toEqual(expect.arrayContaining([
+            'ai-avatar-generator', 'talking-avatar', 'ai-human-generator', 'ai-influencer-generator',
+            'ai-voice-cloning', 'avatar-dialogue', 'talking-cartoon', 'talking-animals',
+            'ai-baby-podcast', 'ai-ad-clone', 'product-avatar',
+            'product-video-generator', 'product-image-generator',
+        ]));
+    });
+
+    it('keeps contextual reuse and restores ordinary Creative tools discovery', () => {
         const list = read('src/app/(app)/features/index.tsx');
         expect(list).toContain('examplePlaysOn(feature.example, Platform.OS)');
+        expect(list).not.toContain('Redirect');
+        expect(list).toContain('reuse ? compatibleCreativeFeatures(reuse.kind) : CREATIVE_FEATURE_DIRECTORY');
+        expect(list).toContain("pathname: '/features/[slug]'");
         expect(list).not.toContain("feature.example.kind === 'video' ?");
-        expect(list).not.toContain('all-features-directory');
-        expect(list).not.toContain('directoryFeatures');
-        expect(read('src/app/(app)/(tabs)/create.tsx')).toMatch(/features\.creativetools[\s\S]{0,80}router\.push\('\/features'\)/);
+        expect(list).toContain('CREATIVE_FEATURE_DIRECTORY');
+        expect(read('src/app/(app)/(tabs)/create.tsx')).not.toContain("router.push('/features')");
     });
 });

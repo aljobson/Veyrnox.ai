@@ -65,7 +65,8 @@ test('Suno simple and custom payloads are strict, normalized, and bounded', () =
   });
   assert.equal(buildRequest(target, { mode: 'custom', instrumental: false, tags: 'rock' }).error, 'inputs_invalid:lyrics');
   assert.equal(buildRequest(target, { mode: 'simple', instrumental: true, prompt: 'x', lyrics: 'not simple' }).error, 'inputs_invalid:mode');
-  assert.equal(buildRequest(target, { mode: 'custom', instrumental: true, tags: 'x', duration: 136 }).error, 'inputs_invalid:duration');
+  assert.equal(buildRequest(target, { mode: 'custom', instrumental: true, tags: 'x', duration: 360 }).ok, true);
+  assert.equal(buildRequest(target, { mode: 'custom', instrumental: true, tags: 'x', duration: 361 }).error, 'inputs_invalid:duration');
   assert.equal(buildRequest(target, { mode: 'simple', instrumental: true, prompt: '🎵'.repeat(500) }).ok, true);
   assert.equal(buildRequest(target, { mode: 'simple', instrumental: true, prompt: '🎵'.repeat(501) }).error, 'inputs_invalid:prompt');
 });

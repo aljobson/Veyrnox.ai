@@ -29,7 +29,7 @@ import { useLibraryAudio } from '../../../lib/useLibraryAudio';
 import { retryDelayMs } from '../../../lib/retryDelay';
 
 import { EmptyState } from '../../../components/EmptyState';
-import { VeyLoader } from '../../../components/VeyLoader';
+import { LoadingSkeleton } from '../../../components/LoadingSkeleton';
 
 export default function Library() {
     const styles = useThemedStyles(sheets);
@@ -293,7 +293,7 @@ export default function Library() {
                     <Button variant="tertiary" accessibilityRole="button" disabled={waiting} onPress={() => void load()} label={t('recovery.retry')} />
                 </View>
             ) : jobs === null ? (
-                <VeyLoader />
+                <LoadingSkeleton variant={view === 'grid' ? 'grid' : 'list'} />
             ) : (
                 <FlatList
                     contentContainerStyle={styles.list}

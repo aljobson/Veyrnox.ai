@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 // The module is browser code but its encoders are pure, so they import and run
 // under node. Only `atob`/`btoa` are needed, and node has had both since 16.
-const { fromB64url, decodeOptions, encodeCredential, signInBody } = await import('../app/lib/passkeys.js');
+const { fromB64url, decodeOptions, encodeCredential, signInBody, signInWithPasskey } = await import('../app/lib/passkeys.js');
 
 const bytes = (...n) => new Uint8Array(n);
 const toB64url = (u8) => Buffer.from(u8).toString('base64')
@@ -121,4 +121,34 @@ test('the sign-in challenge carries the Turnstile token GoTrue demands', () => {
 
 test('no token means no captcha envelope, for projects with it switched off', () => {
     assert.deepEqual(signInBody(undefined), {});
+});
+
+test('a browser refusal is surfaced and never sent to verification', async () => {
+    const oldUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const oldKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const oldWindow = globalThis.window;
+    const oldNavigator = globalThis.navigator;
+    const oldFetch = globalThis.fetch;
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://auth.test';
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'anon';
+    globalThis.window = { PublicKeyCredential: function PublicKeyCredential() {}, isSecureContext: true };
+    Object.defineProperty(globalThis, 'navigator', { configurable: true, value: { credentials: {
+        get: async () => { throw Object.assign(new Error('not allowed'), { name: 'NotAllowedError' }); },
+    } } });
+    const calls = [];
+    globalThis.fetch = async (url) => {
+        calls.push(String(url));
+        return new Response(JSON.stringify({ challenge_id: 'challenge', options: { challenge: 'AQ' } }), { status: 200 });
+    };
+    try {
+        await assert.rejects(signInWithPasskey('captcha'), { name: 'NotAllowedError' });
+        assert.equal(calls.length, 1);
+        assert.match(calls[0], /\/authentication\/options$/);
+    } finally {
+        if (oldUrl === undefined) delete process.env.NEXT_PUBLIC_SUPABASE_URL; else process.env.NEXT_PUBLIC_SUPABASE_URL = oldUrl;
+        if (oldKey === undefined) delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY; else process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = oldKey;
+        globalThis.window = oldWindow;
+        Object.defineProperty(globalThis, 'navigator', { configurable: true, value: oldNavigator });
+        globalThis.fetch = oldFetch;
+    }
 });

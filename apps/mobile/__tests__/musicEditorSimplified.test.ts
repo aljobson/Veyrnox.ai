@@ -7,9 +7,10 @@ test('music editor stays on the timeline, exposes AI editing and has no beat-mak
     expect(source).not.toContain('beat-studio-readout');
     expect(source).toContain('testID="beat-editor-quick-settings"');
     expect(source).not.toContain("label={t(doc.view === 'song' ? 'beat.view.pattern'");
-    expect(source).toContain('<BeatAiPanel doc={doc} apply={apply} disabled={locked} visible={aiToolsOpen}');
+    expect(source).toContain('aiToolsOpen ? <BeatAiPanel doc={doc} apply={apply} disabled={locked} visible');
     expect(source).toContain('showPatterns={false}');
     expect(source).toContain('showPatterns={false} showHistory={false}');
-    expect(source).toContain('onAdd={() => setAddTrackOpen(true)} onAi={() => setAiToolsOpen(true)}');
+    expect(source).toContain('onAdd={toggleAddTools} onAi={toggleAiTools}');
+    expect(source).toContain('subMenu={addTrackOpen');
     expect(source).toContain('headerRight: () => <HeaderAction testID="beat-editor-export"');
 });

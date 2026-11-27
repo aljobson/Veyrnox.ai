@@ -2,9 +2,9 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import { AppState, FlatList, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useAuth } from '../../auth/AuthProvider';
-import { Button, Text, TextField, themedStyles, useThemedStyles } from '../ui';
+import { Button, Icon, Text, TextField, themedStyles, useThemedStyles } from '../ui';
 import { EmptyState } from '../EmptyState';
-import { VeyLoader } from '../VeyLoader';
+import { LoadingSkeleton } from '../LoadingSkeleton';
 import { t } from '../../lib/i18n';
 import { useAnnouncement } from '../../lib/useAnnouncement';
 import { ds } from '../../theme';
@@ -180,6 +180,7 @@ export function BeatSongLibrarySheet({ layout, disabled, placement, onCommit, on
     const status = statusText(loadState, items.length, shown.length, preview, adding, items);
     useAnnouncement(status);
     const empty = loadState.kind !== 'loading' && items.length === 0;
+    const showStatus = loadState.kind !== 'ready' || preview.kind !== 'idle' || adding.kind !== 'idle';
     const list = <View testID="beat-song-library-list-pane" style={s.listPane}>
         <FlatList data={shown} keyExtractor={item => item.id} testID="beat-song-library-list"
             contentContainerStyle={s.listContent} keyboardShouldPersistTaps="handled"
@@ -187,22 +188,25 @@ export function BeatSongLibrarySheet({ layout, disabled, placement, onCommit, on
             renderItem={({ item }) => <BeatSongLibraryRow item={item} destination={destination} selectionControl={layout === 'regular'}
                 disabled={disabled} selected={item.id === selectedId} preview={preview} adding={adding}
                 onSelect={() => setSelectedId(item.id)} onAudition={() => void audition(item)} onAdd={() => void add(item)} />}
-            ListEmptyComponent={loadState.kind === 'loading' ? <VeyLoader label={t('beat.library.loading')} showLabel />
+            ListEmptyComponent={loadState.kind === 'loading' ? <LoadingSkeleton label={t('beat.library.loading')} variant="list" />
                 : loadState.kind === 'error' ? undefined
                 : empty && !term ? <EmptyState title={t('beat.library.empty.title')} body={t('beat.library.empty.body')} />
                 : term ? <View style={s.empty}><Text variant="title3" accessibilityRole="header">{t('beat.library.searchEmpty', { query })}</Text>
                     <Button size="md" variant="secondary" label={t('beat.library.clear')} onPress={() => setQuery('')} /></View> : undefined} />
     </View>;
 
-    return <BeatModal title={t('beat.library.title')} testID="beat-song-library-sheet" onClose={close} onDismiss={onDismiss} scrollable={false}>
-        <Button testID="beat-song-library-close" size="md" variant="secondary" label={t('beat.library.close')} onPress={close} />
-        <TextField testID="beat-song-library-search" label={t('beat.library.search')} value={query} onChangeText={setQuery}
-            autoCorrect={false} returnKeyType="search" clearButtonMode="while-editing" />
+    return <BeatModal title={t('beat.library.open')} closeLabel={t('beat.library.close')} testID="beat-song-library-sheet"
+        onClose={close} onDismiss={onDismiss} scrollable={false}>
+        <TextField testID="beat-song-library-search" accessibilityLabel={t('beat.library.search')} placeholder={t('beat.library.search')}
+            value={query} onChangeText={setQuery} autoCorrect={false} returnKeyType="search" clearButtonMode="while-editing" />
+        {layout !== 'regular' ? <View style={s.destination} accessible accessibilityLabel={t('beat.library.destination', { position: destination })}>
+            <Icon name="plus" size={16} tint={s.destinationText.color} />
+            <Text variant="footnote" tone="accent" style={s.destinationText}>{t('beat.library.destination', { position: destination })}</Text>
+        </View> : null}
         <View testID="beat-song-library-status" accessible accessibilityLabel={status} accessibilityLiveRegion="polite"
             accessibilityRole={loadState.kind === 'error' ? 'alert' : undefined}>
-            <Text variant="footnote" tone={loadState.kind === 'error' ? 'danger' : 'secondary'}>{status}</Text>
+            {showStatus ? <Text variant="footnote" tone={loadState.kind === 'error' ? 'danger' : 'secondary'}>{status}</Text> : null}
         </View>
-        {query ? <Button size="md" variant="tertiary" label={t('beat.library.clear')} onPress={() => setQuery('')} /> : null}
         {disabled ? <Text testID="beat-song-library-read-only" variant="callout" tone="secondary">{t('beat.library.readOnly')}</Text> : null}
         {loadState.kind === 'error' && loadState.error.retryable ? <Button size="md" variant="secondary" label={t('beat.library.retry')} onPress={() => void load(true)} /> : null}
         <View testID={`beat-song-library-layout-${layout}`} style={layout === 'regular' ? s.regular : s.column}>
@@ -227,17 +231,26 @@ function BeatSongLibraryRow({ item, destination, disabled, selected, selectionCo
         : adding.id === item.id && adding.kind === 'refused' ? t('beat.library.addRefused')
         : preview.id === item.id && preview.kind === 'error' && preview.error ? t(errorKey(preview.error.code))
         : adding.id === item.id && adding.kind === 'error' && adding.error ? t(errorKey(adding.error.code)) : null;
+    const song = <View style={s.song}>
+        <View style={s.artwork}><Icon name="audio" size={20} tint={s.artworkIcon.color} /></View>
+        <View style={s.songCopy}>
+            <Text testID={`beat-song-library-title-${item.id}`} variant="bodyStrong" numberOfLines={1} style={s.title}>{item.name}</Text>
+            {cue ? <Text variant="footnote" numberOfLines={1}
+                tone={preview.kind === 'error' || adding.kind === 'error' || adding.kind === 'refused' ? 'danger' : 'accent'}>{cue}</Text> : null}
+        </View>
+    </View>;
     return <View testID={`beat-song-library-row-${item.id}`} style={[s.row, selected && s.selected]}>
         {selectionControl ? <Button size="md" variant="tertiary" label={item.name} onPress={onSelect} accessibilityState={{ selected }}
-            containerStyle={s.titleButton} style={s.titleControl} textStyle={s.title} />
-            : <Text testID={`beat-song-library-title-${item.id}`} variant="title3" style={s.title}>{item.name}</Text>}
-        {cue ? <Text variant="footnote" tone={preview.kind === 'error' || adding.kind === 'error' || adding.kind === 'refused' ? 'danger' : 'accent'}
-            >{cue}</Text> : null}
+            containerStyle={s.titleButton} style={s.titleControl}>{song}</Button> : song}
         <View style={s.controls}>
-            <Button size="md" variant="secondary" label={t(playing ? 'beat.library.stopNamed' : 'beat.library.auditionNamed', { name: item.name })}
-                accessibilityState={{ selected: playing, busy: preparing }} disabled={preparing || addingThis} onPress={onAudition} containerStyle={s.control} />
-            <Button size="md" label={t('beat.library.addNamed', { name: item.name, position: positionLabel ?? destination })}
-                accessibilityState={{ busy: addingThis }} disabled={disabled || adding.kind === 'adding'} onPress={onAdd} containerStyle={s.control} />
+            <Button testID={`beat-song-library-preview-${item.id}`} size="md" variant="tertiary" icon={playing ? 'pauseCircle' : 'play'} iconOnly
+                label={t(playing ? 'beat.library.stopNamed' : 'beat.library.auditionNamed', { name: item.name })}
+                accessibilityState={{ selected: playing, busy: preparing }} loading={preparing} disabled={addingThis}
+                onPress={onAudition} containerStyle={s.control} />
+            <Button testID={`beat-song-library-add-${item.id}`} size="md" variant="tertiary" tone="accent" icon="plus" iconOnly
+                label={t('beat.library.addNamed', { name: item.name, position: positionLabel ?? destination })}
+                accessibilityState={{ busy: addingThis }} loading={addingThis} disabled={disabled || adding.kind === 'adding'}
+                onPress={onAdd} containerStyle={s.control} />
         </View>
     </View>;
 }
@@ -275,13 +288,22 @@ const sheets = themedStyles(p => ({
     regular: { flex: 1, minHeight: 0, flexDirection: 'row', alignItems: 'stretch', gap: ds.space.lg },
     listPane: { flex: 1, minWidth: 0, minHeight: 0 },
     detailPane: { flex: 0.8, minWidth: 0, gap: ds.space.md, padding: ds.space.lg, borderRadius: ds.radius.lg, backgroundColor: p.surface },
-    listContent: { gap: ds.space.sm, paddingBottom: ds.space.xl },
-    row: { minWidth: 0, gap: ds.space.sm, padding: ds.space.md, borderRadius: ds.radius.md, borderWidth: 1, borderColor: p.borderSubtle, backgroundColor: p.bgElevated1 },
-    selected: { borderWidth: 2, borderColor: p.accent },
-    titleButton: { width: '100%' },
-    titleControl: { width: '100%', justifyContent: 'flex-start' },
+    listContent: { paddingBottom: ds.space.xl },
+    destination: { minHeight: 28, alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: ds.space.xs,
+        paddingHorizontal: ds.space.sm, borderRadius: ds.radius.pill, backgroundColor: p.accentSubtle },
+    destinationText: { color: p.accent },
+    row: { minWidth: 0, minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: ds.space.xs,
+        paddingVertical: ds.space.sm, borderBottomWidth: 1, borderBottomColor: p.borderSubtle },
+    selected: { backgroundColor: p.surface },
+    song: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: ds.space.sm },
+    artwork: { width: 40, height: 40, flexShrink: 0, alignItems: 'center', justifyContent: 'center', borderRadius: ds.radius.md,
+        backgroundColor: p.surface },
+    artworkIcon: { color: p.textSecondary },
+    songCopy: { flex: 1, minWidth: 0, gap: 2 },
+    titleButton: { flex: 1, minWidth: 0 },
+    titleControl: { minWidth: 0, justifyContent: 'flex-start', paddingHorizontal: 0 },
     title: { flexShrink: 1, textAlign: 'auto' },
-    controls: { flexDirection: 'row', flexWrap: 'wrap', gap: ds.space.sm },
-    control: { flexGrow: 1, minWidth: 144 },
+    controls: { flexShrink: 0, flexDirection: 'row', gap: 2 },
+    control: { width: 44 },
     empty: { gap: ds.space.md, alignItems: 'center', padding: ds.space.xl },
 }));

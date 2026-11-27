@@ -118,6 +118,14 @@ test('A1 an old pattern project is migrated into the Music Editor timeline witho
     await act(async () => beatStore.flushBeats());
     expect(beatStore.saveState(mockId)).toBe('saved');
 });
+test('the timeline keeps readable beat, bar, and lane guides on the dark editor canvas', async () => {
+    await open();
+    expect(node('arrangement-grid')).toBeDefined();
+    const beatLine = root.container.queryAll(n => n.props.testID === 'arrangement-beat-line')[0];
+    const barLine = root.container.queryAll(n => n.props.testID === 'arrangement-bar-line')[0];
+    expect(RN.StyleSheet.flatten(beatLine.props.style)).toMatchObject({ backgroundColor: '#34343b', opacity: 0.9, width: 1 });
+    expect(RN.StyleSheet.flatten(barLine.props.style)).toMatchObject({ backgroundColor: '#5a5a64', opacity: 0.95, width: 2 });
+});
 test.each([
     ['move', 24, 0, (d: BeatDoc) => moveRegion(d, 'r1', 960, 't1')],
     ['lane', 24, 96, (d: BeatDoc) => moveRegion(d, 'r1', 960, d.tracks[1].id)],

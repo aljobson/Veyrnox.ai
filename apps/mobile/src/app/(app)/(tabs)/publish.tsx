@@ -18,7 +18,7 @@ import { brandStore, fetchBrands, reconcileBrand, roleLabel, type Brand } from '
 import { canConnectAccounts, canPublish, hasPublishPlan, publishDestinations, publishSummary, type PublishDestinationId } from '../../../lib/publishDashboard';
 import { usePublishApi } from '../../../lib/usePublishApi';
 import { VeyCardPeek, peekRoom } from '../../../components/VeyCardPeek';
-import { VeyLoader } from '../../../components/VeyLoader';
+import { LoadingSkeleton } from '../../../components/LoadingSkeleton';
 import { ds, VIVID_HUES, type VividHue } from '../../../theme';
 
 const PLAN_LABEL: Record<Interval, string> = { week: 'unlock.plan.week', month: 'unlock.plan.month', year: 'unlock.plan.year' };
@@ -176,7 +176,7 @@ export default function Publish() {
                 </View> : null}
             </View>
 
-            {!data && !error ? <View style={styles.loading}><VeyLoader label={t('publishHome.loading')} showLabel /></View> : null}
+            {!data && !error ? <View style={styles.loading}><LoadingSkeleton label={t('publishHome.loading')} variant="dashboard" /></View> : null}
             {error ? (
                 <View style={styles.errorCard}>
                     <Text variant="footnote" style={styles.error} accessibilityRole="alert">{error}</Text>

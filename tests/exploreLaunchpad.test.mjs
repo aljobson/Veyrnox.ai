@@ -26,6 +26,11 @@ test('the launchpad is usable at narrow widths and names the template gallery', 
     'interactive cards use the restrained shared press scale');
 });
 
+test('web Explore does not repeat Create with a generic idea composer', () => {
+  assert.doesNotMatch(page, /focusIdea|ideaTitle|promptPlaceholder|makeVideo|makeImage/);
+  assert.doesNotMatch(page, /<textarea\b/);
+});
+
 test('every app locale translates the new entry hierarchy', async () => {
   for (const locale of ['en', 'es', 'zh', 'hi', 'ar', 'fr', 'pt', 'ru', 'ja', 'de', 'ko']) {
     const messages = await appMessagesFor(locale);

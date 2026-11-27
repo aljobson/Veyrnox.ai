@@ -151,6 +151,9 @@ export async function installProductFixtures(page, options = {}) {
       if (url.pathname.startsWith('/api/v1/library-sync')) return state.user ? json({ error: 'not_found' }, 404) : json({ error: 'not_authenticated' }, 401);
       if (method === 'GET') {
         if (url.pathname === '/api/catalog') return json({ models: options.models || SYNTHETIC_MODELS });
+        if (url.pathname === '/api/template-catalog' && url.searchParams.get('summary') === '1') {
+          return json({ total: 1088, providers: { kling: 226, seedance: 341, vidu: 521 } });
+        }
         // The template gallery and one template in full: static data the browser no longer bundles (the same functions the
         // routes serve, so the cards and counts are the real ones); nothing per-user, no price.
         if (url.pathname === '/api/templates') {

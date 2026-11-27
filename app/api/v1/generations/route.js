@@ -66,6 +66,10 @@ export const RIGHTS_ATTESTATION_VERSION = 'terms-2026-11-07';
 // Catalog ids are lowercase slugs ('wan-2.5', 'veo-3.1-fast-kie'). Bounded
 // here so an unbounded string never reaches the PostgREST query string.
 const MODEL_ID_RE = /^[a-z0-9][a-z0-9.-]{0,63}$/;
+// Music generations have their own quote, candidate and durable dispatch
+// lifecycle. Letting these ids enter the generic gateway can debit a user and
+// submit to Suno without creating the delivery records the Music worker owns.
+const MUSIC_ONLY_MODEL_IDS = new Set(['ace-step', 'ace-step-1.5']);
 
 const MAX_REQUEST_BYTES = 512 * 1024;
 const UNIT_SECONDS = 5;
@@ -145,6 +149,9 @@ export async function POST(req) {
     const maxCharge = maxChargeEnabled(process.env) ? requestedMaxCharge : undefined;
     let inputs = body && body.inputs;
     if (typeof modelId !== 'string' || !MODEL_ID_RE.test(modelId)) return NextResponse.json({ error: 'model_id_required' }, { status: 400 });
+    if (MUSIC_ONLY_MODEL_IDS.has(modelId)) {
+        return NextResponse.json({ error: 'music_generation_required' }, { status: 409 });
+    }
     let proofRate, proofEligible = false, ownerProof = false;
     const proofCandidate = (seedance25Offer(modelId) || (veoI2vOffer(modelId) && readGenerationSources(body).references?.length > 0))
         && ownerProofCandidate(req, { modelId });

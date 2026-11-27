@@ -1,12 +1,13 @@
 import { useSwapRedirect } from '../../../lib/templateSwap/availability';
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, AppState, FlatList, ScrollView, View } from 'react-native';
 import { Button, Chip, Text, TextField, themedStyles, useThemedStyles } from '../../../components/ui';
 import { TemplateCollage } from '../../../components/TemplateCollage';
 import { TemplateCard } from '../../../components/templates/TemplateCard';
 import { AudioTemplateCard } from '../../../components/templates/AudioTemplateCard';
 import { ImageTemplateCard } from '../../../components/templates/ImageTemplateCard';
+import { CrunTemplateCard } from '../../../components/templates/CrunTemplateCard';
 import { fetchImageTemplates, imageCategoriesOf, imageTemplatesIn, type ImageTemplate } from '../../../lib/imageTemplates';
 import { audioCategoriesOf, audioTemplatesIn, fetchAudioTemplates, type AudioTemplate } from '../../../lib/audioTemplates';
 import { promptHref } from '../../../lib/explore';
@@ -20,9 +21,10 @@ import { fetchPresets, searchPresets, themeTitle, type Preset } from '../../../l
 import { fetchPopularIds, templateChips, templatesFor, previewRatio, templatePageHref } from '../../../lib/templateFilters';
 import { rankPresets } from '../../../lib/creatorTaste';
 import { useVibeAnswers } from '../../../lib/useVibeAnswers';
+import { CRUN_TEMPLATE_PROVIDERS, CRUN_TEMPLATE_PROVIDER_NAMES, fetchCrunTemplateCatalog, type CrunTemplateCatalog, type CrunTemplateProvider } from '../../../lib/crunTemplateSummary';
 
-type TemplateKind = 'video' | 'image' | 'audio';
-const KINDS: readonly TemplateKind[] = ['video', 'image', 'audio'];
+type TemplateKind = 'video' | 'image' | 'audio' | 'crun';
+const KINDS: readonly TemplateKind[] = ['video', 'image', 'audio', 'crun'];
 
 export default function Templates() {
     const styles = useThemedStyles(sheets);
@@ -44,6 +46,11 @@ export default function Templates() {
     const [audio, setAudio] = useState<AudioTemplate[] | null>(null);
     const [audioFailed, setAudioFailed] = useState(false);
     const [audioChip, setAudioChip] = useState('ALL');
+    const [crunProvider, setCrunProvider] = useState<CrunTemplateProvider>('kling');
+    const crunProviderRef = useRef<CrunTemplateProvider>('kling');
+    const [crun, setCrun] = useState<CrunTemplateCatalog | null>(null);
+    const [crunFailed, setCrunFailed] = useState(false);
+    const [crunLoadingMore, setCrunLoadingMore] = useState(false);
     const [catalog, setCatalog] = useState<CatalogModel[] | null>(null);
     // A saved copy older than its freshness window gives prices but does not decide what is listed (the network has not confirmed it).
     const [catalogConfirmed, setCatalogConfirmed] = useState(false);
@@ -74,6 +81,14 @@ export default function Templates() {
         fetchImageTemplates().then(value => { if (live) setImages(value); }).catch(() => { if (live) setImagesFailed(true); });
         return () => { live = false; };
     }, [kind, attempt]);
+    useEffect(() => {
+        if (kind !== 'crun') return;
+        let live = true;
+        crunProviderRef.current = crunProvider;
+        setCrun(null); setCrunFailed(false); setCrunLoadingMore(false); setPlaying(null);
+        fetchCrunTemplateCatalog(crunProvider).then(value => { if (live) setCrun(value); }).catch(() => { if (live) setCrunFailed(true); });
+        return () => { live = false; };
+    }, [kind, crunProvider, attempt]);
     useFocusEffect(useCallback(() => () => setPlaying(null), []));
     useEffect(() => { const sub = AppState.addEventListener('change', state => { if (state !== 'active') setPlaying(null); }); return () => sub.remove(); }, []);
     useEffect(() => { setLimit(50); setPlaying(null); }, [chip, query, kind, audioChip]);
@@ -99,14 +114,38 @@ export default function Templates() {
     const retry = <View><Text tone="danger">{t('presets.couldnotloadtemplatesCheckyourconnection')}</Text><Button label={t('recovery.retry')} onPress={() => setAttempt(n => n + 1)} /></View>;
     const empty = <Text tone="secondary">{t(query ? 'presets.nomatchingeffects' : 'presets.notemplatesavailablerightnow')}</Text>;
     const open = (p: Preset) => { setPlaying(null); router.push(templatePageHref(p)); };
+    const loadMoreCrun = async () => {
+        if (!crun || crun.templates.length >= crun.total || crunLoadingMore) return;
+        const selectedProvider = crunProvider;
+        setCrunLoadingMore(true); setCrunFailed(false);
+        try {
+            const next = await fetchCrunTemplateCatalog(selectedProvider, crun.page + 1);
+            setCrun(current => {
+                if (!current || current.provider !== selectedProvider) return current;
+                const byId = new Map([...current.templates, ...next.templates].map(item => [item.catalogId, item]));
+                return { ...next, templates: [...byId.values()] };
+            });
+        } catch { if (crunProviderRef.current === selectedProvider) setCrunFailed(true); }
+        finally { if (crunProviderRef.current === selectedProvider) setCrunLoadingMore(false); }
+    };
+    const crunProviderTabs = <ScrollView horizontal contentContainerStyle={styles.chips} accessibilityRole="tablist" accessibilityLabel={t('crunTemplates.providerLabel')}>
+        {CRUN_TEMPLATE_PROVIDERS.map(item => <Chip key={item} selected={crunProvider === item} accessibilityRole="tab" accessibilityState={{ selected: crunProvider === item }} label={CRUN_TEMPLATE_PROVIDER_NAMES[item]} onPress={() => { crunProviderRef.current = item; setCrunProvider(item); }} />)}
+    </ScrollView>;
     return <View style={styles.screen}>
         <Stack.Screen options={{ title: t('presets.templates') }} />
         <Text variant="title1" accessibilityRole="header">{t('presets.templates')}</Text>
         {unavailableId ? <Text accessibilityLiveRegion="assertive">{unavailablePreset ? t('presets.isnotavailablerightnow', { value1: unavailablePreset.title }) : t('presets.thattemplateisnotavailablerightnow')}</Text> : null}
         <View style={styles.kinds} accessibilityRole="tablist" accessibilityLabel={t('templates.kind.label')}>
-            {KINDS.map(k => <Chip key={k} selected={kind === k} accessibilityRole="tab" accessibilityState={{ selected: kind === k }} label={t(`templates.kind.${k}`)} onPress={() => { setKind(k); setQuery(''); }} />)}
+            {KINDS.map(k => <Chip key={k} selected={kind === k} accessibilityRole="tab" accessibilityState={{ selected: kind === k }} label={k === 'crun' ? t('label.Templates') : t(`templates.kind.${k}`)} onPress={() => { setKind(k); setQuery(''); }} />)}
         </View>
-        {kind === 'image' ? (imagesFailed ? retry
+        {kind === 'crun' ? (crunFailed && crun === null ? <View>{crunProviderTabs}{retry}</View>
+            : crun === null ? <View>{crunProviderTabs}<ActivityIndicator /></View> : <FlatList key={`crun-${crunProvider}`} data={crun.templates} numColumns={2} keyExtractor={item => item.catalogId} contentContainerStyle={styles.list}
+                ListHeaderComponent={<View style={styles.header}>{crunProviderTabs}<Text>{t('crunTemplates.count', { loaded: crun.templates.length, total: crun.total })}</Text><Text tone="secondary">{t('crunTemplates.help')}</Text></View>}
+                ListFooterComponent={<View style={styles.footer}>{crunFailed ? <Text tone="danger">{t('presets.couldnotloadtemplatesCheckyourconnection')}</Text> : null}{crun.templates.length < crun.total ? <Button disabled={crunLoadingMore} label={crunLoadingMore ? t('common.loading') : t('crunTemplates.loadMore')} onPress={() => void loadMoreCrun()} /> : null}</View>}
+                onEndReachedThreshold={0.4}
+                onEndReached={() => void loadMoreCrun()}
+                renderItem={({ item }) => <CrunTemplateCard template={item} playing={playing === item.catalogId} onPlay={() => setPlaying(id => id === item.catalogId ? null : item.catalogId)} />} />)
+        : kind === 'image' ? (imagesFailed ? retry
             : images === null ? <ActivityIndicator /> : <FlatList key="image" data={imagesShown} numColumns={2} keyExtractor={i => i.id} contentContainerStyle={styles.list}
                 ListHeaderComponent={<View style={styles.header}>
                     <TextField accessibilityLabel={t('libraryCreate.searchTemplates')} placeholder={t('libraryCreate.searchTemplates')} value={query} onChangeText={setQuery} />
@@ -135,4 +174,4 @@ export default function Templates() {
                 renderItem={({ item }) => <TemplateCard preset={item} playing={playing === item.id} onPlay={() => setPlaying(id => id === item.id ? null : item.id)} onOpen={() => open(item)} />} />}
     </View>;
 }
-const sheets = themedStyles(p => ({ screen: { flex: 1, backgroundColor: p.bg, padding: 16 }, kinds: { flexDirection: 'row', gap: 8, marginBottom: 12 }, list: { paddingBottom: 80 }, header: { gap: 12 }, chips: { gap: 8 }, audioCard: { marginVertical: 4 } }));
+const sheets = themedStyles(p => ({ screen: { flex: 1, backgroundColor: p.bg, padding: 16 }, kinds: { flexDirection: 'row', gap: 8, marginBottom: 12, flexWrap: 'wrap' }, list: { paddingBottom: 80 }, header: { gap: 12 }, footer: { gap: 8, paddingVertical: 16 }, chips: { gap: 8 }, audioCard: { marginVertical: 4 } }));

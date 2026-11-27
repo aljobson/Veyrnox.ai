@@ -30,6 +30,9 @@ const AUTH_ERROR_COPY = (t) => ([
 export function humanAuthError(err, t) {
     // A resend refused for sending too often (HTTP 429 / email-send rate limit codes) is not a developer string.
     if (isEmailRateLimit(err)) return t("authGate.tooManyAttemptsWaitAMinute");
+    // WebAuthn deliberately folds a missing credential, timeout and prompt
+    // dismissal into NotAllowedError. It must not become a silent no-op.
+    if (err && err.name === "NotAllowedError") return t("authGate.noPasskeyForThisSiteOn");
     const raw = err && err.message ? String(err.message) : "";
     if (raw) {
         const hit = AUTH_ERROR_COPY(t).find(([re]) => re.test(raw));
