@@ -14,7 +14,9 @@ export const CRUN_TEMPLATE_PROVIDER_NAMES: Readonly<Record<CrunTemplateProvider,
 };
 
 export interface CrunTemplatePreview {
+    readonly catalogId: string;
     readonly id: string;
+    readonly providerTemplateId: string;
     readonly name: string;
     readonly category: string;
     readonly tag: string | null;
@@ -54,11 +56,13 @@ export function parseCrunTemplateCatalog(body: unknown): CrunTemplateCatalog | n
         || !Array.isArray(value?.templates)) return null;
     const templates = value.templates.flatMap((raw): CrunTemplatePreview[] => {
         const item = raw as Record<string, unknown> | null;
-        const id = text(item?.id), name = text(item?.name);
-        if (!id || !name) return [];
+        const catalogId = text(item?.catalogId), id = text(item?.id), providerTemplateId = text(item?.providerTemplateId), name = text(item?.name);
+        if (!catalogId || !id || !providerTemplateId || !name) return [];
         const previewKind = item?.previewKind === 'image' || item?.previewKind === 'video' ? item.previewKind : null;
         return [{
+            catalogId,
             id,
+            providerTemplateId,
             name,
             category: text(item?.category) ?? '',
             tag: text(item?.tag),

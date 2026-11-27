@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { VEO_TEMPLATE_RECIPES } from '../app/veyrnox/_lib/veoTemplateRecipes.js';
 import { MUSIC_DISCOVER_BEATS } from '../lib/musicDiscover.js';
+import { studioMenuItems, studioSidebarSections } from '../app/veyrnox/_lib/studioNavigation.js';
+import { SECONDARY_NAV_CATEGORIES } from '../app/veyrnox/_lib/tokens.js';
 import appEnglish from '../lib/i18n/messages/app/en.mjs';
 
 const component = await readFile(new URL('../app/veyrnox/_components/TemplateCatalog.js', import.meta.url), 'utf8');
@@ -11,6 +13,13 @@ const page = await readFile(new URL('../app/veyrnox/app/templates/page.js', impo
 
 test('the signed-in catalog is visible in navigation and covers all five requested engines', () => {
   assert.match(navigation, /key: 'templates', href: '\/app\/templates'/);
+  const t = Object.assign((key) => appEnglish[key] ?? key, { label: (label) => label });
+  const flags = { projects: true, publish: true, editor: true };
+  const menuTemplates = studioMenuItems(t, flags).filter((item) => item.label === 'Templates');
+  const sidebarTemplates = studioSidebarSections(t, flags).flatMap((section) => section.items).filter((item) => item.label === 'Templates');
+  assert.deepEqual(menuTemplates.map((item) => item.href), ['/app/templates']);
+  assert.deepEqual(sidebarTemplates.map((item) => item.href), ['/app/templates']);
+  assert.equal(SECONDARY_NAV_CATEGORIES.find((item) => item.label === 'Templates')?.href, '/app/templates');
   for (const provider of ['kling', 'seedance', 'vidu', 'veo', 'suno']) assert.match(component, new RegExp(`id: '${provider}'`));
   assert.match(page, /TemplateCatalog/);
   assert.match(page, /seedance=\{\[\]\}/);
@@ -43,8 +52,11 @@ test('provider effects are catalog-only until pricing and paid proof exist', () 
   assert.doesNotMatch(component, /CreateTask/);
 });
 
-test('the catalog requests and displays the combined live CRUN preview count', () => {
+test('the catalog requests and displays the combined template count without supplier language', () => {
   assert.match(component, /\/api\/template-catalog\?summary=1/);
   assert.match(component, /data-testid="crun-template-count"/);
-  assert.match(appEnglish['app.templates.crunSummary'], /CRUN previews/);
+  assert.equal(appEnglish['app.templates.crunSummary'], '{count} templates across Kling, Seedance and Vidu');
+  for (const key of ['app.templates.intro', 'app.templates.crunSummary', 'app.templates.provider.viduDetail', 'app.templates.liveHelp']) {
+    assert.doesNotMatch(appEnglish[key], /CRUN/i, key);
+  }
 });

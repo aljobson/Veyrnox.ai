@@ -173,7 +173,7 @@ export function TemplateCatalog({ kling, seedance, veo, suno }) {
       if (!response.ok) throw new Error(body.error || 'catalog_unavailable');
       setRemote(current => {
         const previous = page === 1 ? [] : current[kind]?.templates || [];
-        const byId = new Map([...previous, ...(body.templates || [])].map(item => [item.id, item]));
+        const byId = new Map([...previous, ...(body.templates || [])].map(item => [item.catalogId || item.id, item]));
         return { ...current, [kind]: { ...body, templates: [...byId.values()] } };
       });
     } catch {
@@ -269,7 +269,7 @@ export function TemplateCatalog({ kling, seedance, veo, suno }) {
           </div>
           {error[provider] && <div role="status" className="mb-4 rounded-xl border border-vx-money/40 bg-vx-money/5 px-4 py-3 text-sm text-vx-fg-body">{error[provider]} <button type="button" className="ms-2 min-h-11 font-bold text-vx-accent underline" onClick={() => loadRemote(provider, 1)}>{t('app.templates.retry')}</button></div>}
           {!remote[provider] && loading === provider ? <p role="status" className="rounded-2xl border border-dashed border-vx-border p-8 text-center text-sm text-vx-fg-muted">{t('app.templates.loadingIndex', { provider: t(info.labelKey) })}</p>
-            : visibleRemote.length ? <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{visibleRemote.map(item => <ProviderCard key={item.id} item={item} provider={t(info.labelKey)} t={t} />)}</ul>
+            : visibleRemote.length ? <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{visibleRemote.map(item => <ProviderCard key={item.catalogId || item.id} item={item} provider={t(info.labelKey)} t={t} />)}</ul>
               : remote[provider] && <Empty query={query} t={t} />}
           {remote[provider] && remote[provider].templates.length < remote[provider].total && (
             <button type="button" disabled={loading === provider} onClick={() => loadRemote(provider, remote[provider].page + 1)} className="vx-press mt-6 min-h-11 rounded-full border border-vx-border px-6 text-sm font-bold hover:border-vx-accent disabled:opacity-50">

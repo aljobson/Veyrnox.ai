@@ -1,13 +1,13 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
-  "explore.templateTotalWithCrun": "{ready} listas · {previews} vistas previas de CRUN",
-  "templates.kind.crun": "Vistas CRUN",
-  "crunTemplates.providerLabel": "Proveedor de CRUN",
-  "crunTemplates.count": "{loaded} de {total} vistas previas cargadas",
-  "crunTemplates.help": "Explora el catálogo en vivo de CRUN. Estas son solo vistas previas hasta que se habiliten los precios y la generación en Veyrnox.",
-  "crunTemplates.previewOnly": "Solo vista previa",
-  "crunTemplates.previewLabel": "Vista previa de CRUN: {name}",
+  "explore.templateTotalWithCrun": "{previews} plantillas",
+  "templates.kind.crun": "Plantillas",
+  "crunTemplates.providerLabel": "Proveedor de plantillas",
+  "crunTemplates.count": "{loaded} de {total} plantillas cargadas",
+  "crunTemplates.help": "Explora plantillas de Kling, Seedance y Vidu. La generación estará disponible cuando se completen los precios de Veyrnox y la prueba pagada.",
+  "crunTemplates.previewOnly": "Aún no ejecutable",
+  "crunTemplates.previewLabel": "Plantilla {name}",
   "crunTemplates.previewUnavailable": "Vista previa no disponible",
   "crunTemplates.inputCount": "Imágenes de entrada: {count}",
   "crunTemplates.input": "Entrada: {input}",
