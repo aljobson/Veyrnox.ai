@@ -1,7 +1,7 @@
 // English strings for create. Add keys here; keep their original wording and placeholders.
 export default {
     'create.eyebrow': 'STUDIO · NEW CREATION',
-    'create.intro': 'Choose what to make and a model. Every price is shown before you generate.',
+    'create.intro': 'Choose an image or video model. Every price is shown before you generate.',
     'create.startFrom': 'Start from',
     'create.pickPreset': 'Reference, file or idea',
     'create.what': 'What do you want to make?',

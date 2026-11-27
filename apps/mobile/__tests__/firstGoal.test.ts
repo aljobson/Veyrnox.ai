@@ -30,6 +30,18 @@ describe('the first-goal question', () => {
         expect(firstGoalTarget('nonsense')).toEqual({ kind: 'stay' });
     });
 
+    test('the Create-specific question omits audio while global onboarding keeps its dedicated Audio route', () => {
+        const card = fs.readFileSync(path.join(__dirname, '..', 'src', 'components', 'create', 'FirstGoalCard.tsx'), 'utf8');
+        const screen = fs.readFileSync(path.join(__dirname, '..', 'src', 'app', '(app)', '(tabs)', 'create.tsx'), 'utf8');
+        expect(card).toContain("FIRST_GOALS.filter((goal) => goal !== 'audio')");
+        expect(card).toContain("FIRST_GOAL_EXAMPLES.filter((goal) => goal !== 'audio')");
+        expect(screen.match(/const MAKE:[\s\S]*?\];/)?.[0]).not.toContain("kind: 'audio'");
+        expect(screen).not.toContain("params: { kind: 'audio' }");
+        const presets = fs.readFileSync(path.join(__dirname, '..', 'src', 'app', '(app)', 'create', 'presets.tsx'), 'utf8');
+        expect(presets.match(/const KINDS:[\s\S]*?;/)?.[0]).not.toContain("'audio'");
+        expect(firstGoalTarget('audio')).toEqual({ kind: 'tab', href: '/audio' });
+    });
+
     test('the stored choice is versioned and anything unreadable reads as "never chose"', () => {
         expect(parseFirstGoal(serializeFirstGoal('audio'))).toBe('audio');
         expect(parseFirstGoal(serializeFirstGoal('skipped'))).toBe('skipped');

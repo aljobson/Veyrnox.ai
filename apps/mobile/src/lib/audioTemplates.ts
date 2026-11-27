@@ -17,6 +17,20 @@ export interface AudioTemplate {
     readonly attribution?: string;
 }
 
+type AudioTemplateLink = Pick<AudioTemplate, 'category' | 'modelId' | 'name' | 'prompt'>;
+
+// A selected audio idea keeps its words, but enters through the workspace that owns it.
+// Songs go straight to Music; voice-over and sound effects enter through Audio before
+// opening their catalog-backed generator.
+export function audioTemplateHref(template: AudioTemplateLink) {
+    const prompt = template.prompt.trim();
+    const title = template.name.trim();
+    if (template.category.trim().toUpperCase() === 'MUSIC') {
+        return { pathname: '/music/create', params: { templatePrompt: prompt, templateTitle: title } } as const;
+    }
+    return { pathname: '/audio', params: { templateModelId: template.modelId, templatePrompt: prompt } } as const;
+}
+
 const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v : null);
 
 export function parseAudioTemplates(body: unknown, base: string = API_BASE): AudioTemplate[] {

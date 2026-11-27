@@ -61,7 +61,7 @@ export default {
     'edit.audio.earlier': 'Start the sound earlier',
     'edit.audio.later': 'Start the sound later',
     'edit.audio.remove': 'Remove sound',
-    'edit.audio.none': 'No sounds yet. Make audio in Create first.',
+    'edit.audio.none': 'No sounds yet. Make one in Audio first.',
     'edit.audio.with': 'Sound: {name}, from {seconds} s',
     'edit.problem.audio_offset': 'The sound must start inside the video.',
     'edit.err.notAudio': 'That file is not audio.',

@@ -79,7 +79,7 @@ export async function FeaturedHeroCards({ catalog }) {
           captions and prices sit on one line across the row. */}
       <div role="region" aria-labelledby="featured-title" aria-describedby="featured-scroll-hint" className="-mx-4 -my-2 flex snap-x snap-mandatory items-start gap-x-3 gap-y-6 overflow-x-auto scroll-ps-4 px-4 py-2 sm:mx-0 sm:my-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:py-0 lg:grid-cols-5">
         {FEATURE_CARDS.map((f, i) => {
-          const row = rowOf(modelOf(f.href));
+          const row = rowOf(f.modelId || modelOf(f.href));
           const clip = SHOWCASE_CLIPS[f.key];
           const title = t(f.key === 'presets' ? 'home.cards.presets-title' : `home.cards.${f.key}`);
           return (

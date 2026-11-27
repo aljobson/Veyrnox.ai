@@ -2,7 +2,7 @@
 export default {
     'explore.start.title': 'Start creating',
     'explore.start.body': 'Make one asset, or plan with AI.',
-    'explore.start.create.body': 'Generate one image, video or audio asset.',
+    'explore.start.create.body': 'Generate one image or video asset. Songs start in Music; speech and sound start in Audio.',
     'explore.start.create.hint': 'Opens Create.',
     'explore.start.chat.body': 'Plan or improve an idea with leading AI models.',
     'explore.start.film.body': 'Build characters, locations and shots for a consistent film.',

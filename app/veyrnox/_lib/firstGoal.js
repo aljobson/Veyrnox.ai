@@ -19,7 +19,8 @@ const GOAL_IDS = new Set([...FIRST_GOALS.map(({ id }) => id), 'skipped']);
 
 // Where a goal leads: a Create model filter, or another area of the app. Unknown values fall back to all models.
 export function firstGoalTarget(goal) {
-  if (goal === 'image' || goal === 'video' || goal === 'audio') return { createGoal: goal, href: null };
+  if (goal === 'image' || goal === 'video') return { createGoal: goal, href: null };
+  if (goal === 'audio') return { createGoal: null, href: '/app/audio' };
   if (goal === 'edit') return { createGoal: null, href: '/app/editor' };
   if (goal === 'publish') return { createGoal: null, href: '/app/publish' };
   return { createGoal: 'all', href: null };

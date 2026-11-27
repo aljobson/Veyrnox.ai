@@ -50,7 +50,11 @@ describe('phone presentation is separate from shared guide content', () => {
     });
 
     test('Create does not tell phone readers to use a right-hand model list', () => {
-        expect(presentGuide(guideById('first-generation')!, say).steps[1].body).not.toContain('right');
+        const body = presentGuide(guideById('first-generation')!, say).steps[1].body;
+        expect(body).not.toContain('right');
+        expect(body).toContain('image or video model in Create');
+        expect(body).toContain('open Music');
+        expect(body).toContain('Audio');
     });
 
     test('unknown or missing IDs have no guide', () => {

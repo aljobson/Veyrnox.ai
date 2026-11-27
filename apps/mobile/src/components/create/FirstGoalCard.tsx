@@ -6,6 +6,9 @@ import { rawText } from '../../lib/i18n/translate';
 import { ds } from '../../theme';
 import { Button, Card, Text, themedStyles, usePressStyle, useThemedStyles } from '../ui';
 
+export const CREATE_FIRST_GOALS = FIRST_GOALS.filter((goal) => goal !== 'audio');
+export const CREATE_FIRST_GOAL_EXAMPLES = FIRST_GOAL_EXAMPLES.filter((goal) => goal !== 'audio');
+
 // Literal keys, so the translation tooling can see every string this card uses.
 const LABEL: Record<FirstGoal, () => string> = {
     image: () => t('create.firstGoal.image'),
@@ -40,7 +43,7 @@ export function FirstGoalCard({ onChoose, onSkip }: FirstGoalCardProps) {
             <Card style={styles.card}>
                 <Text variant="title2" tone="primary" accessibilityRole="header">{t('create.firstGoal.title')}</Text>
                 <View style={styles.choices}>
-                    {FIRST_GOAL_EXAMPLES.map((goal) => (
+                    {CREATE_FIRST_GOAL_EXAMPLES.map((goal) => (
                         <Pressable key={goal} accessibilityRole="button" accessibilityLabel={rawText(`${LABEL[goal]()}. ${EXAMPLE[goal]()}`)} onPress={() => onChoose(goal)}
                             style={({ pressed }) => [styles.example, pressed && pressStyle]}>
                             <Text variant="bodyStrong" tone="primary">{LABEL[goal]()}</Text>
@@ -56,7 +59,7 @@ export function FirstGoalCard({ onChoose, onSkip }: FirstGoalCardProps) {
         <Card style={styles.card}>
             <Text variant="title2" tone="primary" accessibilityRole="header">{t('create.firstGoal.title')}</Text>
             <View style={styles.choices}>
-                {FIRST_GOALS.map((goal) => (
+                {CREATE_FIRST_GOALS.map((goal) => (
                     <Pressable key={goal} accessibilityRole="button" accessibilityLabel={LABEL[goal]()} onPress={() => (goal === 'unsure' ? setView('examples') : onChoose(goal))}
                         style={({ pressed }) => [styles.choice, pressed && pressStyle]}>
                         <Text variant="bodyStrong" tone="primary">{LABEL[goal]()}</Text>

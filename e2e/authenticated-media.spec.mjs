@@ -107,7 +107,7 @@ test('Create multi-image batch preserves per-job idempotency and stops after an 
   await expect(page.getByText(/may have started and been charged/)).toBeVisible();
 });
 
-test('Create keeps the submitted image label and frame while its next draft switches to audio', async ({ page }) => {
+test('Create keeps the submitted image label and frame while its next draft switches to video', async ({ page }) => {
   const job = '00000000-0000-4000-8000-000000000032';
   // FLUX's registry entry is fixed landscape; Nano Banana declares both tested formats.
   const record = capabilityFor('fal-ai/nano-banana');
@@ -124,8 +124,8 @@ test('Create keeps the submitted image label and frame while its next draft swit
   const result = page.locator('[data-assistant-target="create.result"]');
   await expect(result).toContainText(/RUNNING · SYNTHETIC NANO-BANANA/);
   await chooseChip(page, 'ASPECT', { name: /^16:9( ·|$)/ });
-  await page.getByTestId('create-goal-audio').click();
-  await expect(page.locator('[data-assistant-target="create.models"]')).toHaveAttribute('data-selected-kind', 'audio');
+  await page.getByTestId('create-goal-video').click();
+  await expect(page.locator('[data-assistant-target="create.models"]')).toHaveAttribute('data-selected-kind', 'video');
   await expect(result).toContainText(/RUNNING · SYNTHETIC NANO-BANANA/);
   await expect(result.locator('[style*="aspect-ratio"]')).toHaveCSS('aspect-ratio', '9 / 16');
   const calls = fixture.requests.filter(row => row.path === '/api/v1/generations');
@@ -153,7 +153,7 @@ test('Create completion cannot turn the no-charge New generation action into a s
   const reset = page.locator('[data-assistant-target="create.generate"]');
   await expect(reset).toBeVisible();
   await expect(reset).toHaveAttribute('aria-label', 'New generation — no charge');
-  await page.getByTestId('create-goal-audio').click();
+  await page.getByTestId('create-goal-video').click();
   settled = true;
   await expect(page.locator('[data-assistant-target="create.result"]').getByTestId('generated-result-image')).toBeVisible();
   await expect(reset).toBeEnabled();

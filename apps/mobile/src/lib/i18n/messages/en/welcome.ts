@@ -1,7 +1,7 @@
 // English strings for welcome. Add keys here; keep their original wording and placeholders.
 export default {
     'welcome.hello.title': 'Hi, I am Vey',
-    'welcome.hello.body': 'I will show you around. Make images, video and audio from a few words.',
+    'welcome.hello.body': 'I will show you around. Make images and video in Create. Songs start in Music, with speech and sound in Audio.',
     'welcome.credits.title': 'Credits pay for what you make',
     'welcome.credits.free.one': 'You start with {count} free credit.',
     'welcome.credits.free.other': 'You start with {count} free credits.',

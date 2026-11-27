@@ -5,7 +5,7 @@ import { cn } from '../../../lib/utils';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FAQ, MODELS as MODELS_FALLBACK, SITE_PAGES, isShelfModel, navHref, presetCredits, presetTitle, templateHref } from '../_lib/tokens';
+import { FAQ, MODELS as MODELS_FALLBACK, SITE_PAGES, isShelfModel, modelWorkspaceHref, navHref, presetCredits, presetTitle, templateHref } from '../_lib/tokens';
 import { loadTemplateCards } from '../_lib/useTemplates';
 import { searchIndex, MIN_QUERY } from '../_lib/searchIndex';
 import { Icon } from './Icon';
@@ -52,7 +52,7 @@ function modelsToIndex(models, t) {
     group: 'Models',
     title: m.name,
     detail: t('search.modelDetail', { type: tOr(t, `model.mode.${m.modality || m.kind}`, tOr(t, `home.models.${m.modality || m.kind}`, m.modality || m.kind || t('home.models.image'))), credits: m.credits, premium: m.gated ? t('search.premiumDetail', { premium: t('home.models.premium') }) : '' }),
-    href: `/app/create?model=${encodeURIComponent(m.id)}`,
+    href: modelWorkspaceHref(m),
   }));
 }
 

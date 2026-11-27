@@ -1,4 +1,4 @@
-import { audioFamily, hasAnyOption, resolveTier, resolveAudio, resolveResolution, audioLengthInvalid, voiceIsMissing, SAVED_DRAFT_VERSION, batchCost, draftIsEmpty, filterByTier, freeLeftFor, imageCount, inputsForIndex, modelsForGoal, optionsFor, pickerModels, modelChoices, starterModel, parseDraft, seedIsInvalid, settingsInputs, takesImageCount, tierById } from '../src/lib/createOptions';
+import { audioFamily, GOALS, hasAnyOption, resolveTier, resolveAudio, resolveResolution, audioLengthInvalid, voiceIsMissing, SAVED_DRAFT_VERSION, batchCost, draftIsEmpty, filterByTier, freeLeftFor, imageCount, inputsForIndex, modelsForGoal, optionsFor, pickerModels, modelChoices, starterModel, parseDraft, seedIsInvalid, settingsInputs, takesImageCount, tierById } from '../src/lib/createOptions';
 import { DEFAULT_CINEMA } from '../src/lib/cinemaCamera';
 import { loadDraft, saveDraft, clearDraft } from '../src/lib/createDraftStore';
 import { createCache, createMemoryStorage } from '../src/lib/cache';
@@ -18,10 +18,11 @@ const rich = model({
 
 describe('goals and tiers', () => {
     const list = [model({ id: 'a', credits: 1 }), model({ id: 'b', credits: 2, modality: 'text-to-video' }), model({ id: 'c', credits: 3 }), model({ id: 'd', credits: 9, modality: 'text-to-speech' })];
-    test('goal filters by kind and All keeps everything', () => {
+    test('Create exposes image and video goals while dedicated audio filtering still works', () => {
+        expect(GOALS.map(({ goal }) => goal)).toEqual(['image', 'video']);
         expect(modelsForGoal(list, 'image').map((m) => m.id)).toEqual(['a', 'c']);
         expect(modelsForGoal(list, 'audio').map((m) => m.id)).toEqual(['d']);
-        expect(modelsForGoal(list, 'all')).toHaveLength(4);
+        expect(modelsForGoal(list, 'all').map((m) => m.id)).toEqual(['a', 'b', 'c']);
     });
     test('tiers are thirds of the distinct prices, equal prices share a tier', () => {
         const six = [1, 1, 2, 3, 4, 5].map((c, i) => model({ id: `x${i}`, credits: c }));

@@ -26,7 +26,7 @@ export default function MusicCreate() {
     const { api, flow, state, pending, queue } = useMusicCreate(), s = useThemedStyles(sheets);
     const { generation: sessionGeneration = 0 } = useAuth();
     const router = useRouter();
-    const { sample, challenge, lyricHandoff } = useLocalSearchParams<{ sample?: string; challenge?: string; lyricHandoff?: string }>();
+    const { sample, challenge, lyricHandoff, templatePrompt, templateTitle } = useLocalSearchParams<{ sample?: string; challenge?: string; lyricHandoff?: string; templatePrompt?: string; templateTitle?: string }>();
     const [lyricRequest, setLyricRequest] = useState('');
     const [lyricReview, setLyricReview] = useState<null | { lyrics: string; sourceLyrics: string; draftId: string | null; draftRevision: number }>(null);
     const [lyricNotice, setLyricNotice] = useState<string | null>(null);
@@ -34,12 +34,12 @@ export default function MusicCreate() {
     const seeded = useRef<typeof flow | null>(null), touched = useRef<typeof flow | null>(null);
     const edit: typeof flow.edit = (...args) => { touched.current = flow; flow.edit(...args); };
     useEffect(() => {
-        if (seeded.current === flow || state.status !== 'on' || (!sample && !challenge)) return;
+        if (seeded.current === flow || state.status !== 'on' || (!sample && !challenge && !templatePrompt)) return;
         seeded.current = flow;
-        const handoff = resolveMusicCreateHandoff({ sampleId: sample, challengeId: challenge, entitlements: state.entitlements,
+        const handoff = resolveMusicCreateHandoff({ sampleId: sample, challengeId: challenge, templatePrompt, templateTitle, entitlements: state.entitlements,
             input: state.input, rights: state.rights, touched: touched.current === flow, pending: Boolean(pending), translate: t });
         if (handoff) flow.edit(handoff);
-    }, [flow, sample, challenge, state.status, state.input, state.rights, state.entitlements, pending]);
+    }, [flow, sample, challenge, templatePrompt, templateTitle, state.status, state.input, state.rights, state.entitlements, pending]);
     const lock = useRef(false);
     const [direction, setDirection] = useState<MusicSmartDirection>(EMPTY_MUSIC_SMART_DIRECTION);
     const [directionError, setDirectionError] = useState('');

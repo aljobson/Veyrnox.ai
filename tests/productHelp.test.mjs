@@ -58,7 +58,7 @@ test('reviewed knowledge covers every main product workspace', () => {
 
 test('knowledge retrieval selects the requested workflow and keeps context bounded', () => {
     assert.equal(searchProductKnowledge('How do I set up passkeys and 2FA?', '/app/account', 1)[0].id, 'account-security');
-    assert.equal(searchProductKnowledge('How can I generate speech or sound effects?', '/app/create', 1)[0].id, 'create-audio');
+    assert.equal(searchProductKnowledge('How can I generate speech or sound effects?', '/app/audio', 1)[0].id, 'create-audio');
     assert.equal(searchProductKnowledge('How do I schedule a post?', '/app/publish', 1)[0].id, 'publish-compose');
     // Film Studio is hidden (ADR-0344): Vey no longer has a reviewed article for it.
     assert.ok(!PRODUCT_KNOWLEDGE.some((entry) => entry.routes.includes('/app/film-studio')));
@@ -82,7 +82,7 @@ test('knowledge retrieval recognises creation and product feature questions', ()
         ['Where are my saved Oddling passports?', '/app/oddlings', 'oddlings-history'],
         ['Where are my saved character passports?', '/app/oddlings', 'oddlings-history'],
         ['How do I create a video from a photo?', '/app/create', 'create-video'],
-        ['How can I make speech or sound effects?', '/app/create', 'create-audio'],
+        ['How can I make speech or sound effects?', '/app/audio', 'create-audio'],
         ['How do I upload my own file?', '/app/create', 'create-sources'],
         ['Where are my finished generations?', '/app', 'library'],
         ['How do I attach an image and use web search?', '/app/chat', 'llm-chat'],
