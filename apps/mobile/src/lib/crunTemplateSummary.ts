@@ -26,6 +26,11 @@ export interface CrunTemplatePreview {
     readonly inputCount: number | null;
     readonly inputRequirement: string | null;
     readonly providerCredits: number | null;
+    readonly credits: number | null;
+    readonly minInputCount: number;
+    readonly maxInputCount: number;
+    readonly requirements: readonly { readonly label: string; readonly value: string }[];
+    readonly prices: readonly { readonly resolution: string; readonly credits: number }[];
 }
 
 export interface CrunTemplateCatalog {
@@ -72,6 +77,17 @@ export function parseCrunTemplateCatalog(body: unknown): CrunTemplateCatalog | n
             inputCount: Number.isInteger(item?.inputCount) && (item?.inputCount as number) > 0 ? item?.inputCount as number : null,
             inputRequirement: text(item?.inputRequirement),
             providerCredits: nonNegative(item?.providerCredits),
+            credits: nonNegative(item?.credits),
+            minInputCount: Number.isInteger(item?.minInputCount) && (item?.minInputCount as number) >= 0 ? item?.minInputCount as number : 1,
+            maxInputCount: Number.isInteger(item?.maxInputCount) && (item?.maxInputCount as number) >= 0 ? item?.maxInputCount as number : 1,
+            requirements: Array.isArray(item?.requirements) ? item.requirements.flatMap((raw): { label: string; value: string }[] => {
+                const requirement = raw as Record<string, unknown>; const label = text(requirement.label), value = text(requirement.value);
+                return label && value ? [{ label, value }] : [];
+            }).slice(0, 12) : [],
+            prices: Array.isArray(item?.prices) ? item.prices.flatMap((raw): { resolution: string; credits: number }[] => {
+                const price = raw as Record<string, unknown>; const resolution = text(price.resolution), credits = nonNegative(price.credits);
+                return resolution && credits !== null && Number.isInteger(credits) ? [{ resolution, credits }] : [];
+            }) : [],
         }];
     });
     return { provider: provider as CrunTemplateProvider, total, page, pageSize, templates };

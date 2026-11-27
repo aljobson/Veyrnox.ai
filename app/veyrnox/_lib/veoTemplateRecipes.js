@@ -1,6 +1,6 @@
 const recipe = (id, name, category, prompt, aspect = '16:9') => Object.freeze({
   // Create prices this fixed eight-second output through its existing five-second billing-unit selector.
-  id, name, category, prompt, aspect, model: 'veo-3.1-fast-kie', durationSeconds: 5,
+  id, name, category, prompt, aspect, model: 'veo-3.1-fast-kie', durationSeconds: 5, credits: 9,
 });
 
 // CRUN exposes Veo as generation models, not as an effects-template feed. These are Veyrnox-owned prompt starts
