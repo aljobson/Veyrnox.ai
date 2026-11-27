@@ -102,7 +102,16 @@ function LibraryHarness({ id }: { id: string }) {
 }
 test('library audition and add use shared voices and a single undoable store edit', async () => {
     const doc = newBeat('Library'); await act(async () => root.render(<LibraryHarness id={doc.id} />));
-    await press(t('beatPiano.library.add')); await press(t('beatPiano.library.audition', { name: 'Grand piano' }));
+    await press(t('beatPiano.library.add'));
+    expect(root.container.queryAll(n => n.props.testID === 'instrument-grid-piano')).toHaveLength(1);
+    expect(root.container.queryAll(n => n.props.testID === 'instrument-grid-guitar')).toHaveLength(0);
+    await press(t('beatPiano.library.group.guitar'));
+    expect(root.container.queryAll(n => n.props.testID === 'instrument-grid-piano')).toHaveLength(0);
+    expect(root.container.queryAll(n => n.props.testID === 'instrument-grid-guitar')).toHaveLength(1);
+    await press(t('beatPiano.library.audition', { name: 'Nylon acoustic' }));
+    expect(mockAudio.audition).toHaveBeenCalledWith({ engine: 'voice', id: 'guitar', preset: 'nylon' });
+    await press(t('beatPiano.library.group.piano'));
+    await press(t('beatPiano.library.audition', { name: 'Grand piano' }));
     expect(mockAudio.audition).toHaveBeenCalledWith({ engine: 'voice', id: 'piano', preset: 'grand' });
     await press(t('beatPiano.library.addNamed', { name: 'Grand piano' }));
     expect(midiRegions(getBeat(doc.id)!)).toHaveLength(1); expect(beatStore.saveState(doc.id)).toBe('saving');

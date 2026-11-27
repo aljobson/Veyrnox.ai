@@ -36,6 +36,12 @@
     "ratio": 1.67
   },
   {
+    "id": "beatLabs.makeBeat",
+    "english": "Edit with AI",
+    "translation": "تحرير بالذكاء الاصطناعي",
+    "ratio": 1.92
+  },
+  {
     "id": "beatLabs.touch.help",
     "english": "Tap Controls.",
     "translation": "اضغط على عناصر التحكم.",

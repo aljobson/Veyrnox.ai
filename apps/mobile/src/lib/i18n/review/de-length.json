@@ -4002,6 +4002,12 @@
     "ratio": 2.75
   },
   {
+    "id": "beat.home.empty",
+    "english": "No music edits yet",
+    "translation": "Noch keine Musikbearbeitungen",
+    "ratio": 1.61
+  },
+  {
     "id": "beat.play",
     "english": "Play",
     "translation": "Abspielen",
@@ -4105,7 +4111,7 @@
   },
   {
     "id": "beat.local.loadError",
-    "english": "Could not load saved beats. Retry loading.",
+    "english": "Could not load saved songs. Retry loading.",
     "translation": "Gespeicherte Beats konnten nicht geladen werden. Versuche es erneut.",
     "ratio": 1.62
   },
@@ -4420,12 +4426,6 @@
     "english": "Unpublish",
     "translation": "Veröffentlichung zurückziehen",
     "ratio": 3.22
-  },
-  {
-    "id": "beatAi.extend",
-    "english": "Extend",
-    "translation": "Verlängern",
-    "ratio": 1.67
   },
   {
     "id": "beatAi.key",

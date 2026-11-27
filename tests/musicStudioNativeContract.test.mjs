@@ -1,51 +1,58 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { MUSIC_STUDIO_ACTION_TYPES } from '../lib/musicStudioActions.mjs';
-import {
-  MUSIC_STUDIO_ASSISTANT_NATIVE_TRANSLATIONS,
-  MUSIC_STUDIO_ASSISTANT_TRANSLATIONS,
-} from '../lib/i18n/musicStudioAssistantTranslations.mjs';
 
 const screen = readFileSync(new URL('../apps/mobile/src/app/(app)/beats/[id].tsx', import.meta.url), 'utf8');
-const component = readFileSync(new URL('../apps/mobile/src/components/beats/BeatStudioAssistant.tsx', import.meta.url), 'utf8');
+const aiPanel = readFileSync(new URL('../apps/mobile/src/components/beats/ai/BeatAiPanel.tsx', import.meta.url), 'utf8');
+const addTrackSheet = readFileSync(new URL('../apps/mobile/src/components/beats/MusicAddTrackSheet.tsx', import.meta.url), 'utf8');
+const simpleEditorChrome = readFileSync(new URL('../apps/mobile/src/components/editor/SimpleEditorChrome.tsx', import.meta.url), 'utf8');
 const magic = readFileSync(new URL('../apps/mobile/src/lib/beatAi/magicGate.ts', import.meta.url), 'utf8');
-const catalogs = readFileSync(new URL('../apps/mobile/src/lib/i18n/catalogs.ts', import.meta.url), 'utf8');
 
-test('native Studio actions share the web planner and keep Magic Bar private and hard off', () => {
-  assert.deepEqual([...MUSIC_STUDIO_ACTION_TYPES], ['set_tempo', 'set_track_mute', 'set_track_solo', 'set_view', 'select_pattern']);
-  assert.match(component, /musicStudioActions\.mjs/);
-  assert.match(screen, /magicBar=\{MAGIC_BAR_ON_PHONE\}/);
+test('native Music Editor opens AI editing from a compact icon surface and keeps Magic Bar hard off', () => {
+  assert.match(screen, /<BeatAiPanel doc=\{doc\} apply=\{apply\} disabled=\{locked\} visible=\{aiToolsOpen\}/);
+  assert.match(screen, /onAdd=\{\(\) => setAddTrackOpen\(true\)\} onAi=\{\(\) => setAiToolsOpen\(true\)\}/);
+  assert.match(aiPanel, /testID="music-ai-actions"/);
+  assert.match(aiPanel, /AI_ACTIONS\.map\([\s\S]*iconOnly/);
+  for (const icon of ['magicWand', 'waveform', 'crosshair', 'arrowsHorizontal', 'scissors']) {
+    assert.match(aiPanel, new RegExp(`icon: '${icon}'`));
+  }
+  assert.match(aiPanel, /MAGIC_BAR_ON_PHONE \? <BeatMagicBar/);
   assert.match(magic, /MAGIC_BAR_ON_PHONE = false/);
   assert.doesNotMatch(screen, /features\.magicBar/);
 });
 
-test('native entitlement visibility is generation fenced and fails closed', () => {
-  assert.match(screen, /const expectedGeneration = generation/);
-  assert.match(screen, /authRef\.current\.generation === expectedGeneration/);
-  assert.match(screen, /value\.features\.studioChat[\s\S]*setStudioChatGate/);
-  assert.match(screen, /studioChatGate\.generation === generation/);
-  assert.match(screen, /catch\(\(\) => undefined\)/);
-  assert.match(screen, /announce=\{setSaid\}/);
-  assert.match(component, /announce\(message\(planned\)\)/);
-  assert.doesNotMatch(component, /accessibilityLiveRegion/);
+test('native AI editing is generation, project and visit fenced and fails closed', () => {
+  assert.match(aiPanel, /identity\.current\.generation !== generation/);
+  assert.match(aiPanel, /identity\.current\.id !== doc\.id/);
+  assert.match(aiPanel, /session\.generation !== generation/);
+  assert.match(aiPanel, /session\.id !== doc\.id/);
+  assert.match(aiPanel, /session\.visit !== visit\.current/);
+  assert.match(aiPanel, /\.catch\(\(\) => \{ if \(live\) setSession\(null\); \}\)/);
+  assert.match(aiPanel, /new AbortController\(\)/);
+  assert.match(aiPanel, /session\.controller\.abort\(\)/);
 });
 
-test('native English catalog merges Studio action copy instead of exposing keys', () => {
-  assert.equal(MUSIC_STUDIO_ASSISTANT_TRANSLATIONS.en['studioAssistant.title'], 'Studio actions');
-  assert.equal(MUSIC_STUDIO_ASSISTANT_NATIVE_TRANSLATIONS.en['studioAssistant.title'], 'Studio actions');
-  assert.match(catalogs, /en: \{ \.\.\.en, \.\.\.MUSIC_STUDIO_ASSISTANT_NATIVE_TRANSLATIONS\.en \}/);
-  assert.match(catalogs, /CATALOGS: Catalogs = \{ en: merged\.en! \}/);
+test('add track presents the five music sources as compact choices', () => {
+  for (const [source, icon] of [
+    ['library', 'folder'],
+    ['device', 'arrowUp'],
+    ['record', 'microphone'],
+    ['drums', 'waveform'],
+    ['instrument', 'pianoKeys'],
+  ]) {
+    assert.match(addTrackSheet, new RegExp(`id: '${source}', icon: '${icon}'`));
+  }
+  assert.match(addTrackSheet, /<SimpleEditorSheet testID="music-add-track-sheet"[\s\S]*rows=\{rows\}/);
+  assert.match(simpleEditorChrome, /rows\.map\(\(row\) => <Pressable/);
+  assert.match(simpleEditorChrome, /onPress=\{\(\) => \{ onClose\(\); if \(row\.afterClose\)/);
 });
 
 test('native mute and solo preserve the live engine and refusal result', () => {
-  assert.match(screen, /const applied = apply\(operation, announce, \{[\s\S]*liveMix: true/);
+  assert.match(screen, /const applied = apply\(operation, announce, \{ \.\.\.\(key \? \{ key \} : \{\}\), liveMix: true \}\)/);
   assert.match(screen, /if \(!applied\) return false/);
   assert.match(screen, /next\.tracks\.forEach\(x => mixOf\(x\.id, next\)\)/);
-  assert.match(screen, /set_track_mute'[\s\S]*return mix\(operation\.trackId, d => setTrackMute/);
-  assert.match(screen, /set_track_solo'[\s\S]*return mix\(operation\.trackId, d => setTrackSolo/);
-  assert.match(component, /if \(!applyOperation\(result\.operation\)\) return/);
-  assert.match(component, /if \(readOnly \|\| busy \|\| \(recording && !liveMix\)\) return/);
-  assert.ok(component.indexOf('if (!applyOperation(result.operation)) return') < component.indexOf('setResult(done)'), 'a refused apply preserves the proposal and history');
-  assert.match(screen, /if \(readOnly \|\| replacing \|\| historyBusy \|\| \(\(takes\.controller\.locked\(\) \|\| midiController\.locked\(\)\) && !liveMix\)\) return false/);
+  assert.match(screen, /onMute=\{v => mix\(track\.id, d => setTrackMute\(d, track\.id, v\)/);
+  assert.match(screen, /onSolo=\{v => mix\(track\.id, d => setTrackSolo\(d, track\.id, v\)/);
+  assert.match(screen, /if \(recordingRef\.current\?\.locked\(\) && !options\.recordingCommit && !options\.liveMix\) return refuse/);
+  assert.match(screen, /if \(midiRecordingRef\.current\?\.locked\(\) && !options\.recordingCommit && !options\.liveMix\) return refuse/);
 });
