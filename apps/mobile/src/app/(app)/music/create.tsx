@@ -9,6 +9,8 @@ import { MusicNotice } from '../../../components/music/MusicNotice';
 import { MusicAdvancedControls } from '../../../components/music/MusicAdvancedControls';
 import { MusicSunoControls } from '../../../components/music/MusicSunoControls';
 import { MusicInspirationCard } from '../../../components/music/MusicInspirationCard';
+import { MusicLyricistProfiles } from '../../../components/music/MusicLyricistProfiles';
+import { useAuth } from '../../../auth/AuthProvider';
 import { canMergeSmartDirectionText, EMPTY_MUSIC_SMART_DIRECTION, mergeSmartDirectionText, MusicSmartDirectionControls, type MusicSmartDirection } from '../../../components/music/MusicSmartDirectionControls';
 import { useMusicCreate } from '../../../lib/music/useMusicCreate';
 import { effectiveLyricsLimit, isSunoModel, modelCounterLimit, modelState, quoteBlockers } from '../../../lib/music/createForm';
@@ -22,6 +24,7 @@ const KNOWN = new Set(['empty_prompt', 'lyrics_required', 'style_required', 'ove
 const messageKey = (code: string) => code === 'rights' ? 'rights_required' : KNOWN.has(code) ? code : 'error';
 export default function MusicCreate() {
     const { api, flow, state, pending, queue } = useMusicCreate(), s = useThemedStyles(sheets);
+    const { generation: sessionGeneration = 0 } = useAuth();
     const router = useRouter();
     const { sample, challenge, lyricHandoff } = useLocalSearchParams<{ sample?: string; challenge?: string; lyricHandoff?: string }>();
     const [lyricRequest, setLyricRequest] = useState('');
@@ -90,7 +93,7 @@ export default function MusicCreate() {
         setLyricReview(null);
         router.push({ pathname: '/chat/new', params: { lyricHandoff: token } });
     }
-    const updateDirection = (next: MusicSmartDirection) => {
+    const updateDirection = (next: MusicSmartDirection, instrumentalOverride?: boolean) => {
         const max = input.mode === 'simple' ? (model ? modelCounterLimit(model, 'prompt') ?? 500 : 500)
             : Math.min(model && suno ? modelCounterLimit(model, 'styles') ?? e?.custom_drafts.styles_max ?? 500 : 500, e?.custom_drafts.styles_max ?? 500);
         const sourceText = input.mode === 'simple' ? input.prompt : input.styles;
@@ -98,20 +101,25 @@ export default function MusicCreate() {
             setDirectionError('Your music direction is full. Shorten it before adding another Smart Direction choice.');
             return;
         }
-        const voiceChanged = next.voice !== direction.voice;
+        const voiceChanged = instrumentalOverride !== undefined || next.voice !== direction.voice;
         setDirectionError('');
         setDirection(next);
         const textPatch = input.mode === 'simple'
             ? { prompt: mergeSmartDirectionText(input.prompt, next, max) }
             : { styles: mergeSmartDirectionText(input.styles, next, max) };
-        const voicePatch = !voiceChanged ? {}
+        const voicePatch = instrumentalOverride !== undefined
+            ? { instrumental: instrumentalOverride, vocalGender: 'auto' as const }
+            : !voiceChanged ? {}
             : next.voice === 'Instrumental' ? { instrumental: true, vocalGender: 'auto' as const }
                 : next.voice === 'Female vocal' ? { instrumental: false, vocalGender: 'female' as const }
                     : next.voice === 'Male vocal' ? { instrumental: false, vocalGender: 'male' as const }
                         : { instrumental: model?.controls.instrumental === 'required', vocalGender: 'auto' as const };
         edit({ ...textPatch, ...voicePatch });
     };
-    const setInstrumentalDirection = (instrumental: boolean) => updateDirection({ ...direction, voice: instrumental ? 'Instrumental' : '' });
+    const setInstrumentalDirection = (instrumental: boolean) => updateDirection(
+        { ...direction, voice: instrumental ? 'Instrumental' : '' },
+        instrumental,
+    );
     return <SafeKeyboardFormScrollView style={s.screen} contentContainerStyle={s.content} gutter={ds.space.lg}>
         <Stack.Screen options={{ title: t('music.create.title') }} />
         {state.status === 'off' ? <MusicNotice message={t('music.off')} />
@@ -184,6 +192,8 @@ export default function MusicCreate() {
                                     label={t('music.create.rights')} onPress={() => edit({}, !state.rights)} /> : null}
                                 {!input.instrumental && !state.rights ? <MusicNotice message={t('music.create.rights_required')} /> : null}
                             </>}
+                        {input.mode === 'custom' && !input.instrumental ? <MusicLyricistProfiles api={api} lyrics={input.lyrics}
+                            sessionGeneration={sessionGeneration} onOpenChat={id => router.push({ pathname: '/chat/[id]', params: { id } })} /> : null}
                         {input.mode === 'custom' && !input.instrumental && state.draft && model && lyricLimit ? <View style={s.assistant}>
                             <Text variant="title3">{t('music.lyricAssistant.title')}</Text>
                             <Text>{t('music.lyricAssistant.help')}</Text>

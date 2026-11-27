@@ -18,6 +18,14 @@ test('validates the complete Crun projection, quote controls and immutable draft
     expect(isMusicEntitlements({ ...crunEntitlements, models: [{ ...crunEntitlements.models[1], controls: {
         ...crunEntitlements.models[1].controls, suno_model: ['v5'],
     } }] })).toBe(false);
+    expect(isMusicEntitlements({ ...crunEntitlements, models: [{ ...crunEntitlements.models[1], controls: {
+        ...crunEntitlements.models[1].controls, suno_model_labels: { v6_wild: 'Creative' },
+    } }] })).toBe(true);
+    for (const suno_model_labels of [
+        { v5: 'Old' }, { v6: '' }, { v6: '   ' }, { v6: 'x'.repeat(41) }, { v6: 5 },
+    ]) expect(isMusicEntitlements({ ...crunEntitlements, models: [{ ...crunEntitlements.models[1], controls: {
+        ...crunEntitlements.models[1].controls, suno_model_labels,
+    } }] })).toBe(false);
     expect(isMusicQuote({ ...crunQuote, weirdness: 2 })).toBe(false);
     expect(isMusicDraft({ ...crunDraft, provider_contract: 'unknown' })).toBe(false);
 });

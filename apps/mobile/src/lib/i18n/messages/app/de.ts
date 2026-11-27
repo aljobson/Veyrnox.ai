@@ -6809,7 +6809,7 @@ export default {
     "music.create.lyrics_required": "Füge für einen eigenen Gesangssong einen Text hinzu oder wähle Instrumental.",
     "music.create.contract_stale": "Der Musikanbieter hat sich geändert. Dein Entwurf wurde aktualisiert; prüfe den Preis erneut.",
     "music.create.suno.offer": "Musikmodell",
-    "music.create.suno.model": "Suno-Modell",
+    "music.create.suno.model": "Generierungsstil",
     "music.create.suno.style": "Stil",
     "music.create.suno.exclude": "Stile ausschließen",
     "music.create.suno.selectStyles": "Stile auswählen",

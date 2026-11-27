@@ -1,6 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { MUSIC_STUDIO_ACTION_TYPES } from '../lib/musicStudioActions.mjs';
+import {
+  MUSIC_STUDIO_ASSISTANT_NATIVE_TRANSLATIONS,
+  MUSIC_STUDIO_ASSISTANT_PLURAL_CATEGORIES,
+  MUSIC_STUDIO_ASSISTANT_TRANSLATIONS,
+} from '../lib/i18n/musicStudioAssistantTranslations.mjs';
 
 const screen = readFileSync(new URL('../apps/mobile/src/app/(app)/beats/[id].tsx', import.meta.url), 'utf8');
 const aiPanel = readFileSync(new URL('../apps/mobile/src/components/beats/ai/BeatAiPanel.tsx', import.meta.url), 'utf8');
@@ -62,6 +69,16 @@ test('native Studio catalogs load when the iPhone runtime omits Intl.PluralRules
     if (descriptor) Object.defineProperty(Intl, 'PluralRules', descriptor);
     else delete Intl.PluralRules;
   }
+});
+
+test('native Studio catalog imports without Intl.PluralRules and freezes the shipped ICU categories', () => {
+  for (const locale of Object.keys(MUSIC_STUDIO_ASSISTANT_PLURAL_CATEGORIES)) {
+    assert.deepEqual([...MUSIC_STUDIO_ASSISTANT_PLURAL_CATEGORIES[locale]].sort(),
+      [...new Intl.PluralRules(locale).resolvedOptions().pluralCategories].sort(), locale);
+  }
+  const moduleUrl = new URL('../lib/i18n/musicStudioAssistantTranslations.mjs', import.meta.url).href;
+  const source = `Object.defineProperty(Intl, 'PluralRules', { value: undefined, configurable: true }); await import(${JSON.stringify(moduleUrl)});`;
+  execFileSync(process.execPath, ['--input-type=module', '--eval', source]);
 });
 
 test('native mute and solo preserve the live engine and refusal result', () => {

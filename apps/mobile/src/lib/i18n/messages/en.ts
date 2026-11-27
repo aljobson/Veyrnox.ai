@@ -163,6 +163,7 @@ import area_musicAlbums from './en/musicAlbums';
 import area_musicDiscover from './en/musicDiscover';
 import area_musicExport from './en/musicExport';
 import area_musicGenerationActions from './en/musicGenerationActions';
+import area_musicLyricist from './en/musicLyricist';
 import area_musicPlaylists from './en/musicPlaylists';
 import area_musicPublic from './en/musicPublic';
 import area_musicPublication from './en/musicPublication';
@@ -428,6 +429,7 @@ const catalog = {
     ...area_musicDiscover,
     ...area_musicExport,
     ...area_musicGenerationActions,
+    ...area_musicLyricist,
     ...area_musicPlaylists,
     ...area_musicPublic,
     ...area_musicPublication,

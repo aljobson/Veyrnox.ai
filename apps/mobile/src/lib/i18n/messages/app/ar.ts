@@ -7151,7 +7151,7 @@ export default {
     "music.create.lyrics_required": "أضف كلمات لأغنية صوتية مخصصة أو اختر موسيقى آلية.",
     "music.create.contract_stale": "تغيّر موفر الموسيقى. تم تحديث المسودة؛ راجع السعر مرة أخرى.",
     "music.create.suno.offer": "نموذج الموسيقى",
-    "music.create.suno.model": "نموذج Suno",
+    "music.create.suno.model": "نمط التوليد",
     "music.create.suno.style": "النمط",
     "music.create.suno.exclude": "استبعاد الأنماط",
     "music.create.suno.selectStyles": "اختيار الأنماط",
