@@ -11,6 +11,9 @@ test('375 px beat exports a stereo WAV download', async ({ page }) => {
   const response = await page.goto('/app/music/beats');
   test.skip(response.status() === 404, 'beatEditor is not enabled on staging');
   await page.getByRole('button', { name: 'New beat', exact: true }).click();
+  const templateDialog = page.getByRole('dialog', { name: 'Choose a beat template' });
+  await templateDialog.getByRole('button', { name: /^Blank\b/ }).click();
+  await expect(page).toHaveURL(/\/app\/music\/beats\/[^/]+$/);
   await page.getByRole('button', { name: 'Download WAV', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Export beat' });
   await expect(dialog.getByRole('button', { name: 'Download', exact: true })).toBeEnabled();
