@@ -1,5 +1,11 @@
 [
   {
+    "id": "crunTemplates.run.library",
+    "english": "View in Library",
+    "translation": "Voir dans la bibliothèque",
+    "ratio": 1.67
+  },
+  {
     "id": "editorAudioTools.previewNote",
     "english": "The phone preview plays volume and fades. EQ, pan, voice, noise and effects are saved but not heard on the phone yet.",
     "translation": "L’aperçu sur le téléphone restitue le volume et les fondus. L’égalisation, le panoramique, la voix, le bruit et les effets sont enregistrés mais ne sont pas encore audibles sur le téléphone.",

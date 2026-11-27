@@ -6,6 +6,7 @@ import { ScrollView, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { Button, Chip, Text, themedStyles, useThemedStyles } from '../../../components/ui';
 import { ApiError } from '../../../lib/api';
+import { catalogTemplateImageBounds } from '../../../lib/catalogTemplateInputs';
 import { t } from '../../../lib/i18n';
 import { uploadSource } from '../../../lib/uploads';
 
@@ -16,8 +17,7 @@ export default function CatalogTemplateRun() {
     const s = useThemedStyles(sheets); const router = useRouter(); const { api } = useAuth();
     const params = useLocalSearchParams<{ provider?: string; catalogId?: string; name?: string; min?: string; max?: string; credits?: string; prices?: string; guidance?: string }>();
     const rawMin = Number(params.min), rawMax = Number(params.max);
-    const min = Number.isInteger(rawMin) ? Math.max(0, Math.min(5, rawMin)) : 1;
-    const max = Number.isInteger(rawMax) ? Math.max(min, Math.min(5, rawMax)) : min;
+    const { min, max } = catalogTemplateImageBounds(params.provider, rawMin, rawMax);
     let prices: Price[] = []; try { const parsed = JSON.parse(params.prices || '[]'); if (Array.isArray(parsed)) prices = parsed.filter(item => item && typeof item.resolution === 'string' && Number.isInteger(item.credits) && item.credits > 0); } catch { /* invalid handoff */ }
     let guidance: string[] = []; try { const parsed = JSON.parse(params.guidance || '[]'); if (Array.isArray(parsed)) guidance = parsed.filter(item => typeof item === 'string' && item.trim()).slice(0, 3); } catch { /* invalid handoff */ }
     const [resolution, setResolution] = useState(prices[0]?.resolution || '');

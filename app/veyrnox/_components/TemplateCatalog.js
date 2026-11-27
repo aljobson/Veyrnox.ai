@@ -58,8 +58,9 @@ function ProviderCard({ item, providerId, provider, t }) {
   const input = item.maxInputCount === 0 ? t('app.templates.image.none')
     : item.minInputCount !== item.maxInputCount ? t('app.templates.image.range', { min: item.minInputCount, max: item.maxInputCount })
       : item.inputCount ? t(item.inputCount === 1 ? 'app.templates.image.one' : 'app.templates.image.other', { count: item.inputCount }) : item.inputRequirement;
-  const price = item.prices?.length ? item.prices.map(entry => `${entry.resolution} · ${entry.credits}`).join(' / ')
-    : Number.isInteger(item.credits) ? `${item.credits}` : null;
+  const validPrices = item.prices?.filter(entry => Number.isInteger(entry.credits) && entry.credits > 0) || [];
+  const price = validPrices.length ? validPrices.map(entry => `${entry.resolution} · ${entry.credits}`).join(' / ')
+    : Number.isInteger(item.credits) && item.credits > 0 ? `${item.credits}` : null;
   const hasVideo = item.previewKind === 'video' && item.previewUrl;
   const stillPreview = item.coverUrl || (item.previewKind === 'image' ? item.previewUrl : null);
   return (
@@ -90,7 +91,7 @@ function ProviderCard({ item, providerId, provider, t }) {
         {price && <p className="mt-3 text-sm font-bold text-vx-money">{t('app.templates.customerCredits', { price })}</p>}
         <div className="mt-auto flex flex-wrap gap-2 pt-5">
           {item.previewUrl && <a href={item.previewUrl} target="_blank" rel="noreferrer" className="vx-press inline-flex min-h-11 items-center rounded-full border border-vx-border px-4 text-sm font-bold hover:border-vx-accent">{t('app.templates.openPreview')}</a>}
-          <CatalogTemplateRun item={item} provider={providerId} t={t} />
+          {price && <CatalogTemplateRun item={item} provider={providerId} t={t} />}
         </div>
       </div>
     </li>

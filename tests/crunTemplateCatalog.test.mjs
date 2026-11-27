@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeCrunTemplateCatalog, publicCrunTemplateCatalog, readCrunTemplateCatalog, readCrunTemplateSummary } from '../lib/crunTemplateCatalog.js';
+import { crunTemplateCostMicrousd, normalizeCrunTemplateCatalog, publicCrunTemplateCatalog, readCrunTemplateCatalog, readCrunTemplateSummary } from '../lib/crunTemplateCatalog.js';
 
 test('normalizes the documented Kling template shape and drops unsafe media URLs', () => {
   const catalog = normalizeCrunTemplateCatalog('kling', {
@@ -73,7 +73,19 @@ test('customer prices round supplier cost up to the standing margin floor', () =
   const kling = normalizeCrunTemplateCatalog('kling', { code: 200, data: { total: 1, templates: [{ key: 'x', name: 'X', credit: 376.32, info: [] }] } }, 1, 50);
   const vidu = normalizeCrunTemplateCatalog('vidu', { code: 200, data: { total: 1, templates: [{ template: 'free', name: 'Free upstream', credits: 0 }] } }, 1, 50);
   assert.equal(kling.templates[0].credits, 102);
-  assert.equal(vidu.templates[0].credits, 1, 'a generation is never a zero-credit job');
+  assert.equal(vidu.templates[0].credits, null, 'a zero price is treated as missing rather than guessed');
+});
+
+test('catalogue prices fail closed for blank, boolean, null and non-finite values', () => {
+  for (const credit of ['', '   ', false, null, 0, '0', '0x10', '1e3', Number.POSITIVE_INFINITY]) {
+    const catalog = normalizeCrunTemplateCatalog('kling', {
+      code: 200, data: { total: 1, templates: [{ key: 'x', name: 'X', credit, info: [] }] },
+    }, 1, 50);
+    assert.equal(catalog.templates[0].providerCredits, null);
+    assert.equal(catalog.templates[0].credits, null);
+    assert.equal(crunTemplateCostMicrousd(credit), null);
+  }
+  assert.equal(crunTemplateCostMicrousd(256.47), 1_245_000);
 });
 
 test('the public catalogue exposes only Veyrnox prices', () => {
@@ -96,6 +108,17 @@ test('catalogue input metadata covers the full zero-to-five-image Vidu contract'
     ['Supports uploading 1 to 5 images', [1, 5]],
     ['A maximum of five images can be uploaded, among which the first two are mandatory.', [2, 5]],
   ]) assert.deepEqual([vidu(instruction).minInputCount, vidu(instruction).maxInputCount], expected, instruction);
+});
+
+test('Seedance catalogue metadata preserves an eight-image template contract', () => {
+  const catalog = normalizeCrunTemplateCatalog('seedance', {
+    code: 200, data: { total: 1, templates: [{
+      TemplateId: 'eight', Title_en: 'Eight people', InputNum: 8,
+      ConsumeItems: [{ Resolution: '720p', Credit: 256.47 }],
+    }] },
+  }, 1, 50);
+  assert.deepEqual([catalog.templates[0].minInputCount, catalog.templates[0].maxInputCount], [8, 8]);
+  assert.equal(catalog.templates[0].prices[0].credits, 70);
 });
 
 test('catalog requests keep the API key server-side and forward only bounded query fields', async () => {

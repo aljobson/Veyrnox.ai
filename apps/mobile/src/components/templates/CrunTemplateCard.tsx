@@ -14,6 +14,9 @@ export function CrunTemplateCard({ template, playing, onPlay, onUse }: {
     const styles = useThemedStyles(sheets);
     const still = template.coverUrl ?? (template.previewKind === 'image' ? template.previewUrl : null);
     const video = template.previewKind === 'video' ? template.previewUrl : null;
+    const validPrices = template.prices.filter(price => Number.isInteger(price.credits) && price.credits > 0);
+    const hasPrice = validPrices.length > 0
+        || (Number.isInteger(template.credits) && (template.credits ?? 0) > 0);
     const inputs = template.maxInputCount === 0 ? t('crunTemplates.inputNone')
         : template.minInputCount !== template.maxInputCount ? t('crunTemplates.inputRange', { min: template.minInputCount, max: template.maxInputCount })
             : t('crunTemplates.inputCount', { count: template.maxInputCount });
@@ -26,10 +29,10 @@ export function CrunTemplateCard({ template, playing, onPlay, onUse }: {
         <Text variant="bodyStrong">{template.name}</Text>
         {template.category ? <Text variant="caption" tone="secondary">{template.category}</Text> : null}
         <Text variant="caption" tone="secondary">{inputs}</Text>
-        {template.prices.length ? <Text variant="caption" tone="accent">{template.prices.map(price => `${price.resolution} · ${price.credits}`).join(' / ')} {t('crunTemplates.credits')}</Text>
+        {validPrices.length ? <Text variant="caption" tone="accent">{validPrices.map(price => `${price.resolution} · ${price.credits}`).join(' / ')} {t('crunTemplates.credits')}</Text>
             : template.credits !== null ? <Text variant="caption" tone="accent">{t('crunTemplates.price', { credits: template.credits })}</Text> : null}
         {video ? <TemplatePlayButton title={template.name} playing={playing} style={styles.play} onPress={onPlay} /> : null}
-        <Button label={t('crunTemplates.use')} size="md" onPress={onUse} />
+        <Button label={t('crunTemplates.use')} size="md" disabled={!hasPrice} onPress={onUse} />
     </Card>;
 }
 

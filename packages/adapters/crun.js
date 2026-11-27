@@ -163,7 +163,8 @@ function buildTemplateRequest(model, inputs) {
     for (const key of Object.keys(inputs)) if (!allowed.has(key)) return { ok: false, error: `inputs_key_not_allowed:${key.slice(0, 32)}` };
     if (typeof inputs.template_id !== 'string' || !/^[A-Za-z0-9._-]{1,120}$/.test(inputs.template_id)) return { ok: false, error: 'inputs_invalid:template_id' };
     const images = Array.isArray(inputs.image_url) ? inputs.image_url : inputs.image_url ? [inputs.image_url] : [];
-    if (images.length > 5 || (model !== 'vidu/template' && images.length < 1)) return { ok: false, error: 'source_count_exceeded' };
+    const maxImages = model === 'bytedance/template' ? 8 : 5;
+    if (images.length > maxImages || (model !== 'vidu/template' && images.length < 1)) return { ok: false, error: 'source_count_exceeded' };
     for (const image of images) {
         try { if (typeof image !== 'string' || image.length > 2048 || new URL(image).protocol !== 'https:') throw new Error(); }
         catch { return { ok: false, error: 'inputs_invalid:image_url' }; }
