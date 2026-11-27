@@ -249,5 +249,6 @@ test('owner read and revoke routes use the kill-switch-safe context and header i
 test('every admin voice route is bound to the same default-off readiness gate', async () => {
   const route = await readFile(new URL('../app/api/v1/admin/music/voices/[[...voicePath]]/route.js', import.meta.url), 'utf8');
   assert.match(route, /adminContext[\s\S]*musicVoicesReady\(\)/);
+  assert.match(route, /authenticatedNotFound[\s\S]*adminGate\(req\)[\s\S]*panelGateResponse\(g\)[\s\S]*notFound\(\)/);
   assert.match(route, /error: 'not_found'[^\n]*404/);
 });

@@ -16,6 +16,10 @@ const routePath = async ({ params }) => {
     return Array.isArray(value) ? value : [];
 };
 const notFound = () => panelReply({ error: 'not_found' }, 404);
+async function authenticatedNotFound(req) {
+    const g = await adminGate(req);
+    return g.response ? panelGateResponse(g) : notFound();
+}
 
 async function adminContext(req, { requireMfa = false } = {}) {
     const g = await adminGate(req); if (g.response) return { response: panelGateResponse(g) };
@@ -112,7 +116,7 @@ async function review(req, id) {
 }
 
 export async function GET(req, context) {
-    return (await routePath(context)).length === 0 ? listVoices(req) : notFound();
+    return (await routePath(context)).length === 0 ? listVoices(req) : authenticatedNotFound(req);
 }
 
 export async function POST(req, context) {
@@ -120,5 +124,5 @@ export async function POST(req, context) {
     if (path.length === 2 && path[1] === 'evidence') return evidence(req, path[0]);
     if (path.length === 3 && path[1] === 'evidence' && path[2] === 'ack') return acknowledgeEvidence(req, path[0]);
     if (path.length === 2 && path[1] === 'review') return review(req, path[0]);
-    return notFound();
+    return authenticatedNotFound(req);
 }
