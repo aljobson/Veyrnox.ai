@@ -329,8 +329,11 @@ function CustomDraftFields({ custom, entitlements, quote, busy, clearQuote, quot
   const [directionError, setDirectionError] = useState('');
   const [rightsConfirmed, setRightsConfirmed] = useState(false);
   const [generationError, setGenerationError] = useState('');
+  const [upgradeBusy, setUpgradeBusy] = useState(false);
+  const [upgradeError, setUpgradeError] = useState('');
   const limits = entitlements?.custom_drafts || { lyrics_max: 3000, styles_max: 500, title_max: 80 };
   const selectedModel = entitlements?.models?.find((item) => item.id === custom.draft.model_id) || entitlements?.models?.[0];
+  const availableCustomModel = entitlements?.models?.find((item) => item.generation_modes?.includes('custom') && item.available !== false);
   const controls = selectedModel?.controls || {};
   const [durationSeconds, setDurationSeconds] = useMusicDuration(controls.duration_seconds, clearQuote);
   const customSupported = selectedModel?.generation_modes?.includes('custom') && selectedModel?.available !== false;
@@ -455,6 +458,25 @@ function CustomDraftFields({ custom, entitlements, quote, busy, clearQuote, quot
       instrumental, rights_confirmed: instrumental ? false : true,
       duration_seconds: durationSeconds,
     }, startedAt);
+  }
+
+  async function openPlans(event) {
+    event.preventDefault();
+    if (upgradeBusy || custom.conflict) return;
+    setUpgradeBusy(true);
+    setUpgradeError('');
+    try {
+      if (custom.dirty || custom.status !== 'saved') {
+        const saved = await custom.saveNow();
+        if (!saved) {
+          setUpgradeError('Save the private draft before comparing plans. Your text remains here.');
+          return;
+        }
+      }
+      window.location.assign('/app/credits#credit-subscriptions');
+    } finally {
+      setUpgradeBusy(false);
+    }
   }
 
   function updateDirection(next) {
@@ -608,18 +630,25 @@ function CustomDraftFields({ custom, entitlements, quote, busy, clearQuote, quot
       ) : (
         <section aria-label="Custom generation availability" className="rounded-2xl border border-vx-border bg-vx-base p-4 sm:p-5">
           <p className="font-vx-mono text-xs font-bold uppercase tracking-widest text-vx-money">Writing workspace ready</p>
-          <h3 className="mt-2 font-vx text-xl font-black">Draft now. Generate with a plan.</h3>
+          <h3 className="mt-2 font-vx text-xl font-black">{availableCustomModel ? 'Custom generation is already available.' : 'Draft now. Generate with a plan.'}</h3>
           <p className="mt-2 text-sm leading-6 text-vx-fg-muted">
-            Lyrics, style direction, titles, private revisions and the Chat handoff above all work without starting a generation. A paid plan unlocks the Custom-ready model, its exact quote and the final two-version request.
+            {availableCustomModel
+              ? `Switch this draft to ${availableCustomModel.name} to review its exact quote and create one private track.`
+              : 'Lyrics, style direction, titles, private revisions and the Chat handoff above all work without starting a generation. A paid plan unlocks the Custom-ready model, its exact quote and the final track request.'}
           </p>
           <div className="mt-4 grid gap-2 text-sm sm:grid-cols-3">
             <div className="rounded-xl border border-vx-border px-3 py-3"><strong className="block text-vx-fg">1. Write</strong><span className="mt-1 block text-vx-fg-muted">Shape lyrics and structure.</span></div>
             <div className="rounded-xl border border-vx-border px-3 py-3"><strong className="block text-vx-fg">2. Save</strong><span className="mt-1 block text-vx-fg-muted">Keep a private revision.</span></div>
-            <div className="rounded-xl border border-vx-border px-3 py-3"><strong className="block text-vx-fg">3. Generate</strong><span className="mt-1 block text-vx-fg-muted">Unlock quote and pair creation.</span></div>
+            <div className="rounded-xl border border-vx-border px-3 py-3"><strong className="block text-vx-fg">3. Generate</strong><span className="mt-1 block text-vx-fg-muted">Unlock quote and track creation.</span></div>
           </div>
-          <Link href="/app/credits#subscriptions" className="vx-press mt-4 inline-flex min-h-11 items-center justify-center rounded-full bg-vx-accent px-5 text-sm font-extrabold text-vx-accent-ink hover:bg-vx-accent-hover">
-            Compare plans for Custom
-          </Link>
+          {availableCustomModel ? (
+            <button type="button" onClick={() => custom.update('model_id', availableCustomModel.id)} className="vx-press mt-4 inline-flex min-h-11 items-center justify-center rounded-full bg-vx-accent px-5 text-sm font-extrabold text-vx-accent-ink hover:bg-vx-accent-hover">Use {availableCustomModel.name}</button>
+          ) : (
+            <Link href="/app/credits#credit-subscriptions" onClick={openPlans} aria-disabled={upgradeBusy || Boolean(custom.conflict)} className="vx-press mt-4 inline-flex min-h-11 items-center justify-center rounded-full bg-vx-accent px-5 text-sm font-extrabold text-vx-accent-ink hover:bg-vx-accent-hover aria-disabled:pointer-events-none aria-disabled:opacity-40">
+              {upgradeBusy ? 'Saving before plans…' : 'Compare plans for Custom'}
+            </Link>
+          )}
+          {upgradeError ? <p role="alert" className="mt-3 text-sm text-vx-danger">{upgradeError}</p> : null}
           <p className="mt-3 text-xs leading-5 text-vx-fg-faint">Nothing is quoted, sent to a provider or charged while you draft.</p>
         </section>
       )}
