@@ -9094,6 +9094,7 @@ export default {
   "editorManualCommit.priceChanged": "تغيّر سعر الأرصدة. راجع السعر الجديد وحاول الحفظ أو التصدير مجددًا.",
   "editorManualCommit.failed": "تعذر حفظ التحرير اليدوي. تحقق من رصيدك وحاول مجددًا.",
   "editorManualCommit.connectionFailed": "تعذر حفظ التحرير اليدوي. تحقق من اتصالك وحاول مجددًا.",
+  "editorManualCommit.unavailable": "الحفظ والتصدير غير متاحين بعد.",
   "editorLocalExport.start": "التصدير على هذا الجهاز",
   "editorLocalExport.quality": "الجودة",
   "editorLocalExport.quality.compact": "مضغوطة",

@@ -8628,6 +8628,7 @@ export default {
   "editorManualCommit.priceChanged": "Der Credit-Preis hat sich geändert. Prüfe den neuen Preis und versuche erneut zu speichern oder zu exportieren.",
   "editorManualCommit.failed": "Der manuelle Schnitt konnte nicht gespeichert werden. Prüfe dein Credit-Guthaben und versuche es erneut.",
   "editorManualCommit.connectionFailed": "Der manuelle Schnitt konnte nicht gespeichert werden. Prüfe deine Verbindung und versuche es erneut.",
+  "editorManualCommit.unavailable": "Speichern und Exportieren sind noch nicht verfügbar.",
   "editorLocalExport.start": "Auf diesem Gerät exportieren",
   "editorLocalExport.quality": "Qualität",
   "editorLocalExport.quality.compact": "Kompakt",

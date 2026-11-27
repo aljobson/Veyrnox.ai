@@ -7,6 +7,33 @@
 -- source creates a new import set and may be charged again.
 BEGIN;
 
+-- Two independent switches are required before this paid path can ship: the
+-- Worker flag gates the HTTP route and this row gates direct PostgREST RPCs.
+CREATE TABLE IF NOT EXISTS public.editor_manual_commit_config (
+  singleton boolean PRIMARY KEY DEFAULT true CHECK (singleton),
+  enabled boolean NOT NULL DEFAULT false,
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+INSERT INTO public.editor_manual_commit_config(singleton,enabled) VALUES(true,false)
+  ON CONFLICT(singleton) DO NOTHING;
+ALTER TABLE public.editor_manual_commit_config ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.editor_manual_commit_config FORCE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public.editor_manual_commit_config FROM PUBLIC,anon,authenticated,service_role;
+
+-- Mark the exact document version written by the paid endpoint. Reconciliation
+-- must never mistake an ordinary save that reused the request key for payment.
+ALTER TABLE public.project_document_versions
+  ADD COLUMN manual_commit_credits integer,
+  ADD COLUMN manual_commit_job_id uuid REFERENCES public.jobs(id) ON DELETE RESTRICT,
+  ADD COLUMN manual_commit_fingerprint text,
+  ADD CONSTRAINT project_document_versions_manual_commit_check CHECK (
+    (manual_commit_credits IS NULL AND manual_commit_job_id IS NULL AND manual_commit_fingerprint IS NULL)
+    OR (manual_commit_credits IN (0,5)
+      AND manual_commit_fingerprint ~ '^[0-9a-f]{64}$'
+      AND ((manual_commit_credits=0 AND manual_commit_job_id IS NULL)
+        OR (manual_commit_credits=5 AND manual_commit_job_id IS NOT NULL)))
+  );
+
 CREATE TABLE IF NOT EXISTS public.editor_manual_commit_receipts (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL REFERENCES public.users(id) ON DELETE RESTRICT,
@@ -36,7 +63,9 @@ LANGUAGE sql IMMUTABLE SET search_path='' AS $$
     SELECT clip->>'mediaId' AS source_id FROM clips
     UNION SELECT clip#>>'{background,mediaId}' AS source_id FROM clips
   ), eligible AS (
-    SELECT DISTINCT encode(sha256(convert_to(r.source_id,'UTF8')),'hex') AS source_hash
+    SELECT DISTINCT encode(sha256(convert_to(
+      jsonb_build_object('source_id',r.source_id,'media',m.media)::text,'UTF8'
+    )),'hex') AS source_hash
       FROM referenced r
       JOIN jsonb_each(coalesce(content#>'{timeline,media}','{}'::jsonb)) m(source_id,media)
         ON m.source_id=r.source_id
@@ -50,6 +79,8 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
 DECLARE actor uuid:=auth.uid(); v_user_id uuid; sources jsonb; covered boolean;
 BEGIN
   IF actor IS NULL THEN RAISE EXCEPTION 'UNAUTHORIZED' USING ERRCODE='PT401'; END IF;
+  IF NOT EXISTS(SELECT 1 FROM public.editor_manual_commit_config WHERE singleton AND enabled)
+    THEN RAISE EXCEPTION 'FEATURE_DISABLED' USING ERRCODE='PT404'; END IF;
   IF coalesce(private.project_role(p_project),'') NOT IN ('OWNER','ADMIN','CREATOR','EDITOR')
     THEN RAISE EXCEPTION 'NOT_FOUND' USING ERRCODE='PT404'; END IF;
   IF NOT private.project_document_within_bounds(p_content,p_project)
@@ -77,8 +108,11 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
 DECLARE
   actor uuid:=auth.uid(); v_user_id uuid; sources jsonb; fingerprint text; charge_key text;
   amount integer; covered boolean; replay boolean; debit jsonb; saved jsonb; charged_job uuid;
+  saved_revision integer; charge_inputs jsonb;
 BEGIN
   IF actor IS NULL THEN RAISE EXCEPTION 'UNAUTHORIZED' USING ERRCODE='PT401'; END IF;
+  IF NOT EXISTS(SELECT 1 FROM public.editor_manual_commit_config WHERE singleton AND enabled)
+    THEN RAISE EXCEPTION 'FEATURE_DISABLED' USING ERRCODE='PT404'; END IF;
   IF p_expected_credits IS NULL OR p_expected_credits NOT IN (0,5) THEN
     RETURN jsonb_build_object('ok',false,'code','PRICE_CHANGED','expected_credits',5);
   END IF;
@@ -103,17 +137,30 @@ BEGIN
   amount:=CASE WHEN jsonb_array_length(sources)=0 OR covered THEN 0 ELSE 5 END;
   SELECT EXISTS(SELECT 1 FROM public.project_document_versions v
     WHERE v.project_id=p_project AND v.actor_id=actor AND v.request_key=p_request_key) INTO replay;
+  IF replay AND NOT EXISTS(SELECT 1 FROM public.project_document_versions v
+    WHERE v.project_id=p_project AND v.actor_id=actor AND v.request_key=p_request_key
+      AND v.manual_commit_credits IS NOT NULL) THEN
+    RETURN jsonb_build_object('ok',false,'code','IDEMPOTENCY_CONFLICT');
+  END IF;
   IF p_expected_credits IS DISTINCT FROM amount AND NOT (replay AND p_expected_credits=5 AND amount=0) THEN
     RETURN jsonb_build_object('ok',false,'code','PRICE_CHANGED','expected_credits',amount);
   END IF;
   IF amount=5 THEN
     charge_key:='editor-manual.'||encode(sha256(convert_to(actor::text||':'||p_project::text||':'||fingerprint,'UTF8')),'hex');
+    charge_inputs:=jsonb_build_object('kind','manual_editor_commit','project_id',p_project,
+      'source_fingerprint',fingerprint,'request_key',p_request_key);
     debit:=public.ledger_debit(v_user_id,charge_key,5,'debit:editor_manual_commit','editor-manual-commit',
-      jsonb_build_object('kind','manual_editor_commit','project_id',p_project,'source_fingerprint',fingerprint),0,60);
+      charge_inputs,0,60);
     IF debit->>'ok' IS DISTINCT FROM 'true' THEN RETURN debit; END IF;
     charged_job:=(debit->>'job_id')::uuid;
+    IF NOT EXISTS(SELECT 1 FROM public.jobs j WHERE j.id=charged_job AND j.user_id=v_user_id
+      AND j.idempotency_key=charge_key AND j.model_id='editor-manual-commit' AND j.credits=5
+      AND j.inputs=charge_inputs) THEN
+      RAISE EXCEPTION 'IDEMPOTENCY_CONFLICT' USING ERRCODE='PT409';
+    END IF;
   END IF;
   saved:=private.save_project_document(p_project,p_expected,p_content,p_request_key,NULL);
+  saved_revision:=(saved->>'revision')::integer;
   IF amount=5 THEN
     INSERT INTO public.editor_manual_commit_receipts(user_id,project_id,source_fingerprint,source_hashes,job_id,credits)
       VALUES(v_user_id,p_project,fingerprint,sources,charged_job,5)
@@ -124,6 +171,14 @@ BEGIN
     UPDATE public.jobs SET state='STORED',provider='local',deleted_at=now(),updated_at=now()
       WHERE id=charged_job AND state='DEBITED';
   END IF;
+  UPDATE public.project_document_versions v SET manual_commit_credits=amount,
+      manual_commit_job_id=charged_job,manual_commit_fingerprint=fingerprint
+    WHERE v.project_id=p_project AND v.actor_id=actor AND v.request_key=p_request_key
+      AND v.revision=saved_revision
+      AND (v.manual_commit_credits IS NULL OR (v.manual_commit_credits=amount
+        AND v.manual_commit_job_id IS NOT DISTINCT FROM charged_job
+        AND v.manual_commit_fingerprint=fingerprint));
+  IF NOT FOUND THEN RAISE EXCEPTION 'IDEMPOTENCY_CONFLICT' USING ERRCODE='PT409'; END IF;
   RETURN saved||jsonb_build_object('ok',true,'credits',amount,'covered',amount=0);
 END $$;
 
@@ -135,6 +190,8 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
 DECLARE actor uuid:=auth.uid(); saved_revision integer;
 BEGIN
   IF actor IS NULL THEN RAISE EXCEPTION 'UNAUTHORIZED' USING ERRCODE='PT401'; END IF;
+  IF NOT EXISTS(SELECT 1 FROM public.editor_manual_commit_config WHERE singleton AND enabled)
+    THEN RAISE EXCEPTION 'FEATURE_DISABLED' USING ERRCODE='PT404'; END IF;
   IF p_request_key IS NULL OR p_request_key!~'^[A-Za-z0-9._-]{8,128}$'
     THEN RAISE EXCEPTION 'INVALID_IDEMPOTENCY_KEY' USING ERRCODE='PT400'; END IF;
   IF coalesce(private.project_role(p_project),'') NOT IN ('OWNER','ADMIN','CREATOR','EDITOR')
@@ -144,7 +201,14 @@ BEGIN
   -- rollback/non-arrival result rather than a snapshot taken mid-transaction.
   PERFORM pg_advisory_xact_lock(hashtextextended(actor::text||':'||p_project::text,621));
   SELECT v.revision INTO saved_revision FROM public.project_document_versions v
-   WHERE v.project_id=p_project AND v.actor_id=actor AND v.request_key=p_request_key;
+   WHERE v.project_id=p_project AND v.actor_id=actor AND v.request_key=p_request_key
+     AND v.manual_commit_credits IS NOT NULL
+     AND (v.manual_commit_credits=0 OR EXISTS(
+       SELECT 1 FROM public.editor_manual_commit_receipts r JOIN public.jobs j ON j.id=r.job_id
+        WHERE r.user_id=j.user_id AND r.project_id=p_project
+          AND r.job_id=v.manual_commit_job_id AND r.source_fingerprint=v.manual_commit_fingerprint
+          AND j.model_id='editor-manual-commit' AND j.credits=5
+          AND j.inputs->>'request_key'=p_request_key));
   RETURN jsonb_build_object('ok',true,'committed',saved_revision IS NOT NULL,'revision',saved_revision);
 END $$;
 
@@ -197,9 +261,13 @@ BEGIN
     v_spendable:=v_current_balance-(v_sub_balance-v_sub_live);
     SELECT id INTO v_existing FROM public.jobs WHERE user_id=p_user_id AND idempotency_key=p_idempotency_key;
     IF v_existing IS NOT NULL THEN
-        IF p_reason IN ('debit:generation','debit:chat') AND EXISTS(
+        IF p_reason IN ('debit:generation','debit:chat','debit:editor_manual_commit') AND EXISTS(
             SELECT 1 FROM public.jobs j WHERE j.id=v_existing AND
-              (j.model_id IS DISTINCT FROM p_model_id OR NOT private.generation_request_matches(j.inputs,p_inputs))
+              (j.model_id IS DISTINCT FROM p_model_id
+                OR (p_reason='debit:editor_manual_commit' AND
+                  (j.credits IS DISTINCT FROM p_credits OR j.inputs IS DISTINCT FROM p_inputs))
+                OR (p_reason IN ('debit:generation','debit:chat') AND
+                  NOT private.generation_request_matches(j.inputs,p_inputs)))
         ) THEN RETURN jsonb_build_object('ok',false,'code','IDEMPOTENCY_CONFLICT'); END IF;
         RETURN jsonb_build_object('ok',true,'job_id',v_existing,'idempotent',true,'balance_after',v_spendable);
     END IF;
@@ -235,9 +303,13 @@ BEGIN
           VALUES(p_user_id,p_idempotency_key,p_model_id,p_credits,p_inputs,'DEBITED') RETURNING id INTO v_new_job_id;
     EXCEPTION WHEN unique_violation THEN
         SELECT id INTO v_existing FROM public.jobs WHERE user_id=p_user_id AND idempotency_key=p_idempotency_key;
-        IF p_reason IN ('debit:generation','debit:chat') AND EXISTS(
+        IF p_reason IN ('debit:generation','debit:chat','debit:editor_manual_commit') AND EXISTS(
             SELECT 1 FROM public.jobs j WHERE j.id=v_existing AND
-              (j.model_id IS DISTINCT FROM p_model_id OR NOT private.generation_request_matches(j.inputs,p_inputs))
+              (j.model_id IS DISTINCT FROM p_model_id
+                OR (p_reason='debit:editor_manual_commit' AND
+                  (j.credits IS DISTINCT FROM p_credits OR j.inputs IS DISTINCT FROM p_inputs))
+                OR (p_reason IN ('debit:generation','debit:chat') AND
+                  NOT private.generation_request_matches(j.inputs,p_inputs)))
         ) THEN RETURN jsonb_build_object('ok',false,'code','IDEMPOTENCY_CONFLICT'); END IF;
         RETURN jsonb_build_object('ok',true,'job_id',v_existing,'idempotent',true,'balance_after',v_spendable);
     END;

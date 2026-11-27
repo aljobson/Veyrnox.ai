@@ -8627,6 +8627,7 @@ export default {
   "editorManualCommit.priceChanged": "क्रेडिट की कीमत बदल गई। नई कीमत देखें और फिर से सेव या एक्सपोर्ट करने की कोशिश करें।",
   "editorManualCommit.failed": "मैन्युअल एडिट सेव नहीं हो सका। अपना क्रेडिट बैलेंस जाँचें और फिर कोशिश करें।",
   "editorManualCommit.connectionFailed": "मैन्युअल एडिट सेव नहीं हो सका। अपना कनेक्शन जाँचें और फिर कोशिश करें।",
+  "editorManualCommit.unavailable": "सेव और एक्सपोर्ट अभी उपलब्ध नहीं हैं।",
   "editorLocalExport.start": "इस डिवाइस पर एक्सपोर्ट करें",
   "editorLocalExport.quality": "क्वालिटी",
   "editorLocalExport.quality.compact": "कॉम्पैक्ट",

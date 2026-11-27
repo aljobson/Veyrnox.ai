@@ -8509,6 +8509,7 @@ export default {
   "editorManualCommit.priceChanged": "クレジット価格が変更されました。新しい価格を確認し、もう一度保存または書き出しをお試しください。",
   "editorManualCommit.failed": "手動編集を保存できませんでした。クレジット残高を確認し、もう一度お試しください。",
   "editorManualCommit.connectionFailed": "手動編集を保存できませんでした。接続を確認し、もう一度お試しください。",
+  "editorManualCommit.unavailable": "保存と書き出しはまだ利用できません。",
   "editorLocalExport.start": "この端末で書き出す",
   "editorLocalExport.quality": "画質",
   "editorLocalExport.quality.compact": "コンパクト",

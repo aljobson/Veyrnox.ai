@@ -8509,6 +8509,7 @@ export default {
   "editorManualCommit.priceChanged": "크레딧 가격이 변경됐습니다. 새 가격을 확인하고 저장 또는 내보내기를 다시 시도하세요.",
   "editorManualCommit.failed": "수동 편집을 저장하지 못했습니다. 크레딧 잔액을 확인하고 다시 시도하세요.",
   "editorManualCommit.connectionFailed": "수동 편집을 저장하지 못했습니다. 연결을 확인하고 다시 시도하세요.",
+  "editorManualCommit.unavailable": "저장 및 내보내기는 아직 사용할 수 없습니다.",
   "editorLocalExport.start": "이 기기에서 내보내기",
   "editorLocalExport.quality": "화질",
   "editorLocalExport.quality.compact": "압축",

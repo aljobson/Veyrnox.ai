@@ -11,7 +11,7 @@ test('manual editor Save and Export share one server-derived five-credit receipt
   assert.match(sql, /credits integer NOT NULL CHECK \(credits = 5\)/);
   assert.match(sql, /private\.editor_manual_source_hashes\(p_content\)/);
   assert.match(sql, /jsonb_array_elements_text\(r\.source_hashes\) paid_source/g);
-  assert.match(sql, /encode\(sha256\(convert_to\(r\.source_id,'UTF8'\)\),'hex'\) AS source_hash/);
+  assert.match(sql, /jsonb_build_object\('source_id',r\.source_id,'media',m\.media\)::text/);
   assert.match(sql, /editor_manual_commit_project_idx[\s\S]*ON public\.editor_manual_commit_receipts\(project_id\)/);
   assert.match(sql, /JOIN jsonb_each\(coalesce\(content#>'\{timeline,media\}'/);
   assert.doesNotMatch(sql, /m\.media\?'(?:originalAudio|graphic)'/);
@@ -32,9 +32,17 @@ test('manual editor charge is atomic with document save and bypasses supplier-on
   assert.doesNotMatch(sql, /ledger_refund/);
 });
 
+test('manual editor charge is disabled by default and exact job identity is enforced', () => {
+  assert.match(sql, /editor_manual_commit_config[\s\S]*enabled boolean NOT NULL DEFAULT false/);
+  assert.equal((sql.match(/FEATURE_DISABLED/g) ?? []).length, 3);
+  assert.match(sql, /j\.credits IS DISTINCT FROM p_credits OR j\.inputs IS DISTINCT FROM p_inputs/);
+  assert.match(sql, /j\.inputs=charge_inputs/);
+});
+
 test('ambiguous paid responses reconcile by exact idempotency key', () => {
   assert.match(sql, /private\.manual_editor_commit_status\(p_project uuid,p_request_key text\)/);
   assert.match(sql, /v\.project_id=p_project AND v\.actor_id=actor AND v\.request_key=p_request_key/);
+  assert.match(sql, /v\.manual_commit_credits IS NOT NULL/);
 });
 
 test('the synchronous debit job is hidden from Library and push completion', () => {

@@ -15,6 +15,8 @@ export async function GET(request, { params }) {
     if (revision !== null && (!/^[1-9]\d{0,8}$/.test(revision))) throw new ApiError(400, 'INVALID_REVISION', 'A positive revision is required.');
     if (manualStatus !== null && manualStatus !== '1') throw new ApiError(400, 'INVALID_REQUEST', 'The manual commit status request is invalid.');
     if (manualStatus !== null && revision !== null) throw new ApiError(400, 'INVALID_REQUEST', 'Choose a version or a manual commit status.');
+    if (manualStatus !== null && !editorFeatureEnabled('EDITOR_MANUAL_COMMIT_ENABLED'))
+      throw new ApiError(404, 'NOT_FOUND', 'Manual editor commits are not available here yet.');
     const projects = await tenantRequest(request, context, `projects?id=eq.${id}&select=id&limit=1`);
     if (!projects[0]) throw new ApiError(404, 'NOT_FOUND', 'The project was not found.');
     if (manualStatus !== null) {
@@ -38,6 +40,8 @@ export async function PUT(request, { params }) {
     const restore = body.restore_revision !== undefined;
     const manual = body.manual_commit;
     if (manual !== undefined) {
+      if (!editorFeatureEnabled('EDITOR_MANUAL_COMMIT_ENABLED'))
+        throw new ApiError(404, 'NOT_FOUND', 'Manual editor commits are not available here yet.');
       if (restore || !manual || typeof manual !== 'object' || Array.isArray(manual))
         throw new ApiError(400, 'INVALID_MANUAL_COMMIT', 'A manual editor commit must save a document.');
       exactKeys(manual, ['mode', 'expected_credits']);

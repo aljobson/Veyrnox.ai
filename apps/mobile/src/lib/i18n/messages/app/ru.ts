@@ -8860,6 +8860,7 @@ export default {
   "editorManualCommit.priceChanged": "Цена в кредитах изменилась. Проверьте новую цену и снова попробуйте сохранить или экспортировать.",
   "editorManualCommit.failed": "Не удалось сохранить ручной монтаж. Проверьте баланс кредитов и повторите попытку.",
   "editorManualCommit.connectionFailed": "Не удалось сохранить ручной монтаж. Проверьте подключение и повторите попытку.",
+  "editorManualCommit.unavailable": "Сохранение и экспорт пока недоступны.",
   "editorLocalExport.start": "Экспортировать на этом устройстве",
   "editorLocalExport.quality": "Качество",
   "editorLocalExport.quality.compact": "Компактное",

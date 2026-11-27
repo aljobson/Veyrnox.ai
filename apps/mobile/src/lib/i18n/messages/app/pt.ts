@@ -8744,6 +8744,7 @@ export default {
   "editorManualCommit.priceChanged": "O preço em créditos mudou. Confira o novo preço e tente salvar ou exportar novamente.",
   "editorManualCommit.failed": "Não foi possível salvar a edição manual. Confira seu saldo de créditos e tente novamente.",
   "editorManualCommit.connectionFailed": "Não foi possível salvar a edição manual. Confira sua conexão e tente novamente.",
+  "editorManualCommit.unavailable": "Salvar e exportar ainda não estão disponíveis.",
   "editorLocalExport.start": "Exportar neste dispositivo",
   "editorLocalExport.quality": "Qualidade",
   "editorLocalExport.quality.compact": "Compacta",

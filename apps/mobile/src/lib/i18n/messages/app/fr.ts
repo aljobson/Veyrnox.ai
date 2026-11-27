@@ -8746,6 +8746,7 @@ export default {
   "editorManualCommit.priceChanged": "Le prix en crédits a changé. Vérifiez le nouveau prix, puis réessayez d’enregistrer ou d’exporter.",
   "editorManualCommit.failed": "Le montage manuel n’a pas pu être enregistré. Vérifiez votre solde de crédits et réessayez.",
   "editorManualCommit.connectionFailed": "Le montage manuel n’a pas pu être enregistré. Vérifiez votre connexion et réessayez.",
+  "editorManualCommit.unavailable": "L’enregistrement et l’exportation ne sont pas encore disponibles.",
   "editorLocalExport.start": "Exporter sur cet appareil",
   "editorLocalExport.quality": "Qualité",
   "editorLocalExport.quality.compact": "Compacte",

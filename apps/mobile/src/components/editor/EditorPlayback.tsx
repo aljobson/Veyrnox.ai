@@ -52,7 +52,11 @@ export function PlaybackPreview({ frameStore, timeline, api, playing, localMedia
     const active = plan.visuals.filter((visual): visual is typeof visual & { media: NonNullable<typeof visual.media> } => Boolean(visual.media));
     const caption = plan.texts[plan.texts.length - 1]?.item;
     const effectiveStatic = staticPreview && !playing ? staticDisplay : null;
-    const effectiveNative = nativeDisplay?.frame === frame ? nativeDisplay : null;
+    // Native compositor snapshots are useful while scrubbing, but they must
+    // never sit above the live expo-video surface during playback. Rendering a
+    // full composited frame for every timeline tick can lag behind the player
+    // and makes a correctly playing clip look frozen.
+    const effectiveNative = !playing && nativeDisplay?.frame === frame ? nativeDisplay : null;
     const exactDisplay = effectiveNative ?? effectiveStatic;
     const approximate = exactDisplay ? !exactDisplay.exact : !plan.capabilities.exact;
     return <View style={StyleSheet.absoluteFill}>
@@ -65,7 +69,7 @@ export function PlaybackPreview({ frameStore, timeline, api, playing, localMedia
                 fps={timeline.fps} playing={playing} localUri={localMediaUris[media.id]} />)}
             {staticPreview ? <EditorStaticPreviewSurface enabled={!playing} timeline={timeline} frame={frame} api={api} localMediaUris={localMediaUris}
                 onDisplayed={onStaticDisplayed} /> : null}
-            {staticPreview && nativeIdentity ? <EditorNativePreviewSurface enabled account={nativeIdentity.account} project={nativeIdentity.project}
+            {staticPreview && nativeIdentity ? <EditorNativePreviewSurface enabled={!playing} account={nativeIdentity.account} project={nativeIdentity.project}
                 timeline={timeline} frame={frame} localMediaUris={localMediaUris} onDisplayed={onNativeDisplayed} /> : null}
             {compositionFrame ? <View style={styles.safeFrame} /> : null}
             {!active.length && !caption ? <><NativeText style={styles.previewMark}>{t('editor.v')}</NativeText><NativeText style={styles.previewLabel}>{timeline.video.length ? t('editor.movetheplayheadontoavisualclip') : t('editor.previewEmpty')}</NativeText></> : null}

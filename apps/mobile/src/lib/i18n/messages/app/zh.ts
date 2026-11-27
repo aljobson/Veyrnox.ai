@@ -8509,6 +8509,7 @@ export default {
   "editorManualCommit.priceChanged": "积分价格已变更。请检查新价格，然后重新尝试保存或导出。",
   "editorManualCommit.failed": "无法保存手动编辑。请检查积分余额后重试。",
   "editorManualCommit.connectionFailed": "无法保存手动编辑。请检查网络连接后重试。",
+  "editorManualCommit.unavailable": "保存和导出功能尚未开放。",
   "editorLocalExport.start": "在此设备上导出",
   "editorLocalExport.quality": "质量",
   "editorLocalExport.quality.compact": "紧凑",

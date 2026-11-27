@@ -79,6 +79,20 @@ test('manual editor debit migration is atomic, idempotent and invisible', { skip
     INSERT INTO public.credit_balances(user_id,balance,free_balance,subscription_balance,subscription_expires_at,subscription_cycle)
       VALUES('${user}',20,20,0,now()+interval '1 month',1);`);
 
+  await t.test('feature is fail-closed until the disposable database explicitly enables it', async () => {
+    const quote = `BEGIN; SELECT set_config('request.jwt.claim.sub','${actor}',true);
+      SELECT public.quote_manual_editor_commit('${project}','${doc(['camera-a'])}'::jsonb); COMMIT;`;
+    const status = `BEGIN; SELECT set_config('request.jwt.claim.sub','${actor}',true);
+      SELECT public.manual_editor_commit_status('${project}','disabled-status'); COMMIT;`;
+    await assert.rejects(psql(quote), /FEATURE_DISABLED/);
+    await assert.rejects(psql(saveSql(project, 0, doc(['camera-a']), 'disabled-save', 5)), /FEATURE_DISABLED/);
+    await assert.rejects(psql(status), /FEATURE_DISABLED/);
+    assert.equal(await psql(`SELECT balance||'|'||(SELECT count(*) FROM public.project_document_versions)||'|'||
+      (SELECT count(*) FROM public.jobs)||'|'||(SELECT count(*) FROM public.editor_manual_commit_receipts)
+      FROM public.credit_balances WHERE user_id='${user}';`), '20|0|0|0');
+  });
+  await psql(`UPDATE public.editor_manual_commit_config SET enabled=true,updated_at=now() WHERE singleton;`);
+
   await t.test('Save then Export charges once and hides the accounting job', async () => {
     assert.match(await psql(saveSql(project, 0, doc(['camera-a']), 'save-key-1', 5)), /"credits": 5/);
     const quote = await psql(`BEGIN; SELECT set_config('request.jwt.claim.sub','${actor}',true); SELECT public.quote_manual_editor_commit('${project}','${doc(['camera-a'])}'::jsonb); COMMIT;`);

@@ -1,4 +1,10 @@
 jest.mock('../src/lib/voiceoverRecorder', () => ({ VOICEOVER_AVAILABLE: false }));
+var mockManualCommitEnabled = true;
+jest.mock('../src/lib/editorFlag', () => ({
+    ...jest.requireActual('../src/lib/editorFlag'),
+    EDITOR_MANUAL_COMMIT_ENABLED: true,
+    editorManualCommitEnabled: () => mockManualCommitEnabled,
+}));
 var mockPickNativeColor = jest.fn().mockResolvedValue('#34C759');
 jest.mock('../src/lib/nativeColorPicker', () => ({ nativeColorPickerAvailable: () => true, pickNativeColor: (...args: unknown[]) => mockPickNativeColor(...args) }));
 var mockSafeInsets = { top: 0, bottom: 0, left: 0, right: 0 };
@@ -77,6 +83,7 @@ beforeEach(() => {
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
     jest.useFakeTimers();
     jest.clearAllMocks();
+    mockManualCommitEnabled = true;
     mockPickNativeColor.mockResolvedValue('#34C759');
     mockSafeInsets = { top: 0, bottom: 0, left: 0, right: 0 };
     mockRouter.canGoBack.mockReturnValue(true);
@@ -556,6 +563,17 @@ test('B1: flag off Export opens the private on-device MP4 flow without a server 
     expect(visible('Makes a private MP4 on this device for supported projects up to 30 seconds. Saving or exporting an imported edit uses a one-time 5-credit manual-edit fee.')).toBe(true);
     expect(visible('Use cloud export instead')).toBe(true);
     expect(mockRequest.mock.calls.some(([path]) => path.includes('/editor/server-render'))).toBe(false);
+});
+
+test('manual-commit flag off blocks explicit Save without writing the document', async () => {
+    mockManualCommitEnabled = false;
+    await renderSimple();
+    await press('Text');
+    await press('Title');
+    mockRequest.mockClear();
+    await press('Save');
+    expect(puts()).toHaveLength(0);
+    expect(visible('Saving and exporting are not available yet.')).toBe(true);
 });
 
 test('explicit Save quotes and confirms the one-time 5-credit manual edit before committing', async () => {

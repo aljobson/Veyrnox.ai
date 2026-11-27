@@ -4,7 +4,7 @@ import { GET, PUT } from '../app/api/v1/projects/[id]/document/route.js';
 import { GET as history } from '../app/api/v1/projects/[id]/history/route.js';
 import { emptyProjectDocument, equalProjectDocuments, validProjectDocument } from '../lib/projectDocument.js';
 const id=crypto.randomUUID(), other=crypto.randomUUID();
-Object.assign(process.env,{APP_ENV:'development',PUBLIC_HOST:'http://localhost:3000',SUPABASE_URL:'http://127.0.0.1:54321',NEXT_PUBLIC_SUPABASE_URL:'http://127.0.0.1:54321',NEXT_PUBLIC_SUPABASE_ANON_KEY:'sb_publishable_local_test',TENANT_PROJECTS_ENABLED:'true'});
+Object.assign(process.env,{APP_ENV:'development',PUBLIC_HOST:'http://localhost:3000',SUPABASE_URL:'http://127.0.0.1:54321',NEXT_PUBLIC_SUPABASE_URL:'http://127.0.0.1:54321',NEXT_PUBLIC_SUPABASE_ANON_KEY:'sb_publishable_local_test',TENANT_PROJECTS_ENABLED:'true',EDITOR_RUNTIME_FLAGS:JSON.stringify({manualCommit:'true'})});
 const original=globalThis.fetch;
 test.after(()=>{globalThis.fetch=original;});
 const req=(body,query='')=>new Request('http://localhost:3000/api/v1/projects/'+id+'/document'+query,{method:body?'PUT':'GET',headers:{authorization:'Bearer test-user','x-veyrnox-auth-id':other,'x-request-id':crypto.randomUUID(),'content-type':'application/json','idempotency-key':'document-test-key'},...(body?{body:JSON.stringify(body)}:{})});
@@ -59,6 +59,15 @@ test('manual editor debit failures preserve price, balance and availability sema
   const response=await PUT(req({expected_revision:1,document:doc,manual_commit:{mode:'commit',expected_credits:5}}),params);
   assert.equal(response.status,status,code);
  }
+});
+test('manual editor endpoints fail closed before any upstream call when rollout is off',async()=>{
+ const previous=process.env.EDITOR_RUNTIME_FLAGS;process.env.EDITOR_RUNTIME_FLAGS=JSON.stringify({manualCommit:'false'});
+ let calls=0;globalThis.fetch=async()=>{calls++;throw Error('must not call upstream');};
+ try{
+  assert.equal((await GET(req(undefined,'?manual_commit_status=1'),params)).status,404);
+  assert.equal((await PUT(req({expected_revision:1,document:emptyProjectDocument(id),manual_commit:{mode:'quote'}}),params)).status,404);
+  assert.equal(calls,0);
+ }finally{process.env.EDITOR_RUNTIME_FLAGS=previous;}
 });
 test('history pagination is bounded and excludes document content',async()=>{
  const urls=[];globalThis.fetch=async(url)=>{urls.push(String(url));return Response.json(urls.length===1?[{id}]:[]);};

@@ -61,7 +61,7 @@ import { useContext, useEffect, useRef, useState } from 'react';
 import { SafeAreaInsetsContext } from 'react-native-safe-area-context';
 import { editorLayoutBudget } from '../../lib/editorLayoutBudget';
 import { editorTopInset } from '../../lib/editorSafeInsets';
-import { EDITOR_SERVER_EXPORT_ENABLED } from '../../lib/editorFlag';
+import { editorManualCommitEnabled, EDITOR_SERVER_EXPORT_ENABLED } from '../../lib/editorFlag';
 import type { Cut } from '../../lib/smartCutHandoff';
 import { requireOnline, OFFLINE_PAID_MESSAGE } from '../../lib/network';
 import { exportUnavailable } from '../../lib/editorServerExport';
@@ -130,6 +130,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     const [safeAreaGuideId, setSafeAreaGuideId] = useState<SafeAreaGuideId>('off');
     const session = useFullEditorSession({ projectId, jobId, cuts, onOwnerChange: () => guard.teardown(() => router.back()), onCopy: id => guard.teardown(() => router.replace({ pathname:
         '/editor/[projectId]', params: { projectId: id } })) });
+    const manualCommitEnabled = editorManualCommitEnabled();
     const { getEditRevision, beginImport, replacing, leaveEditor, saveStatus, sync, currentDocument, preparePicked, savedDocument, api, router, name, document, dirty, problem, setProblem, tool,
         setTool, selection, setSelection, selections, setSelections, multiSelect, setMultiSelect, clipboard, setClipboard, snap, setSnap, ripple, setRipple, zoom, setZoom, privacyNotice,
         history, frameStore, setFrame, playing, setPlaying, projectAssets, localMediaUris, libraryKind, setLibraryKind, markDocument, save, acknowledgePrivacy, travel } = session;
@@ -545,8 +546,17 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         if (declaredFonts.length) { setProblem(t('editorFont.exportNote')); return; }
         if (!exportGate.available) { if (await save()) setProblem(t(exportGate.messageKey)); return; } try { requireOnline(); } catch {
         setProblem(OFFLINE_PAID_MESSAGE); return; } if (exportUnavailable()) { setProblem(t('handoff.exportUnavailable')); return; }
-        if (await commitManualEdit('export') !== null) setExportVisible(true); };
-    const openExport = () => { setPlaying(false); setLocalExportVisible(true); };
+        // Opening or dismissing the server-render sheet must never charge the
+        // separate manual-edit fee. The paid flow is rollout-gated until the
+        // render admission can own and refund the combined charge atomically.
+        if (!manualCommitEnabled) { setProblem(t('editorManualCommit.unavailable')); return; }
+        if (dirty && !(await save())) return;
+        setExportVisible(true); };
+    const openExport = () => {
+        setPlaying(false);
+        if (!manualCommitEnabled) { setProblem(t('editorManualCommit.unavailable')); return; }
+        setLocalExportVisible(true);
+    };
     const openCover = () => { setPlaying(false); setSheet(null); setCoverRestoreFrame(clampFrame(frameStore.get())); };
     const closeCover = () => { if (coverRestoreFrame !== null) setFrame(coverRestoreFrame); setCoverRestoreFrame(null); };
     const saveCover = (cover: EditorCover) => {
@@ -669,7 +679,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         <EditorClipAudioSheet visible={clipAudioVisible !== null} clip={selected && selection?.track !== 'text' ? selected as Clip : null} fps={timeline.fps}
             focus={clipAudioVisible ?? 'volume'} onClose={() => setClipAudioVisible(null)} onPatch={patchSelected} />
         <EditorFiltersSheet visible={filtersVisible} clip={selected && selection?.track === 'video' ? selected as Clip : null} onClose={() => setFiltersVisible(false)} onPatch={patchSelected} />
-        {EDITOR_SERVER_EXPORT_ENABLED ? <ServerExportSheet api={api} router={router} now={Date.now} projectId={projectId} name={displayName} document={document} localMediaUris={localMediaUris} dirty={dirty} visible={exportVisible}
+        {EDITOR_SERVER_EXPORT_ENABLED && manualCommitEnabled ? <ServerExportSheet api={api} router={router} now={Date.now} projectId={projectId} name={displayName} document={document} localMediaUris={localMediaUris} dirty={dirty} visible={exportVisible}
             onOpen={() => setExportVisible(true)} onClose={() => setExportVisible(false)} onFallback={() => { setExportVisible(false); setProblem(t('handoff.exportUnavailable')); }} /> : null}
         <Stack.Screen options={{ headerShown: false, gestureEnabled: !timelineTouch && !selection /* a selected clip is about to be dragged: swipe-back must not steal that drag; Done and the leave guard still exit */ }} />
         <View style={[styles.projectBar, !advanced && styles.simpleProjectBar]}>
@@ -686,7 +696,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
             </Pressable>
             {advanced ? <Button label={t('editorSave.versions')} variant="tertiary" size="sm" containerStyle={{ marginVertical: -2 }} onPress={sync.openVersions} /> : null}
             {!advanced ? <Pressable accessibilityRole="button" accessibilityLabel={dirty ? t('projects.save') : saveStatus} accessibilityLiveRegion={Platform.OS === 'android' ? 'polite' : undefined}
-                onPress={() => { void commitManualEdit('save'); }} style={({ pressed }) => [styles.simpleSaveButton, !dirty && !sync.saving && styles.simpleSaveIdle, pressed && styles.pressed]}>
+                onPress={() => { if (!manualCommitEnabled) { setProblem(t('editorManualCommit.unavailable')); return; } void commitManualEdit('save'); }} style={({ pressed }) => [styles.simpleSaveButton, !dirty && !sync.saving && styles.simpleSaveIdle, pressed && styles.pressed]}>
                 <Text numberOfLines={1} maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.simpleSaveText}>{sync.saving ? t('editor.saving') : dirty ? t('projects.save') : t('editor.saved')}</Text>
             </Pressable> : null}
             <Pressable accessibilityRole="button" accessibilityLabel={advanced ? t('editor.done') : t('editor.export')} onPress={advanced ? guard.done : openExport}
