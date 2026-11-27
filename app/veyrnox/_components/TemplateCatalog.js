@@ -92,10 +92,10 @@ function ProviderCard({ item, providerId, provider, t }) {
         <p className="mt-1 text-xs text-vx-fg-muted">{item.category}</p>
         {input && <p className="mt-4 text-sm leading-6 text-vx-fg-body">{t('app.templates.input', { input })}</p>}
         {item.requirements?.length > 0 && <p className="mt-3 line-clamp-3 text-xs leading-5 text-vx-fg-muted">{item.requirements.slice(0, 3).map(part => `${part.label}: ${part.value}`).join(' · ')}</p>}
-        {price && <p className="mt-3 text-sm font-bold text-vx-money">{t('app.templates.customerCredits', { price })}</p>}
+        {price ? <p className="mt-3 text-sm font-bold text-vx-money">{t('app.templates.customerCredits', { price })}</p> : <p className="mt-3 text-sm font-bold text-vx-fg-muted">{t('app.templates.priceUnavailable')}</p>}
         <div className="mt-auto flex flex-wrap gap-2 pt-5">
           {item.previewUrl && <a href={item.previewUrl} target="_blank" rel="noreferrer" className="vx-press inline-flex min-h-11 items-center rounded-full border border-vx-border px-4 text-sm font-bold hover:border-vx-accent">{t('app.templates.openPreview')}</a>}
-          {price && <CatalogTemplateRun item={item} provider={providerId} t={t} />}
+          {price ? <CatalogTemplateRun item={item} provider={providerId} t={t} /> : <button type="button" disabled className="inline-flex min-h-11 items-center rounded-full bg-vx-accent px-4 text-sm font-extrabold text-vx-accent-ink opacity-50">{t('app.templates.useTemplate')}</button>}
         </div>
       </div>
     </li>
