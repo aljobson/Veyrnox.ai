@@ -78,7 +78,7 @@ test('compact idle editor exposes quick settings without adding a sixth main-doc
     expect(source).toContain('onKeyboardEditingChange={setKeyboardEditing}');
     expect(source).toContain('compact={compactViewport}');
     expect(source).toContain('composerFirst={compactViewport && keyboardEditing}');
-    expect(source).toContain("type BottomTool = 'tracks' | 'library' | 'instruments' | 'ai' | 'mix' | 'save' | null");
+    expect(source).toContain("type BottomTool = 'tracks' | 'library' | 'instruments' | 'sounds' | 'ai' | 'mix' | 'save' | null");
     expect(source).toContain("onPress={() => setBottomTool('save')}");
     expect(source).toContain("bottomTool === 'save' ? <View testID=\"beat-compact-save-tray\"");
     expect(source).not.toContain('compactViewport && saveControlsOpen ? <BeatModal');
