@@ -35,28 +35,24 @@ export const AUDIO_HUB_PERFORMANCES = AUDIO_PERFORMANCES.filter((id) => {
 
 export type AudioTarget = { pathname: '/music' | '/music/create' | '/speech' | '/dialogue' } | { pathname: '/create/[modelId]'; params: { modelId: string } } | { pathname: '/features/[slug]'; params: { slug: string } } | { pathname: '/create' };
 
-// A catalog name like "ACE-Step (music/SFX)" trips the effects heuristic in audioFamily, so music is matched by name first.
-const isMusic = (m: CatalogModel): boolean => {
-    const text = `${m.id} ${m.name}`;
-    const family = audioFamily(m);
-    return family === 'music' || (/music|song|ace-?step/i.test(text) && family === 'effects');
-};
-const byFamily = (models: readonly CatalogModel[], family: 'music' | 'speech'): CatalogModel | null => {
-    const audio = models.filter((m) => kindOf(m.modality) === 'audio' && (family === 'music' ? isMusic(m) : audioFamily(m) === 'speech'));
+const bySpeechFamily = (models: readonly CatalogModel[]): CatalogModel | null => {
+    const audio = models.filter((m) => kindOf(m.modality) === 'audio' && audioFamily(m) === 'speech');
     return starterModel(audio, 'audio');
 };
 const dialogue = (models: readonly CatalogModel[]): CatalogModel | null =>
     starterModel(models.filter((m) => kindOf(m.modality) === 'audio' && /dialogue/i.test(`${m.id} ${m.name}`)), 'audio');
 
-// Where a card goes. Before the catalog arrives (or when no open model fits) it falls back to Create, never a dead end.
-export function audioTarget(id: AudioStudioId, models: readonly CatalogModel[] | null, musicAvailable = false): AudioTarget {
-    if (id === 'music' && musicAvailable) return { pathname: '/music/create' };
+// Where a card goes. Music owns its availability/error state, so its destination
+// must not change while the asynchronous Music probe and catalog are loading.
+// Other catalog-backed cards still fall back to Create when no open model fits.
+export function audioTarget(id: AudioStudioId, models: readonly CatalogModel[] | null, _musicAvailable = false): AudioTarget {
+    if (id === 'music') return { pathname: '/music/create' };
     if (id === 'speech' && models && speechModel(models)) return { pathname: '/speech' };
     if (id === 'dialogue' && models && dialogueModel(models)) return { pathname: '/dialogue' };
     if (id === 'yourMusic') return { pathname: '/music' };
     const slug = FEATURE_SLUGS[id];
     if (slug) return { pathname: '/features/[slug]', params: { slug } };
-    const model = !models ? null : id === 'music' ? byFamily(models, 'music') : id === 'speech' ? byFamily(models, 'speech') : dialogue(models);
+    const model = !models ? null : id === 'speech' ? bySpeechFamily(models) : dialogue(models);
     return model ? { pathname: '/create/[modelId]', params: { modelId: model.id } } : { pathname: '/create' };
 }
 
