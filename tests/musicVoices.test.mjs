@@ -169,6 +169,8 @@ test('the migration preserves evidence accountability without retaining content 
   assert.match(sql, /DELETE FROM public\.upload_reservations WHERE r2_key=p_challenge_key AND user_id=u/);
   assert.match(sql, /p_reference_key!~\('\^music-voice-uploads\/'\|\|lower\(p_auth_id\)/);
   assert.match(sql, /p_challenge_key!~\('\^music-voice-uploads\/'\|\|lower\(p_auth_id\)/);
+  assert.ok(sql.includes("[0-9a-f]{12}\\.(mp3|wav)$"), "upload-key regex escapes the extension dot once");
+  assert.ok(!sql.includes("[0-9a-f]{12}\\\\.(mp3|wav)$"), "upload-key regex must not require a literal backslash");
   assert.match(sql, /asset_reap_queue WHERE r2_key=p_reference_key/);
   assert.match(sql, /actor=v\.user_id[\s\S]*SELF_REVIEW_FORBIDDEN/);
   assert.match(sql, /SELECT id INTO actor[\s\S]*IF actor IS NULL THEN RAISE EXCEPTION 'not_admin'/);

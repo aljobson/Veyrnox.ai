@@ -70,6 +70,7 @@ describe('music voice state-change idempotency', { skip: !DATABASE_URL && 'DATAB
           r2_key TEXT PRIMARY KEY,
           user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
           size_bytes BIGINT NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
           put_expires_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp() + interval '16 minutes'
         )`);
       }

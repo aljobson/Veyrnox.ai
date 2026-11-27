@@ -290,7 +290,7 @@ DECLARE u UUID; v public.music_voice_profiles; seen public.music_voice_receipts;
   OR p_reference_mime NOT IN('audio/mpeg','audio/wav') OR p_reference_size NOT BETWEEN 1 AND 20971520
   OR p_reference_seconds NOT BETWEEN 2 AND 300 OR p_nonce IS NULL OR length(p_nonce)<20 OR p_hmac IS NULL OR length(p_hmac)<40
   OR p_ciphertext IS NULL OR length(p_ciphertext)<40 OR p_idem_key!~'^[A-Za-z0-9._-]{8,120}$'
-  OR p_reference_key!~('^music-voice-uploads/'||lower(p_auth_id)||'/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.(mp3|wav)$')
+  OR p_reference_key!~('^music-voice-uploads/'||lower(p_auth_id)||'/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(mp3|wav)$')
   OR p_request_digest!~'^[a-f0-9]{64}$' OR p_consent_version<>'music-own-voice-2026-11-24'
   OR p_policy_version<>'music-voice-review-v1' THEN RETURN jsonb_build_object('ok',false,'code','INVALID'); END IF;
  FOR v IN SELECT * FROM public.music_voice_profiles WHERE user_id=u AND ((status='challenge_issued' AND challenge_expires_at<=clock_timestamp())
@@ -381,7 +381,7 @@ DECLARE u UUID; v public.music_voice_profiles; r public.upload_reservations; see
   RETURN result||jsonb_build_object('idempotent',false);
  END IF;
  IF p_challenge_key=v.reference_source_key OR p_challenge_mime NOT IN('audio/mpeg','audio/wav') OR p_challenge_size NOT BETWEEN 1 AND 20971520
-  OR p_challenge_key!~('^music-voice-uploads/'||lower(p_auth_id)||'/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.(mp3|wav)$')
+  OR p_challenge_key!~('^music-voice-uploads/'||lower(p_auth_id)||'/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(mp3|wav)$')
   OR p_challenge_seconds NOT BETWEEN 2 AND 60 OR p_idem_key!~'^[A-Za-z0-9._-]{8,120}$' OR p_request_digest!~'^[a-f0-9]{64}$'
   THEN RETURN jsonb_build_object('ok',false,'code','INVALID'); END IF;
  SELECT * INTO r FROM public.upload_reservations WHERE r2_key=p_challenge_key AND user_id=u AND size_bytes=p_challenge_size;
