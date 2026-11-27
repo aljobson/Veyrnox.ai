@@ -1,6 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { addVideoFrameWithTimeout, ENCODER_STALLED, exportWithEncoderFallback } from '../app/veyrnox/_lib/editorExportEncoder.mjs';
+import {
+    addVideoFrameWithTimeout,
+    cancelExportWithTimeout,
+    ENCODER_STALLED,
+    exportWithEncoderFallback,
+    FINALIZE_STALLED,
+    finalizeExportWithTimeout,
+} from '../app/veyrnox/_lib/editorExportEncoder.mjs';
 
 test('a stalled video frame is bounded and a qualified software export retries once with the browser encoder', async () => {
     await assert.rejects(
@@ -26,4 +33,23 @@ test('cancellation interrupts a stalled write and ordinary export errors are nev
     let attempts = 0;
     await assert.rejects(exportWithEncoderFallback(async () => { attempts++; throw new Error('decode failed'); }), /decode failed/);
     assert.equal(attempts, 1);
+});
+
+test('finalization is bounded, abortable, and cleanup cannot lock the dialog forever', async () => {
+    await assert.rejects(
+        finalizeExportWithTimeout(() => new Promise(() => {}), { timeoutMs: 5 }),
+        error => error.code === FINALIZE_STALLED,
+    );
+
+    const controller = new AbortController();
+    const finalizing = finalizeExportWithTimeout(
+        () => new Promise(() => {}),
+        { signal: controller.signal, timeoutMs: 1000 },
+    );
+    controller.abort();
+    await assert.rejects(finalizing, { name: 'AbortError' });
+
+    const started = Date.now();
+    await cancelExportWithTimeout(() => new Promise(() => {}), { timeoutMs: 5 });
+    assert.ok(Date.now() - started < 250);
 });
