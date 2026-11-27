@@ -34,8 +34,8 @@ export default function BeatTrackHeader({ onHeight, armedId, onArm, mode = 'song
       aria-label={t('app.music.beat.labels.l40', { p0: track.name, p1: track.fx?.length ? t('app.music.beat.labels.l41', { p0: track.fx.length }) : '' })}
       onClick={() => onAutomation?.(automationLane ? null : 'gain')}>{t('app.music.beat.ui.automation')}</button>;
   }
-  function settings(location) {
-    const automationId = `${track.id}-${location}-automated`;
+  function settings() {
+    const automationId = `${track.id}-automated`;
     return <div className="grid min-w-0 grid-cols-2 gap-1">
       <label className="col-span-2 text-xs">{t('app.music.beat.ui.name')}<input aria-label={t('app.music.beat.labels.l42', { p0: track.name })} className={`${input} w-full`} maxLength={40}
           value={nameDraft ?? track.name} onChange={(e) => setNameDraft(e.target.value)}
@@ -87,7 +87,7 @@ export default function BeatTrackHeader({ onHeight, armedId, onArm, mode = 'song
       <summary data-beat-read data-beat-live aria-label={t('app.music.beat.labels.l47', { p0: track.name })}
         className="relative z-10 flex min-h-9 cursor-pointer items-center gap-2 text-xs focus-visible:outline-vx-accent"><svg aria-hidden="true" viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M4 6h7 M15 6h5 M4 12h3 M11 12h9 M4 18h9 M17 18h3 M11 4v4 M7 10v4 M13 16v4" /></svg>{t('app.music.beat.ui.track.settings')}</summary>
       <div className="absolute start-0 top-full z-30 w-64 rounded-xl border border-vx-border bg-vx-panel p-2 shadow-lg">
-        {settings('panel')}
+        {settings()}
       </div>
     </details>
   </div>;
