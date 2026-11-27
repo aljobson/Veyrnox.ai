@@ -31,7 +31,7 @@ function friendlyError(reason, kind) {
   const code = reason?.code;
   if (code === 'plan_unavailable') return 'Mashup and Sample need an active paid plan.';
   if (code === 'model_unavailable') return 'This provider is not switched on yet. Nothing was charged.';
-  if (code === 'format_unavailable') return kind === 'sample'
+  if (code === 'format_unavailable' || code === 'edit_unavailable_for_format') return kind === 'sample'
     ? 'This song must be a WAV master. Make a WAV copy from Download first.'
     : 'Both songs must be WAV masters. Make a WAV copy from Download first.';
   if (code === 'mix_format_mismatch') return 'These two songs use different audio formats, so they cannot be mixed.';

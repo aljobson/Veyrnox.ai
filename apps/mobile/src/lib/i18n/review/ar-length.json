@@ -2784,6 +2784,12 @@
     "ratio": 1.67
   },
   {
+    "id": "musicRemix.sample.title",
+    "english": "Sample this song",
+    "translation": "استخدم عينة من هذه الأغنية",
+    "ratio": 1.63
+  },
+  {
     "id": "musicLyricist.retry",
     "english": "Retry",
     "translation": "إعادة المحاولة",
