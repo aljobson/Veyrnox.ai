@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { readyTemplateCatalog } from '../app/veyrnox/_lib/templateCatalogReady.js';
 
 const read = path => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 function config(value, extras = {}) {
@@ -23,8 +24,8 @@ test('staging account smoke excludes synthetic fixture specs and preserves its p
 
 async function installedRouting(controls = {}) {
   const source = read('e2e/fixtures/authenticated-product.mjs').split('export async function installProductFixtures')[1];
-  const factory = new Function('base', 'publicFiles', 'PAGE_TEMPLATES', 'templateMatches', 'installed', 'SYNTHETIC_USER', 'SYNTHETIC_MODELS', 'SESSION_KEY', 'COMPLETED_TOUR_IDS', `return async function installProductFixtures${source}`);
-  const install = factory({}, new Set(['/favicon.ico']), [{ route: '/app/create' }, { route: '/app/publish/queues' }], (template, path) => template === path, new WeakMap(), { id: 'synthetic' }, [], 'synthetic-session', ['create', 'page:publish/queues']);
+  const factory = new Function('base', 'publicFiles', 'PAGE_TEMPLATES', 'templateMatches', 'installed', 'SYNTHETIC_USER', 'SYNTHETIC_MODELS', 'SESSION_KEY', 'COMPLETED_TOUR_IDS', 'SYNTHETIC_READY_TEMPLATE_CATALOG', `return async function installProductFixtures${source}`);
+  const install = factory({}, new Set(['/favicon.ico']), [{ route: '/app/create' }, { route: '/app/publish/queues' }], (template, path) => template === path, new WeakMap(), { id: 'synthetic' }, [], 'synthetic-session', ['create', 'page:publish/queues'], readyTemplateCatalog());
   let handler, fulfilled, fixture;
   const events = [], initScripts = [], pages = [], listeners = new Map();
   const context = {
@@ -197,6 +198,19 @@ test('actual fixture explicitly returns a claimed daily check-in without opening
   fixture.state.user = null;
   assert.equal(await request('http://localhost:3100/api/v1/checkin'), 'fulfill');
   assert.equal(response().status, 401);
+});
+
+test('actual fixture serves the unified ready catalogue and fail-closed live indexes', async () => {
+  const { fixture, request, response } = await installedRouting();
+  assert.equal(await request('http://localhost:3100/api/template-catalog/ready'), 'fulfill');
+  const ready = JSON.parse(response().body);
+  assert.deepEqual(Object.keys(ready), ['kling', 'seedance', 'veo', 'suno']);
+  assert.ok(ready.kling.length > 0);
+  assert.ok(ready.veo.length > 0);
+  assert.ok(ready.suno.length > 0);
+  assert.equal(await request('http://localhost:3100/api/template-catalog?provider=seedance&page=1&page_size=50'), 'fulfill');
+  assert.deepEqual(JSON.parse(response().body), { provider: 'seedance', page: 1, pageSize: 50, total: 0, templates: [] });
+  assert.equal(fixture.unhandled.length, 0);
 });
 
 test('actual fixture routing never follows redirects from owned pages or static assets', async () => {
