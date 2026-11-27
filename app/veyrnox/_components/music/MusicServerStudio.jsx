@@ -467,7 +467,7 @@ function CustomDraftFields({ custom, entitlements, quote, busy, clearQuote, quot
     setUpgradeError('');
     try {
       if (custom.dirty || custom.status !== 'saved') {
-        const saved = await custom.saveNow();
+        const saved = await custom.saveBeforeLeave();
         if (!saved) {
           setUpgradeError('Save the private draft before comparing plans. Your text remains here.');
           return;
@@ -630,11 +630,11 @@ function CustomDraftFields({ custom, entitlements, quote, busy, clearQuote, quot
       ) : (
         <section aria-label="Custom generation availability" className="rounded-2xl border border-vx-border bg-vx-base p-4 sm:p-5">
           <p className="font-vx-mono text-xs font-bold uppercase tracking-widest text-vx-money">Writing workspace ready</p>
-          <h3 className="mt-2 font-vx text-xl font-black">{availableCustomModel ? 'Custom generation is already available.' : 'Draft now. Generate with a plan.'}</h3>
+          <h3 className="mt-2 font-vx text-xl font-black">{availableCustomModel ? 'Custom generation is already available.' : 'Custom generation is unavailable right now.'}</h3>
           <p className="mt-2 text-sm leading-6 text-vx-fg-muted">
             {availableCustomModel
               ? `Switch this draft to ${availableCustomModel.name} to review its exact quote and create one private track.`
-              : 'Lyrics, style direction, titles, private revisions and the Chat handoff above all work without starting a generation. A paid plan unlocks the Custom-ready model, its exact quote and the final track request.'}
+              : 'Lyrics, style direction, titles, private revisions and the Chat handoff above still work. Your account or the verified provider may not currently support a Custom-ready model.'}
           </p>
           <div className="mt-4 grid gap-2 text-sm sm:grid-cols-3">
             <div className="rounded-xl border border-vx-border px-3 py-3"><strong className="block text-vx-fg">1. Write</strong><span className="mt-1 block text-vx-fg-muted">Shape lyrics and structure.</span></div>
@@ -645,7 +645,7 @@ function CustomDraftFields({ custom, entitlements, quote, busy, clearQuote, quot
             <button type="button" onClick={() => custom.update('model_id', availableCustomModel.id)} className="vx-press mt-4 inline-flex min-h-11 items-center justify-center rounded-full bg-vx-accent px-5 text-sm font-extrabold text-vx-accent-ink hover:bg-vx-accent-hover">Use {availableCustomModel.name}</button>
           ) : (
             <Link href="/app/credits#credit-subscriptions" onClick={openPlans} aria-disabled={upgradeBusy || Boolean(custom.conflict)} className="vx-press mt-4 inline-flex min-h-11 items-center justify-center rounded-full bg-vx-accent px-5 text-sm font-extrabold text-vx-accent-ink hover:bg-vx-accent-hover aria-disabled:pointer-events-none aria-disabled:opacity-40">
-              {upgradeBusy ? 'Saving before plans…' : 'Compare plans for Custom'}
+              {upgradeBusy ? 'Saving before leaving…' : 'View plans and availability'}
             </Link>
           )}
           {upgradeError ? <p role="alert" className="mt-3 text-sm text-vx-danger">{upgradeError}</p> : null}

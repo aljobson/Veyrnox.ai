@@ -389,6 +389,7 @@ test('F02-H3 paid model selection produces the ACE-Step 1.5 live-catalog quote',
 test('F03-H1 Custom stays a complete private writing workspace before plan upgrade', async ({ page }) => {
   await installMockSession(page);
   const saves = [];
+  let releaseLastSecondSave = null;
   const draft = {
     id: null, model_id: 'ace-step', lyrics: '', styles: '', title: '',
     revision: 0, updated_at: null,
@@ -402,6 +403,7 @@ test('F03-H1 Custom stays a complete private writing workspace before plan upgra
     if (request.method() === 'PUT' && path.endsWith('/music/drafts/custom')) {
       const body = request.postDataJSON();
       saves.push(body);
+      if (body.title === 'Last-second title') await new Promise((resolve) => { releaseLastSecondSave = resolve; });
       return route.fulfill({ json: { draft: { ...draft, ...body, id: 'acfd2d0d-8276-4fbb-9c4f-39f401a31589', revision: 1, updated_at: new Date().toISOString() } } });
     }
     return route.abort('failed');
@@ -415,8 +417,8 @@ test('F03-H1 Custom stays a complete private writing workspace before plan upgra
   await expect(styles).toBeVisible();
   await expect(title).toBeVisible();
   await expect(page.getByRole('button', { name: 'Focus lyrics' })).toBeEnabled();
-  await expect(page.getByRole('region', { name: 'Custom generation availability' })).toContainText('Draft now. Generate with a plan.');
-  await expect(page.getByRole('link', { name: 'Compare plans for Custom' })).toHaveAttribute('href', '/app/credits#credit-subscriptions');
+  await expect(page.getByRole('region', { name: 'Custom generation availability' })).toContainText('Custom generation is unavailable right now.');
+  await expect(page.getByRole('link', { name: 'View plans and availability' })).toHaveAttribute('href', '/app/credits#credit-subscriptions');
 
   await lyrics.fill('[Verse]\nA private first line');
   await styles.fill('Warm piano, restrained percussion, 84 bpm');
@@ -436,9 +438,15 @@ test('F03-H1 Custom stays a complete private writing workspace before plan upgra
   expect(accessibility.violations, accessibility.violations.map((item) => `${item.id}: ${item.help}`).join('\n')).toEqual([]);
 
   await title.fill('Last-second title');
-  await page.getByRole('link', { name: 'Compare plans for Custom' }).click();
+  await page.getByRole('link', { name: 'View plans and availability' }).evaluate((node) => node.click());
+  await expect.poll(() => typeof releaseLastSecondSave).toBe('function');
+  await title.fill('Typed during save');
+  releaseLastSecondSave();
+  await expect(page.getByRole('alert')).toContainText('Save the private draft before comparing plans. Your text remains here.');
+  await expect(page).toHaveURL(/\/app\/music\/create/);
+  await page.getByRole('link', { name: 'View plans and availability' }).click();
   await expect(page).toHaveURL(/\/app\/credits#credit-subscriptions$/);
-  expect(saves.at(-1)?.title).toBe('Last-second title');
+  expect(saves.at(-1)?.title).toBe('Typed during save');
 });
 
 test('F03-H1b paid access offers the available Custom model instead of an upgrade', async ({ page }) => {
@@ -455,7 +463,7 @@ test('F03-H1b paid access offers the available Custom model instead of an upgrad
 
   await page.goto('/app/music/create?mode=custom');
   await expect(page.getByRole('region', { name: 'Custom generation availability' })).toContainText('Custom generation is already available.');
-  await expect(page.getByRole('link', { name: 'Compare plans for Custom' })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'View plans and availability' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Use ACE-Step 1.5' }).click();
   await expect(page.getByRole('region', { name: 'Custom generation' })).toBeVisible();
 });
@@ -919,8 +927,9 @@ test('F03-H2 Custom lyrics autosave privately, survive reload and never request 
   expect(serverDraft.styles).toBe('Warm piano, restrained percussion, 84 bpm; wide stereo space with a close, intimate centre');
   expect(serverDraft.title).toBe('Harbour Frame');
   expect(generationCalls).toBe(0);
-  await expect(page.getByRole('region', { name: 'Custom generation availability' })).toContainText('Draft now. Generate with a plan.');
-  await expect(page.getByRole('link', { name: 'Compare plans for Custom' })).toHaveAttribute('href', '/app/credits#subscriptions');
+  await expect(page.getByRole('region', { name: 'Custom generation availability' })).toContainText('Custom generation is already available.');
+  await expect(page.getByRole('button', { name: 'Use ACE-Step 1.5' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'View plans and availability' })).toHaveCount(0);
   await page.screenshot({ path: 'replica/suno/clone-screens/S06-server-mobile.png', fullPage: true });
 
   await page.reload();
