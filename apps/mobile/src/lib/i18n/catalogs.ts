@@ -25,7 +25,7 @@ export const CATALOG_LOADERS = {
 } satisfies Record<Exclude<LocaleCode, 'en'>, { app(): Messages; web(): Messages }>;
 
 type TranslatedLocale = keyof typeof CATALOG_LOADERS;
-const merged: Partial<Record<LocaleCode, Messages>> = { en: { ...en, ...MUSIC_STUDIO_ASSISTANT_NATIVE_TRANSLATIONS.en, ...musicRemixByLocale.en, ...musicSourcesByLocale.en } };
+const merged: Partial<Record<LocaleCode, Messages>> = { en: { ...en, ...MUSIC_STUDIO_ASSISTANT_NATIVE_TRANSLATIONS.en, ...musicSourcesByLocale.en } };
 export const WEB_CATALOGS: Catalogs = {};
 export const APP_CATALOGS = {} as Readonly<Record<TranslatedLocale, Messages>>;
 export const CATALOGS: Catalogs = { en: merged.en! };
