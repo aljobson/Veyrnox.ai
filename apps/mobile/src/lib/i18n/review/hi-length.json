@@ -2808,6 +2808,12 @@
     "ratio": 1.73
   },
   {
+    "id": "musicLyricist.retry",
+    "english": "Retry",
+    "translation": "फिर कोशिश करें",
+    "ratio": 2.8
+  },
+  {
     "id": "music.lyricAssistant.reviewInMusic",
     "english": "Review in Music",
     "translation": "म्यूज़िक में समीक्षा करें",
