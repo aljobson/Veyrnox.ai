@@ -173,6 +173,20 @@ test('advanced controls are capability-gated progressive disclosure and never re
     expect(button(t('music.create.advanced.hide')).props.accessibilityState.expanded).toBe(true);
     expect(text(t('music.create.advanced.bpmInvalid', { min: 40, max: 220 })).length).toBeGreaterThan(0);
 });
+test('Lyricist profiles render only for Custom vocals', async () => {
+    await mount();
+    expect(text(t('musicLyricist.title'))).toHaveLength(0);
+    await mode('custom');
+    expect(text(t('musicLyricist.title'))).toHaveLength(0);
+    const instrumental = root.container.queryAll(n => n.props.accessibilityLabel === t('music.create.instrumental')
+        && typeof n.props.onChange === 'function')[0];
+    await act(async () => instrumental.props.onChange({ nativeEvent: { value: false } }));
+    expect(text(t('musicLyricist.title')).length).toBeGreaterThan(0);
+    await act(async () => instrumental.props.onChange({ nativeEvent: { value: true } }));
+    expect(text(t('musicLyricist.title'))).toHaveLength(0);
+    await mode('simple');
+    expect(text(t('musicLyricist.title'))).toHaveLength(0);
+});
 test('custom saves draft then quotes saved revision and resolves conflict', async () => {
     await mount(); await mode('custom'); await edit('lyrics', 'My lyrics'); await edit('styles', 'warm piano');
     let conflicted = false;
