@@ -11,7 +11,7 @@ const config = parseJsonc(readFileSync(new URL('../wrangler.jsonc', import.meta.
 const LEGACY = {
   production: {
     CREATOR_APPLICATIONS_ENABLED: 'true', CREATOR_CONTENT_ENABLED: 'true', SOCIAL_CINEMA_PROFILES_ENABLED: 'true', CREATOR_UPLOADS_ENABLED: 'true',
-    CINEMA_SUBSCRIPTIONS_ENABLED: 'false', CINEMA_UNLOCKS_ENABLED: 'false', CINEMA_FREE_CEILING_ENABLED: 'true',
+    CINEMA_SUBSCRIPTIONS_ENABLED: 'false', CINEMA_UNLOCKS_ENABLED: 'true', CINEMA_FREE_CEILING_ENABLED: 'true',
     CINEMA_PUBLISHING_ENABLED: 'true', CINEMA_VIEWING_ENABLED: 'true',
   },
   staging: {
