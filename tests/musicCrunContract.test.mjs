@@ -120,6 +120,9 @@ test('entitlements use the active contract table and catalog price', () => {
   assert.equal(result.models[0].credits_per_candidate, 4);
   assert.equal(result.models[0].total_credits, 4);
   assert.equal(result.models[0].controls.tempo_key_meter, false);
+  assert.equal(result.models[0].name, 'Veyrnox Music');
+  assert.deepEqual(result.models[0].controls.suno_model_labels, { v6: 'Balanced' });
+  assert.equal(result.models[0].id, 'ace-step');
 });
 
 test('entitlements fail closed for the shared account, endpoint and selected Suno-model breakers', () => {
@@ -139,6 +142,8 @@ test('entitlements fail closed for the shared account, endpoint and selected Sun
   assert.equal(perModel.models[0].available, false);
   assert.equal(perModel.models[1].available, true);
   assert.deepEqual(perModel.models[1].controls.suno_model, ['v6_mini']);
+  assert.deepEqual(perModel.models[1].controls.suno_model_labels, { v6_mini: 'Fast' });
+  assert.deepEqual(Object.keys(perModel.models[1].controls.suno_model_labels), perModel.models[1].controls.suno_model);
 });
 
 test('song projection keeps an asset-less row and makes every capability null-safe', async () => {

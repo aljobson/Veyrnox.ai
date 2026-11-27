@@ -6720,7 +6720,7 @@ export default {
     "music.create.lyrics_required": "为自定义人声歌曲添加歌词，或选择纯音乐。",
     "music.create.contract_stale": "音乐提供商已更改。草稿已刷新；请重新查看价格。",
     "music.create.suno.offer": "音乐模型",
-    "music.create.suno.model": "Suno 模型",
+    "music.create.suno.model": "生成风格",
     "music.create.suno.style": "风格",
     "music.create.suno.exclude": "排除风格",
     "music.create.suno.selectStyles": "选择风格",

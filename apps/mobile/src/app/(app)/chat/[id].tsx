@@ -90,7 +90,6 @@ export default function Conversation() {
     const busy = useRef(false); // synchronous: a second tap must not start a second turn
     const musicLimit = typeof lyricHandoff === 'string' ? musicLyricProposalLimit(lyricHandoff, id) : null;
     const musicProposal = musicLimit ? latestServerMusicLyricProposal(messages ?? [], sending, musicLimit, serverMessageIds.current) : null;
-
     function reviewLyricsInMusic() {
         if (typeof lyricHandoff !== 'string' || !musicProposal
             || !stageMusicLyricProposal(lyricHandoff, id, musicProposal.messageId,
