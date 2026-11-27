@@ -1,13 +1,13 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
-  "explore.templateTotalWithCrun": "{ready} prêts · {previews} aperçus CRUN",
-  "templates.kind.crun": "Aperçus CRUN",
-  "crunTemplates.providerLabel": "Fournisseur CRUN",
-  "crunTemplates.count": "{loaded} aperçus chargés sur {total}",
-  "crunTemplates.help": "Parcourez le catalogue CRUN en direct. Ces éléments sont uniquement des aperçus jusqu’à l’activation des tarifs et de la génération dans Veyrnox.",
-  "crunTemplates.previewOnly": "Aperçu uniquement",
-  "crunTemplates.previewLabel": "Aperçu CRUN de {name}",
+  "explore.templateTotalWithCrun": "{previews} modèles",
+  "templates.kind.crun": "Modèles",
+  "crunTemplates.providerLabel": "Fournisseur de modèles",
+  "crunTemplates.count": "{loaded} modèles chargés sur {total}",
+  "crunTemplates.help": "Parcourez les modèles de Kling, Seedance et Vidu. La génération sera disponible une fois les tarifs Veyrnox et la preuve payante validés.",
+  "crunTemplates.previewOnly": "Pas encore exécutable",
+  "crunTemplates.previewLabel": "Modèle {name}",
   "crunTemplates.previewUnavailable": "Aperçu indisponible",
   "crunTemplates.inputCount": "Images d’entrée : {count}",
   "crunTemplates.input": "Entrée : {input}",

@@ -199,7 +199,7 @@ export const SECONDARY_NAV_CATEGORIES = [
   { href: '/#explore',   label: 'Explore', group: 'Discover' },
   { href: '/oddlings', studioHref: '/app/oddlings', label: 'Oddlings', group: 'Discover' },
   { href: '/models',     label: 'Models', group: 'Discover' },
-  { href: '/presets',   label: 'Templates', group: 'Discover' },
+  { href: '/app/templates', label: 'Templates', group: 'Discover' },
   { href: '/guides',    label: 'Guides', group: 'Learn' },
   { href: '/mcp',       label: 'MCP', group: 'Build' },
   { href: '/developers', label: 'Developers', group: 'Build' },

@@ -13,6 +13,7 @@ test('normalizes the documented Kling template shape and drops unsafe media URLs
   }, 1, 50);
   assert.equal(catalog.total, 226);
   assert.deepEqual(catalog.templates[0], {
+    catalogId: 'kling:1:1:critter_paste', providerTemplateId: 'critter_paste',
     id: 'critter_paste', name: 'Critter Paste', category: 'Pet', tag: 'NEW', coverUrl: null,
     previewUrl: 'https://s15-kling.klingai.com/demo.mp4', previewKind: 'video', providerCredits: 200.7,
     requirements: [{ label: 'Resolution', value: '1080p' }, { label: 'Recommended Image Types', value: 'Single animal' }],
@@ -32,6 +33,7 @@ test('normalizes Vidu templates, including image previews and bounded input inst
   }, 1, 50);
   assert.equal(catalog.total, 120);
   assert.deepEqual(catalog.templates[0], {
+    catalogId: 'vidu:1:1:Vintage_Moment_of_Mom', providerTemplateId: 'Vintage_Moment_of_Mom',
     id: 'Vintage_Moment_of_Mom', name: 'Vintage Moment of Mom', category: 'Festival', tag: 'HOT',
     coverUrl: 'https://scene.cf.vidu.studio/cover.png', previewUrl: 'https://scene.cf.vidu.studio/preview.png', previewKind: 'image',
     providerCredits: 28.8, inputRequirement: 'Only one person', requirements: [

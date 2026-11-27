@@ -13,8 +13,8 @@ describe('Explore templates header count line', () => {
     ])('%i templates -> "%s" (no model count: it never matched what a template runs on)', (templates, text) => {
         expect(templateCountLabel(en, templates)).toBe(text);
     });
-    it('keeps runnable templates distinct from CRUN previews', () => {
-        expect(templateCountLabel({ ...en, formatNumber: value => value.toLocaleString('en-GB') }, 175, 1088)).toBe('175 ready · 1,088 CRUN previews');
+    it('shows one template catalog with the runnable subset', () => {
+        expect(templateCountLabel({ ...en, formatNumber: value => value.toLocaleString('en-GB') }, 175, 1088)).toBe('1,088 templates');
     });
     const locales = Object.keys(CATALOGS) as LocaleCode[];
     it.each(locales)('%s fills the count, no placeholder left', (locale) => {
