@@ -56,6 +56,9 @@ describe('music voice state-change idempotency', { skip: !DATABASE_URL && 'DATAB
       if (!(await one("SELECT to_regclass('public.music_source_assets') IS NOT NULL AS ready")).ready) {
         await client.query('CREATE TABLE public.music_source_assets (r2_key TEXT, status TEXT)');
       }
+      if (!(await one("SELECT to_regclass('public.editor_library_renders') IS NOT NULL AS ready")).ready) {
+        await client.query('CREATE TABLE public.editor_library_renders (owner_id UUID, r2_key TEXT)');
+      }
       await client.query(`ALTER TABLE public.users
         ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ,
         ADD COLUMN IF NOT EXISTS frozen_at TIMESTAMPTZ`);
