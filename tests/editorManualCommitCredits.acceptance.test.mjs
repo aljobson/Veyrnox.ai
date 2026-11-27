@@ -17,6 +17,7 @@ const projectConcurrent = '55555555-5555-4555-8555-555555555555';
 const projectUnion = '66666666-6666-4666-8666-666666666666';
 const projectNull = '77777777-7777-4777-8777-777777777777';
 const projectStatus = '88888888-8888-4888-8888-888888888888';
+const projectCrossRoute = '12121212-1212-4212-8212-121212121212';
 
 async function psql(sql) {
   const { stdout } = await run('psql', [url, '--no-psqlrc', '--set', 'ON_ERROR_STOP=1', '--tuples-only', '--no-align', '--command', sql], { maxBuffer: 4 * 1024 * 1024 });
@@ -67,6 +68,8 @@ test('manual editor debit migration is atomic, idempotent and invisible', { skip
     CREATE OR REPLACE FUNCTION private.generation_request_matches(jsonb,jsonb) RETURNS boolean LANGUAGE sql IMMUTABLE AS $$ SELECT true $$;
     CREATE OR REPLACE FUNCTION private.save_project_document(p_project uuid,p_expected integer,p_content jsonb,p_key text,p_unused jsonb)
     RETURNS jsonb LANGUAGE plpgsql AS $$ DECLARE current_revision integer; next_revision integer; existing public.project_document_versions; BEGIN
+      PERFORM pg_advisory_xact_lock(hashtextextended(auth.uid()::text,34));
+      PERFORM 1 FROM public.projects WHERE id=p_project FOR UPDATE;
       SELECT * INTO existing FROM public.project_document_versions WHERE project_id=p_project AND actor_id=auth.uid() AND request_key=p_key;
       IF FOUND THEN
         IF existing.expected_revision<>p_expected OR existing.document IS DISTINCT FROM p_content THEN RAISE EXCEPTION 'IDEMPOTENCY_CONFLICT'; END IF;
@@ -78,14 +81,17 @@ test('manual editor debit migration is atomic, idempotent and invisible', { skip
       next_revision:=current_revision+1;
       INSERT INTO public.project_document_versions(project_id,revision,actor_id,request_key,expected_revision,document)
         VALUES(p_project,next_revision,auth.uid(),p_key,p_expected,p_content);
-      RETURN jsonb_build_object('ok',true,'revision',next_revision); END $$;
+      RETURN jsonb_build_object('ok',true,'revision',next_revision,'idempotent',false); END $$;
   `);
   await psql(migration);
   await psql(`CREATE OR REPLACE FUNCTION public.ledger_debit(p_user uuid,p_key text,p_credits integer,p_reason text,p_model text,p_inputs jsonb,p_a integer,p_b integer)
-    RETURNS jsonb LANGUAGE sql AS $$ SELECT private.ledger_debit_for_admission(p_user,p_key,p_credits,p_reason,p_model,p_inputs,p_a,p_b,false) $$;`);
+    RETURNS jsonb LANGUAGE plpgsql AS $$ BEGIN
+      IF p_inputs->>'project_id'='${projectCrossRoute}' THEN PERFORM pg_sleep(0.4); END IF;
+      RETURN private.ledger_debit_for_admission(p_user,p_key,p_credits,p_reason,p_model,p_inputs,p_a,p_b,false); END $$;`);
+  await psql(migration);
   await psql(`INSERT INTO public.users(id,auth_id) VALUES('${user}','${actor}'),('${otherUser}','${otherActor}');
     INSERT INTO public.projects(id,user_id) VALUES('${project}','${user}'),('${projectTwo}','${user}'),('${projectConcurrent}','${user}'),
-      ('${projectUnion}','${user}'),('${projectNull}','${user}'),('${projectStatus}','${user}');
+      ('${projectUnion}','${user}'),('${projectNull}','${user}'),('${projectStatus}','${user}'),('${projectCrossRoute}','${user}');
     INSERT INTO public.credit_balances(user_id,balance,free_balance,subscription_balance,subscription_expires_at,subscription_cycle)
       VALUES('${user}',20,20,0,now()+interval '1 month',1);`);
 
@@ -157,6 +163,21 @@ test('manual editor debit migration is atomic, idempotent and invisible', { skip
       FROM public.credit_balances WHERE user_id='${user}';`), '15|1');
   });
 
+  await t.test('paid and free routes serialize the same request key before debit', async () => {
+    await psql(`UPDATE public.credit_balances SET balance=20,free_balance=20 WHERE user_id='${user}';`);
+    const paid = run('psql', [url, '--no-psqlrc', '--set', 'ON_ERROR_STOP=1', '--tuples-only', '--no-align', '--command',
+      saveSql(projectCrossRoute, 0, doc(['cross-route']), 'cross-route-key', 5)]);
+    await new Promise(resolve => setTimeout(resolve, 100));
+    const free = run('psql', [url, '--no-psqlrc', '--set', 'ON_ERROR_STOP=1', '--tuples-only', '--no-align', '--command',
+      `BEGIN; SELECT set_config('request.jwt.claim.sub','${actor}',true); SELECT private.save_project_document('${projectCrossRoute}',0,'${doc(['cross-route'])}'::jsonb,'cross-route-key',NULL::jsonb); COMMIT;`]);
+    const [paidResult, freeResult] = await Promise.all([paid, free]);
+    assert.match(paidResult.stdout, /"idempotent": false/);
+    assert.match(freeResult.stdout, /"idempotent": true/);
+    assert.equal(await psql(`SELECT balance||'|'||manual_commit_credits||'|'||(SELECT count(*) FROM public.jobs WHERE inputs->>'project_id'='${projectCrossRoute}')
+      FROM public.credit_balances b CROSS JOIN public.project_document_versions v
+      WHERE b.user_id='${user}' AND v.project_id='${projectCrossRoute}';`), '15|5|1');
+  });
+
   await t.test('all referenced local media are chargeable despite client-controlled metadata', async () => {
     const builtIn = JSON.stringify({ schema_version: 3, timeline: {
       media: {
@@ -201,7 +222,7 @@ test('manual editor debit migration is atomic, idempotent and invisible', { skip
 
   await t.test('exact-key status waits behind rollback and returns false', async () => {
     const rollingBack = run('psql', [url, '--no-psqlrc', '--set', 'ON_ERROR_STOP=1', '--tuples-only', '--no-align', '--command',
-      `BEGIN; SELECT set_config('request.jwt.claim.sub','${actor}',true); SELECT pg_advisory_xact_lock(hashtextextended('${actor}:${projectStatus}',621)); SELECT pg_sleep(0.4); ROLLBACK;`]);
+      `BEGIN; SELECT set_config('request.jwt.claim.sub','${actor}',true); SELECT pg_advisory_xact_lock(hashtextextended('${actor}',34)); SELECT pg_sleep(0.4); ROLLBACK;`]);
     await new Promise(resolve => setTimeout(resolve, 80));
     const started = Date.now();
     const status = await psql(`BEGIN; SELECT set_config('request.jwt.claim.sub','${actor}',true); SELECT public.manual_editor_commit_status('${projectStatus}','status-rollback-key'); COMMIT;`);

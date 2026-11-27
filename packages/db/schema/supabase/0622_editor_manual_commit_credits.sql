@@ -23,16 +23,26 @@ REVOKE ALL ON TABLE public.editor_manual_commit_config FROM PUBLIC,anon,authenti
 -- Mark the exact document version written by the paid endpoint. Reconciliation
 -- must never mistake an ordinary save that reused the request key for payment.
 ALTER TABLE public.project_document_versions
-  ADD COLUMN manual_commit_credits integer,
-  ADD COLUMN manual_commit_job_id uuid REFERENCES public.jobs(id) ON DELETE RESTRICT,
-  ADD COLUMN manual_commit_fingerprint text,
-  ADD CONSTRAINT project_document_versions_manual_commit_check CHECK (
-    (manual_commit_credits IS NULL AND manual_commit_job_id IS NULL AND manual_commit_fingerprint IS NULL)
-    OR (manual_commit_credits IN (0,5)
-      AND manual_commit_fingerprint ~ '^[0-9a-f]{64}$'
-      AND ((manual_commit_credits=0 AND manual_commit_job_id IS NULL)
-        OR (manual_commit_credits=5 AND manual_commit_job_id IS NOT NULL)))
-  );
+  ADD COLUMN IF NOT EXISTS manual_commit_credits integer,
+  ADD COLUMN IF NOT EXISTS manual_commit_job_id uuid,
+  ADD COLUMN IF NOT EXISTS manual_commit_fingerprint text;
+DO $$ BEGIN
+  IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.project_document_versions'::regclass
+      AND conname='project_document_versions_manual_commit_job_id_fkey') THEN
+    ALTER TABLE public.project_document_versions ADD CONSTRAINT project_document_versions_manual_commit_job_id_fkey
+      FOREIGN KEY(manual_commit_job_id) REFERENCES public.jobs(id) ON DELETE RESTRICT;
+  END IF;
+  IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.project_document_versions'::regclass
+      AND conname='project_document_versions_manual_commit_check') THEN
+    ALTER TABLE public.project_document_versions ADD CONSTRAINT project_document_versions_manual_commit_check CHECK (
+      (manual_commit_credits IS NULL AND manual_commit_job_id IS NULL AND manual_commit_fingerprint IS NULL)
+      OR (manual_commit_credits IN (0,5)
+        AND manual_commit_fingerprint ~ '^[0-9a-f]{64}$'
+        AND ((manual_commit_credits=0 AND manual_commit_job_id IS NULL)
+          OR (manual_commit_credits=5 AND manual_commit_job_id IS NOT NULL)))
+    );
+  END IF;
+END $$;
 CREATE INDEX IF NOT EXISTS project_document_versions_manual_commit_job_idx
   ON public.project_document_versions(manual_commit_job_id);
 
@@ -118,7 +128,11 @@ BEGIN
   IF p_expected_credits IS NULL OR p_expected_credits NOT IN (0,5) THEN
     RETURN jsonb_build_object('ok',false,'code','PRICE_CHANGED','expected_credits',5);
   END IF;
-  PERFORM pg_advisory_xact_lock(hashtextextended(actor::text||':'||p_project::text,621));
+  -- Take the exact same actor and project locks as the canonical free-save
+  -- route before checking the request key or debiting. A concurrent free save
+  -- can therefore never insert this key between the replay check and update.
+  PERFORM pg_advisory_xact_lock(hashtextextended(actor::text,34));
+  PERFORM 1 FROM public.projects WHERE id=p_project FOR UPDATE;
   IF coalesce(private.project_role(p_project),'') NOT IN ('OWNER','ADMIN','CREATOR','EDITOR')
     THEN RAISE EXCEPTION 'NOT_FOUND' USING ERRCODE='PT404'; END IF;
   IF NOT private.project_document_within_bounds(p_content,p_project)
@@ -211,7 +225,8 @@ BEGIN
   -- Serialize behind any already-issued paid save for this actor/project.
   -- Once this lock is acquired, a missing exact key is an authoritative
   -- rollback/non-arrival result rather than a snapshot taken mid-transaction.
-  PERFORM pg_advisory_xact_lock(hashtextextended(actor::text||':'||p_project::text,621));
+  PERFORM pg_advisory_xact_lock(hashtextextended(actor::text,34));
+  PERFORM 1 FROM public.projects WHERE id=p_project FOR UPDATE;
   SELECT v.revision INTO saved_revision FROM public.project_document_versions v
    WHERE v.project_id=p_project AND v.actor_id=actor AND v.request_key=p_request_key
      AND v.manual_commit_credits IS NOT NULL

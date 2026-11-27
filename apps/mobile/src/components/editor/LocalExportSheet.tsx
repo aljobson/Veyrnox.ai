@@ -40,7 +40,9 @@ export type LocalExportResolution = '720p' | '1080p' | '4k';
 export type LocalExportFrameRate = 24 | 25 | 30 | 60;
 export const selectedLocalExportDimensions = (canvas: Canvas, resolution: LocalExportResolution) => {
     const edge = resolution === '720p' ? 720 : resolution === '1080p' ? 1080 : 2160;
-    return canvasResolutionSize(canvas.aspect_ratio, edge) ?? fittedLocalExportDimensions(canvas);
+    const desired = canvasResolutionSize(canvas.aspect_ratio, edge) ?? fittedLocalExportDimensions(canvas);
+    if (desired.width * desired.height <= MAX_LOCAL_EXPORT_PIXELS && desired.width <= 1280 && desired.height <= 1280) return desired;
+    return fittedLocalExportDimensions(canvas);
 };
 export const LOCAL_EXPORT_QUALITY: Readonly<Record<LocalExportQuality, { videoBitRate: number; audioBitRate: number }>> = Object.freeze({
     compact: { videoBitRate: 3_000_000, audioBitRate: 128_000 },
@@ -76,6 +78,7 @@ export function LocalExportSheet({ visible, api, account, projectId, revision, t
     const [frameRate, setFrameRate] = useState<LocalExportFrameRate>([24, 25, 30, 60].includes(timeline.fps) ? timeline.fps as LocalExportFrameRate : 30);
     const [autoSave, setAutoSave] = useState(true), [saved, setSaved] = useState(false), [saving, setSaving] = useState(false), [confirming, setConfirming] = useState(false);
     const [pendingCredits, setPendingCredits] = useState<number | null>(null);
+    const [commitAttempted, setCommitAttempted] = useState(false);
     const exportIdentity = `${projectId}:${revision}`;
     const contentIdentity = useMemo(() => JSON.stringify([timeline, canvas]), [timeline, canvas]);
     const controller = useRef<AbortController | null>(null), mounted = useRef(true), latestArtifact = useRef(artifact), lastIdentity = useRef(exportIdentity),
@@ -93,14 +96,27 @@ export function LocalExportSheet({ visible, api, account, projectId, revision, t
         controller.current?.abort(); controller.current = null;
         saveToken.current += 1;
         const value = latestArtifact.current; latestArtifact.current = null; if (value) void releaseArtifact(value);
-        setArtifact(null); setError(null); setProgress(null); setSaved(false); setSaving(false); setPendingCredits(null); setPhase('idle');
+        setArtifact(null); setError(null); setProgress(null); setSaved(false); setSaving(false); setPendingCredits(null); setCommitAttempted(false); setPhase('idle');
     }, [contentIdentity, exportIdentity, pendingCredits, projectId]);
     const close = () => { if (phase !== 'exporting' && phase !== 'verifying' && !saving && !confirming) onClose(); };
     const completeCommittedArtifact = async (target: ExportArtifact, committedRevision: number, sessionCurrent: () => boolean = () => true) => {
         lastIdentity.current = `${projectId}:${committedRevision}`;
         lastContentIdentity.current = contentIdentity;
-        latestArtifact.current = target; setArtifact(target); setPendingCredits(null); setPhase('done');
-        if (!autoSave || target.kind !== 'mp4') return;
+        latestArtifact.current = target; setArtifact(target); setPendingCredits(null); setCommitAttempted(false); setPhase('done');
+    };
+    const commitDeliveredArtifact = async (target: ExportArtifact, credits: number, sessionCurrent: () => boolean = () => true) => {
+        setCommitAttempted(true); setConfirming(true); setError(null); setPhase('verifying');
+        const committedRevision = await onCommit(credits).catch(() => null);
+        if (!mounted.current || latestArtifact.current?.artifactId !== target.artifactId) return;
+        setConfirming(false);
+        if (!sessionCurrent()) {
+            await releaseArtifact(target); latestArtifact.current = null; setArtifact(null); setPendingCredits(null);
+            setError('stale'); setPhase('error'); return;
+        }
+        if (committedRevision === null) { setError('credit-failed'); setPhase('error'); return; }
+        await completeCommittedArtifact(target, committedRevision);
+    };
+    const saveAndCommit = async (target: Extract<ExportArtifact, { kind: 'mp4' }>, credits: number | null, sessionCurrent: () => boolean = () => true) => {
         const token = ++saveToken.current; setSaving(true);
         const stillCurrent = () => mounted.current && sessionCurrent() && latestArtifact.current?.artifactId === target.artifactId;
         const outcome = await saveLocalExportToPhotos(target.uri, stillCurrent);
@@ -112,6 +128,7 @@ export function LocalExportSheet({ visible, api, account, projectId, revision, t
         }
         else if (!sessionCurrent()) { setError('stale'); setPhase('error'); }
         setSaving(false);
+        if (outcome === 'saved' && credits !== null && stillCurrent()) await commitDeliveredArtifact(target, credits, sessionCurrent);
     };
     const start = async () => {
         if (controller.current || confirming) return;
@@ -124,7 +141,7 @@ export function LocalExportSheet({ visible, api, account, projectId, revision, t
         if (expectedCredits === null) return;
         const frozen = JSON.parse(JSON.stringify(timeline)) as Timeline, abort = new AbortController(), task = beginSessionTask(); controller.current = abort;
         if (artifact) await releaseArtifact(artifact).catch(() => undefined);
-        setArtifact(null); setError(null); setProgress(null); setSaved(false); setSaving(false); setPendingCredits(null); setPhase('exporting');
+        setArtifact(null); setError(null); setProgress(null); setSaved(false); setSaving(false); setPendingCredits(null); setCommitAttempted(false); setPhase('exporting');
         const preset = LOCAL_EXPORT_QUALITY[quality];
         let prepared: EditorExportSourceResult<EditorLocalExportResult | EditorAudioExportResult>;
         try { prepared = await withEditorExportSources<EditorLocalExportResult | EditorAudioExportResult>({ api, task, account, projectId, timeline: frozen, localMediaUris, signal: abort.signal }, materialized => {
@@ -160,21 +177,12 @@ export function LocalExportSheet({ visible, api, account, projectId, revision, t
         }
         const result = prepared.value;
         if (result.ok) {
-            setPhase('verifying'); setProgress(null);
-            const committedRevision = await onCommit(expectedCredits).catch(() => null);
-            if (!mounted.current || controller.current !== null || !task.current()) {
-                await releaseArtifact(result.artifact); return;
-            }
-            if (committedRevision === null) {
-                // A lost paid response may have committed and debited already.
-                // Retain the completed render and retry the exact-key status
-                // reconciliation instead of deleting the user's only output.
-                latestArtifact.current = result.artifact; setArtifact(result.artifact); setPendingCredits(expectedCredits);
-                setError('credit-failed'); setPhase('error'); setProgress(null); return;
-            }
-            // Adopt the paid identity before React delivers the new prop so the
-            // freshly rendered artifact is not mistaken for stale output.
-            await completeCommittedArtifact(result.artifact, committedRevision, task.current);
+            // A local export is charged only after the finished file has been
+            // delivered. That ordering guarantees that a session change or
+            // unmount cannot consume credits and then delete the only copy.
+            latestArtifact.current = result.artifact; setArtifact(result.artifact); setPendingCredits(expectedCredits);
+            setCommitAttempted(false); setPhase('done'); setProgress(null);
+            if (autoSave && result.artifact.kind === 'mp4') await saveAndCommit(result.artifact, expectedCredits, task.current);
         }
         else if (result.code === 'cancelled') { setPhase('idle'); setProgress(null); }
         else { setError(result.code === 'invalid-timeline' ? 'invalid-timeline' : result.code === 'unsupported-frame' ? 'unsupported-frame'
@@ -182,7 +190,7 @@ export function LocalExportSheet({ visible, api, account, projectId, revision, t
     };
     const retryCommit = async () => {
         const retained = latestArtifact.current;
-        if (!retained || pendingCredits === null || confirming) return;
+        if (!retained || pendingCredits === null || !commitAttempted || confirming) return;
         setConfirming(true); setError(null); setPhase('verifying');
         const committedRevision = await onCommit(pendingCredits).catch(() => null);
         if (!mounted.current || latestArtifact.current?.artifactId !== retained.artifactId) return;
@@ -190,15 +198,12 @@ export function LocalExportSheet({ visible, api, account, projectId, revision, t
         if (committedRevision === null) { setError('credit-failed'); setPhase('error'); return; }
         await completeCommittedArtifact(retained, committedRevision);
     };
-    const save = async () => { if (!artifact || artifact.kind !== 'mp4' || saving) return; const target = artifact, token = ++saveToken.current; setSaving(true); setError(null);
-        const stillCurrent = () => mounted.current && latestArtifact.current?.artifactId === target.artifactId;
-        const outcome = await saveLocalExportToPhotos(target.uri, stillCurrent);
-        if (!mounted.current || saveToken.current !== token) return;
-        if (stillCurrent()) { if (outcome === 'saved') setSaved(true); else if (outcome === 'permission') setError('save-permission');
-            else if (outcome === 'failed') setError('save-failed'); }
-        setSaving(false); };
+    const save = async () => { if (!artifact || artifact.kind !== 'mp4' || saving) return; setError(null);
+        await saveAndCommit(artifact, pendingCredits !== null && !commitAttempted ? pendingCredits : null); };
     const share = async () => { if (!artifact) return; try { if (!await Sharing.isAvailableAsync()) { setError('share-unavailable'); return; }
-        await Sharing.shareAsync(artifact.uri, { mimeType: artifact.kind === 'wav' ? 'audio/wav' : 'video/mp4' }); } catch { setError('write-failed'); } };
+        await Sharing.shareAsync(artifact.uri, { mimeType: artifact.kind === 'wav' ? 'audio/wav' : 'video/mp4' });
+        if (pendingCredits !== null && !commitAttempted) await commitDeliveredArtifact(artifact, pendingCredits);
+    } catch { setError('write-failed'); } };
     const value = Math.round((progress?.value ?? 0) * 100), messageKey = error ? `editorLocalExport.${error}` as Parameters<typeof t>[0] : null;
     const announcedValue = Math.floor(value / 10) * 10, totalFrames = progress?.frames ?? editorLocalExportFrameCount(timeline, frameRate);
     const announcement = messageKey ? t(messageKey) : phase === 'done' && artifact ? t('editorLocalExport.done', { size: formatNumber(artifact.size / 1_000_000, 1) })
@@ -218,7 +223,7 @@ export function LocalExportSheet({ visible, api, account, projectId, revision, t
             <Button label={t('editorScenes.cancel')} onPress={() => controller.current?.abort()} /></> : null}
         {phase === 'verifying' ? <Text style={styles.text}>{t('editorLocalExport.verifying')}</Text> : null}
         {messageKey ? <Text style={styles.error}>{t(messageKey)}</Text> : null}
-        {phase === 'error' && artifact && pendingCredits !== null ? <Button label={t('musicExport.retry')} disabled={confirming} onPress={() => void retryCommit()} /> : null}
+        {phase === 'error' && artifact && pendingCredits !== null && commitAttempted ? <Button label={t('musicExport.retry')} disabled={confirming} onPress={() => void retryCommit()} /> : null}
         {phase === 'idle' || phase === 'error' && pendingCredits === null ? <><View style={styles.readyCard}><View style={styles.readyIcon}><Text style={styles.readyIconText}>{output === 'audio' ? '♫' : '▣'}</Text></View><View style={{ flex: 1 }}><Text style={styles.readyTitle}>{t('editorParity.readyToExport')}</Text><Text style={styles.readyMeta}>{output === 'audio' ? t('editorParity.audioExportMeta', { size: formatNumber(estimatedLocalAudioBytes(timeline) / 1_000_000, 1) }) : t('editorParity.videoExportMeta', { width: selectedLocalExportDimensions(canvas, resolution).width, height: selectedLocalExportDimensions(canvas, resolution).height, fps: frameRate, size: formatNumber(estimatedLocalExportBytes(timeline, quality) / 1_000_000, 1) })}</Text></View></View>
             <Text style={styles.label}>{t('editorParity.output')}</Text><View accessibilityRole="radiogroup" accessibilityLabel={t('editorParity.output')} style={styles.outputSegment}>{(['video', 'audio'] as const).map(value => <Pressable key={value} accessibilityRole="radio" accessibilityLabel={t(value === 'video' ? 'editorSimple.video' : 'editorParity.audioOnly')} accessibilityState={{ checked: output === value }} onPress={() => setOutput(value)} style={[styles.outputChoice, output === value && styles.outputSelected]}><Text style={output === value ? styles.outputSelectedText : styles.outputChoiceText}>{t(value === 'video' ? 'editorSimple.video' : 'editorParity.audioOnly')}</Text></Pressable>)}</View>
             {output === 'video' ? <><Text style={styles.label}>{t('editorParity.resolution')}</Text>
@@ -240,7 +245,7 @@ export function LocalExportSheet({ visible, api, account, projectId, revision, t
             <View style={styles.switchRow}><Text style={styles.text}>{t('editorLocalExport.autoSave')}</Text><Switch accessibilityLabel={rawText(t('editorLocalExport.autoSave'))}
                 value={autoSave} onValueChange={setAutoSave} /></View></> : <Text style={styles.help}>{t('editorParity.audioExportHelp')}</Text>}
             <Button label={output === 'video' && resolution === '4k' ? t('editorParity.continueFourK') : output === 'audio' ? t('editorParity.exportAudio') : t('editorLocalExport.start')} disabled={confirming} onPress={() => void start()} /></> : null}
-        {phase === 'done' && artifact ? <><Text style={styles.text}>{t('editorLocalExport.done', { size: formatNumber(artifact.size / 1_000_000, 1) })}</Text>
+        {(phase === 'done' || phase === 'error' && artifact && pendingCredits !== null && !commitAttempted) && artifact ? <><Text style={styles.text}>{t('editorLocalExport.done', { size: formatNumber(artifact.size / 1_000_000, 1) })}</Text>
             {artifact.kind === 'mp4' ? saving ? <Text style={styles.text}>{t('editorLocalExport.saving')}</Text> : saved ? <Text style={styles.text}>{t('editorLocalExport.saved')}</Text>
                 : <Button label={t('editorLocalExport.save')} onPress={() => void save()} /> : <Text style={styles.help}>{t('editorParity.shareWavHelp')}</Text>}
             <Button label={t('editorServerExport.share')} disabled={saving} onPress={() => void share()} /></> : null}
