@@ -369,7 +369,7 @@ function SpeechCard({
             rows={5}
             disabled={disabled}
             onChange={(event) => onScript(event.target.value)}
-            placeholder={isDubbing ? 'Paste the exact approved translation the speaker should deliver…' : isBabyPodcast ? 'Write the short podcast line your synthetic character should deliver…' : isObject ? 'Write the exact words your object character should say…' : isAnimal ? 'Write the exact words your animal should say…' : isCartoon ? 'Write the exact words your character should say…' : 'Write the exact words your subject should say…'}
+            placeholder={isDubbing ? 'Paste the exact approved translation the speaker should deliver…' : isBabyPodcast ? 'Write the short podcast line your synthetic character should deliver…' : isAnimal ? 'Write the exact words your animal should say…' : isCartoon ? 'Write the exact words your character should say…' : 'Write the exact words your subject should say…'}
           />
           <div className="mt-2 flex flex-wrap justify-between gap-2 text-xs">
             <span className={tooLong ? 'text-vx-danger' : 'text-vx-fg-muted'}>
