@@ -4974,6 +4974,12 @@
     "ratio": 2.14
   },
   {
+    "id": "musicLyricist.retry",
+    "english": "Retry",
+    "translation": "Tentar novamente",
+    "ratio": 3.2
+  },
+  {
     "id": "music.lyricAssistant.retry",
     "english": "Try again",
     "translation": "Tentar novamente",

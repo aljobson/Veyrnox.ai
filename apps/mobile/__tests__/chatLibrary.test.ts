@@ -74,6 +74,8 @@ describe('validatePersonaForm', () => {
     });
     test('the token estimate the server uses is respected (4 characters a token, at most 1000)', () => {
         expect(validatePersonaForm({ ...ok, instructions: 'x'.repeat(4000) })).toMatchObject({ ok: true });
+        expect(validatePersonaForm({ ...ok, instructions: '歌'.repeat(1001) })).toMatchObject({ ok: false });
+        expect(validatePersonaForm({ ...ok, instructions: '歌'.repeat(1000) })).toMatchObject({ ok: true });
     });
     test('a model id must look like one', () => {
         expect(validatePersonaForm({ ...ok, modelId: 'claude-sonnet' })).toMatchObject({ ok: true });
@@ -154,6 +156,21 @@ describe('startFromPersona', () => {
         });
         await expect(startFromPersona({ request } as unknown as ApiClient, { id: 'p1', name: 'E', instructions: 'I', modelId: null, thinking: false, web: false }, 'm')).rejects.toBeInstanceOf(ApiError);
         expect(request.mock.calls.some(([p, i]) => p === '/api/v1/chat/threads/t9' && (i as RequestInit).method === 'DELETE')).toBe(true);
+    });
+    test.each([
+        ['before instructions are patched', false],
+        ['after instructions are patched', true],
+    ] as const)('an account change %s deletes the half-made chat', async (_label, patched) => {
+        let checks = 0;
+        const stillCurrent = (): boolean => patched ? ++checks === 1 : false;
+        const request = jest.fn(async (_path: string, init?: RequestInit) => (init?.method === 'POST' ? { thread: { id: 't9' } } : { ok: true }));
+        await expect(startFromPersona(
+            { request } as unknown as ApiClient,
+            { id: 'p1', name: 'E', instructions: 'I', modelId: null, thinking: false, web: false },
+            'm', stillCurrent,
+        )).rejects.toThrow('account_changed');
+        expect(request.mock.calls.some(([, init]) => (init as RequestInit).method === 'PATCH')).toBe(patched);
+        expect(request.mock.calls.some(([path, init]) => path === '/api/v1/chat/threads/t9' && (init as RequestInit).method === 'DELETE')).toBe(true);
     });
 });
 

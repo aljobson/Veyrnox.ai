@@ -7734,6 +7734,30 @@
     "ratio": 3.09
   },
   {
+    "id": "musicLyricist.retry",
+    "english": "Retry",
+    "translation": "Réessayer",
+    "ratio": 1.8
+  },
+  {
+    "id": "musicLyricist.examples",
+    "english": "Examples you wrote or own",
+    "translation": "Exemples que vous avez écrits ou possédez",
+    "ratio": 1.64
+  },
+  {
+    "id": "musicLyricist.save",
+    "english": "Save profile",
+    "translation": "Enregistrer le profil",
+    "ratio": 1.75
+  },
+  {
+    "id": "musicLyricist.confirmDelete",
+    "english": "Confirm delete",
+    "translation": "Confirmer la suppression",
+    "ratio": 1.71
+  },
+  {
     "id": "music.lyricAssistant.emptyDraft",
     "english": "No lyrics yet.",
     "translation": "Aucune parole pour le moment.",
