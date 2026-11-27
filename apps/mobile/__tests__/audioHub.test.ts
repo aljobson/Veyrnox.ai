@@ -22,17 +22,20 @@ const model = (id: string, name: string, credits: number, modality = 'text-to-au
     ({ id, name, modality, credits, durations: [], gated: false, capabilities: { inputs: { prompt: {} } } }) as unknown as CatalogModel;
 
 describe('audio hub targets', () => {
-    test('falls back to Create before the catalog loads or when nothing fits', () => {
-        expect(audioTarget('music', null)).toEqual({ pathname: '/create' });
+    test('Music stays on its native create route before availability and catalog probes finish', () => {
+        expect(audioTarget('music', null, false)).toEqual({ pathname: '/music/create' });
+        expect(audioTarget('music', null, true)).toEqual({ pathname: '/music/create' });
+    });
+    test('catalog-backed studios fall back to Create when nothing fits', () => {
         expect(audioTarget('speech', [])).toEqual({ pathname: '/create' });
         expect(audioTarget('dialogue', [model('x', 'Other', 1)])).toEqual({ pathname: '/create' });
     });
     test('lip sync always opens the lip-sync feature', () => {
         expect(audioTarget('dub', null)).toEqual({ pathname: '/features/[slug]', params: { slug: 'lip-sync' } });
     });
-    test('music picks the cheapest music model, including one named music/SFX', () => {
+    test('Music uses its native flow while speech still picks the cheapest eligible model', () => {
         const models = [model('suno', 'Suno music', 9), model('ace-step', 'ACE-Step (music/SFX)', 2), model('tts', 'Text to speech voice', 1)];
-        expect(audioTarget('music', models)).toEqual({ pathname: '/create/[modelId]', params: { modelId: 'ace-step' } });
+        expect(audioTarget('music', models)).toEqual({ pathname: '/music/create' });
         expect(audioTarget('speech', models)).toEqual({ pathname: '/create/[modelId]', params: { modelId: 'tts' } });
     });
     test('dialogue picks a dialogue model', () => {
@@ -43,11 +46,6 @@ describe('audio hub targets', () => {
 test('Your music opens the library regardless of generation catalog', () => {
     expect(audioTarget('yourMusic', null)).toEqual({ pathname: '/music' });
     expect(audioTarget('yourMusic', [])).toEqual({ pathname: '/music' });
-});
-
-test('available music opens native create; unavailable retains generic target', () => {
-    expect(audioTarget('music', null, true)).toEqual({ pathname: '/music/create' });
-    expect(audioTarget('music', null, false)).toEqual({ pathname: '/create' });
 });
 
 const performances = [
@@ -89,7 +87,7 @@ describe('destination-aware catalog prices', () => {
             expect(fromCredits([model('tts', 'Speech', 1)], id)).toBeNull();
         }
     });
-    test.each(['music', 'speech', 'dialogue'] as const)('%s prices the cheapest eligible destination', id => {
+    test.each(['speech', 'dialogue'] as const)('%s prices the cheapest eligible destination', id => {
         const models = [model('costly', id, 8), model('cheap', id, 2),
             { ...model('gated', id, 1), gated: true },
             { ...model('upload', id, 0), capabilities: { inputs: { prompt: {} }, media: { audio: { required: true } } } } as unknown as CatalogModel,
@@ -111,8 +109,7 @@ describe('destination-aware catalog prices', () => {
     });
     test('native music and Your music never show the single-generation catalog quote', () => {
         const models = [model('suno', 'Music', 9)];
-        expect(fromCredits(models, 'music', true, true)).toBeNull();
-        expect(fromCredits(models, 'music', false, true)).toBe(9);
+        for (const available of [true, false]) expect(fromCredits(models, 'music', available, true)).toBeNull();
         for (const available of [true, false]) expect(fromCredits(models, 'yourMusic', available, true)).toBeNull();
     });
     test.each(performances)('%s prices the feature model rather than an unrelated cheaper model', (id, slug) => {
