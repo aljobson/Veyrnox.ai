@@ -67,6 +67,7 @@ test('the shared studio never asks for uploads on a guarded workflow', async () 
   assert.match(studio, /data-testid="source-upload-script"/);
   assert.match(studio, /href=\{feature\.alternativeHref\}/);
   assert.match(studio, /\{copy\.alternativeLabel\}/);
+  assert.match(studio, /feature\.blocked \? 'app\.features\.guardedGuide' : 'app\.features\.guide'/);
   assert.match(studio, /<p className="mt-2 text-sm font-black">\{copy\.title\}<\/p>/);
   assert.doesNotMatch(studio, />\{feature\.model\}<\/p>/);
 });
