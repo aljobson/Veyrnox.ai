@@ -15,7 +15,7 @@ jest.mock('expo-secure-store', () => ({
 }));
 
 const originalFetch = global.fetch;
-const fetchMock = jest.fn(async () => new Response(JSON.stringify(generation), {
+const fetchMock = jest.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => new Response(JSON.stringify(generation), {
     status: 200, headers: { 'Content-Type': 'application/json' },
 }));
 const api = () => createApiClient({
