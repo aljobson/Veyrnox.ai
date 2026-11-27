@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
-const sql = await readFile(new URL('../packages/db/schema/supabase/0622_editor_manual_commit_credits.sql', import.meta.url), 'utf8');
+const sql = await readFile(new URL('../packages/db/schema/supabase/0623_editor_manual_commit_credits.sql', import.meta.url), 'utf8');
 const privilegeGuard = await readFile(new URL('../scripts/test-default-privileges.mjs', import.meta.url), 'utf8');
 const accountDeletionGuard = await readFile(new URL('../scripts/test-account-deletion.mjs', import.meta.url), 'utf8');
 const privacyExportGuard = await readFile(new URL('../scripts/test-privacy-export.mjs', import.meta.url), 'utf8');

@@ -6,7 +6,7 @@ import test from 'node:test';
 
 const run = promisify(execFile);
 const url = process.env.EDITOR_MANUAL_COMMIT_TEST_DATABASE_URL;
-const migration = await readFile(new URL('../packages/db/schema/supabase/0622_editor_manual_commit_credits.sql', import.meta.url), 'utf8');
+const migration = await readFile(new URL('../packages/db/schema/supabase/0623_editor_manual_commit_credits.sql', import.meta.url), 'utf8');
 const actor = '11111111-1111-4111-8111-111111111111';
 const user = '22222222-2222-4222-8222-222222222222';
 const otherActor = '99999999-9999-4999-8999-999999999999';
