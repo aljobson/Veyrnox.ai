@@ -69,7 +69,7 @@ test('Create lists the gallery video templates, each with its poster and a link 
   assert.match(html, new RegExp(`TEMPLATES · ${runnable.length}`));
   assert.doesNotMatch(html, /create-template-picker-empty/);
   assert.match(html, /<video src="\/showcase\/[^"]+\.mp4" poster="\/showcase\/[^"]+\.jpg" controls=""/);
-  assert.match(html, /href="\/presets"[^>]*>Open the template gallery</);
+  assert.match(html, /href="\/app\/templates"[^>]*>Open the template gallery</);
   assert.ok(runnable.every(({ model }) => model.kind === 'video'));
 });
 
@@ -80,7 +80,7 @@ test('the video picker says it is loading until the gallery answers, and points 
   assert.doesNotMatch(loading, /create-template-picker-empty/);
   const failed = renderPicker('video', models, []);
   assert.match(failed, /data-testid="create-template-picker-empty"/);
-  assert.match(failed, /href="\/presets"[^>]*>Open the template gallery</);
+  assert.match(failed, /href="\/app\/templates"[^>]*>Open the template gallery</);
 });
 
 test('the picker keeps failures visible and prevents duplicate picks while loading', () => {

@@ -110,6 +110,17 @@ const extendedAccountKnowledge = new Set([
 // The public and signed-in preset galleries now distinguish Veyrnox templates
 // from CRUN provider previews instead of presenting the old model-count line.
 const retiredTemplateCountKnowledge = new Set(['{templates} on {models}']);
+// Home now embeds the full unified catalogue, so its legacy 166-card gallery
+// heading, help and filter copy are intentionally replaced by the exact same
+// catalogue UI and search control as /app/templates.
+const retiredHomeTemplateKnowledge = {
+    headings: new Set(['Explore presets']),
+    descriptions: new Set([
+        'Each one opens the studio on its model and prompt, priced before you press Generate.',
+        'Showing {shown} of {total} templates',
+    ]),
+    controls: new Set(['Filter templates']),
+};
 
 test('phase B retains every app route knowledge item from origin/main', async () => {
     const baseline = JSON.parse(await readFile(path.join(root, 'tests/fixtures/app-knowledge-main.json'), 'utf8'));
@@ -135,6 +146,7 @@ test('phase B retains every app route knowledge item from origin/main', async ()
                 if (entry.route === '/app/account' && field === 'descriptions' && extendedAccountKnowledge.has(value)
                     && [...actual].some(currentValue => currentValue.startsWith(normal(value)))) continue;
                 if (['/app', '/presets'].includes(entry.route) && field === 'descriptions' && retiredTemplateCountKnowledge.has(value)) continue;
+                if (entry.route === '/app' && retiredHomeTemplateKnowledge[field]?.has(value)) continue;
                 // ADR-0326 replaces the comma-separated palette with native swatches.
                 if (entry.route === '/app/editor' && field === 'descriptions' && value === 'Use up to 12 hex colours separated by commas.') continue;
                 if (entry.route === '/app/chat' && retiredChatKnowledge[field]?.has(value)) continue;
@@ -225,6 +237,8 @@ test('all main route knowledge survives localization except the retired unknown-
                 if (route === '/app/create' && retiredCreateKnowledge[field]?.has(expected)) continue;
                 if (route === '/app/editor' && retiredEditorKnowledge[field]?.has(expected)) continue;
                 if (field === 'descriptions' && retiredLegalKnowledge[route]?.has(expected)) continue;
+                if (['/app', '/presets'].includes(route) && field === 'descriptions' && retiredTemplateCountKnowledge.has(expected)) continue;
+                if (route === '/app' && retiredHomeTemplateKnowledge[field]?.has(expected)) continue;
                 if (isRetiredSupplierDisclosure(route, field, expected)) continue;
                 // A hidden h2 that came before the page's h1 (WCAG 1.3.1); the
                 // brand name is still the page title and the logo's name.
