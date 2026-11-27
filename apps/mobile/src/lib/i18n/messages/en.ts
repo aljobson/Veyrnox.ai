@@ -94,9 +94,11 @@ import area_editorExportRefusal from './en/editorExportRefusal';
 import area_editorFont from './en/editorFont';
 import area_editorLocalExport from './en/editorLocalExport';
 import area_editorLook from './en/editorLook';
+import area_editorManualCommit from './en/editorManualCommit';
 import area_editorMotion from './en/editorMotion';
 import area_editorNativeMotion from './en/editorNativeMotion';
 import area_editorPack from './en/editorPack';
+import area_editorParity from './en/editorParity';
 import area_editorPersonMask from './en/editorPersonMask';
 import area_editorProjects from './en/editorProjects';
 import area_editorSave from './en/editorSave';
@@ -361,9 +363,11 @@ const catalog = {
     ...area_editorFont,
     ...area_editorLocalExport,
     ...area_editorLook,
+    ...area_editorManualCommit,
     ...area_editorMotion,
     ...area_editorNativeMotion,
     ...area_editorPack,
+    ...area_editorParity,
     ...area_editorPersonMask,
     ...area_editorProjects,
     ...area_editorSave,

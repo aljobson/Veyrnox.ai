@@ -5010,12 +5010,6 @@
     "ratio": 1.75
   },
   {
-    "id": "editorCover.frames",
-    "english": "Cover frame choices",
-    "translation": "Opciones de fotograma de portada",
-    "ratio": 1.68
-  },
-  {
     "id": "editorCover.scrub",
     "english": "Cover frame",
     "translation": "Fotograma de portada",
@@ -5074,6 +5068,114 @@
     "english": "Could not change cloud sync.",
     "translation": "No se pudo cambiar la sincronización en la nube.",
     "ratio": 1.71
+  },
+  {
+    "id": "editorParity.blur",
+    "english": "Blur",
+    "translation": "Desenfoque",
+    "ratio": 2.5
+  },
+  {
+    "id": "editorParity.bold",
+    "english": "Bold",
+    "translation": "Negrita",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorParity.closeFullscreenPreview",
+    "english": "Close fullscreen preview",
+    "translation": "Cerrar vista previa a pantalla completa",
+    "ratio": 1.63
+  },
+  {
+    "id": "editorParity.custom",
+    "english": "Custom",
+    "translation": "Personalizado",
+    "ratio": 2.17
+  },
+  {
+    "id": "editorParity.customCanvasWidth",
+    "english": "Custom canvas width",
+    "translation": "Anchura del lienzo personalizado",
+    "ratio": 1.68
+  },
+  {
+    "id": "editorParity.fadeIn",
+    "english": "Fade in",
+    "translation": "Fundido de entrada",
+    "ratio": 2.57
+  },
+  {
+    "id": "editorParity.fadeOut",
+    "english": "Fade out",
+    "translation": "Fundido de salida",
+    "ratio": 2.13
+  },
+  {
+    "id": "editorParity.fill",
+    "english": "Fill",
+    "translation": "Rellenar",
+    "ratio": 2
+  },
+  {
+    "id": "editorParity.fit",
+    "english": "Fit",
+    "translation": "Ajustar",
+    "ratio": 2.33
+  },
+  {
+    "id": "editorParity.fitMode",
+    "english": "Fit Mode",
+    "translation": "Modo de ajuste",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorParity.frameRate",
+    "english": "Frame Rate",
+    "translation": "Velocidad de fotogramas",
+    "ratio": 2.3
+  },
+  {
+    "id": "editorParity.inPoint",
+    "english": "In",
+    "translation": "Entrada",
+    "ratio": 3.5
+  },
+  {
+    "id": "editorParity.moveLeft",
+    "english": "Move left",
+    "translation": "Mover a la izquierda",
+    "ratio": 2.22
+  },
+  {
+    "id": "editorParity.moveRight",
+    "english": "Move right",
+    "translation": "Mover a la derecha",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorParity.none",
+    "english": "None",
+    "translation": "Ninguno",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorParity.outPoint",
+    "english": "Out",
+    "translation": "Salida",
+    "ratio": 2
+  },
+  {
+    "id": "editorParity.timelineZoom",
+    "english": "Timeline zoom",
+    "translation": "Zoom de la línea de tiempo",
+    "ratio": 2
+  },
+  {
+    "id": "editorParity.unmuteTrack",
+    "english": "Unmute {name}",
+    "translation": "Activar sonido de {name}",
+    "ratio": 1.85
   },
   {
     "id": "musicAlbums.addTrack",

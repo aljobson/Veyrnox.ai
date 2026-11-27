@@ -71,3 +71,10 @@ test('motion worker is visible to the editor-media lifecycle worker and legacy c
     expect(compositor).not.toContain('private static func mixClip(');
     expect(advanced).toContain('EditorAudioOutputContract.peakNormalize(&mixed)');
 });
+
+test('native colour picker presents from the Expo current controller above React Native modals', () => {
+    const compositor = readFileSync(resolve(__dirname, '../modules/editor-media/ios/VeyrnoxEditorMediaModule.swift'), 'utf8');
+    expect(compositor).toContain('appContext?.utilities?.currentViewController()');
+    expect(compositor).toContain('session.controller.modalPresentationStyle = .pageSheet');
+    expect(compositor).not.toContain('private static func topViewController()');
+});

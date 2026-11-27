@@ -6,6 +6,10 @@ export const editorDefaultEnabled = (value: unknown): boolean => value !== 'fals
 export const EDITOR_ENABLED = editorDefaultEnabled(process.env.EXPO_PUBLIC_EDITOR_ENABLED);
 export const FULL_EDITOR_ENABLED = editorDefaultEnabled(process.env.EXPO_PUBLIC_FULL_EDITOR_ENABLED);
 export const EDITOR_SERVER_EXPORT_ENABLED = editorEnabled(process.env.EXPO_PUBLIC_EDITOR_SERVER_EXPORT_ENABLED);
+// Paid manual Save/Export remains fail-closed until the Worker and database
+// rollout switches are enabled with the same release.
+export const EDITOR_MANUAL_COMMIT_ENABLED = editorEnabled(process.env.EXPO_PUBLIC_EDITOR_MANUAL_COMMIT_ENABLED);
+export const editorManualCommitEnabled = (): boolean => EDITOR_MANUAL_COMMIT_ENABLED;
 export const EDITOR_ORGANIZATION_ENABLED = editorEnabled(process.env.EXPO_PUBLIC_EDITOR_ORGANIZATION_ENABLED);
 
 export const EDITOR_AI_EDIT_ENABLED = editorEnabled(process.env.EXPO_PUBLIC_EDITOR_AI_EDIT_ENABLED);

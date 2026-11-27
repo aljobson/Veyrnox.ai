@@ -45,7 +45,8 @@ export function frameLayers(tl, i) {
 export async function resolvePictures(layers, picture) {
     if (layers.visuals) return {
         visuals: await Promise.all(layers.visuals.map(v => picture(v.k, v.time))),
-        backgrounds: await Promise.all(layers.visuals.map(v => v.clip.background?.type === 'image' ? picture(v.k, 0, v.clip.background.mediaId) : null)),
+        backgrounds: await Promise.all(layers.visuals.map(v => ['image','video'].includes(v.clip.background?.type)
+            ? picture(v.k, v.clip.background.type === 'video' ? v.time : 0, v.clip.background.mediaId) : null)),
         masks: await Promise.all(layers.visuals.map(v => v.clip.semanticMask?.mediaId
             ? picture(v.k, v.clip.semanticMask.dynamic ? v.offset / v.clip.semanticMask.dynamic.fps : 0, v.clip.semanticMask.mediaId) : null)),
     };

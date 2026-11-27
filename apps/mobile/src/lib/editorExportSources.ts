@@ -116,7 +116,8 @@ function requiredMediaIds(timeline: Timeline): string[] {
         // The same rule applies when a generated graphic is selected as an image background.
         if (media?.kind !== 'graphic') add(clip.mediaId);
         add(clip.semanticMask?.mediaId);
-        if (clip.background?.type === 'image' && timeline.media[clip.background.mediaId]?.kind !== 'graphic') add(clip.background.mediaId);
+        if ((clip.background?.type === 'image' || clip.background?.type === 'video')
+            && timeline.media[clip.background.mediaId]?.kind !== 'graphic') add(clip.background.mediaId);
         if (media?.hasAudio && (clip.volume ?? 1) > 0 && !track?.muted && (!solo || track?.solo)) add(clip.mediaId);
     }
     for (const clip of timeline.audio) {

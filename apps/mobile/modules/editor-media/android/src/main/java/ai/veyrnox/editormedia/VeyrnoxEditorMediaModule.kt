@@ -76,5 +76,6 @@ class VeyrnoxEditorMediaModule : Module() {
     Function("cancel") { _: String, _: String, _: String, _: String -> Unit }
     AsyncFunction("cancelProject") { _: String, _: String, promise: Promise -> promise.resolve(null) }
     AsyncFunction("release") { _: String, _: String, _: String, promise: Promise -> promise.resolve(null) }
+    AsyncFunction("share") { _: String, _: String, promise: Promise -> promise.resolve(unsupported()) }
   }
 }
