@@ -44,6 +44,20 @@ function MixerLoading() {
   return <div role="status" aria-busy="true" className="min-h-64 rounded-xl bg-vx-panel p-4">{t('app.music.beat.details.d31')}</div>;
 }
 
+const toolbarPaths = {
+  back: 'M15 18l-6-6 6-6',
+  undo: 'M9 7H5v-4 M5 7c2-3 5-4 8-3 4 0 7 3 7 7s-3 7-7 7c-2 0-4-1-5-2',
+  redo: 'M15 7h4v-4 M19 7c-2-3-5-4-8-3-4 0-7 3-7 7s3 7 7 7c2 0 4-1 5-2',
+  mixer: 'M4 6h7 M15 6h5 M4 12h3 M11 12h9 M4 18h9 M17 18h3 M11 4v4 M7 10v4 M13 16v4',
+  shortcuts: 'M5 6h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z M7 10h.01 M11 10h.01 M15 10h.01 M7 14h10',
+  copy: 'M8 8h11a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1z M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3',
+  sparkle: 'M12 3l1.3 3.7L17 8l-3.7 1.3L12 13l-1.3-3.7L7 8l3.7-1.3z M18 14l.7 2.3L21 17l-2.3.7L18 20l-.7-2.3L15 17l2.3-.7z',
+};
+
+function ToolbarIcon({ name }) {
+  return <svg aria-hidden="true" viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d={toolbarPaths[name]} /></svg>;
+}
+
 export default function BeatEditor({ ai = {}, id, magicBar = false, studioChat = false, v5Writes = false, cloud = false, librarySave = false }) {
   useLayoutEffect(() => { configureBeatWrites(v5Writes); }, [v5Writes]);
   const router = useRouter();
@@ -153,7 +167,8 @@ export default function BeatEditor({ ai = {}, id, magicBar = false, studioChat =
     }
     router.push('/app/music/beats');
   }
-  const back = <Link data-beat-live onClick={goBack} className={`${button} inline-flex items-center`} data-beat-read href="/app/music/beats">{t('app.music.beat.ui.my.beats')}</Link>;
+  const iconButton = `${button} grid place-items-center px-0`;
+  const back = <Link data-beat-live onClick={goBack} className={iconButton} data-beat-read href="/app/music/beats" aria-label={t('app.music.beat.ui.my.beats')} title={t('app.music.beat.ui.my.beats')}><ToolbarIcon name="back" /><span className="sr-only">{t('app.music.beat.ui.my.beats')}</span></Link>;
   if (project.error) return <div className="space-y-4 p-6"><h1 className="text-2xl font-bold">{project.error === 'blocked' ? t('app.music.beat.compat.blocked') : project.error === 'unsupported_version' ? t('app.music.beat.compat.unsupported') : project.error === 'update_required' ? t('app.music.beat.compat.updateRequired') : project.error === 'storage' ? t('app.music.beat.device.readError') : project.error === 'damaged' ? t('app.music.beat.device.damaged') : t('app.music.beat.ui.this.beat.isn.t.on.this.device')}</h1>{['storage', 'blocked'].includes(project.error) && <button className={button} onClick={project.reload}>{t('app.music.beat.ui.retry')}</button>}{back}</div>;
   if (!doc) return <p className="p-6" aria-busy="true">{t('app.music.beat.ui.loading.beat')}</p>;
   const title = titleDraft ?? doc.title;
@@ -168,28 +183,29 @@ export default function BeatEditor({ ai = {}, id, magicBar = false, studioChat =
     setAutomationLanes(previous => ({ ...previous, [id]: lane }));
     if (lane && doc.view !== 'song') edit(d => ops.setView(d, 'song'), { label: BEAT_ACTIONS.a16 });
   }
-  return <div ref={root} className="mx-auto min-w-0 w-full max-w-7xl space-y-5 px-2 py-6 md:px-6">
+  return <div ref={root} className="mx-auto min-w-0 w-full max-w-none space-y-3 px-2 py-3 md:px-4">
     <BeatCoachMarks replay={tipReplay} /><BeatShortcutSheet open={shortcutsOpen} close={() => setShortcutsOpen(false)} replayTips={() => setTipReplay(value => value + 1)} />
-    <header className="flex flex-wrap items-center gap-3">{back}<h1 className="text-2xl font-black">{t('app.music.beat.ui.beat.editor')}</h1>
-      <button className={button} aria-disabled={!project.canUndo}
-        onClick={() => { project.undo(); setTitleDraft(null); }}>{t('app.music.beat.shortcut.undo')}</button>
-      <button className={button} aria-disabled={!project.canRedo}
-        onClick={() => { project.redo(); setTitleDraft(null); }}>{t('app.music.beat.shortcut.redo')}</button>
-      <button data-beat-read data-beat-live className={button} aria-expanded={mixerOpen} onClick={() => setMixerOpen(value => !value)}>{t('app.music.beat.ui.mixer')}</button>
-      <button data-beat-read data-beat-live data-beat-tip="shortcuts" className={button} onClick={() => setShortcutsOpen(true)}>{t('app.music.beat.shortcuts')}</button>
-      <button className={button} disabled={copying} onClick={copy}>{t('app.music.beat.ui.save.as.copy')}</button>
-      {ai.generate && <button className={action} onClick={() => aiRequest.open({ op: 'generate' })}><span aria-hidden="true">✦ </span>{t('app.music.beat.ui.generate')}</button>}
+    <header className="flex flex-wrap items-center gap-2 rounded-2xl border border-vx-border bg-vx-panel p-2">{back}<h1 className="sr-only">{t('app.music.beat.ui.beat.editor')}</h1>
+      <label className="min-w-44 flex-1"><span className="sr-only">{t('app.music.beat.ui.title')}</span><input className={`${input} w-full border-0 bg-transparent text-lg font-black shadow-none`} value={title} aria-invalid={titleInvalid} aria-describedby={titleInvalid ? 'title-error' : undefined} onChange={(e) => {
+        const value = e.target.value;
+        setTitleDraft(value);
+        if (value.trim() && value.length <= 80 && edit((d) => ops.rename(d, value), { key: 'title', label: BEAT_ACTIONS.a17 })) setStoredTitle(value);
+      }} onBlur={() => { if (!titleInvalid) setTitleDraft(null); }} /></label>
+      <span className="hidden max-w-48 truncate text-xs text-vx-fg-muted lg:inline">{project.readOnly ? (project.dirty && sync.state === 'read_only' ? sync.message : t(BEAT_READ_ONLY_MESSAGE)) : project.conflict ? t('app.music.beat.ui.autosave.paused') : project.saveError ? t('app.music.beat.ui.couldn.t.save.on.this.device') : !project.persistent ? t('app.music.beat.ui.kept.in.memory.for.this.visit') : project.dirty ? t('app.music.beat.ui.saving') : t('app.music.beat.ui.saved.on.this.device')}</span>
+      <button className={iconButton} aria-label={t('app.music.beat.shortcut.undo')} title={t('app.music.beat.shortcut.undo')} aria-disabled={!project.canUndo}
+        onClick={() => { project.undo(); setTitleDraft(null); }}><ToolbarIcon name="undo" /><span className="sr-only">{t('app.music.beat.shortcut.undo')}</span></button>
+      <button className={iconButton} aria-label={t('app.music.beat.shortcut.redo')} title={t('app.music.beat.shortcut.redo')} aria-disabled={!project.canRedo}
+        onClick={() => { project.redo(); setTitleDraft(null); }}><ToolbarIcon name="redo" /><span className="sr-only">{t('app.music.beat.shortcut.redo')}</span></button>
+      <button data-beat-read data-beat-live className={iconButton} aria-label={t('app.music.beat.ui.mixer')} title={t('app.music.beat.ui.mixer')} aria-expanded={mixerOpen} onClick={() => setMixerOpen(value => !value)}><ToolbarIcon name="mixer" /><span className="sr-only">{t('app.music.beat.ui.mixer')}</span></button>
+      <button data-beat-read data-beat-live data-beat-tip="shortcuts" className={iconButton} aria-label={t('app.music.beat.shortcuts')} title={t('app.music.beat.shortcuts')} onClick={() => setShortcutsOpen(true)}><ToolbarIcon name="shortcuts" /><span className="sr-only">{t('app.music.beat.shortcuts')}</span></button>
+      <button className={iconButton} aria-label={t('app.music.beat.ui.save.as.copy')} title={t('app.music.beat.ui.save.as.copy')} disabled={copying} onClick={copy}><ToolbarIcon name="copy" /><span className="sr-only">{t('app.music.beat.ui.save.as.copy')}</span></button>
+      <span data-beat-read><BeatExportDialog compact librarySave={librarySave} finalize={() => playback.isRecording() || playback.pending.current ? playback.finishRecording() : project.current.current} doc={doc} editTrackId={track.id} announce={announce} /></span>
+      {ai.generate && <button className={`${action} inline-flex items-center gap-2`} onClick={() => aiRequest.open({ op: 'generate' })}><ToolbarIcon name="sparkle" />{t('app.music.beat.ui.generate')}</button>}
       {Object.values(ai).some(Boolean) && aiRequest.pending.map(r => <button data-beat-read className={button} key={r.key} onClick={() => aiRequest.resume(r)}>{t('app.music.beat.ui.resume')}{r.prompt.slice(0, 24) || t('app.music.beat.ui.ai.parts')}</button>)}
     </header>
+    {titleInvalid && <span id="title-error" className="text-sm text-vx-danger">{!title.trim() ? t('app.music.beat.ui.give.your.beat.a.title') : t('app.music.beat.error.beat-title')}</span>}
     {aiRequest.selection && (aiRequest.selection.op === 'generate' ? <BeatGenerateSheet key="generate" request={aiRequest} doc={doc} afterTrackId={track.id} /> : <BeatAiActionSheet key={aiRequest.selection.op} request={aiRequest} doc={doc} afterTrackId={track.id} />)}
-    <div className="flex flex-wrap items-end justify-between gap-3"><label className="flex min-w-0 flex-1 flex-col gap-1">{t('app.music.beat.ui.title')}<input className={`${input} w-full text-xl font-bold`} value={title} aria-invalid={titleInvalid} aria-describedby={titleInvalid ? 'title-error' : undefined} onChange={(e) => {
-      const value = e.target.value;
-      setTitleDraft(value);
-      if (value.trim() && value.length <= 80 && edit((d) => ops.rename(d, value), { key: 'title', label: BEAT_ACTIONS.a17 })) {
-        setStoredTitle(value);
-      }
-    }} onBlur={() => { if (!titleInvalid) setTitleDraft(null); }} />{titleInvalid && <span id="title-error" className="text-sm text-vx-danger">{!title.trim() ? t('app.music.beat.ui.give.your.beat.a.title') : t('app.music.beat.error.beat-title')}</span>}</label><span data-beat-read><BeatExportDialog librarySave={librarySave} finalize={() => playback.isRecording() || playback.pending.current ? playback.finishRecording() : project.current.current} doc={doc} editTrackId={track.id} announce={announce} /></span></div>
-    <p role={project.readOnly ? "status" : undefined} className="text-sm text-vx-fg-muted">{project.readOnly ? (project.dirty && sync.state === 'read_only' ? sync.message : t(BEAT_READ_ONLY_MESSAGE)) : project.conflict ? t('app.music.beat.ui.autosave.paused') : project.saveError ? <>{t('app.music.beat.ui.couldn.t.save.on.this.device')} <button className={button} onClick={project.retry}>{t('app.music.beat.ui.retry')}</button></> : !project.persistent ? t('app.music.beat.ui.kept.in.memory.for.this.visit') : project.dirty ? t('app.music.beat.ui.saving') : t('app.music.beat.ui.saved.on.this.device')}</p>
+    {project.saveError && <p role="status" className="text-sm text-vx-danger">{t('app.music.beat.ui.couldn.t.save.on.this.device')} <button className={button} onClick={project.retry}>{t('app.music.beat.ui.retry')}</button></p>}
     {!project.persistent && <p className="rounded-xl border border-vx-border bg-vx-panel p-3">{t('app.music.beat.recovery.r11')}</p>}
     {project.conflict && <section className="space-y-3 rounded-xl border border-vx-border bg-vx-panel p-4" aria-label={t('app.music.beat.ui.beat.changed.elsewhere')}><h2 className="font-bold">{project.conflict === 'deleted' ? t('app.music.beat.ui.this.beat.was.deleted.in.another.tab') : t('app.music.beat.ui.this.beat.was.changed.in.another.tab')}</h2><div className="flex flex-wrap gap-2">{project.conflict !== 'deleted' && <button data-beat-read className={button} onClick={async () => { await playback.finishRecording(); setTitleDraft(null); setUndo(null); setLocator(0); setEditTrackId(null); setReloadKey((value) => value + 1); project.reload(); }}>{t('app.music.beat.ui.reload')}</button>}<button className={action} disabled={copying} onClick={copy}>{project.conflict === 'deleted' ? t('app.music.beat.ui.save.as.a.new.beat') : t('app.music.beat.ui.save.my.version.as.a.copy')}</button></div></section>}
     {playback.audioError && <p className="rounded-xl border border-vx-border p-3">{playback.audioError}</p>}

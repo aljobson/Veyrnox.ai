@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { harness, find, button, elements } from './helpers/musicBeatComponentHarness.mjs';
+import { harness, find, elements } from './helpers/musicBeatComponentHarness.mjs';
 import { v5BeatFixture } from './fixtures/musicBeatV5.mjs';
 import { configureBeatWrites } from '../app/veyrnox/_lib/music/beat/beatCompatibility.mjs';
 const base = new URL('../app/veyrnox/_components/music/beat/', import.meta.url);
@@ -55,6 +55,7 @@ function domControl(node) {
     closest(selector) { return attrs.has(selector.slice(1, -1)) ? this : null; },
   };
 }
+const namedButton = (tree, name) => find(tree, node => node.type === 'button' && (node.props.children === name || node.props['aria-label'] === name));
 test('read-only lock permits Reload, navigation and playback while disabling editing controls', async t => {
   const { h, doc } = await editor(t), transport = harness(); t.after(() => transport.close());
   const Transport = transport.load('BeatTransport', await stubsFor('BeatTransport')).default;
@@ -66,12 +67,12 @@ test('read-only lock permits Reload, navigation and playback while disabling edi
   t.after(() => { globalThis.MutationObserver = previous; });
   h.tree.props.ref.current = root; h.effects();
   const byNode = node => controls.find(c => c.node === node);
-  for (const node of [button(h.tree, 'Reload'), button(h.tree, 'Mixer'), find(h.tree, n => n.props.href === '/app/music/beats'), find(h.tree, n => n.props.href === '/app/account'), button(transport.tree, 'Play')]) {
+  for (const node of [namedButton(h.tree, 'Reload'), namedButton(h.tree, 'Mixer'), find(h.tree, n => n.props.href === '/app/music/beats'), find(h.tree, n => n.props.href === '/app/account'), namedButton(transport.tree, 'Play')]) {
     assert.ok(node); const control = byNode(node);
     assert.equal(control.disabled, false); assert.notEqual(control.getAttribute('aria-disabled'), 'true');
     listeners.get('click')({ target: control, preventDefault() { assert.fail('read action blocked'); }, stopPropagation() {} });
   }
-  for (const node of [button(h.tree, 'Save as copy'), find(h.tree, n => n.type === 'input'), button(transport.tree, 'Cycle')]) {
+  for (const node of [namedButton(h.tree, 'Save as copy'), find(h.tree, n => n.type === 'input'), namedButton(transport.tree, 'Cycle')]) {
     const control = byNode(node); assert.ok(control); assert.equal(control.disabled, true); assert.match(control.getAttribute('title'), /read-only/);
     let blocked = false; listeners.get('click')({ target: control, preventDefault() { blocked = true; }, stopPropagation() {} }); assert.equal(blocked, true);
   }

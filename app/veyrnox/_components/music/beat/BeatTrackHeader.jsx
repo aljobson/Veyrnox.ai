@@ -10,7 +10,6 @@ import * as ops from '../../../_lib/music/beat/beatOps.mjs';
 import { button, input } from './beatStyles';
 
 const titleSpan = 'col-span-2';
-const layoutIds = { desktop: 'desktop', mobile: 'mobile' };
 export default function BeatTrackHeader({ onHeight, armedId, onArm, mode = 'song', recording = false, automationLane, onAutomation, track, edit, locator, last, selected, onSelect }) {
   const { t } = useI18n();
   const header = useRef(null);
@@ -49,20 +48,14 @@ export default function BeatTrackHeader({ onHeight, armedId, onArm, mode = 'song
           {PRESETS.drums.map((kit) => <option key={kit.id} value={kit.id}>{kit.label}</option>)}
         </select>
       </label>}
-      <label data-beat-live className="min-w-0 text-xs">{t('app.music.beat.ui.gain.2')}{gain.disabled ? t('app.music.beat.ui.automated') : t('app.music.beat.labels.l43', { p0: Math.round(track.gain * 100) })}
-        <input aria-label={t('app.music.beat.labels.l7', { p0: track.name })} disabled={gain.disabled} aria-describedby={gain.disabled ? `${automationId}-gain` : undefined} type="range" min="0" max="100" value={track.gain * 100}
-          className="min-h-11 w-full accent-vx-accent focus-visible:outline-vx-accent"
-          onChange={(e) => field(ops.setTrackGain, Number(e.target.value) / 100, BEAT_ACTIONS.a55, 'gain')} />
-      </label>
       <label data-beat-live className="min-w-0 text-xs">{t('app.music.beat.ui.pan.2')}{pan.disabled ? t('app.music.beat.ui.automated') : t('app.music.beat.ui.l.r')}
         <input aria-label={t('app.music.beat.labels.l8', { p0: track.name })} disabled={pan.disabled} aria-describedby={pan.disabled ? `${automationId}-pan` : undefined} type="range" min="-100" max="100" value={track.pan * 100}
           className="min-h-11 w-full accent-vx-accent focus-visible:outline-vx-accent"
           onChange={(e) => field(ops.setTrackPan, Number(e.target.value) / 100, BEAT_ACTIONS.a56, 'pan')} />
       </label>
-      {gain.disabled && <span id={`${automationId}-gain`} className="col-span-2 text-xs">{tOr(t, 'app.music.beat.control.gainHelp', gain.message)}</span>}
       {pan.disabled && <span id={`${automationId}-pan`} className="col-span-2 text-xs">{tOr(t, 'app.music.beat.control.panHelp', pan.message)}</span>}
       {track.fx?.length > 0 && <p className="col-span-2 text-xs">{t('app.music.beat.control.effects', { count: track.fx.length })}</p>}
-      {location === 'mobile' && automationButton(titleSpan)}
+      {automationButton(titleSpan)}
       {track.kind !== 'audio' && <button className={button} onClick={() => edit((d) => track.kind === 'midi' ? addMidiRegion(d, track.id, locator) : ops.addRegion(d, track.id, locator, d.currentPattern),
         { label: BEAT_ACTIONS.a2, trackId: track.id, start: locator })}>{t('app.music.beat.ui.add.region')}</button>}
       <button className={button} disabled={last} title={last ? t('app.music.beat.ui.keep.at.least.one.track') : undefined}
@@ -71,27 +64,30 @@ export default function BeatTrackHeader({ onHeight, armedId, onArm, mode = 'song
         } }}>{t('app.music.beat.ui.delete.track')}</button>
     </div>;
   }
-  return <div ref={header} className={`relative min-h-64 border-b border-vx-border md:min-h-80 ${selected ? 'bg-vx-accent/10' : 'bg-vx-panel'}`}>
-    <div className="flex flex-wrap items-center justify-center gap-1 md:justify-start md:px-2">
-      <button data-beat-read className="min-h-11 w-full truncate text-xs font-bold focus-visible:outline-vx-accent md:w-auto md:flex-1"
+  return <div ref={header} className={`relative min-h-36 border-b border-vx-border p-1.5 ${selected ? 'bg-vx-accent/10' : 'bg-vx-panel'}`}>
+    <div className="flex items-center gap-1">
+      <button data-beat-read className="min-h-9 min-w-0 flex-1 truncate text-start text-xs font-bold focus-visible:outline-vx-accent"
         aria-pressed={selected} onClick={onSelect} title={track.name}>{track.name}</button>
-      <button className={`${button} px-2 max-md:w-11 ${track.mute ? 'bg-vx-accent text-vx-accent-ink' : ''}`}
+      <button className={`${button} min-h-9 min-w-9 rounded-lg px-1 py-1 ${track.mute ? 'bg-vx-accent text-vx-accent-ink' : ''}`}
         data-beat-live aria-label={t('app.music.beat.labels.l44', { p0: track.name })}
         aria-pressed={track.mute} onClick={() => field(ops.setTrackMute, !track.mute,
           `${track.mute ? 'unmute' : 'mute'} ${track.name}`)}>{t('app.music.beat.ui.m')}</button>
-      <button className={`${button} px-2 max-md:w-11 ${track.solo ? 'bg-vx-accent text-vx-accent-ink' : ''}`}
+      <button className={`${button} min-h-9 min-w-9 rounded-lg px-1 py-1 ${track.solo ? 'bg-vx-accent text-vx-accent-ink' : ''}`}
         data-beat-live aria-label={t('app.music.beat.labels.l45', { p0: track.name })}
         aria-pressed={track.solo} onClick={() => field(ops.setTrackSolo, !track.solo,
           `${track.solo ? 'unsolo' : 'solo'} ${track.name}`)}>{t('app.music.beat.ui.s.3')}</button>
-      {track.kind === 'audio' && <button className={`${button} min-h-11 min-w-11 px-1 text-xs`} aria-label={t('app.music.beat.labels.l46', { p0: track.name })} aria-pressed={armedId === track.id} onClick={() => onArm(armedId === track.id ? null : track.id)}><span aria-hidden="true" className="text-vx-hue-rose">●</span>{t('app.music.beat.ui.arm')}</button>}
-      <span className="hidden md:inline-flex">{automationButton()}</span>
+      {track.kind === 'audio' && <button className={`${button} min-h-9 min-w-9 rounded-lg px-1 py-1 text-xs`} aria-label={t('app.music.beat.labels.l46', { p0: track.name })} aria-pressed={armedId === track.id} onClick={() => onArm(armedId === track.id ? null : track.id)}><span aria-hidden="true" className="text-vx-hue-rose">●</span></button>}
     </div>
-    <div className="hidden p-2 md:block">{settings(layoutIds.desktop)}</div>
-    <details className="md:hidden">
+    <label data-beat-live className="mt-1 block text-xs">{t('app.music.beat.ui.gain.2')}{gain.disabled ? t('app.music.beat.ui.automated') : t('app.music.beat.labels.l43', { p0: Math.round(track.gain * 100) })}
+      <input aria-label={t('app.music.beat.labels.l7', { p0: track.name })} disabled={gain.disabled} aria-describedby={gain.disabled ? `${track.id}-gain-visible` : undefined} type="range" min="0" max="100" value={track.gain * 100}
+        className="min-h-9 w-full accent-vx-accent focus-visible:outline-vx-accent" onChange={(e) => field(ops.setTrackGain, Number(e.target.value) / 100, BEAT_ACTIONS.a55, 'gain')} />
+      {gain.disabled && <span id={`${track.id}-gain-visible`} className="block text-[10px]">{tOr(t, 'app.music.beat.control.gainHelp', gain.message)}</span>}
+    </label>
+    <details>
       <summary data-beat-read data-beat-live aria-label={t('app.music.beat.labels.l47', { p0: track.name })}
-        className="relative z-10 flex min-h-11 cursor-pointer items-center text-center text-xs focus-visible:outline-vx-accent">{t('app.music.beat.ui.track.settings')}</summary>
+        className="relative z-10 flex min-h-9 cursor-pointer items-center gap-2 text-xs focus-visible:outline-vx-accent"><svg aria-hidden="true" viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M4 6h7 M15 6h5 M4 12h3 M11 12h9 M4 18h9 M17 18h3 M11 4v4 M7 10v4 M13 16v4" /></svg>{t('app.music.beat.ui.track.settings')}</summary>
       <div className="absolute start-0 top-full z-30 w-64 rounded-xl border border-vx-border bg-vx-panel p-2 shadow-lg">
-        {settings(layoutIds.mobile)}
+        {settings('panel')}
       </div>
     </details>
   </div>;
