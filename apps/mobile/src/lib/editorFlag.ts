@@ -1,7 +1,10 @@
 export const editorEnabled = (value: unknown): boolean => value === 'true';
 export const editorDefaultEnabled = (value: unknown): boolean => value !== 'false';
-export const EDITOR_ENABLED = editorEnabled(process.env.EXPO_PUBLIC_EDITOR_ENABLED);
-export const FULL_EDITOR_ENABLED = editorEnabled(process.env.EXPO_PUBLIC_FULL_EDITOR_ENABLED);
+// The native editors are part of the shipped app. Keep an explicit `false` as
+// the emergency rollback, but do not render an empty Editor tab just because a
+// local Xcode/Metro launch omitted EAS's build-profile environment variables.
+export const EDITOR_ENABLED = editorDefaultEnabled(process.env.EXPO_PUBLIC_EDITOR_ENABLED);
+export const FULL_EDITOR_ENABLED = editorDefaultEnabled(process.env.EXPO_PUBLIC_FULL_EDITOR_ENABLED);
 export const EDITOR_SERVER_EXPORT_ENABLED = editorEnabled(process.env.EXPO_PUBLIC_EDITOR_SERVER_EXPORT_ENABLED);
 export const EDITOR_ORGANIZATION_ENABLED = editorEnabled(process.env.EXPO_PUBLIC_EDITOR_ORGANIZATION_ENABLED);
 

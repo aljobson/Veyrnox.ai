@@ -15,13 +15,14 @@ export type StoredFirstGoal = FirstGoal | 'skipped';
 const KNOWN: ReadonlySet<string> = new Set<string>([...FIRST_GOALS, 'skipped']);
 
 export type FirstGoalTarget =
-    | { readonly kind: 'create'; readonly goal: 'image' | 'video' | 'audio' }
-    | { readonly kind: 'tab'; readonly href: '/editor' | '/publish' }
+    | { readonly kind: 'create'; readonly goal: 'image' | 'video' }
+    | { readonly kind: 'tab'; readonly href: '/audio' | '/editor' | '/publish' }
     | { readonly kind: 'stay' };
 
 // Where a goal leads: the starter form for a creation goal, another tab, or nowhere ("not sure" keeps the goal list).
 export function firstGoalTarget(goal: string): FirstGoalTarget {
-    if (goal === 'image' || goal === 'video' || goal === 'audio') return { kind: 'create', goal };
+    if (goal === 'image' || goal === 'video') return { kind: 'create', goal };
+    if (goal === 'audio') return { kind: 'tab', href: featureHref('audio') as '/audio' };
     if (goal === 'edit') return { kind: 'tab', href: featureHref('editor') as '/editor' };
     if (goal === 'publish') return { kind: 'tab', href: featureHref('publish') as '/publish' };
     return { kind: 'stay' };

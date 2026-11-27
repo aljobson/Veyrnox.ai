@@ -23,7 +23,7 @@ describe('the signed-out preview', () => {
     });
 
     test('every action asks to sign in; nothing plays, creates or buys', () => {
-        expect(screen).toContain("router.push('/sign-in')");
+        expect(screen).toContain("router.push({ pathname: '/sign-in', params: { from: 'preview' } })");
         expect(screen).not.toContain("'/cinema/watch");
         expect(screen).not.toContain("'/create/");
         expect(screen).not.toContain("'/credits'");

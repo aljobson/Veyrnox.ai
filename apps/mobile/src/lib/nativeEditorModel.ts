@@ -1,8 +1,9 @@
-import { upgradeSequence } from '../../../../app/veyrnox/_lib/editorSequence.mjs';
+import { insertSequenceGap, upgradeSequence } from '../../../../app/veyrnox/_lib/editorSequence.mjs';
 import { slicedWords } from '../../../../app/veyrnox/_lib/editorWords.mjs';
 import { slicedAnimation } from '../../../../app/veyrnox/_lib/editorAnimation.mjs';
 import { sliceMaskKeyframes as webSliceMaskKeyframes } from '../../../../app/veyrnox/_lib/editorMask.mjs';
 import { fontMetadataProblem } from '../../../../app/veyrnox/_lib/editorOrganization.mjs';
+import { canvasAspectRatio, canvasAspectSize, canvasPixelSize, customCanvasParts, formatCustomCanvasAspect, validCanvasAspect } from '../../../../app/veyrnox/_lib/editorCanvasFormat.mjs';
 // The web caller supplies the retained length; today's helper preserves keys beyond that boundary.
 const sliceMaskKeyframes = webSliceMaskKeyframes as (clip: Clip | TextClip, from: number, len: number) => ReturnType<typeof webSliceMaskKeyframes>;
 import { sourceFrame, shiftedSpeedKeys } from '../../../../app/veyrnox/_lib/editorSpeed.mjs';
@@ -10,7 +11,9 @@ import { rawText, t } from './i18n';
 export const DEFAULT_TEXT_STYLE = { font: 'sans-serif', weight: 'bold', align: 'center', color: '#ffffff', stroke: '#000000', strokeWidth: 0, background: '#000000', backgroundOpacity: 0 } as const;
 export type TrackKind = 'video' | 'audio' | 'text';
 export type Selection = { track: TrackKind; id: string };
-export type Canvas = { aspect_ratio: '16:9' | '9:16' | '1:1'; frame_rate: 24 | 25 | 30 | 60 };
+export type CanvasAspect = '16:9' | '9:16' | '1:1' | '4:5' | `custom:${number}x${number}`;
+export type Canvas = { aspect_ratio: CanvasAspect; frame_rate: 24 | 25 | 30 | 60 };
+export { canvasAspectRatio, canvasAspectSize, canvasPixelSize, customCanvasParts, formatCustomCanvasAspect };
 export type Media = {
     id: string; name?: string; kind?: string; frames?: number; hasAudio?: boolean; width?: number; height?: number;
     graphic?: { shape: string; color: string };
@@ -32,6 +35,7 @@ export type ColourAdjustment = {
     curves: Record<string, { x: number; y: number }[]>;
 };
 export type Clip = TimedFields & {
+    behindSubject?: string;
     semanticMask?: { version: 1; mediaId: string; category: 'background' | 'hair' | 'bodySkin' | 'faceSkin' | 'clothes' | 'others' | 'person'; sourceFrame: number;
         dynamic?: { fps: 24 | 25 | 30 | 50 | 60; frames: number; identity: string } };
     mask?: string;
@@ -51,6 +55,7 @@ export type Clip = TimedFields & {
     audioEffects?: { width: number; tremoloRate: number; tremoloDepth: number; echoDelay: number; echoDecay: number; echoRepeats: number; echoMix: number };
 };
 export type TextClip = TimedFields & {
+    behindSubject?: string;
     caption?: boolean; wordsEstimated?: boolean;
     wordStyle?: { mode: 'none' | 'highlight' | 'karaoke' | 'word'; color: string };
     id: string; text: string; start: number; len: number; trackId?: string; x: number; y: number; size: number;
@@ -85,7 +90,7 @@ export const emptyTimeline = (): Timeline => ({
 export const canvasOf = (value: unknown): Canvas => {
     const canvas = value && typeof value === 'object' ? value as Partial<Canvas> : {};
     return {
-        aspect_ratio: canvas.aspect_ratio === '9:16' || canvas.aspect_ratio === '1:1' ? canvas.aspect_ratio : '16:9',
+        aspect_ratio: validCanvasAspect(canvas.aspect_ratio) ? canvas.aspect_ratio as CanvasAspect : '16:9',
         frame_rate: canvas.frame_rate === 24 || canvas.frame_rate === 25 || canvas.frame_rate === 60 ? canvas.frame_rate : 30,
     };
 };
@@ -110,7 +115,9 @@ export function timelineOf(value: unknown): Timeline {
     const clip = (kind: 'video' | 'audio', item: Clip) => ({ ...item, start: Math.max(0, Math.round(Number(item.start) || 0)), in: Math.max(0, Number(item.in) || 0), len: Math.max(1,
         Math.round(Number(item.len) || 1)), trackId: trackId(kind, item.trackId), volume: item.volume ?? 1, ...(kind === 'video' ? { transition: item.transition ?? 0 } : {}) });
     return {
-        ...emptyTimeline(), ...rawWithoutFonts, schemaVersion: 3, fps: 30, media, tracks, markers: Array.isArray(raw.markers) ? raw.markers : [],
+        ...emptyTimeline(), ...rawWithoutFonts, schemaVersion: 3, fps: 30,
+        aspect: validCanvasAspect(raw.aspect, { allowSource: true }) ? raw.aspect : '16:9',
+        media, tracks, markers: Array.isArray(raw.markers) ? raw.markers : [],
         ...(rawFonts !== undefined ? { fonts: rawFonts } : {}),
         video: raw.video.map((item) => clip('video', item)),
         audio: raw.audio.map((item) => clip('audio', item)),
@@ -205,13 +212,17 @@ export function copySelections(timeline: Timeline, selections: readonly Selectio
     return items.length ? { items } : null;
 }
 
-export function pasteClipboard(timeline: Timeline, clipboard: Clipboard, frame: number): { timeline: Timeline; selections: Selection[] } | null {
+export function pasteClipboard(timeline: Timeline, clipboard: Clipboard, frame: number, rippleAll = false): { timeline: Timeline; selections: Selection[] } | null {
     if (!clipboard?.items.length) return null;
-    const origin = Math.min(...clipboard.items.map(({ item }) => item.start));
-    let seq = timeline.seq;
+    const at = Math.max(0, Math.round(frame)), origin = Math.min(...clipboard.items.map(({ item }) => item.start));
+    const span = Math.max(...clipboard.items.map(({ item }) => item.start + item.len)) - origin;
+    const candidate = rippleAll ? insertSequenceGap(timeline, at, span) as Timeline & { error?: string } : timeline;
+    if (rippleAll && (candidate as Timeline & { error?: string }).error) return null;
+    const base = candidate as Timeline;
+    let seq = base.seq;
     const additions: Record<TrackKind, (Clip | TextClip)[]> = { video: [], audio: [], text: [] };
     const selections: Selection[] = [];
-    const tracks = [...timeline.tracks], restored = new Map<string, string>();
+    const tracks = [...base.tracks], restored = new Map<string, string>();
     for (const { track, item } of clipboard.items) {
         seq += 1;
         const id = `${track[0]}${seq}`;
@@ -227,18 +238,22 @@ export function pasteClipboard(timeline: Timeline, clipboard: Clipboard, frame: 
             }
             lane = restored.get(key);
         }
-        additions[track].push({ ...item, id, trackId: lane, start: Math.max(0, frame + item.start - origin) });
+        additions[track].push({ ...item, id, trackId: lane, start: at + item.start - origin });
         selections.push({ track, id });
     }
     // Insert, never overlap: on each track the existing items from the insert point on move right by the pasted span;
     // an item the insert point falls inside is split there, and only its tail moves.
-    const next = { ...timeline, seq, tracks } as Timeline;
+    const next = { ...base, seq, tracks } as Timeline;
     for (const track of ['video', 'audio', 'text'] as const) {
         const added = additions[track];
         if (!added.length) continue;
+        if (rippleAll) {
+            (next as Record<TrackKind, (Clip | TextClip)[]>)[track] = [...base[track], ...added];
+            continue;
+        }
         const lanes = new Map<string | undefined, (Clip | TextClip)[]>();
         for (const item of added) lanes.set(item.trackId, [...(lanes.get(item.trackId) ?? []), item]);
-        let existing = timeline[track] as (Clip | TextClip)[];
+        let existing = base[track] as (Clip | TextClip)[];
         for (const [lane, items] of lanes) {
             const from = Math.min(...items.map((item) => item.start));
             const span = Math.max(...items.map((item) => item.start + item.len)) - from;
@@ -254,11 +269,11 @@ export function pasteClipboard(timeline: Timeline, clipboard: Clipboard, frame: 
     return { timeline: { ...next, seq, tracks }, selections };
 }
 
-export function duplicateSelections(timeline: Timeline, selections: readonly Selection[]): { timeline: Timeline; selections: Selection[] } | null {
+export function duplicateSelections(timeline: Timeline, selections: readonly Selection[], rippleAll = false): { timeline: Timeline; selections: Selection[] } | null {
     const clipboard = copySelections(timeline, selections);
     if (!clipboard) return null;
     const end = Math.max(...clipboard.items.map(({ item }) => item.start + item.len));
-    return pasteClipboard(timeline, clipboard, end);
+    return pasteClipboard(timeline, clipboard, end, rippleAll);
 }
 
 /**

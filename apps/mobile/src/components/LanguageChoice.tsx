@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { saveAccountLanguage, saveLanguage } from '../lib/languageStore';
+import { saveAccountLanguage, saveLanguageSync } from '../lib/languageStore';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { ScrollView, View, type ScrollViewInstance, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -37,16 +37,27 @@ export function LanguageChoice({ returnPath, active = ACTIVE_LOCALES, onComplete
         setBusy(true);
         setFailed(false);
         const unchanged = picked === getLocale();
+        // First launch already uses the device locale and therefore cannot need a
+        // direction reload. Persist the explicit choice and reveal sign-in without
+        // waiting for the startup reconciler, which may still be finishing its own
+        // Secure Store read on a cold native launch.
+        if (unchanged && onComplete) {
+            const ok = saveLanguageSync(picked, true);
+            if (ok) onComplete();
+            else setFailed(true);
+            setBusy(false);
+            running.current = false;
+            return;
+        }
         const ready = await directionReconciler.beforeChoice();
         const ok = ready && (unchanged
-            ? ((onComplete ? await saveLanguage(picked, true) : true) && await reconcileLanguageDirection(returnPath, { signedIn: status === 'signedIn', canReloadSession }))
+            ? await reconcileLanguageDirection(returnPath, { signedIn: status === 'signedIn', canReloadSession })
             : await changeLanguage(picked, returnPath, { signedIn: status === 'signedIn', canReloadSession }, {
                 active, onChosen: code => status === 'signedIn' ? saveAccountLanguage(api, code) : Promise.resolve(),
             }));
         if (ok && unchanged) {
-            if (onComplete) onComplete();
             // A reload leaves nothing behind this screen: go to the return path instead of a back that does nothing.
-            else if (router.canGoBack()) router.back();
+            if (router.canGoBack()) router.back();
             else router.replace(returnPath as never);
         }
         if (!ok) setFailed(true);

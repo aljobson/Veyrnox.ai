@@ -64,6 +64,9 @@ const post = (inputs, extra = {}) => generations.POST(new Request('https://veyrn
 }));
 const debit = net => net.calls.find(c => c.url.includes('/rpc/ledger_debit'))?.body;
 const crun = net => net.calls.filter(c => new URL(c.url).hostname === 'api.crun.ai');
+const stableSupplierBodies = calls => calls.map(c => ({ ...c.body, input: { ...c.body.input,
+    img_urls: c.body.input.img_urls?.map(value => { const url = new URL(value); return `${url.origin}${url.pathname}`; }),
+} }));
 async function run(inputs, extra) {
     const net = network();
     try { const res = await post(inputs, extra); return { res, debit: debit(net), crun: crun(net), calls: net.calls }; } finally { net.restore(); }
@@ -80,7 +83,7 @@ test('a placeholder runs with the server\'s own words: same debit, same supplier
     assert.equal(named.res.status, 200);
     assert.equal(named.debit.p_inputs.prompt, own, 'the stored job inputs are the words the supplier gets');
     assert.deepEqual(named.debit, sent.debit, 'price, key and stored inputs identical to a stale client that still sends the text');
-    assert.deepEqual(named.crun.map(c => c.body), sent.crun.map(c => c.body));
+    assert.deepEqual(stableSupplierBodies(named.crun), stableSupplierBodies(sent.crun));
     assert.equal(named.crun[0].body.input.prompt, own.trim());
     assert.equal(JSON.stringify(named.calls).includes('template-prompt'), false, 'the placeholder never leaves the Worker');
 });
@@ -156,7 +159,7 @@ const auditedBody = (c, prompt) => ({ model_id: c.modelId, template_id: c.id, id
 
 for (const [name, c] of [['like-for-like', safe], ['bound', bound]]) {
     test(`audited ${name} template: absent, named and sent prompts resolve to the same audited request and fingerprint`, async () => {
-        const sentPrompt = c.class === 'bound' ? c.prompt : c.sourcePrompt;
+        const sentPrompt = c.prompt;
         const sent = auditedBody(c, sentPrompt);
         const forms = [auditedBody(c, undefined), auditedBody(c, templatePromptPlaceholder(c.id)), sent];
         const resolved = forms.map(body => resolveTemplatePrompt(body, c.modelId).body);

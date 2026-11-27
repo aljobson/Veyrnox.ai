@@ -22,6 +22,7 @@ export default {
     "editorSpeech.quoting": "Checking price…",
     "editorSpeech.queued": "Analysis queued…",
     "editorSpeech.transcribing": "Transcribing audio…",
+    "editorSpeech.retrying": "Connection interrupted. Retrying analysis…",
     "editorSpeech.planning": "Preparing cut suggestions…",
     "editorSpeech.failed": "The analysis could not be completed. Check its status or try again.",
     "editorSpeech.notCharged": "You were not charged",

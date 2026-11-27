@@ -1,4 +1,4 @@
-import { applySpeechRanges, keptAfterRemovals, parseSmartCutAnalysis, retakeRanges, silenceRanges, speechClip } from '../src/lib/speechCut';
+import { applySpeechRanges, keptAfterRemovals, parseSmartCutAnalysis, retakeRanges, silenceRangePlan, silenceRanges, silenceRemovalProposalPlan, SpeechCutPlanError, speechClip } from '../src/lib/speechCut';
 import { emptyTimeline, framesIn, type Timeline } from '../src/lib/nativeEditorModel';
 // Shared fixtures are exercised by the real web normalizer/planner, never copied expected steps.
 const { fixtures, assetId, silence, stretched, words } = require('../../../tests/fixtures/speechCut.mjs');
@@ -46,9 +46,43 @@ test('a stretched word spanning a pause is kept intact', () => {
 test('ten sections and sixty-second output caps match web; locked/overfull timelines refused', () => {
     const result = { language_code: 'eng', text: 'words', words: Array.from({ length: 15 }, (_, i) => ({ type: 'word', text: `word${i}`, start: i * 5, end: i * 5 + 3 })) };
     const { kept, next } = parity(result, 75); expect(kept).toHaveLength(10); expect(framesIn(next!)).toBeLessThanOrEqual(1800);
-    const continuous = parity({ language_code: 'eng', text: 'long', words: [{ type: 'word', text: 'long', start: 0, end: 75 }] }, 75);
-    expect(framesIn(continuous.next!)).toBe(1800);
+    const long = normalized({ language_code: 'eng', text: 'long', words: [{ type: 'word', text: 'long', start: 0, end: 75 }] }, 75);
+    expect(() => web.buildSpeechAwareCutPlan({ clips: [{ id: 'v1', assetId, duration: 75 }], analyses: { [assetId]: long } })).toThrow(expect.objectContaining({ code: 'unit_exceeds_budget' }));
+    expect(() => silenceRangePlan(long, 0, 75)).toThrow(expect.objectContaining({ code: 'unit_exceeds_budget' }));
     const tl = timeline(); tl.tracks = tl.tracks.map(t => ({ ...t, locked: true })); expect(applySpeechRanges(tl, speechClip(tl, null)!, [{ start: 1, end: 2, label: '' }])).toBeNull();
+});
+
+test('trim and output caps drop partial words identically to web', () => {
+    const trimmed = { language_code: 'eng', text: 'partial kept', words: [
+        { type: 'word', text: 'partial', start: 1.8, end: 2.4 },
+        { type: 'word', text: 'kept', start: 2.45, end: 3 },
+    ] };
+    const result = parity(trimmed, 8, 2, 6);
+    expect(result.kept[0].start).toBeGreaterThanOrEqual(2.4);
+    expect(result.kept[0].label).toBe('kept');
+
+    const capped = { language_code: 'eng', text: 'first crossing', words: [
+        { type: 'word', text: 'first', start: 0, end: 59 },
+        { type: 'word', text: 'crossing', start: 59.7, end: 60.3 },
+    ] };
+    expect(parity(capped, 70).kept.at(-1)?.end).toBe(59);
+
+    const onlyPartial = normalized({ language_code: 'eng', text: 'partial', words: [{ type: 'word', text: 'partial', start: 1.8, end: 2.4 }] }, 8);
+    expect(() => silenceRangePlan(onlyPartial, 2, 6)).toThrow(SpeechCutPlanError);
+    expect(() => silenceRangePlan(onlyPartial, 2, 6)).toThrow(expect.objectContaining({ code: 'trim_intersects_unit' }));
+});
+test('in-place silence removal never preselects a trim-boundary word or applies the Smart Cut output cap', () => {
+    const analysis = normalized({ language_code: 'eng', text: 'boundary kept later', words: [
+        { type: 'word', text: 'boundary', start: 1.8, end: 2.4 },
+        { type: 'word', text: 'kept', start: 2.6, end: 3 },
+        { type: 'word', text: 'later', start: 64, end: 65 },
+    ] }, 70);
+    const proposal = silenceRemovalProposalPlan(analysis, 2, 70);
+    const boundaryIndex = proposal.removals.findIndex((range) => range.start <= 2 && range.end >= 2.4);
+    expect(boundaryIndex).toBeGreaterThanOrEqual(0);
+    expect(proposal.checked[boundaryIndex]).toBe(false);
+    expect(proposal.warningDetails.some((warning) => warning.code === 'output_limit_reached')).toBe(false);
+    expect(proposal.ranges.at(-1)?.end).toBeGreaterThanOrEqual(65);
 });
 test('had had, very very, distant repeats, unknown language and fewer than four tokens never propose', () => {
     for (const phrase of ['had had', 'very very', 'I want tea']) {

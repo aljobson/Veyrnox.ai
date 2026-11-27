@@ -57,11 +57,15 @@ test('the output size follows the aspect preset, else the first clip, always eve
     assert.deepEqual(outputSize(1920, 1080, 720), { width: 1280, height: 720 });
     assert.deepEqual(outputSize(1920, 1080, 720, '9:16'), { width: 406, height: 720 });
     assert.deepEqual(outputSize(1920, 1080, 1080, '1:1'), { width: 1080, height: 1080 });
+    assert.deepEqual(outputSize(1920, 1080, 1080, '4:5'), { width: 864, height: 1080 });
+    assert.deepEqual(outputSize(1920, 1080, 720, 'custom:5x8'), { width: 450, height: 720 });
     assert.deepEqual(outputSize(1080, 1920, 1080, '16:9'), { width: 1920, height: 1080 });
     assert.deepEqual(outputSize(0, 0, 999), { width: 1280, height: 720 });
     let tl = twoClips();
     assert.deepEqual(timelineSize(tl, 720), { width: 1280, height: 720 });
     tl = ok(setAspect(tl, '9:16'));
     assert.deepEqual(timelineSize(tl, 1080), { width: 608, height: 1080 });
+    tl = ok(setAspect(tl, 'custom:5x8'));
+    assert.deepEqual(timelineSize(tl, 1080), { width: 676, height: 1080 });
     assert.deepEqual(timelineSize(emptyTimeline(), 720), { width: 1280, height: 720 });
 });

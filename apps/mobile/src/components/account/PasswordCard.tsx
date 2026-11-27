@@ -40,7 +40,7 @@ export function PasswordCard() {
     }
 
     return (
-        <Card title={t('acct.pw.title')} help={t('acct.pw.help')}>
+        <Card title={t('acct.pw.title')} help={t('acct.pw.help')} icon="key" hue="orange">
             <Button variant="tertiary" label={t('acct.pw.send')} disabled={busy} onPress={() => void run(() => requestPasswordCode(getAccessToken), t('acct.pw.sent'))} />
             <View style={styles.fieldGroup}>
                 <Text variant="footnote" tone="secondary">{t('acct.pw.new')}</Text>

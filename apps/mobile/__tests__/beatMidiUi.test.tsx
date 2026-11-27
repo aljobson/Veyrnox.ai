@@ -63,9 +63,10 @@ test('accessibility activation has a deterministic finite release and musical or
 });
 
 test('record panel wraps settings, keeps 44pt switches, and uses static count and record cues', async () => {
+    const onRecord = jest.fn();
     await act(async () => root.render(<BeatMidiRecordPanel {...keyboardProps} phase="countIn" noteCount={3}
         countIn countInStep={2} quantise settingsDisabled layout="accessible"
-        onCountInChange={jest.fn()} onQuantiseChange={jest.fn()} lockReason="Recording controls are locked." />));
+        onCountInChange={jest.fn()} onQuantiseChange={jest.fn()} onRecord={onRecord} lockReason="Recording controls are locked." />));
     for (const id of ['beat-midi-count-in', 'beat-midi-quantise']) {
         const control = root.container.queryAll(n => n.props.testID === id)[0];
         expect(control.props.accessibilityState.disabled).toBe(true);
@@ -74,6 +75,17 @@ test('record panel wraps settings, keeps 44pt switches, and uses static count an
     const status = root.container.queryAll(n => n.props.testID === 'beat-midi-record-status')[0];
     expect(status.props.accessibilityLiveRegion).toBeUndefined();
     expect(root.container.queryAll(n => n.props.testID === 'beat-midi-record-lock')).toHaveLength(1);
+    expect(root.container.queryAll(n => n.props.testID === 'beat-midi-panel-record')).toHaveLength(0);
+    expect(onRecord).not.toHaveBeenCalled();
+});
+
+test('record panel shows its record action only while idle so transport owns stop and cancel', async () => {
+    await act(async () => root.render(<BeatMidiRecordPanel {...keyboardProps} phase="idle" noteCount={0}
+        countIn quantise onCountInChange={jest.fn()} onQuantiseChange={jest.fn()} onRecord={jest.fn()} />));
+    expect(root.container.queryAll(n => n.props.testID === 'beat-midi-panel-record')).toHaveLength(1);
+    await act(async () => root.render(<BeatMidiRecordPanel {...keyboardProps} phase="recording" noteCount={1}
+        countIn quantise onCountInChange={jest.fn()} onQuantiseChange={jest.fn()} onRecord={jest.fn()} />));
+    expect(root.container.queryAll(n => n.props.testID === 'beat-midi-panel-record')).toHaveLength(0);
 });
 
 test('recovery modes expose only valid primary actions and confirm destructive discard', async () => {

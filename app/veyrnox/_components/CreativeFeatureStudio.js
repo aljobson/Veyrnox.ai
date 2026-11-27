@@ -161,7 +161,7 @@ export default function CreativeFeatureStudio({ feature }) {
             <span>{copy.group}</span><span aria-hidden="true">·</span><span>{feature.kind}</span>
           </div>
           <h1 className="vx-display mt-4 text-[42px] leading-[0.95] sm:text-[58px]">{copy.title}</h1>
-          <p className="mt-4 max-w-2xl text-sm leading-6 text-vx-fg-muted">{t('app.features.guide')}</p>
+          <p className="mt-4 max-w-2xl text-sm leading-6 text-vx-fg-muted">{t(feature.blocked ? 'app.features.guardedGuide' : 'app.features.guide')}</p>
         </header>
 
         {example && <section className={`${card} overflow-hidden`}>
@@ -174,7 +174,7 @@ export default function CreativeFeatureStudio({ feature }) {
           {!exampleAsset.startsWith('/') && <p className="px-5 py-3 text-[11px] leading-4 text-vx-fg-faint sm:px-6">{t('app.features.exampleNote')}</p>}
         </section>}
 
-        <section className={`${card} p-5 sm:p-6`}>
+        {!feature.blocked && <><section className={`${card} p-5 sm:p-6`}>
           <div className="flex items-start justify-between gap-4">
             <div><p className="font-vx-mono text-[10px] font-bold uppercase tracking-[0.14em] text-vx-accent">{t('app.features.brief')}</p><h2 className="mt-1 text-xl font-black">{copy.input}</h2></div>
             <span className="font-vx-mono text-[10px] text-vx-fg-faint">{brief.length}/1000</span>
@@ -208,19 +208,19 @@ export default function CreativeFeatureStudio({ feature }) {
           </div>}
           {libraryFor && <LibraryPicker kind={generationSlotKind(libraryFor)} mimeTypes={generationMimeTypes(generationSlotKind(libraryFor))} onClose={() => setLibraryFor(null)} onPick={asset => { pickSource(libraryFor, null, asset); setLibraryFor(null); }} />}
           <p className="mt-4 text-xs leading-5 text-vx-fg-muted">{t('app.features.uploadSafety')}</p>
-        </section>
+        </section></>}
       </div>
 
       <aside className="space-y-5 xl:sticky xl:top-24">
-        <section className={`${card} p-5`}>
+        {!feature.blocked && <section className={`${card} p-5`}>
           <p className="font-vx-mono text-[10px] font-bold uppercase tracking-[0.14em] text-vx-accent">{t('app.features.workflow')}</p>
           <ol className="mt-4 space-y-4">
             {copy.steps.map((step, index) => <li key={step} className="flex gap-3 text-sm leading-5"><span className="font-vx-mono text-xs font-bold text-vx-accent">0{index + 1}</span><span>{step}</span></li>)}
           </ol>
-        </section>
+        </section>}
 
         <section className={`${card} p-5`}>
-          {feature.blocked ? <><p className="text-sm font-black text-vx-danger">{t('app.features.safeguard')}</p><p className="mt-2 text-xs leading-5 text-vx-fg-muted">{copy.blockedReason}</p><Link href="/app/features/text-to-speech" className="mt-5 inline-flex min-h-11 w-full items-center justify-center rounded-full border border-vx-accent px-5 text-sm font-black text-vx-accent">{t('app.features.useTts')}</Link></> : <><p className="font-vx-mono text-[10px] font-bold uppercase tracking-[0.14em] text-vx-fg-muted">{t('app.features.liveModel')}</p><p className="mt-2 text-sm font-black">{copy.title}</p><p role="status" className="mt-2 text-sm text-vx-fg-muted">{priceLabel}</p>{error && <p role="alert" className="mt-4 rounded-xl border border-vx-danger/35 bg-vx-danger/[0.06] px-4 py-3 text-xs leading-5 text-vx-danger">{error}</p>}{uploadProgress && <p role="status" className="mt-4 text-xs font-bold text-vx-accent">{uploadProgress}</p>}<button type="button" disabled={uploading || sourcesConverting} onClick={launch} className="mt-5 min-h-12 w-full rounded-full bg-vx-accent px-5 text-sm font-black text-vx-accent-ink hover:bg-vx-accent-hover disabled:cursor-wait disabled:opacity-60">{uploading ? t('app.features.uploadingAction') : t('app.features.continue')}</button><p className="mt-3 text-center text-[11px] leading-4 text-vx-fg-faint">{t('app.features.finalReview')}</p></>}
+          {feature.blocked ? <><p className="text-sm font-black text-vx-danger">{t('app.features.safeguard')}</p><p className="mt-2 text-xs leading-5 text-vx-fg-muted">{copy.blockedReason}</p><Link href={feature.alternativeHref} className="mt-5 inline-flex min-h-11 w-full items-center justify-center rounded-full border border-vx-accent px-5 text-sm font-black text-vx-accent">{copy.alternativeLabel}</Link></> : <><p className="font-vx-mono text-[10px] font-bold uppercase tracking-[0.14em] text-vx-fg-muted">{t('app.features.liveModel')}</p><p className="mt-2 text-sm font-black">{copy.title}</p><p role="status" className="mt-2 text-sm text-vx-fg-muted">{priceLabel}</p>{error && <p role="alert" className="mt-4 rounded-xl border border-vx-danger/35 bg-vx-danger/[0.06] px-4 py-3 text-xs leading-5 text-vx-danger">{error}</p>}{uploadProgress && <p role="status" className="mt-4 text-xs font-bold text-vx-accent">{uploadProgress}</p>}<button type="button" disabled={uploading || sourcesConverting} onClick={launch} className="mt-5 min-h-12 w-full rounded-full bg-vx-accent px-5 text-sm font-black text-vx-accent-ink hover:bg-vx-accent-hover disabled:cursor-wait disabled:opacity-60">{uploading ? t('app.features.uploadingAction') : t('app.features.continue')}</button><p className="mt-3 text-center text-[11px] leading-4 text-vx-fg-faint">{t('app.features.finalReview')}</p></>}
         </section>
 
         <Link href="/app/features" className="block text-center text-xs font-bold text-vx-accent underline underline-offset-4">{t('app.features.browse')}</Link>

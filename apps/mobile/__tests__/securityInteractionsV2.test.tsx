@@ -17,6 +17,7 @@ import { PasswordCard } from '../src/components/account/PasswordCard';
 import { PasskeysCard } from '../src/components/account/PasskeysCard';
 import { DevicesCard } from '../src/components/account/DevicesCard';
 import { GrantsCard } from '../src/components/account/GrantsCard';
+import { vividHue, type VividHue } from '../src/theme';
 
 jest.mock('expo-clipboard', () => ({ setStringAsync: jest.fn() }), { virtual: true });
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: jest.fn() }));
@@ -66,6 +67,20 @@ async function input(label: string, value: string) { await act(async () => field
 const disabled = (...labels: string[]) => labels.forEach(label => expect(control(label).props.accessibilityState.disabled).toBe(true));
 async function confirm(cancel = false) { const buttons = alert.mock.calls.at(-1)![2]; await act(async () => buttons.find((b: any) => b.style === (cancel ? 'cancel' : 'destructive')).onPress?.()); }
 function deferred<T = void>() { let resolve!: (value: T) => void; const promise = new Promise<T>(r => { resolve = r; }); return { promise, resolve }; }
+
+test.each([
+    [MfaCard, 'purple', 'acct.mfa.title'],
+    [PasskeysCard, 'blue', 'pk.title'],
+    [PasswordCard, 'orange', 'acct.pw.title'],
+    [DevicesCard, 'green', 'acct.dev.title'],
+    [GrantsCard, 'teal', 'acct.oauth.title'],
+] as const)('%s uses a vivid %s section header without changing its controls', async (Component, hue, titleKey) => {
+    await render(<Component />);
+    const title = t(titleKey);
+    const header = root.container.queryAll(n => n.props.accessibilityRole === 'header' && String(n.props.accessibilityLabel).startsWith(title))[0];
+    expect(header).toBeDefined();
+    expect(RN.StyleSheet.flatten(header.props.style).backgroundColor).toBe(vividHue(hue as VividHue, 'dark').fill);
+});
 
 test('TOTP enrolment keeps secret, otpauth action, one-time-code field, wrong-code recovery and adoption', async () => {
     jest.mocked(calls.fetchProfile).mockResolvedValue(profile([]));

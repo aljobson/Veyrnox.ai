@@ -258,7 +258,7 @@ export function MusicServerLibrary({ workspaceView = false, sourcesEnabled = fal
         ) : collection === 'trash' && visible.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-vx-border p-10"><h2 className="font-vx text-2xl font-black">Trash is empty.</h2><p className="mt-3 text-vx-fg-muted">Versions moved here can be restored. Permanent deletion remains unavailable while private asset cleanup is being validated.</p></div>
         ) : collection !== 'trash' && library.songs.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-vx-border p-10"><h2 className="font-vx text-2xl font-black">No completed private versions yet.</h2><p className="mt-3 text-vx-fg-muted">Create an instrumental pair and completed versions will appear here.</p><Link href="/app/music/create" className="mt-6 inline-flex min-h-11 items-center rounded-full bg-vx-accent px-5 font-bold text-vx-accent-ink">Open Create</Link></div>
+          <div className="rounded-2xl border border-dashed border-vx-border p-10"><h2 className="font-vx text-2xl font-black">No completed private tracks yet.</h2><p className="mt-3 text-vx-fg-muted">Create a track and the completed result will appear here.</p><Link href="/app/music/create" className="mt-6 inline-flex min-h-11 items-center rounded-full bg-vx-accent px-5 font-bold text-vx-accent-ink">Open Create</Link></div>
         ) : visible.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-vx-border p-10"><h2 className="font-vx text-2xl font-black">Nothing matches this private view.</h2><p className="mt-3 text-vx-fg-muted">Clear the search or choose another workspace.</p></div>
         ) : (

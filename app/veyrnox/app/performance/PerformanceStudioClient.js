@@ -128,14 +128,13 @@ function SourceCard({ workflow, source, onPick, onLibrary, onSample, sampleLoadi
   const isCartoon = workflow.id === 'talking-cartoon';
   const isAnimal = workflow.id === 'talking-animal';
   const isBabyPodcast = workflow.id === 'baby-podcast';
-  const isObject = workflow.id === 'talking-object';
   const isProductPresenter = workflow.id === 'product-presenter';
   const portraitCreatorHref = isProductPresenter
     ? '/app/create?recipe=product-presenter'
-    : (isBabyPodcast || isObject || isAnimal || isCartoon)
+    : (isBabyPodcast || isAnimal || isCartoon)
       ? '/app/oddlings?recipe=synthetic-avatar'
       : '/app/create?recipe=synthetic-avatar';
-  const title = workflow.sourceKind === 'video' ? 'Source video' : workflow.id === 'singing-photo' ? 'Performer portrait' : isProductPresenter ? 'Approved product composite' : isBabyPodcast ? 'Synthetic baby character' : isObject ? 'Object character' : isCartoon ? 'Character artwork' : isAnimal ? 'Pet or animal image' : 'Portrait';
+  const title = workflow.sourceKind === 'video' ? 'Source video' : workflow.id === 'singing-photo' ? 'Performer portrait' : isProductPresenter ? 'Approved product composite' : isBabyPodcast ? 'Synthetic baby character' : isCartoon ? 'Character artwork' : isAnimal ? 'Pet or animal image' : 'Portrait';
   return (
     <section className={`${card} p-4 sm:p-5`} aria-labelledby="performance-source-title">
       <div className="flex items-start justify-between gap-4">
@@ -167,7 +166,7 @@ function SourceCard({ workflow, source, onPick, onLibrary, onSample, sampleLoadi
         <button type="button" disabled={disabled} onClick={onLibrary} className="min-h-10 rounded-full border border-vx-border px-4 py-2 text-xs font-bold transition-colors hover:border-vx-accent disabled:opacity-40">From Library</button>
         {workflow.sourceKind === 'image' && (
           <>
-            <Link href={portraitCreatorHref} className="inline-flex min-h-10 items-center rounded-full border border-vx-border px-4 py-2 text-xs font-bold transition-colors hover:border-vx-accent">{isBabyPodcast ? 'Create synthetic character' : isProductPresenter ? 'Create product composite' : isObject ? 'Create object character' : isAnimal ? 'Create animal character' : isCartoon ? 'Create character' : 'Create portrait'}</Link>
+            <Link href={portraitCreatorHref} className="inline-flex min-h-10 items-center rounded-full border border-vx-border px-4 py-2 text-xs font-bold transition-colors hover:border-vx-accent">{isBabyPodcast ? 'Create synthetic character' : isProductPresenter ? 'Create product composite' : isAnimal ? 'Create animal character' : isCartoon ? 'Create character' : 'Create portrait'}</Link>
           </>
         )}
       </div>
@@ -196,12 +195,6 @@ function SourceCard({ workflow, source, onPick, onLibrary, onSample, sampleLoadi
         <div className="mt-3 rounded-xl border border-vx-border bg-vx-base px-4 py-3 text-xs leading-5 text-vx-fg-muted">
           <p className="font-bold text-vx-fg-body">Experimental animal compatibility</p>
           <p className="mt-1">Use one animal with a clearly visible, front-facing head and mouth. The current renderer supports a 10-second talking-animal clip; video input, subtitles, picture-in-picture and guaranteed full-body motion are not offered here.</p>
-        </div>
-      )}
-      {isObject && (
-        <div className="mt-3 rounded-xl border border-vx-border bg-vx-base px-4 py-3 text-xs leading-5 text-vx-fg-muted">
-          <p className="font-bold text-vx-fg-body">Experimental object compatibility</p>
-          <p className="mt-1">Use one product, food item, toy, package or everyday object with a clearly designed face and visible mouth. The current renderer supports a 10-second talking-object clip; subtitles, picture-in-picture, guaranteed full-body motion and object physics are not offered here.</p>
         </div>
       )}
       {isBabyPodcast && (
@@ -338,7 +331,6 @@ function SpeechCard({
   const isCartoon = workflow.id === 'talking-cartoon';
   const isAnimal = workflow.id === 'talking-animal';
   const isBabyPodcast = workflow.id === 'baby-podcast';
-  const isObject = workflow.id === 'talking-object';
   const sources = speechSourcesFor(workflow);
   const voiceRecipeMatches = Boolean(voiceRecipeNotice && voiceRecipesMatch(ttsSettings, voiceRecipeNotice.settings));
   return (
@@ -347,7 +339,7 @@ function SpeechCard({
         <div>
           <p className="font-vx-mono text-[10px] font-bold tracking-[0.14em] text-vx-accent">STEP 2</p>
           <h2 id="performance-speech-title" className="mt-1 text-lg font-black">{isSong ? 'Song' : isDubbing ? 'Target-language audio' : 'Speech'}</h2>
-          <p className="mt-1 text-xs leading-5 text-vx-fg-muted">{isSong ? 'Upload or record a song clip you are allowed to use. Nothing is submitted until you approve the quote.' : isDubbing ? 'Paste a reviewed translation, upload an owned dub, or record one here. Nothing is submitted until you approve the quote.' : isBabyPodcast ? 'Write the synthetic character’s line, upload cleared adult audio, or record an adult performance. Never use a real child’s voice.' : isObject ? 'Write the object character’s line, upload owned audio, or record it here. Nothing is submitted until you approve the quote.' : isAnimal ? 'Write the animal’s line, upload owned audio, or record it here. Nothing is submitted until you approve the quote.' : isCartoon ? 'Write the character’s line, upload owned audio, or record it here. Nothing is submitted until you approve the quote.' : 'Choose one source. Nothing is submitted until you approve the quote.'}</p>
+          <p className="mt-1 text-xs leading-5 text-vx-fg-muted">{isSong ? 'Upload or record a song clip you are allowed to use. Nothing is submitted until you approve the quote.' : isDubbing ? 'Paste a reviewed translation, upload an owned dub, or record one here. Nothing is submitted until you approve the quote.' : isBabyPodcast ? 'Write the synthetic character’s line, upload cleared adult audio, or record an adult performance. Never use a real child’s voice.' : isAnimal ? 'Write the animal’s line, upload owned audio, or record it here. Nothing is submitted until you approve the quote.' : isCartoon ? 'Write the character’s line, upload owned audio, or record it here. Nothing is submitted until you approve the quote.' : 'Choose one source. Nothing is submitted until you approve the quote.'}</p>
         </div>
         {((mode === 'script' && script.trim() && !tooLong) || (mode !== 'script' && audio && !audioTooLong)) && <Chip tone="accent">Ready</Chip>}
       </div>
@@ -377,7 +369,7 @@ function SpeechCard({
             rows={5}
             disabled={disabled}
             onChange={(event) => onScript(event.target.value)}
-            placeholder={isDubbing ? 'Paste the exact approved translation the speaker should deliver…' : isBabyPodcast ? 'Write the short podcast line your synthetic character should deliver…' : isObject ? 'Write the exact words your object character should say…' : isAnimal ? 'Write the exact words your animal should say…' : isCartoon ? 'Write the exact words your character should say…' : 'Write the exact words your subject should say…'}
+            placeholder={isDubbing ? 'Paste the exact approved translation the speaker should deliver…' : isBabyPodcast ? 'Write the short podcast line your synthetic character should deliver…' : isAnimal ? 'Write the exact words your animal should say…' : isCartoon ? 'Write the exact words your character should say…' : 'Write the exact words your subject should say…'}
           />
           <div className="mt-2 flex flex-wrap justify-between gap-2 text-xs">
             <span className={tooLong ? 'text-vx-danger' : 'text-vx-fg-muted'}>
@@ -481,9 +473,7 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
     ? 'talking-cartoon'
     : pathname === '/app/talking-animals'
       ? 'talking-animal'
-      : pathname === '/app/talking-objects'
-        ? 'talking-object'
-        : pathname === '/app/baby-podcast'
+      : pathname === '/app/baby-podcast'
           ? 'baby-podcast'
         : null;
   const dedicatedCharacterRecipe = dedicatedCharacterWorkflow === 'baby-podcast' ? 'minor-podcast' : dedicatedCharacterWorkflow;
@@ -546,7 +536,7 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
     const params = new URLSearchParams(window.location.search);
     const requested = params.get('workflow') || params.get('recipe') || initialWorkflowId || dedicatedCharacterWorkflow || (dedicatedProductPresenter ? 'product-presenter' : dedicatedDubbing ? 'video-dubbing' : dedicatedSingingPhoto ? 'singing-photo' : dedicatedTalkingAvatar ? 'talking-photo' : null);
     const requestedAvatar = params.get('avatar');
-    if (pendingPerformanceDraft.current === undefined) pendingPerformanceDraft.current = (dedicatedLipSync || ['baby-podcast', 'singing-photo', 'talking-cartoon', 'talking-animal', 'talking-object'].includes(requested)) ? readPerformanceDraft(window.sessionStorage) : null;
+    if (pendingPerformanceDraft.current === undefined) pendingPerformanceDraft.current = (dedicatedLipSync || ['baby-podcast', 'singing-photo', 'talking-cartoon', 'talking-animal'].includes(requested)) ? readPerformanceDraft(window.sessionStorage) : null;
     if (pendingDubbingDraft.current === undefined) pendingDubbingDraft.current = requested === 'video-dubbing' ? readDubbingDraft(window.sessionStorage) : null;
     if (pendingDialogueDubbingHandoff.current === undefined) pendingDialogueDubbingHandoff.current = requested === 'video-dubbing' ? readDialogueDubbingHandoff(window.sessionStorage, params.get('audio')) : null;
     const importedDraft = pendingPerformanceDraft.current;
@@ -577,7 +567,7 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
     }
     if (dedicatedLipSync && !requested) {
       const timer = setTimeout(() => {
-        setWorkflowId('video-lip-sync');
+        setWorkflowId('talking-photo');
         setSpeechSource('script');
       }, 0);
       return () => clearTimeout(timer);
@@ -637,6 +627,7 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
     ttsCredits: ttsModel?.credits,
     captionsCredits,
   }), [captionsCredits, lipModel?.credits, speechSource, ttsModel?.credits]);
+  const quoteAvailable = Boolean(lipModel && (speechSource !== 'script' || ttsModel));
   const dubbingBatchUnitCredits = useMemo(() => performanceQuote({
     lipSyncCredits: lipModel?.credits,
     speechSource: 'script',
@@ -650,6 +641,22 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
   const job = jobs[0] || null;
   const busy = sending || generating || ['uploading', 'speech', 'rendering', 'captioning', 'batch-speech', 'batch-rendering', 'batch-captioning'].includes(stage);
   const compositionStatus = talkingAvatarCompositionStatus(composition, background, { subtitlesAvailable: captionRendererAvailable });
+
+  useEffect(() => {
+    if (!dedicatedLipSync || catalogLoading || performanceModels.length) return undefined;
+    const fallbackId = ['talking-photo', 'video-lip-sync']
+      .find((id) => availablePerformanceModels(models, id).length > 0);
+    if (!fallbackId || fallbackId === workflowId) return undefined;
+    const next = workflowById(fallbackId);
+    const timer = setTimeout(() => {
+      setWorkflowId(fallbackId);
+      setPerformanceModelId(null);
+      setSpeechSource(next.defaultSpeechSource);
+      setConsent(false);
+      setError(null);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [catalogLoading, dedicatedLipSync, models, performanceModels.length, workflowId]);
 
   const setVisualFile = useCallback((file) => {
     if (visualRef.current?.previewUrl?.startsWith('blob:')) URL.revokeObjectURL(visualRef.current.previewUrl);
@@ -1716,12 +1723,12 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
         <header className="flex flex-col gap-6 border-b border-vx-border pb-8 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <div className="flex flex-wrap items-center gap-3">
-              <p className="font-vx-mono text-[10px] font-bold tracking-[0.16em] text-vx-accent">{dedicatedCharacterWorkflow === 'talking-cartoon' ? 'TALKING ILLUSTRATION STUDIO' : dedicatedCharacterWorkflow === 'talking-animal' ? 'TALKING ANIMALS STUDIO' : dedicatedCharacterWorkflow === 'talking-object' ? 'TALKING OBJECTS STUDIO' : dedicatedCharacterWorkflow === 'baby-podcast' ? 'SYNTHETIC BABY PODCAST STUDIO' : dedicatedProductPresenter ? 'PRODUCT AVATAR ANIMATION STUDIO' : dedicatedDubbing ? 'VIDEO DUBBING STUDIO' : dedicatedSingingPhoto ? 'SINGING PHOTO STUDIO' : dedicatedTalkingAvatar ? 'TALKING AVATAR STUDIO' : dedicatedLipSync ? 'LIP SYNC STUDIO' : 'PERFORMANCE STUDIO · PREVIEW'}</p>
+              <p className="font-vx-mono text-[10px] font-bold tracking-[0.16em] text-vx-accent">{dedicatedCharacterWorkflow === 'talking-cartoon' ? 'TALKING ILLUSTRATION STUDIO' : dedicatedCharacterWorkflow === 'talking-animal' ? 'TALKING ANIMALS STUDIO' : dedicatedCharacterWorkflow === 'baby-podcast' ? 'SYNTHETIC BABY PODCAST STUDIO' : dedicatedProductPresenter ? 'PRODUCT AVATAR ANIMATION STUDIO' : dedicatedDubbing ? 'VIDEO DUBBING STUDIO' : dedicatedSingingPhoto ? 'SINGING PHOTO STUDIO' : dedicatedTalkingAvatar ? 'TALKING AVATAR STUDIO' : dedicatedLipSync ? 'LIP SYNC STUDIO' : 'PERFORMANCE STUDIO · PREVIEW'}</p>
               <Chip tone="neutral">{live ? 'Live catalog' : 'Cached catalog'}</Chip>
             </div>
-            <h1 className="vx-display mt-3 text-[40px] leading-[0.95] sm:text-[58px]">{dedicatedTalkingAvatar ? 'Reuse the face. Change the message.' : dedicatedLipSync ? (workflow.id === 'video-lip-sync' ? 'Keep the performance. Change the words.' : 'Turn one portrait into a speaker.') : workflow.id === 'singing-photo' ? 'Turn a portrait into a performance.' : workflow.id === 'video-dubbing' ? 'Localise the voice. Keep the performance.' : workflow.id === 'product-presenter' ? 'Make the product pitch feel human.' : workflow.id === 'baby-podcast' ? 'Host a tiny podcast—synthetically.' : workflow.id === 'talking-object' ? 'Give an object a point of view.' : workflow.id === 'talking-animal' ? 'Give an animal a voice.' : workflow.id === 'talking-cartoon' ? 'Make an illustration speak.' : 'Give a face the right words.'}</h1>
+            <h1 className="vx-display mt-3 text-[40px] leading-[0.95] sm:text-[58px]">{dedicatedTalkingAvatar ? 'Reuse the face. Change the message.' : dedicatedLipSync ? (workflow.id === 'video-lip-sync' ? 'Keep the performance. Change the words.' : 'Turn one portrait into a speaker.') : workflow.id === 'singing-photo' ? 'Turn a portrait into a performance.' : workflow.id === 'video-dubbing' ? 'Localise the voice. Keep the performance.' : workflow.id === 'product-presenter' ? 'Make the product pitch feel human.' : workflow.id === 'baby-podcast' ? 'Host a tiny podcast—synthetically.' : workflow.id === 'talking-animal' ? 'Give an animal a voice.' : workflow.id === 'talking-cartoon' ? 'Make an illustration speak.' : 'Give a face the right words.'}</h1>
             <p className="mt-4 max-w-2xl text-sm leading-6 text-vx-fg-muted sm:text-base">
-              {dedicatedTalkingAvatar ? 'Choose a saved avatar passport, an approved portrait, an owned Library image, or a Veyrnox.ai-original starter. Then write a script, upload owned audio, or record in the browser. The ten-second model limit, consent gate, exact staged quote, refunds, download and provenance stay visible.' : dedicatedLipSync ? 'Start with a permitted video or portrait, then write a script, upload owned audio, or record in the browser. Source limits, the two-stage speech charge, consent, and the final quote stay visible before anything runs.' : workflow.id === 'singing-photo' ? 'Start with one permitted portrait, then upload or record a cleared song clip. Veyrnox.ai shows the real model limit and price before anything runs.' : workflow.id === 'video-dubbing' ? 'Start with a short source video and a reviewed translation or owned dub. Veyrnox.ai shows the stock-voice and lip-sync charges before either job runs.' : workflow.id === 'product-presenter' ? 'Start with an approved presenter-and-product composite, then write, upload or record the pitch. Veyrnox.ai shows the separate speech and animation charges before either job runs.' : workflow.id === 'baby-podcast' ? 'Start with a fully synthetic baby character, then add a short script, cleared adult audio or an adult recording. Real child identities and voices are outside this workflow.' : workflow.id === 'talking-object' ? 'Start with one original object character—a product, food item, toy, package or everyday object—then write, upload or record its line. The experimental 10-second contract and full credit path stay visible.' : workflow.id === 'talking-animal' ? 'Start with one permitted pet, wildlife or mascot image, then write, upload or record the speech. Veyrnox.ai keeps the experimental 10-second model contract and full credit path visible.' : workflow.id === 'talking-cartoon' ? 'Start with one original or licensed character, then write, upload or record the speech. Veyrnox.ai keeps the renderer’s 10-second compatibility limit and full credit path visible.' : 'Start with a portrait or video, then write, upload or record the speech. Veyrnox.ai shows the whole credit path before anything runs.'}
+              {dedicatedTalkingAvatar ? 'Choose a saved avatar passport, an approved portrait, an owned Library image, or a Veyrnox.ai-original starter. Then write a script, upload owned audio, or record in the browser. The ten-second model limit, consent gate, exact staged quote, refunds, download and provenance stay visible.' : dedicatedLipSync ? 'Start with a permitted video or portrait, then write a script, upload owned audio, or record in the browser. Source limits, the two-stage speech charge, consent, and the final quote stay visible before anything runs.' : workflow.id === 'singing-photo' ? 'Start with one permitted portrait, then upload or record a cleared song clip. Veyrnox.ai shows the real model limit and price before anything runs.' : workflow.id === 'video-dubbing' ? 'Start with a short source video and a reviewed translation or owned dub. Veyrnox.ai shows the stock-voice and lip-sync charges before either job runs.' : workflow.id === 'product-presenter' ? 'Start with an approved presenter-and-product composite, then write, upload or record the pitch. Veyrnox.ai shows the separate speech and animation charges before either job runs.' : workflow.id === 'baby-podcast' ? 'Start with a fully synthetic baby character, then add a short script, cleared adult audio or an adult recording. Real child identities and voices are outside this workflow.' : workflow.id === 'talking-animal' ? 'Start with one permitted pet, wildlife or mascot image, then write, upload or record the speech. Veyrnox.ai keeps the experimental 10-second model contract and full credit path visible.' : workflow.id === 'talking-cartoon' ? 'Start with one original or licensed character, then write, upload or record the speech. Veyrnox.ai keeps the renderer’s 10-second compatibility limit and full credit path visible.' : 'Start with a portrait or video, then write, upload or record the speech. Veyrnox.ai shows the whole credit path before anything runs.'}
             </p>
           </div>
           <div className="max-w-xs lg:text-right">
@@ -1731,8 +1738,6 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
         </header>
 
         {dedicatedLipSync && workflow.id === 'video-lip-sync' && <StudioExampleCard slug="lip-sync" title="AI Lip Sync" poster="/examples/lip-sync.jpg" />}
-        {dedicatedCharacterWorkflow === 'talking-object' && <StudioExampleCard slug="talking-objects" title="Talking Objects" />}
-
         {activeRecipe && (
           <section aria-label={`${activeRecipe.title} recipe`} className="mt-6 rounded-2xl border border-vx-accent/35 bg-vx-accent/[0.06] p-4 sm:p-5">
             <div className="flex flex-wrap items-start justify-between gap-4">
@@ -1753,19 +1758,20 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
         {dedicatedLipSync && (
           <section aria-labelledby="lip-sync-engine-title" className="mt-6 overflow-hidden rounded-2xl border border-vx-border bg-vx-panel">
             <div className="border-b border-vx-border px-4 py-4 sm:px-5">
-              <p className="font-vx-mono text-[10px] font-bold uppercase tracking-[0.14em] text-vx-accent">Live model contracts</p>
+              <p className="font-vx-mono text-[10px] font-bold uppercase tracking-[0.14em] text-vx-accent">Available model contracts</p>
               <h2 id="lip-sync-engine-title" className="mt-1 text-xl font-black">Choose the source—not a vague quality toggle.</h2>
-              <p className="mt-2 max-w-3xl text-sm leading-6 text-vx-fg-muted">These are separate live engines. Video Lip Sync preserves an existing performance; Talking Photo creates a new one from a still portrait. The selected engine fixes the accepted source, model and duration limit.</p>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-vx-fg-muted">These are separate engines. Video Lip Sync preserves an existing performance; Talking Photo creates a new one from a still portrait. Only an engine backed by the live catalog can be selected.</p>
             </div>
             <div className="grid sm:grid-cols-2" role="list" aria-label="Live lip-sync engine contracts">
               {LIP_SYNC_ENGINE_CONTRACTS.map((contract) => {
                 const selected = contract.workflowId === workflow.id;
+                const available = availablePerformanceModels(models, contract.workflowId).length > 0;
                 return (
                   <div key={contract.workflowId} role="listitem" className="border-b border-vx-border p-4 last:border-b-0 sm:border-b-0 sm:border-r sm:last:border-r-0 sm:p-5">
-                    <button type="button" aria-pressed={selected} disabled={busy} onClick={() => chooseWorkflow(contract.workflowId)} className="w-full rounded-xl border border-vx-border bg-vx-base p-4 text-left transition-colors hover:border-vx-accent disabled:opacity-55 aria-pressed:border-vx-accent aria-pressed:ring-2 aria-pressed:ring-vx-accent/20">
+                    <button type="button" aria-pressed={selected} disabled={busy || !available} onClick={() => chooseWorkflow(contract.workflowId)} className="w-full rounded-xl border border-vx-border bg-vx-base p-4 text-left transition-colors hover:border-vx-accent disabled:opacity-55 aria-pressed:border-vx-accent aria-pressed:ring-2 aria-pressed:ring-vx-accent/20">
                       <span className="flex flex-wrap items-center justify-between gap-2">
                         <span className="text-base font-black">{workflowById(contract.workflowId).label}</span>
-                        <span className={`rounded-full px-2.5 py-1 font-vx-mono text-[9px] font-bold uppercase tracking-[0.1em] ${selected ? 'bg-vx-accent text-vx-accent-ink' : 'border border-vx-border text-vx-fg-muted'}`}>{selected ? 'Selected' : contract.badge}</span>
+                        <span className={`rounded-full px-2.5 py-1 font-vx-mono text-[9px] font-bold uppercase tracking-[0.1em] ${selected && available ? 'bg-vx-accent text-vx-accent-ink' : 'border border-vx-border text-vx-fg-muted'}`}>{!available ? 'Unavailable' : selected ? 'Selected' : contract.badge}</span>
                       </span>
                       <span className="mt-3 block text-sm leading-5 text-vx-fg-body">{contract.summary}</span>
                       <span className="mt-4 grid grid-cols-3 gap-2 border-y border-vx-border py-3">
@@ -1794,6 +1800,7 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {visibleWorkflows.map((item) => {
               const engineContract = dedicatedLipSync ? lipSyncEngineContract(item) : null;
+              const available = item.status === 'available' && availablePerformanceModels(models, item).length > 0;
               const content = (
                 <>
                   <span className="font-vx-mono text-[9px] font-bold tracking-[0.12em] text-vx-fg-faint">{item.eyebrow}</span>
@@ -1801,13 +1808,13 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
                   <span className="mt-2 block text-[11px] leading-4 text-vx-fg-muted">{item.description}</span>
                   {engineContract && <span className="mt-2 block font-vx-mono text-[9px] font-bold uppercase tracking-[0.08em] text-vx-fg-faint">{engineContract.modelLabel} · {engineContract.maxSeconds}s max</span>}
                   <span className={`mt-3 block font-vx-mono text-[9px] font-bold tracking-[0.1em] ${item.status === 'planned' ? 'text-vx-fg-faint' : 'text-vx-accent'}`}>
-                    {item.status === 'available' ? '● AVAILABLE' : item.href ? '↗ OPEN TOOL' : '○ PLANNED'}
+                    {item.status === 'available' ? available ? '● AVAILABLE' : '○ UNAVAILABLE' : item.href ? '↗ OPEN TOOL' : '○ PLANNED'}
                   </span>
                 </>
               );
               const className = 'min-h-36 rounded-2xl border border-vx-border bg-vx-panel p-4 text-left transition-colors hover:border-vx-accent disabled:cursor-not-allowed disabled:opacity-55 aria-pressed:border-vx-accent aria-pressed:bg-vx-accent/[0.07]';
               if (item.href) return <Link key={item.id} href={item.href} className={className}>{content}</Link>;
-              return <button key={item.id} type="button" disabled={item.status !== 'available' || busy} aria-pressed={workflowId === item.id} onClick={() => chooseWorkflow(item.id)} className={className}>{content}</button>;
+              return <button key={item.id} type="button" disabled={!available || busy} aria-pressed={workflowId === item.id} onClick={() => chooseWorkflow(item.id)} className={className}>{content}</button>;
             })}
           </div>
         </section>
@@ -1822,7 +1829,7 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
                     <h2 id="talking-photo-model-title" className="mt-1 text-lg font-black">Choose speed, fidelity and price</h2>
                     <p className="mt-1 max-w-2xl text-xs leading-5 text-vx-fg-muted">Both models accept one permitted image and speech up to ten seconds. Each card uses its own live catalog price.</p>
                   </div>
-                  <span className="rounded-full border border-vx-border px-3 py-1.5 font-vx-mono text-[9px] font-bold uppercase tracking-[0.1em] text-vx-fg-muted">2 live models</span>
+                  <span className="rounded-full border border-vx-border px-3 py-1.5 font-vx-mono text-[9px] font-bold uppercase tracking-[0.1em] text-vx-fg-muted">{performanceModels.length} available</span>
                 </div>
                 <div className="mt-4 grid gap-3 sm:grid-cols-2" role="list" aria-label="Talking Photo models">
                   {TALKING_PHOTO_MODEL_CONTRACTS.map((contract) => {
@@ -1850,7 +1857,7 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
                     <h2 id="video-lip-sync-model-title" className="mt-1 text-lg font-black">Choose duration, cost and mismatch handling</h2>
                     <p className="mt-1 max-w-2xl text-xs leading-5 text-vx-fg-muted">{dedicatedDubbing ? 'Quick clip is the lower-cost 40-second path. Long-form accepts an owned video and speech track up to three minutes; reviewed text remains bounded by the editor’s script limit.' : 'Both models preserve an existing performance. Long-form expands the server-enforced source limit from 40 seconds to three minutes.'}</p>
                   </div>
-                  <span className="rounded-full border border-vx-border px-3 py-1.5 font-vx-mono text-[9px] font-bold uppercase tracking-[0.1em] text-vx-fg-muted">2 live models</span>
+                  <span className="rounded-full border border-vx-border px-3 py-1.5 font-vx-mono text-[9px] font-bold uppercase tracking-[0.1em] text-vx-fg-muted">{performanceModels.length} available</span>
                 </div>
                 <div className="mt-4 grid gap-3 sm:grid-cols-2" role="list" aria-label={dedicatedDubbing ? 'Video Dubbing engines' : 'Video Lip Sync models'}>
                   {VIDEO_LIP_SYNC_MODEL_CONTRACTS.map((contract) => {
@@ -2017,8 +2024,6 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
                         ? 'I own or may use this presenter likeness, product, packaging, branding and speech. Every product claim and implied endorsement is accurate and approved, and I will disclose synthetic media where required.'
                       : workflow.id === 'baby-podcast'
                         ? 'I confirm this character is fully synthetic and does not depict a real child. The speech is stock-generated or performed by a consenting adult; no child voice, private information, sexual content, exploitation or deceptive claim is included.'
-                      : workflow.id === 'talking-object'
-                        ? 'I own or license this object design and speech. I have permission for every identifiable person, voice, logo and brand represented; product claims are accurate, no endorsement is implied, and I am not presenting the result as authentic footage.'
                       : workflow.id === 'talking-animal'
                         ? 'I own or license this animal image and speech. I have permission for every identifiable person, voice, logo and brand represented, and the source was created without harming or distressing an animal.'
                       : workflow.id === 'talking-cartoon'
@@ -2099,7 +2104,7 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
                 <div>
                   <p className="font-vx-mono text-[10px] font-bold tracking-[0.14em] text-vx-fg-muted">MODEL</p>
                   <p className="mt-2 text-sm font-black">{lipModel?.name || 'Model unavailable'}</p>
-                  <p className="mt-1 text-xs leading-5 text-vx-fg-muted">{activeMaxSeconds}s maximum · {workflow.id === 'product-presenter' ? 'product composite' : workflow.id === 'baby-podcast' ? 'synthetic baby character' : workflow.id === 'talking-object' ? 'object character' : workflow.id === 'talking-animal' ? 'animal image' : workflow.id === 'talking-cartoon' ? 'illustration' : workflow.sourceKind === 'image' ? 'portrait' : 'video'} + {workflow.id === 'singing-photo' ? 'cleared song' : 'speech'}</p>
+                  <p className="mt-1 text-xs leading-5 text-vx-fg-muted">{activeMaxSeconds}s maximum · {workflow.id === 'product-presenter' ? 'product composite' : workflow.id === 'baby-podcast' ? 'synthetic baby character' : workflow.id === 'talking-animal' ? 'animal image' : workflow.id === 'talking-cartoon' ? 'illustration' : workflow.sourceKind === 'image' ? 'portrait' : 'video'} + {workflow.id === 'singing-photo' ? 'cleared song' : 'speech'}</p>
                 </div>
                 {lipModel && <span className="font-vx-mono text-sm font-bold text-vx-money">{lipModel.credits} cr</span>}
               </div>
@@ -2129,7 +2134,7 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
                 <p className="font-vx-mono text-[10px] font-bold tracking-[0.14em] text-vx-fg-muted">APPROVE TOTAL</p>
                 <p className="font-vx-mono text-[11px] text-vx-fg-muted">balance {balance ?? '—'} cr</p>
               </div>
-              <p className="mt-2 font-vx-mono text-[38px] font-black text-vx-money">−{quote.totalCredits} cr</p>
+              <p className="mt-2 font-vx-mono text-[38px] font-black text-vx-money">{quoteAvailable ? `−${quote.totalCredits} cr` : 'Unavailable'}</p>
               {speechSource === 'script' && (
                 <p className="mt-2 text-xs leading-5 text-vx-fg-muted">
                   {quote.speechCredits} credits for speech, then {quote.lipSyncCredits} for {workflow.id === 'product-presenter' ? 'presenter animation' : 'lip sync'}. If speech succeeds but {workflow.id === 'product-presenter' ? 'animation' : 'lip sync'} cannot start, the speech stays in Library and only its charge stands.
@@ -2137,8 +2142,8 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
               )}
               {composition.subtitles && <p className="mt-2 text-xs leading-5 text-vx-fg-muted">The base performance is created first, then up to {captionsCredits} credits are charged for burned subtitles, based on the finished video&apos;s length. If captioning fails, that second job is refunded and the base video remains in Library.</p>}
               {composition.pictureInPicture && <p className="mt-2 text-xs leading-5 text-vx-fg-muted">Picture-in-picture adds no credits. After the performance succeeds, this browser combines it with the selected background and prepares a local WebM download.</p>}
-              <Button className="mt-5 w-full justify-between" cost={quote.totalCredits} disabled={blocked} onClick={submit}>
-                {sending ? 'Preparing…' : generating ? 'Generation running' : workflow.id === 'video-dubbing' ? 'Create dubbed video' : workflow.id === 'product-presenter' ? 'Create product presenter' : workflow.id === 'baby-podcast' ? 'Create synthetic baby podcast' : workflow.id === 'talking-object' ? 'Create talking object' : workflow.id === 'talking-animal' ? 'Create talking animal' : workflow.id === 'talking-cartoon' ? 'Create talking illustration' : 'Create performance'}
+              <Button className="mt-5 w-full justify-between" cost={quoteAvailable ? quote.totalCredits : undefined} disabled={blocked} onClick={submit}>
+                {!quoteAvailable ? 'Model unavailable' : sending ? 'Preparing…' : generating ? 'Generation running' : workflow.id === 'video-dubbing' ? 'Create dubbed video' : workflow.id === 'product-presenter' ? 'Create product presenter' : workflow.id === 'baby-podcast' ? 'Create synthetic baby podcast' : workflow.id === 'talking-animal' ? 'Create talking animal' : workflow.id === 'talking-cartoon' ? 'Create talking illustration' : 'Create performance'}
               </Button>
               {!visual && <p className="mt-3 text-xs text-vx-fg-muted">Add the required source.</p>}
               {visual && !speechReady && <p className="mt-3 text-xs text-vx-fg-muted">Add {workflow.id === 'singing-photo' ? 'a cleared song clip' : 'speech'} that fits the {activeMaxSeconds}s model limit.</p>}

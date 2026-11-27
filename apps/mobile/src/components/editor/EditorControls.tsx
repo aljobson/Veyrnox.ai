@@ -2,7 +2,7 @@ import { rawText } from '../../lib/i18n/translate';
 import { Pressable, Text, TextInput, View } from 'react-native';
 import { HEADER_MAX_FONT_SCALE, touchTarget } from '../../lib/a11y';
 import { formatNumber, t } from '../../lib/i18n';
-import { colors } from '../../theme';
+import { studioColors as colors } from '../../theme';
 import { styles } from './fullEditorStyles';
 
 export function Command({ icon, label, onPress, disabled = false, danger = false, selected = false }: { icon: string; label: string; onPress(): void; disabled?: boolean; danger?: boolean; selected?: boolean }) {

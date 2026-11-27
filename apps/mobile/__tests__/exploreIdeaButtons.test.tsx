@@ -18,19 +18,13 @@ jest.mock('expo-image', () => ({ Image: jest.requireActual('react-native').Image
 void [RN.View, RN.Text, RN.Pressable, RN.ScrollView, RN.ActivityIndicator];
 
 let root: Root;
-const button = (label: string) => root.container.queryAll(n => n.props.accessibilityRole === 'button').find(n => n.props.accessibilityLabel === label);
-const idle = (n: any) => typeof n.props.style === 'function' ? n.props.style({ pressed: false }) : n.props.style;
-const flat = (style: any): Record<string, unknown> => Object.assign({}, ...[style].flat(9).filter(Boolean));
 beforeEach(() => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; root = createRoot(); });
 afterEach(async () => { await act(async () => root.unmount()); });
 
-// QA 2.2: with nothing typed, Make a video was greyed but Make an image still looked ready.
-test('with an empty idea both Make buttons are disabled and look the same', async () => {
+test('Explore does not repeat Create with a generic idea composer', async () => {
     await act(async () => root.render(<Home />));
-    const video = button(t('explore.makeVideo'))!, image = button(t('explore.makeImage'))!;
-    expect(video.props.accessibilityState.disabled).toBe(true);
-    expect(image.props.accessibilityState.disabled).toBe(true);
-    const a = flat(idle(video)), b = flat(idle(image));
-    expect(b.backgroundColor).toBe(a.backgroundColor);
-    expect(b.opacity).toBe(a.opacity);
+    const labels = root.container.queryAll(node => typeof node.props.accessibilityLabel === 'string').map(node => node.props.accessibilityLabel);
+    expect(labels).not.toContain(t('explore.ideaTitle'));
+    expect(labels).not.toContain(t('explore.makeVideo'));
+    expect(labels).not.toContain(t('explore.makeImage'));
 });

@@ -57,7 +57,7 @@
   {
     "area": "editor",
     "name": "Editor",
-    "text": "Add files from this computerAdd from my LibraryAdd textUndoRedoDuplicatePlay0:00.0 / 0:00.0Timeline zoom Space play · S split · ⌘/Ctrl Z undo · Shift Z redo · ⌘/Ctrl D duplicateAdd a video, sound or title to start. Up to 60 seconds, 10 video clips and 10 sounds.Select a clip or a text on the timeline to change it.ShapeSame as the first clip16:9 landscape9:16 portrait1:1 squareSize720p1080pExport MP4Editing and export run in this browser and use no credits. Saving a project stores its timeline and settings in your workspace; files from this computer stay here. Keep this tab open during export. Preview and export share the same audio mix. Imported sources can be up to 10 minutes; this edit is up to 60 seconds."
+    "text": "Add files from this computerAdd from my LibraryAdd textUndoRedoDuplicatePlay0:00.0 / 0:00.0Timeline zoom Space play · S split · ⌘/Ctrl Z undo · Shift Z redo · ⌘/Ctrl D duplicateAdd a video, sound or title to start. Up to 60 seconds, 10 video clips and 10 sounds.Select a clip or a text on the timeline to change it.ShapeSame as the first clip16:9 landscape9:16 portrait1:1 square4:5Size720p1080pExport MP4Editing and export run in this browser and use no credits. Saving a project stores its timeline and settings in your workspace; files from this computer stay here. Keep this tab open during export. Preview and export share the same audio mix. Imported sources can be up to 10 minutes; this edit is up to 60 seconds."
   },
   {
     "area": "create",

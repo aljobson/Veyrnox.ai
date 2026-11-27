@@ -24,3 +24,18 @@ test('sheet displays the exact server quote and restored original quote', async 
     expect(contains(t('beatAi.original'))).toBeGreaterThan(0);
     expect(c.request).not.toHaveBeenCalled(); await act(async () => root.unmount());
 });
+
+test('embedded AI uses one compact prompt and an inline submit icon', async () => {
+    (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+    jest.spyOn(RN.AppState, 'addEventListener').mockImplementation(() => ({ remove: jest.fn() }));
+    const root = createRoot(), c = client(), storage = pendingStore(files().port);
+    const request = new ReceiptRequest<Pending>({ owner, beatId, client: c.client, storage, current: () => true, off: jest.fn(), finish: async () => ({ noticeKey: '' }) });
+    request.open();
+    await act(async () => root.render(<BeatAiSheet request={request} client={c.client} doc={doc()} op="generate" onClose={request.close} embedded />));
+    const prompt = root.container.queryAll(n => n.props.accessibilityLabel === t('beatAi.prompt') && typeof n.props.onChangeText === 'function')[0];
+    const submit = root.container.queryAll(n => n.props.testID === 'music-ai-submit')[0];
+    expect(prompt).toBeDefined(); expect(prompt.props.multiline).toBe(false); expect(prompt.props.returnKeyType).toBe('send');
+    expect(submit).toBeDefined();
+    expect(root.container.queryAll(n => n.children.includes(t('beatAi.price')))).toHaveLength(0);
+    await act(async () => root.unmount());
+});

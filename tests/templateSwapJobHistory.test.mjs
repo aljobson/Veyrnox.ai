@@ -9,12 +9,12 @@ import { barRows, expectedDurationMs } from '../app/veyrnox/_lib/generationProgr
 // swap is written to the job history the bar reads, and nothing else is.
 const offer = { id: 'test', model: 'kling-o1-reference', credits: 47, name: 'Kling O1' };
 const pngs = () => [new Blob(['front'], { type: 'image/png' }), new Blob(['crop'], { type: 'image/png' })];
-function setup(gateway) {
+function setup(gateway, over = {}) {
   const started = []; let key = 0;
   const store = createSwapStore({ revoke: () => {} }); store.session('A');
   const actions = createSwapActions(store, { makeKey: () => `key-${++key}`, processPhoto: async () => ({ files: pngs() }),
     upload: async () => `upload-${++key}`, gateway, objectURL: () => `blob:${++key}`, wait: async () => {},
-    jobStarted: job => started.push(job) });
+    jobStarted: job => started.push(job), ...over });
   return { store, actions, started };
 }
 
@@ -85,18 +85,19 @@ test('the web runtime writes accepted swaps to the job history; both swap screen
 
 test('a running swap keeps being read past 12 lookups and settles instead of showing unresolved', async () => {
   const { POLL_LIMIT, LIVE_POLL_LIMIT } = await import('../app/veyrnox/_lib/templateSwapActions.mjs');
-  let reads = 0; const waits = [];
+  let reads = 0; const waits = [], settlements = [];
   const s = setup(async path => {
     if (path === '/generations') return { job_id: 'slow-job' };
     if (path === '/balance') return { balance: 5 };
     reads++;
     return { job: { id: 'slow-job', state: reads < 20 ? 'running' : 'succeeded', refunded: false, refund_state: 'none' } };
-  });
+  }, { jobSettled: (...args) => settlements.push(args) });
   await s.actions.choose('test', new Blob(['raw'])); await s.actions.submit('test', offer);
   await s.actions.reconcile('test', s.store.get('test')[0].key);
   assert.ok(reads > POLL_LIMIT);
   assert.equal(reads, 20);
   assert.equal(s.store.get('test')[0].state, 'succeeded');
+  assert.deepEqual(settlements, [['slow-job', 'running'], ['slow-job', 'succeeded']], 'unchanged running reads do not rebroadcast');
   assert.ok(LIVE_POLL_LIMIT * 20_000 >= 55 * 60_000, 'about an hour at the 20 s ceiling');
 });
 

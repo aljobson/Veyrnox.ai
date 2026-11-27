@@ -2,6 +2,7 @@ import { mobile } from '@e2e-dev/mobile';
 import type { E2EConfig } from 'e2e';
 
 const e2eDevice = process.env.E2E_DEVICE ?? 'iPhone 17 Pro';
+const metroPort = process.env.E2E_METRO_PORT ?? '8084';
 
 const iphone = mobile({
   platform: 'ios',
@@ -20,7 +21,7 @@ export default {
         bundleId: 'ai.veyrnox.app',
         launchArguments: [
           '--initialUrl',
-          'http://localhost:8081',
+          `http://localhost:${metroPort}`,
           '-EXDevMenuShowsAtLaunch',
           'NO',
           '-EXDevMenuIsOnboardingFinished',
@@ -37,7 +38,7 @@ export default {
           reuseExisting: false,
           startupTimeout: 120_000,
         },
-        readyUrl: 'http://localhost:8081/status',
+        readyUrl: `http://localhost:${metroPort}/status`,
         environment: 'test',
       },
     },

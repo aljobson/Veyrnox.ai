@@ -1,5 +1,5 @@
 import { Switch, View } from 'react-native';
-import { Card, Text, themedStyles, useThemedStyles } from '../ui';
+import { Button, Card, Text, themedStyles, useThemedStyles } from '../ui';
 import { BeatKeyboard, type BeatKeyboardProps } from './BeatKeyboard';
 import { BeatExternalMidiCapture } from './BeatExternalMidiCapture';
 import type { BeatEditorLayout } from '../../lib/beatNative/editorLayout';
@@ -27,13 +27,16 @@ export type BeatMidiRecordPanelProps = Pick<BeatKeyboardProps,
     countInStep?: number;
     settingsDisabled?: boolean;
     keyboardDisabled?: boolean;
+    recordDisabled?: boolean;
+    recordHint?: string;
+    onRecord?(): void;
     lockReason?: string;
     layout?: BeatEditorLayout;
 };
 
 export function BeatMidiRecordPanel({
     phase, noteCount, countIn, quantise, onCountInChange, onQuantiseChange, countInStep,
-    settingsDisabled = false, keyboardDisabled = false, lockReason, layout = 'compact', ...keyboard
+    settingsDisabled = false, keyboardDisabled = false, recordDisabled = false, recordHint, onRecord, lockReason, layout = 'compact', ...keyboard
 }: BeatMidiRecordPanelProps) {
     const s = useThemedStyles(styles);
     const capturing = phase === 'recording';
@@ -48,9 +51,15 @@ export function BeatMidiRecordPanel({
                     {phase === 'recording' || phase === 'finishing' ? '■ ' : ''}{status}
                 </Text>
             </View>
-            <Text testID="beat-midi-record-note-count" variant="footnote" tone="secondary">
-                {t('beat.midiRecord.recorded', { count: noteCount })}
-            </Text>
+            <View style={s.headingActions}>
+                <Text testID="beat-midi-record-note-count" variant="footnote" tone="secondary">
+                    {t('beat.midiRecord.recorded', { count: noteCount })}
+                </Text>
+                {onRecord && phase === 'idle' ? <Button testID="beat-midi-panel-record" size="md" icon="vinylRecord" iconOnly
+                    variant="primary" label={t('beat.midiRecord.record')}
+                    accessibilityHint={recordHint}
+                    disabled={recordDisabled} onPress={onRecord} /> : null}
+            </View>
         </View>
         <View style={[s.settings, layout === 'accessible' && s.settingsAccessible]}>
             <View style={s.switchRow}>
@@ -79,6 +88,7 @@ const styles = themedStyles(p => ({
     card: { gap: ds.space.lg },
     heading: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: ds.space.sm },
     headingText: { flexShrink: 1, gap: ds.space.xs },
+    headingActions: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: ds.space.sm },
     stack: { flexDirection: 'column', alignItems: 'stretch' },
     settings: { flexDirection: 'row', flexWrap: 'wrap', gap: ds.space.md },
     settingsAccessible: { flexDirection: 'column' },

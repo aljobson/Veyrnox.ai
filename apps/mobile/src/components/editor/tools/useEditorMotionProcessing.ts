@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { adoptEditorMotionOutput } from '../../../lib/editorNativeMediaActions';
 import { createNativeEditorMotionProcessor, runEditorMotionProcessing, type EditorMotionOptions, type EditorMotionProgress, type EditorMotionTool } from '../../../lib/editorMotionProcessingNative';
-import { clipAt, type Clip, type Selection, type Timeline } from '../../../lib/nativeEditorModel';
+import { canvasAspectRatio, clipAt, type Clip, type Selection, type Timeline } from '../../../lib/nativeEditorModel';
 import { sourceRange } from '../../../../../../app/veyrnox/_lib/editorSpeed.mjs';
 import { prepareCanonicalMotionInput } from '../../../lib/editorMotionPreRender';
 import { editorMediaArtifacts } from '../../../lib/editorMedia/artifacts';
@@ -45,7 +45,7 @@ export function useEditorMotionProcessing(options: Options) {
             preRenderedArtifactId = preRendered.value.artifact.artifactId;
             const options: EditorMotionOptions = { tool, frameRate: [24, 25, 30, 50, 60].includes(start.timeline.fps) ? start.timeline.fps as 24 | 25 | 30 | 50 | 60 : 30,
                 height, smoothing: 10, strength: 1,
-                ...(tool === 'track-reframe' ? { aspect: start.timeline.aspect === '9:16' ? 9 / 16 : start.timeline.aspect === '1:1' ? 1 : 16 / 9,
+                ...(tool === 'track-reframe' ? { aspect: canvasAspectRatio(start.timeline.aspect) ?? 16 / 9,
                     region: { x: .25, y: .25, width: .5, height: .5 } } : {}),
                 ...(tool === 'camera-movement' ? { from: { x: .42, y: .5, zoom: 1.08 }, to: { x: .58, y: .5, zoom: 1.08 } } : {}) };
             const result = await runEditorMotionProcessing(preRendered.value.artifact.uri, options,

@@ -16,6 +16,7 @@ import { smartPictureProblem } from './editorSmartPicture.mjs';
 import { colourProblem } from './editorColour.mjs';
 import { maskProblem } from './editorMask.mjs';
 import { EFFECT_TYPES, TRANSITION_TYPES } from './editorEffects.mjs';
+import { validCanvasAspect } from './editorCanvasFormat.mjs';
 const object = v => v && typeof v === 'object' && !Array.isArray(v);
 const exact = (v, keys) => object(v) && Object.keys(v).length === keys.length && Object.keys(v).every(k => keys.includes(k));
 const only = (v, keys) => object(v) && Object.keys(v).every(k => keys.includes(k));
@@ -26,6 +27,7 @@ export const TEXT_DEFAULTS = Object.freeze({ color: '#ffffff', background: '#000
 export const BLENDS = Object.freeze(['source-over', 'multiply', 'screen', 'overlay', 'darken', 'lighten', 'difference']);
 export { ANIMATIONS } from './editorAnimation.mjs';
 export function visualProblem(c) {
+    if(c.behindSubject!==undefined && (typeof c.behindSubject!=='string' || !/^v[0-9]{1,7}$/.test(c.behindSubject)))return helperEnglish('invalid_behind_subject_reference');
     if(c.semanticMask!==undefined && ((!exact(c.semanticMask,['version','mediaId','category','sourceFrame']) && !exact(c.semanticMask,['version','mediaId','category','sourceFrame','dynamic'])) || c.semanticMask.version!==1 || !/^[A-Za-z0-9_-]{1,64}$/.test(c.semanticMask.mediaId) || !['background','hair','bodySkin','faceSkin','clothes','others','person'].includes(c.semanticMask.category) || !int(c.semanticMask.sourceFrame,0,1e7) || (c.semanticMask.dynamic!==undefined && (!exact(c.semanticMask.dynamic,['fps','frames','identity']) || ![24,25,30,50,60].includes(c.semanticMask.dynamic.fps) || !int(c.semanticMask.dynamic.frames,1,1800) || !/^sm2-[0-9a-f]{8}$/.test(c.semanticMask.dynamic.identity)))))return helperEnglish('invalid_semantic_mask');
     const smart=smartPictureProblem(c.smartPicture);if(smart)return smart;
     const badParameters=parameterProblem(c.parameterKeyframes);if(badParameters)return badParameters;
@@ -44,14 +46,14 @@ export function visualProblem(c) {
     return null;
 }
 // Shared validator allowlists: interchange dispositions are independently checked against these.
-export const CLIP_KEYS = Object.freeze([...['id', 'start', 'len', 'trackId', 'animation', 'keyframes', 'groupId'], 'mediaId', 'in', 'volume', 'transition', 'rate', 'fadeIn', 'fadeOut', 'pan', 'eq', 'transform', 'filter', 'crop', 'mask', 'maskSettings', 'maskKeyframes', 'colourAdjustment', 'blend', 'fit', 'effect', 'transitionType', 'speedCurve', 'reverse', 'freezeFrame', 'background', 'parameterKeyframes', 'preservePitch', 'audioProcessing', 'audioEffects', 'smartPicture', 'semanticMask']);
-export const TEXT_KEYS = Object.freeze([...['id', 'start', 'len', 'trackId', 'animation', 'keyframes', 'groupId'], 'text', 'x', 'y', 'size', 'style', 'caption', 'words', 'wordStyle', 'wordsEstimated']);
+export const CLIP_KEYS = Object.freeze([...['id', 'start', 'len', 'trackId', 'animation', 'keyframes', 'groupId'], 'mediaId', 'in', 'volume', 'transition', 'rate', 'fadeIn', 'fadeOut', 'pan', 'eq', 'transform', 'filter', 'crop', 'mask', 'maskSettings', 'maskKeyframes', 'colourAdjustment', 'blend', 'fit', 'effect', 'transitionType', 'speedCurve', 'reverse', 'freezeFrame', 'background', 'parameterKeyframes', 'preservePitch', 'audioProcessing', 'audioEffects', 'smartPicture', 'semanticMask', 'behindSubject']);
+export const TEXT_KEYS = Object.freeze([...['id', 'start', 'len', 'trackId', 'animation', 'keyframes', 'groupId'], 'text', 'x', 'y', 'size', 'style', 'caption', 'words', 'wordStyle', 'wordsEstimated', 'behindSubject']);
 export const MEDIA_KEYS = Object.freeze(['id','kind','frames','name','hasAudio','width','height','graphic','folder','attribution','sourceName','assetSource','originalAudio']);
 export const TRACK_KEYS = Object.freeze(['id','kind','name','locked','muted','hidden','solo']);
 export const MARKER_KEYS = Object.freeze(['id','frame','label','color']);
 export function validateSequence(tl) {
     if (!exact(tl, ['schemaVersion', 'fps', 'seq', 'aspect', 'media', 'video', 'audio', 'text', 'tracks', 'background',...['folders','fonts','markers'].filter(k=>tl[k]!==undefined)])) return helperEnglish('invalid_multitrack_document');
-    if (tl.schemaVersion !== 3 || tl.fps !== 30 || !int(tl.seq, 0, 1e6) || !['source', '16:9', '9:16', '1:1'].includes(tl.aspect) || !colour(tl.background)) return helperEnglish('invalid_project_settings');
+    if (tl.schemaVersion !== 3 || tl.fps !== 30 || !int(tl.seq, 0, 1e6) || !validCanvasAspect(tl.aspect, { allowSource: true }) || !colour(tl.background)) return helperEnglish('invalid_project_settings');
     const organization=organizationProblem(tl);if(organization)return organization;
     if (!object(tl.media) || Object.keys(tl.media).length > 40) return helperEnglish('a_project_holds_up_to_40_files');
     for (const [id, m] of Object.entries(tl.media)) {
@@ -85,6 +87,7 @@ export function validateSequence(tl) {
                 if (c.style !== undefined && (!exact(c.style, [...Object.keys(TEXT_DEFAULTS),...Object.keys(TEXT_EXTRAS).filter(k=>c.style[k]!==undefined)]) || textExtrasProblem(c.style) || !colour(c.style.color) || !colour(c.style.background) || !colour(c.style.stroke) || !number(c.style.backgroundOpacity, 0, 1) || !number(c.style.strokeWidth, 0, 12) || !['normal', 'bold'].includes(c.style.weight)  || !['left', 'center', 'right'].includes(c.style.align))) return helperEnglish('invalid_text_style');
             } else {
                 const m = tl.media[c.mediaId], rate = c.rate ?? 1;
+                if(kind==='audio' && c.behindSubject!==undefined)return helperEnglish('only_titles_and_images_can_go_behind_a_subject');
                 if(c.semanticMask && (!tl.media[c.semanticMask.mediaId] || tl.media[c.semanticMask.mediaId].kind!==(c.semanticMask.dynamic?'video':'image') || tl.media[c.semanticMask.mediaId].hasAudio))return helperEnglish('semantic_mask_asset_is_missing');
                 const badAudio=audioSettingsProblem(c,m)||audioEffectsProblem(c.audioEffects);if(badAudio)return badAudio;
                 if(c.audioEffects!==undefined && !m?.hasAudio)return helperEnglish('audio_effects_need_a_source_with_sound');
@@ -101,6 +104,12 @@ export function validateSequence(tl) {
             }
             const bad = visualProblem(c); if (bad) return bad;
         }
+    }
+    for(const overlay of [...tl.video,...tl.text].filter(item=>item.behindSubject!==undefined)) {
+        const subject=tl.video.find(item=>item.id===overlay.behindSubject),media='mediaId' in overlay?tl.media[overlay.mediaId]:null;
+        if(!subject || subject.id===overlay.id || subject.semanticMask?.category!=='person'
+            || overlay.start<subject.start || overlay.start+overlay.len>subject.start+subject.len
+            || ('mediaId' in overlay && !['image','graphic'].includes(media?.kind)))return helperEnglish('invalid_behind_subject_overlay');
     }
     if (new TextEncoder().encode(JSON.stringify(tl)).byteLength > 30000) return helperEnglish('this_project_is_too_large_to_save_use');
     return null;

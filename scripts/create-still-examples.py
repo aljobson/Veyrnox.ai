@@ -83,28 +83,6 @@ def voice():
     save(im, "ai-voice-cloning")
 
 
-def object_character():
-    im, d = canvas()
-    d.ellipse((394, 568, 896, 620), fill=(8, 17, 16))
-    # An original friendly mug, drawn entirely from geometric shapes.
-    d.ellipse((774, 274, 990, 494), fill=MINT)
-    d.ellipse((811, 315, 948, 454), fill=(16, 39, 35))
-    d.rounded_rectangle((404, 252, 838, 584), radius=70, fill=MINT)
-    d.ellipse((404, 211, 838, 311), fill=(131, 242, 220))
-    d.ellipse((430, 231, 812, 290), fill=(18, 62, 53))
-    for x in (524, 698):
-        d.ellipse((x, 364, x+28, 404), fill=BASE)
-        d.ellipse((x+7, 370, x+14, 380), fill=INK)
-    d.arc((568, 401, 672, 479), 5, 175, fill=BASE, width=7)
-    for x in (484, 738):
-        d.ellipse((x, 425, x+40, 442), fill=(25, 170, 146))
-    d.rounded_rectangle((903, 138, 1094, 244), radius=32, fill=INK)
-    d.polygon(((922, 229), (915, 270), (964, 235)), fill=INK)
-    for x in (950, 996, 1042):
-        d.ellipse((x, 183, x+10, 193), fill=BASE)
-    save(im, "talking-objects")
-
-
 def product():
     im, d = canvas()
     d.ellipse((283, 126, 997, 668), outline=(39, 77, 69), width=2)
@@ -128,5 +106,4 @@ if __name__ == "__main__":
     avatar()
     speech()
     voice()
-    object_character()
     product()

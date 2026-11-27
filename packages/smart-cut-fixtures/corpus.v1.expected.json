@@ -1,0 +1,606 @@
+{
+  "schemaVersion": 1,
+  "fixtures": [
+    {
+      "id": "multi-take-script-and-notes",
+      "expected": {
+        "mode": "transcript-silence",
+        "pacing": "speech",
+        "pacingLabel": "Speech aware",
+        "silencePreset": "natural",
+        "notes": "Prefer the cleanest complete take.",
+        "scriptProvided": true,
+        "language": "en",
+        "languageOverride": null,
+        "detectedLanguages": [
+          "en"
+        ],
+        "takes": [
+          {
+            "id": "take-a",
+            "assetId": "asset-a",
+            "name": "Take A",
+            "duration": 8,
+            "rangeStart": 0,
+            "rangeEnd": 8
+          },
+          {
+            "id": "take-b",
+            "assetId": "asset-b",
+            "name": "Take B",
+            "duration": 8,
+            "rangeStart": 0,
+            "rangeEnd": 8
+          }
+        ],
+        "segments": [
+          {
+            "id": "speech-1",
+            "label": "First line.",
+            "takeId": "take-a",
+            "start": 0.38,
+            "end": 1.52,
+            "outputOffset": 0,
+            "plannedLength": 1.14,
+            "boundaryQuality": {
+              "timingQuality": "word",
+              "startInsideUnit": false,
+              "endInsideUnit": false
+            },
+            "matchStatus": "Matched script line 1 (100% confidence).",
+            "alternates": [],
+            "alternateCandidates": [],
+            "reason": "Selected Take A using transcript coverage, completeness, boundary safety and pause density.",
+            "matchCode": "script_line_matched",
+            "matchParameters": {
+              "line": 1,
+              "confidence": 1,
+              "coverage": 1,
+              "precision": 1
+            },
+            "reasonCode": "best_take_score",
+            "reasonParameters": {
+              "takeId": "take-a",
+              "confidence": 1
+            }
+          },
+          {
+            "id": "speech-2",
+            "label": "Second line.",
+            "takeId": "take-b",
+            "start": 0.48,
+            "end": 1.62,
+            "outputOffset": 1.14,
+            "plannedLength": 1.14,
+            "boundaryQuality": {
+              "timingQuality": "word",
+              "startInsideUnit": false,
+              "endInsideUnit": false
+            },
+            "matchStatus": "Matched script line 2 (100% confidence).",
+            "alternates": [],
+            "alternateCandidates": [],
+            "reason": "Selected Take B using transcript coverage, completeness, boundary safety and pause density.",
+            "matchCode": "script_line_matched",
+            "matchParameters": {
+              "line": 2,
+              "confidence": 1,
+              "coverage": 1,
+              "precision": 1
+            },
+            "reasonCode": "best_take_score",
+            "reasonParameters": {
+              "takeId": "take-b",
+              "confidence": 1
+            }
+          }
+        ],
+        "totalDuration": 2.28,
+        "silenceRemoved": 13.72,
+        "removalsApplied": 0,
+        "analysisProviders": [
+          "fal-scribe-v2"
+        ],
+        "qualityChecks": [
+          {
+            "code": "complete_unit_boundaries",
+            "parameters": {
+              "segmentId": "speech-1",
+              "timingQuality": "word"
+            }
+          },
+          {
+            "code": "complete_unit_boundaries",
+            "parameters": {
+              "segmentId": "speech-2",
+              "timingQuality": "word"
+            }
+          },
+          {
+            "code": "source_ranges_non_overlapping",
+            "parameters": {
+              "segments": 2
+            }
+          },
+          {
+            "code": "join_review",
+            "parameters": {
+              "fromSegmentId": "speech-1",
+              "toSegmentId": "speech-2",
+              "sourceGap": null,
+              "changesTake": true
+            }
+          }
+        ],
+        "warnings": [
+          "review_boundaries",
+          "extra_speech_omitted",
+          "join_review"
+        ],
+        "warningDetails": [
+          {
+            "code": "review_boundaries",
+            "parameters": {}
+          },
+          {
+            "code": "extra_speech_omitted",
+            "parameters": {
+              "count": 1,
+              "groups": [
+                {
+                  "takeId": "take-a",
+                  "start": 3,
+                  "end": 4,
+                  "entries": [
+                    {
+                      "start": 3,
+                      "end": 3.4,
+                      "text": "Extra"
+                    },
+                    {
+                      "start": 3.5,
+                      "end": 4,
+                      "text": "thought."
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "code": "join_review",
+            "parameters": {
+              "count": 1,
+              "joins": [
+                {
+                  "fromSegmentId": "speech-1",
+                  "toSegmentId": "speech-2",
+                  "sourceGap": null,
+                  "changesTake": true
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "complete-word-output-cap",
+      "expected": {
+        "mode": "transcript-silence",
+        "pacing": "speech",
+        "pacingLabel": "Speech aware",
+        "silencePreset": "natural",
+        "notes": "",
+        "scriptProvided": false,
+        "language": "en",
+        "languageOverride": null,
+        "detectedLanguages": [
+          "en"
+        ],
+        "takes": [
+          {
+            "id": "intro",
+            "assetId": "intro",
+            "name": "Intro",
+            "duration": 1,
+            "rangeStart": 0,
+            "rangeEnd": 1
+          },
+          {
+            "id": "main",
+            "assetId": "main",
+            "name": "Main",
+            "duration": 60,
+            "rangeStart": 0,
+            "rangeEnd": 60
+          }
+        ],
+        "segments": [
+          {
+            "id": "speech-1",
+            "label": "Intro.",
+            "takeId": "intro",
+            "start": 0,
+            "end": 1,
+            "outputOffset": 0,
+            "plannedLength": 1,
+            "boundaryQuality": {
+              "timingQuality": "word",
+              "startInsideUnit": false,
+              "endInsideUnit": false
+            },
+            "matchStatus": "Matched to timed transcript.",
+            "alternates": [],
+            "alternateCandidates": [],
+            "reason": "Kept transcript-backed speech from Intro; pauses of at least 0.75 seconds were eligible for removal.",
+            "matchCode": "transcript_section_kept",
+            "matchParameters": {},
+            "reasonCode": "transcript_continuity",
+            "reasonParameters": {
+              "minimumSilenceSeconds": 0.75
+            }
+          },
+          {
+            "id": "speech-2",
+            "label": "Main",
+            "takeId": "main",
+            "start": 0,
+            "end": 59,
+            "outputOffset": 1,
+            "plannedLength": 59,
+            "boundaryQuality": {
+              "timingQuality": "word",
+              "startInsideUnit": false,
+              "endInsideUnit": false
+            },
+            "matchStatus": "Matched to timed transcript.",
+            "alternates": [],
+            "alternateCandidates": [],
+            "reason": "Kept transcript-backed speech from Main; pauses of at least 0.75 seconds were eligible for removal.",
+            "matchCode": "transcript_section_kept",
+            "matchParameters": {},
+            "reasonCode": "transcript_continuity",
+            "reasonParameters": {
+              "minimumSilenceSeconds": 0.75
+            }
+          }
+        ],
+        "totalDuration": 60,
+        "silenceRemoved": 0,
+        "removalsApplied": 0,
+        "analysisProviders": [
+          "fal-scribe-v2"
+        ],
+        "qualityChecks": [
+          {
+            "code": "complete_unit_boundaries",
+            "parameters": {
+              "segmentId": "speech-1",
+              "timingQuality": "word"
+            }
+          },
+          {
+            "code": "complete_unit_boundaries",
+            "parameters": {
+              "segmentId": "speech-2",
+              "timingQuality": "word"
+            }
+          },
+          {
+            "code": "source_ranges_non_overlapping",
+            "parameters": {
+              "segments": 2
+            }
+          },
+          {
+            "code": "join_review",
+            "parameters": {
+              "fromSegmentId": "speech-1",
+              "toSegmentId": "speech-2",
+              "sourceGap": null,
+              "changesTake": true
+            }
+          }
+        ],
+        "warnings": [
+          "review_boundaries",
+          "output_limit_reached",
+          "join_review"
+        ],
+        "warningDetails": [
+          {
+            "code": "review_boundaries",
+            "parameters": {}
+          },
+          {
+            "code": "output_limit_reached",
+            "parameters": {
+              "count": 1,
+              "groups": [
+                {
+                  "takeId": "main",
+                  "start": 59,
+                  "end": 60,
+                  "entries": [
+                    {
+                      "start": 59.2,
+                      "end": 60,
+                      "text": "crossing."
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "code": "join_review",
+            "parameters": {
+              "count": 1,
+              "joins": [
+                {
+                  "fromSegmentId": "speech-1",
+                  "toSegmentId": "speech-2",
+                  "sourceGap": null,
+                  "changesTake": true
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "trim-boundary-complete-unit",
+      "expected": {
+        "mode": "transcript-silence",
+        "pacing": "speech",
+        "pacingLabel": "Speech aware",
+        "silencePreset": "natural",
+        "notes": "",
+        "scriptProvided": false,
+        "language": "en",
+        "languageOverride": null,
+        "detectedLanguages": [
+          "en"
+        ],
+        "takes": [
+          {
+            "id": "trimmed",
+            "assetId": "trimmed",
+            "name": "Trimmed",
+            "duration": 5,
+            "rangeStart": 1.2,
+            "rangeEnd": 3.4
+          }
+        ],
+        "segments": [
+          {
+            "id": "speech-1",
+            "label": "keep",
+            "takeId": "trimmed",
+            "start": 1.46,
+            "end": 3.09,
+            "outputOffset": 0,
+            "plannedLength": 1.63,
+            "boundaryQuality": {
+              "timingQuality": "phrase",
+              "startInsideUnit": false,
+              "endInsideUnit": false
+            },
+            "matchStatus": "Matched to timed transcript.",
+            "alternates": [],
+            "alternateCandidates": [],
+            "reason": "Kept transcript-backed speech from Trimmed; pauses of at least 0.75 seconds were eligible for removal.",
+            "matchCode": "transcript_section_kept",
+            "matchParameters": {},
+            "reasonCode": "transcript_continuity",
+            "reasonParameters": {
+              "minimumSilenceSeconds": 0.75
+            }
+          }
+        ],
+        "totalDuration": 1.63,
+        "silenceRemoved": 0.57,
+        "removalsApplied": 0,
+        "analysisProviders": [
+          "fal-wizper"
+        ],
+        "qualityChecks": [
+          {
+            "code": "complete_unit_boundaries",
+            "parameters": {
+              "segmentId": "speech-1",
+              "timingQuality": "phrase"
+            }
+          },
+          {
+            "code": "phrase_timing_review",
+            "parameters": {
+              "segmentId": "speech-1"
+            }
+          },
+          {
+            "code": "source_ranges_non_overlapping",
+            "parameters": {
+              "segments": 1
+            }
+          }
+        ],
+        "warnings": [
+          "review_boundaries",
+          "trim_intersects_unit",
+          "phrase_timing"
+        ],
+        "warningDetails": [
+          {
+            "code": "review_boundaries",
+            "parameters": {}
+          },
+          {
+            "code": "trim_intersects_unit",
+            "parameters": {
+              "count": 2,
+              "units": [
+                {
+                  "takeId": "trimmed",
+                  "start": 1,
+                  "end": 1.4,
+                  "text": "leading"
+                },
+                {
+                  "takeId": "trimmed",
+                  "start": 3.2,
+                  "end": 3.6,
+                  "text": "trailing"
+                }
+              ]
+            }
+          },
+          {
+            "code": "phrase_timing",
+            "parameters": {}
+          }
+        ]
+      }
+    },
+    {
+      "id": "no-script-repeated-takes",
+      "expected": {
+        "mode": "transcript-silence",
+        "pacing": "speech",
+        "pacingLabel": "Speech aware",
+        "silencePreset": "natural",
+        "notes": "",
+        "scriptProvided": false,
+        "language": "en",
+        "languageOverride": null,
+        "detectedLanguages": [
+          "en"
+        ],
+        "takes": [
+          {
+            "id": "take-one",
+            "assetId": "take-one",
+            "name": "Take One",
+            "duration": 4,
+            "rangeStart": 0,
+            "rangeEnd": 4
+          },
+          {
+            "id": "take-two",
+            "assetId": "take-two",
+            "name": "Take Two",
+            "duration": 4,
+            "rangeStart": 0,
+            "rangeEnd": 4
+          }
+        ],
+        "segments": [
+          {
+            "id": "speech-1",
+            "label": "Thanks for watching.",
+            "takeId": "take-two",
+            "start": 0.48,
+            "end": 1.81,
+            "outputOffset": 0,
+            "plannedLength": 1.33,
+            "boundaryQuality": {
+              "timingQuality": "word",
+              "startInsideUnit": false,
+              "endInsideUnit": false
+            },
+            "matchStatus": "Matched to timed transcript.",
+            "alternates": [
+              "take-one"
+            ],
+            "alternateCandidates": [
+              {
+                "takeId": "take-one",
+                "start": 0.38,
+                "end": 1.72,
+                "confidence": 1,
+                "coverage": 1,
+                "precision": 1,
+                "boundaryQuality": {
+                  "timingQuality": "word",
+                  "startInsideUnit": false,
+                  "endInsideUnit": false
+                }
+              }
+            ],
+            "reason": "Selected Take Two using transcript coverage, completeness, boundary safety and pause density.",
+            "matchCode": "transcript_section_kept",
+            "matchParameters": {},
+            "reasonCode": "best_take_score",
+            "reasonParameters": {
+              "takeId": "take-two",
+              "confidence": 1
+            }
+          }
+        ],
+        "totalDuration": 1.33,
+        "silenceRemoved": 2.67,
+        "removalsApplied": 0,
+        "analysisProviders": [
+          "fal-scribe-v2"
+        ],
+        "qualityChecks": [
+          {
+            "code": "complete_unit_boundaries",
+            "parameters": {
+              "segmentId": "speech-1",
+              "timingQuality": "word"
+            }
+          },
+          {
+            "code": "source_ranges_non_overlapping",
+            "parameters": {
+              "segments": 1
+            }
+          }
+        ],
+        "warnings": [
+          "review_boundaries",
+          "retake_omitted"
+        ],
+        "warningDetails": [
+          {
+            "code": "review_boundaries",
+            "parameters": {}
+          },
+          {
+            "code": "retake_omitted",
+            "parameters": {
+              "count": 1,
+              "groups": [
+                {
+                  "takeId": "take-one",
+                  "start": 0.5,
+                  "end": 1.6,
+                  "entries": [
+                    {
+                      "start": 0.5,
+                      "end": 0.8,
+                      "text": "Thanks"
+                    },
+                    {
+                      "start": 0.9,
+                      "end": 1.2,
+                      "text": "for"
+                    },
+                    {
+                      "start": 1.3,
+                      "end": 1.6,
+                      "text": "watching."
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

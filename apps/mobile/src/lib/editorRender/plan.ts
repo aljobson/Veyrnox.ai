@@ -19,6 +19,7 @@ function unsupportedFeature(capability: EditorPreviewCapability): StaticPreviewU
         case 'unknown-media-source': return 'missing-source-image';
         case 'transition': return 'transition';
         case 'animation-reveal': return 'animation-reveal';
+        case 'behind-subject': return 'behind-subject';
         case 'smart-picture': return 'smart-picture';
         case 'advanced-colour': return 'colour';
         case 'effect': return 'effect';

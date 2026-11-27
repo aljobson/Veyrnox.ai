@@ -1,4 +1,4 @@
-import { ACCENTS, DEFAULT_APPEARANCE, paletteForScheme, resolveScheme, THEME_PREFERENCES, toggledTheme, tokensForScheme } from '../src/theme';
+import { ACCENTS, DEFAULT_APPEARANCE, paletteForScheme, resolveScheme, THEME_PREFERENCES, toggledTheme, tokensForScheme, VIVID_HUES, vividFromFeatureHue, vividHue } from '../src/theme';
 
 const light = {
     background: '#ffffff',
@@ -46,6 +46,19 @@ describe('light and dark', () => {
             expect(ratio(text, light.surface)).toBeGreaterThanOrEqual(4.5);
         }
         expect(ratio(light.accentInk, light.accent)).toBeGreaterThanOrEqual(4.5);
+    });
+    test.each(['light', 'dark'] as const)('every vivid %s card keeps white copy at WCAG AA contrast', scheme => {
+        for (const hue of VIVID_HUES) {
+            const tone = vividHue(hue, scheme);
+            expect(ratio(tone.foreground, tone.fill)).toBeGreaterThanOrEqual(4.5);
+            expect(tone.glow).toMatch(/^#/);
+            expect(tone.edge).toMatch(/^rgba\(/);
+        }
+    });
+    test('feature hues map to navigation colours without borrowing status semantics', () => {
+        expect(['green', 'purple', 'blue', 'pink', 'orange']).toEqual(
+            ['mint', 'iris', 'sky', 'rose', 'amber'].map((hue) => vividFromFeatureHue(hue as Parameters<typeof vividFromFeatureHue>[0])),
+        );
     });
     test.each(['light', 'dark'] as const)('every %s accent and OLED keep semantic status cues and stronger increased-contrast tokens', scheme => {
         for (const accent of ACCENTS) {

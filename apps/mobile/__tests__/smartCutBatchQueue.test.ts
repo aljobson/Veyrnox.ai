@@ -1,0 +1,50 @@
+import { createMemoryStorage } from '../src/lib/cache';
+import { cancelSmartCutBatchItem, createSmartCutBatch, failSmartCutBatchItem, finishSmartCutBatchItem, nextSmartCutBatchItem, openSmartCutBatchItem, parseSmartCutBatch, readSmartCutBatch, retrySmartCutBatchItem, smartCutBatchDone, writeSmartCutBatch } from '../src/lib/smartCutBatchQueue';
+let mockCacheUser = 'owner';
+jest.mock('../src/lib/appCache', () => ({ getCacheUser: () => mockCacheUser, userDocStorage: {} }));
+const projects = [{ id: 'p1', name: 'One' }, { id: 'p2', name: 'Two' }, { id: 'p3', name: 'Three' }];
+test('durable batch queue serialises one active project and supports retry, completion and cancellation', () => {
+    let queue = createSmartCutBatch('owner', 'workspace', projects, 'batch', 1)!;
+    queue = openSmartCutBatchItem(queue, 'p1', 2);
+    expect(openSmartCutBatchItem(queue, 'p2', 3)).toEqual(queue);
+    queue = failSmartCutBatchItem(queue, 'p1', 'interrupted', 4);
+    queue = retrySmartCutBatchItem(queue, 'p1', 5);
+    queue = openSmartCutBatchItem(queue, 'p1', 6);
+    queue = finishSmartCutBatchItem(queue, 'p1', 7);
+    queue = cancelSmartCutBatchItem(queue, 'p2', 8);
+    queue = openSmartCutBatchItem(queue, 'p3', 9);
+    expect(nextSmartCutBatchItem(queue)?.projectId).toBe('p3');
+    queue = finishSmartCutBatchItem(queue, 'p3', 10);
+    expect(smartCutBatchDone(queue)).toBe(true);
+    expect(parseSmartCutBatch(queue, 'other', 'workspace')).toBeNull();
+    expect(createSmartCutBatch('owner', 'workspace', [{ id: 'blank', name: '' }, projects[1]], 'blank-name', 1)!.items[0].name).toBe('');
+});
+test('private storage round-trips only for the current owner and corrupt rows fail closed', async () => {
+    mockCacheUser = 'owner';
+    const storage = createMemoryStorage();
+    const queue = createSmartCutBatch('owner', 'workspace', projects, 'batch', 1)!;
+    await expect(writeSmartCutBatch(queue, storage)).resolves.toBe(true);
+    await expect(readSmartCutBatch('owner', 'workspace', storage)).resolves.toEqual(queue);
+    await storage.set('smart-cut-batch:v1:owner:workspace', '{bad');
+    await expect(readSmartCutBatch('owner', 'workspace', storage)).resolves.toBeNull();
+    await expect(storage.get('smart-cut-batch:v1:owner:workspace')).resolves.toBeNull();
+});
+test('an account switch during a read ignores the old queue without deleting it', async () => {
+    mockCacheUser = 'owner';
+    const storage = createMemoryStorage();
+    const queue = createSmartCutBatch('owner', 'workspace', projects, 'batch', 1)!;
+    await storage.set('smart-cut-batch:v1:owner:workspace', JSON.stringify(queue));
+    const switchingStorage = { ...storage, get: async (key: string) => { const value = await storage.get(key); mockCacheUser = 'other'; return value; } };
+    await expect(readSmartCutBatch('owner', 'workspace', switchingStorage)).resolves.toBeNull();
+    await expect(storage.get('smart-cut-batch:v1:owner:workspace')).resolves.toBe(JSON.stringify(queue));
+    mockCacheUser = 'owner';
+});
+test('an account switch during a write preserves the old owner queue', async () => {
+    mockCacheUser = 'owner';
+    const storage = createMemoryStorage();
+    const queue = createSmartCutBatch('owner', 'workspace', projects, 'batch', 1)!;
+    const switchingStorage = { ...storage, set: async (key: string, value: string) => { await storage.set(key, value); mockCacheUser = 'other'; } };
+    await expect(writeSmartCutBatch(queue, switchingStorage)).resolves.toBe(false);
+    await expect(storage.get('smart-cut-batch:v1:owner:workspace')).resolves.toBe(JSON.stringify(queue));
+    mockCacheUser = 'owner';
+});

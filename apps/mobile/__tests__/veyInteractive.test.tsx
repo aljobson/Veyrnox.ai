@@ -188,14 +188,12 @@ test('Reduce Motion suppresses eye drag and its return spring', async () => {
     await act(async () => { outer.props.onResponderGrant(moveEvent(0, 0, 1)); outer.props.onResponderMove(moveEvent(50, 0, 2)); outer.props.onResponderRelease(moveEvent(50, 0, 3)); });
     expect(Animated.spring).not.toHaveBeenCalled(); expect(started).toHaveLength(0);
 });
-test('loader keeps its loading label on a status sibling before the reachable working Vey', async () => {
+test('routine loader is one native progress element and does not expose Vey as a button', async () => {
     await render(<VeyLoader />);
     const status = root.container.queryAll(n => n.props.accessibilityRole === 'progressbar')[0];
     expect(status.props).toMatchObject({ accessibilityLabel: t('common.loading'), accessibilityState: { busy: true } });
-    expect(status.parent).toBe(button().parent!.parent);
-    expect(status.parent!.children.indexOf(status)).toBeLessThan(status.parent!.children.indexOf(button().parent!));
-    reachable(button());
-    expect(started.flatMap(flatten).some(a => a.config?.duration === 440)).toBe(true);
+    expect(root.container.queryAll(n => n.props.accessibilityRole === 'button')).toHaveLength(0);
+    expect(started).toHaveLength(0);
 });
 test('empty state greets with an interactive one-shot wave', async () => {
     await render(<EmptyState title="Nothing yet" />); reachable(button());

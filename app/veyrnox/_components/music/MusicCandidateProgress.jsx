@@ -10,7 +10,7 @@ import { estimatePercent, expectedDurationMs } from '../../_lib/generationProgre
 // reload restarts the estimate, never moves it past the cap.
 const TICK_MS = 1000;
 
-export function MusicCandidateProgress({ label, modelId = 'ace-step-1.5' }) {
+export function MusicCandidateProgress({ label, modelId = 'ace-step-1.5', single = false }) {
   const { t } = useI18n();
   const [startedAt] = useState(() => Date.now());
   const [now, setNow] = useState(startedAt);
@@ -25,7 +25,7 @@ export function MusicCandidateProgress({ label, modelId = 'ace-step-1.5' }) {
         <span className="uppercase">{t('public.jobs.progress.title')}</span> · {t('public.jobs.progress.patient')}
       </p>
       <div className="mt-2 flex items-baseline justify-between text-xs text-vx-fg-body">
-        <span>{`Version ${label}`}</span>
+        <span>{single ? 'Track' : `Version ${label}`}</span>
         <span className="font-vx-mono tabular-nums text-vx-fg">{percent}%</span>
       </div>
       <div
@@ -41,7 +41,7 @@ export function MusicCandidateProgress({ label, modelId = 'ace-step-1.5' }) {
           style={{ width: `${percent}%` }}
         />
       </div>
-      <p className="mt-3 text-sm text-vx-fg-muted">This candidate completes independently from the other version.</p>
+      <p className="mt-3 text-sm text-vx-fg-muted">{single ? 'Your track will appear here when it is ready.' : 'This candidate completes independently from the other version.'}</p>
     </div>
   );
 }

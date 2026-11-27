@@ -1,8 +1,8 @@
 import { duplicateSelections, emptyTimeline, pasteClipboard, copySelections, splitClip, splitClipAtFrames, type Timeline, type Clip, type TextClip } from '../src/lib/nativeEditorModel';
 
-const clip = (id: string, start: number, len: number, trackId = 'video-0'): Clip => ({ id, mediaId: 'm1', start, in: 0, len, trackId });
+const clip = (id: string, start: number, len: number, trackId = 'video-0'): Clip => ({ id, mediaId: 'm1', start, in: 0, len, trackId, volume: 1, transition: 0 });
 const text = (id: string, start: number, len: number): TextClip => ({ id, text: 'Hi', start, len, trackId: 'text-0', x: .5, y: .5, size: 6 });
-const base = (): Timeline => ({ ...emptyTimeline(), seq: 10, video: [clip('v1', 0, 100), clip('v2', 100, 80)] });
+const base = (): Timeline => ({ ...emptyTimeline(), seq: 10, media: { m1: { id: 'm1', kind: 'video', frames: 600, name: 'Fixture', hasAudio: false, width: 1920, height: 1080 } }, video: [clip('v1', 0, 100), clip('v2', 100, 80)] });
 
 /** True when two items on the same lane overlap. */
 const overlaps = (timeline: Timeline) => (['video', 'audio', 'text'] as const).some((kind) => {
@@ -37,6 +37,15 @@ describe('editor timeline never overlaps on one track', () => {
         expect(overlaps(pasted.timeline)).toBe(false);
         expect(pasted.timeline.video).toHaveLength(4); // v1 is split at the insert point
         expect(total(pasted.timeline)).toBe(260);
+    });
+
+    it('all-track paste moves later captions by the inserted span without changing their content or word timing', () => {
+        const caption = { ...text('t1', 100, 60), caption: true, words: [{ text: 'Hi', start: 0, len: 60 }], wordsEstimated: false };
+        const timeline = { ...base(), text: [caption] };
+        const result = pasteClipboard(timeline, copySelections(timeline, [{ track: 'video', id: 'v1' }]), 0, true)!;
+        expect(result.timeline.video.map(({ start }) => start).sort((a, b) => a - b)).toEqual([0, 100, 200]);
+        expect(result.timeline.text[0]).toEqual(expect.objectContaining({ start: 200, text: 'Hi', words: caption.words }));
+        expect(overlaps(result.timeline)).toBe(false);
     });
 
     it('duplicating text keeps the text lane clear', () => {
