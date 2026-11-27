@@ -3,6 +3,13 @@
 -- queued for deletion no later than their immutable PUT expiry plus the reaper interval.
 BEGIN;
 
+-- Isolated acceptance databases can replay this migration without earlier
+-- private helpers. Keep the helper schema self-contained while preserving the
+-- same restricted permissions used by production migrations.
+CREATE SCHEMA IF NOT EXISTS private;
+REVOKE ALL ON SCHEMA private FROM PUBLIC, anon;
+GRANT USAGE ON SCHEMA private TO authenticated, service_role;
+
 CREATE TABLE IF NOT EXISTS public.music_voice_profiles (
   id UUID PRIMARY KEY,
   user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE RESTRICT,

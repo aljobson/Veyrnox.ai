@@ -137,6 +137,8 @@ test('the migration preserves evidence accountability without retaining content 
     readFile(new URL('../scripts/test-account-deletion.mjs', import.meta.url), 'utf8'),
     readFile(new URL('../scripts/test-privacy-export.mjs', import.meta.url), 'utf8'),
   ]);
+  assert.match(sql, /BEGIN;[\s\S]*CREATE SCHEMA IF NOT EXISTS private;/);
+  assert.match(sql, /REVOKE ALL ON SCHEMA private FROM PUBLIC, anon;/);
   assert.match(sql, /FORCE ROW LEVEL SECURITY/g);
   assert.match(sql, /music_voice_events_immutable/);
   assert.match(sql, /append-only \(attempted TRUNCATE\)/);
