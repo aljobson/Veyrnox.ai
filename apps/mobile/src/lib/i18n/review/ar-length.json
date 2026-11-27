@@ -2358,6 +2358,12 @@
     "ratio": 1.92
   },
   {
+    "id": "beatMix.dock.ai",
+    "english": "AI",
+    "translation": "الذكاء",
+    "ratio": 3
+  },
+  {
     "id": "beatMix.master.feedback",
     "english": "Delay feedback",
     "translation": "التغذية الراجعة للتأخير",

@@ -133,5 +133,6 @@
   "vibe.destination.tiktok": "Social platform brand name.",
   "vibe.destination.youtube": "Social platform brand name.",
   "whenPicker.hHMM": "Literal required time input format.",
-  "whenPicker.yYYYMMDD": "Literal required date input format."
+  "whenPicker.yYYYMMDD": "Literal required date input format.",
+  "beatMix.dock.ai": "AI is the standard compact label in Chinese and English."
 }

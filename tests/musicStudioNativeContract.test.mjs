@@ -9,11 +9,11 @@ const instrumentTray = readFileSync(new URL('../apps/mobile/src/components/beats
 const magic = readFileSync(new URL('../apps/mobile/src/lib/beatAi/magicGate.ts', import.meta.url), 'utf8');
 
 test('native Music Editor opens AI editing from a compact icon surface and keeps Magic Bar hard off', () => {
-  assert.match(screen, /aiToolsOpen \? <BeatAiPanel doc=\{doc\} apply=\{apply\} disabled=\{locked\} visible/);
+  assert.match(screen, /bottomTool === 'ai' \? <BeatAiPanel doc=\{doc\} apply=\{apply\} disabled=\{aiLocked\} visible/);
   assert.match(screen, /onAdd=\{toggleAddTools\} onAi=\{toggleAiTools\}/);
-  assert.match(screen, /subMenu=\{addTrackOpen/);
+  assert.match(screen, /subMenu=\{bottomTool === 'tracks'/);
   assert.match(aiPanel, /testID="music-ai-actions"/);
-  assert.match(aiPanel, /testID="music-ai-context"/);
+  assert.match(aiPanel, /testID="music-ai-context-slot"/);
   assert.match(aiPanel, /<BeatAiSheet[\s\S]*embedded/);
   for (const icon of ['magicWand', 'waveform', 'crosshair', 'arrowsHorizontal', 'scissors']) {
     assert.match(aiPanel, new RegExp(`icon: '${icon}'`));
@@ -34,16 +34,18 @@ test('native AI editing is generation, project and visit fenced and fails closed
   assert.match(aiPanel, /session\.controller\.abort\(\)/);
 });
 
-test('add track presents four inline sources and keeps drums inside instruments', () => {
-  for (const source of ['library', 'device', 'record', 'instrument']) {
+test('add track presents compact inline sources, keeps library separate and keeps drums inside instruments', () => {
+  for (const source of ['device', 'record', 'instrument', 'sounds']) {
     assert.match(addTrackSheet, new RegExp(`testID="music-add-track-${source}"`));
   }
-  assert.match(addTrackSheet, /icon="folder"/);
   assert.match(addTrackSheet, /icon="arrowUp"/);
   assert.match(addTrackSheet, /icon="microphone"/);
   assert.match(addTrackSheet, /icon="pianoKeys"/);
+  assert.match(addTrackSheet, /icon="waveSine"/);
+  assert.match(screen, /onLibrary=\{toggleLibraryTools\}/);
+  assert.match(screen, /bottomTool === 'library' \? <BeatSongLibrarySheet inline/);
   assert.doesNotMatch(addTrackSheet, /BeatModal|music-add-track-drums/);
-  assert.match(instrumentTray, /group === 'drums'/);
+  assert.match(instrumentTray, /testID=\{`music-instrument-group-\$\{group\.id\}`\}/);
   assert.match(instrumentTray, /groups\[0\]\?\.id \?\? 'drums'/);
   assert.doesNotMatch(instrumentTray, /audition|icon="play"/);
 });
@@ -52,8 +54,8 @@ test('native mute and solo preserve the live engine and refusal result', () => {
   assert.match(screen, /const applied = apply\(operation, announce, \{ \.\.\.\(key \? \{ key \} : \{\}\), liveMix: true \}\)/);
   assert.match(screen, /if \(!applied\) return false/);
   assert.match(screen, /next\.tracks\.forEach\(x => mixOf\(x\.id, next\)\)/);
-  assert.match(screen, /onMute=\{v => mix\(track\.id, d => setTrackMute\(d, track\.id, v\)/);
-  assert.match(screen, /onSolo=\{v => mix\(track\.id, d => setTrackSolo\(d, track\.id, v\)/);
+  assert.match(screen, /onMute=\{\(trackId, value\) => \{[\s\S]*mix\(trackId, d => setTrackMute\(d, trackId, value\)/);
+  assert.match(screen, /onSolo=\{\(trackId, value\) => \{[\s\S]*mix\(trackId, d => setTrackSolo\(d, trackId, value\)/);
   assert.match(screen, /if \(recordingRef\.current\?\.locked\(\) && !options\.recordingCommit && !options\.liveMix\) return refuse/);
   assert.match(screen, /if \(midiRecordingRef\.current\?\.locked\(\) && !options\.recordingCommit && !options\.liveMix\) return refuse/);
 });

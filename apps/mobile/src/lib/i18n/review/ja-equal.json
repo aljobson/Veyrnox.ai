@@ -140,5 +140,6 @@
   "vibe.destination.tiktok": "Platform brand name retained by the Japanese website.",
   "vibe.destination.youtube": "Platform brand name retained by the Japanese website.",
   "whenPicker.hHMM": "Required time-entry syntax; not translated.",
-  "whenPicker.yYYYMMDD": "Required date-entry syntax; not translated."
+  "whenPicker.yYYYMMDD": "Required date-entry syntax; not translated.",
+  "beatMix.dock.ai": "AI is the standard compact label in Japanese and English."
 }

@@ -4,11 +4,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Text, themedStyles, useThemedStyles } from '../ui';
 import { ds } from '../../theme';
 import { KeyboardFormScrollView } from '../KeyboardFormScrollView';
+import { useReducedMotion } from '../ui/useReducedMotion';
 export function BeatModal({ title, testID, onClose, onDismiss, scrollable = true, closeLabel, children }: {
     title: string; testID?: string; onClose(): void; onDismiss?(): void; scrollable?: boolean; closeLabel?: string; children: ReactNode;
 }) {
     const heading = useRef<ComponentRef<typeof View>>(null);
     const s = useThemedStyles(sheets);
+    const reducedMotion = useReducedMotion();
     const header = <View style={s.header}>
         <View ref={heading} accessible accessibilityRole="header" accessibilityLabel={title} style={s.heading}>
             <Text variant="title2" numberOfLines={1}>{title}</Text>
@@ -16,7 +18,7 @@ export function BeatModal({ title, testID, onClose, onDismiss, scrollable = true
         {closeLabel ? <Button testID={testID ? `${testID}-close` : undefined} size="md" variant="tertiary"
             icon="close" iconOnly label={closeLabel} onPress={onClose} containerStyle={s.close} /> : null}
     </View>;
-    return <Modal testID={testID} visible transparent animationType="slide" presentationStyle="overFullScreen"
+    return <Modal testID={testID} visible transparent animationType={reducedMotion ? 'none' : 'slide'} presentationStyle="overFullScreen"
         statusBarTranslucent onRequestClose={onClose} onDismiss={onDismiss} onShow={() => {
         const node = findNodeHandle(heading.current); if (node) AccessibilityInfo.setAccessibilityFocus(node);
     }}>

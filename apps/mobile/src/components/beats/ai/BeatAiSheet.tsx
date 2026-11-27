@@ -12,7 +12,7 @@ import type { BeatAiClient } from '../../../lib/beatAi/client';
 import type { AiDoc, AudioRegion, Op, Pending, Selection, Song } from '../../../lib/beatAi/types';
 import { promptDrafts } from '../../../lib/beatAi/drafts';
 import { RequestControls } from './RequestControls';
-export function BeatAiSheet({ request, client, doc, op, onClose, embedded = false }: { request: ReceiptRequest<Pending>; client: BeatAiClient; doc: AiDoc; op: Op; onClose(): void; embedded?: boolean }) {
+export function BeatAiSheet({ request, client, doc, op, onClose, embedded = false, disabled = false }: { request: ReceiptRequest<Pending>; client: BeatAiClient; doc: AiDoc; op: Op; onClose(): void; embedded?: boolean; disabled?: boolean }) {
     const view = useBeatAiRequest(request), s = useThemedStyles(styles);
     const drafts = useMemo(() => promptDrafts(), []);
     const [draftReady, setDraftReady] = useState(!!view.record), [draftError, setDraftError] = useState(false);
@@ -27,7 +27,7 @@ export function BeatAiSheet({ request, client, doc, op, onClose, embedded = fals
     const [key, setKey] = useState(''), [instrument, setInstrument] = useState(view.record?.instrument ?? AI_INSTRUMENTS[0]);
     const [rights, setRights] = useState(false), [selected, setSelected] = useState<Selection | null>(null);
     const [song, setSong] = useState<Song | null>(null), [songError, setSongError] = useState(false);
-    const locked = !draftReady || !!view.quote || !!view.record || view.busy;
+    const locked = disabled || !draftReady || !!view.quote || !!view.record || view.busy;
     const regions: Selection[] = doc.tracks.filter(track => track.kind === 'audio').flatMap(track => track.regions.map(r => {
         const region = r as AudioRegion; return { track, region, asset: doc.assets[region.assetId] };
     })).filter((item): item is Selection => item.asset?.source === 'song');
@@ -65,7 +65,7 @@ export function BeatAiSheet({ request, client, doc, op, onClose, embedded = fals
                 value={prompt} editable={!locked} maxLength={400} multiline={!embedded} returnKeyType={embedded ? 'send' : undefined}
                 onSubmitEditing={embedded ? price : undefined}
                 trailing={embedded && !view.quote ? <Button testID="music-ai-submit" size="sm" variant="tertiary" tone="accent"
-                    icon="arrowRight" iconOnly label={t('beatAi.price')} disabled={view.busy || view.offline || !!reason || !built} onPress={price} /> : null}
+                    icon="arrowRight" iconOnly label={t('beatAi.price')} disabled={locked || view.offline || !!reason || !built} onPress={price} /> : null}
                 onChangeText={value => { setPrompt(value); request.reset(); void drafts.write(request.options.owner, doc.id, op, value, request.current).catch(() => { if (request.current()) setDraftError(true); }); }} /> : null}
             {op === 'generate' ? <><Text variant="footnote" tone="secondary">{t('beatAi.key')}</Text><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.options}>{['', ...BEAT_AI_KEYS].map(value => <Button key={value || 'auto'} size="sm" variant={key === value ? 'secondary' : 'tertiary'} disabled={locked} label={keyLabel(value)} accessibilityLabel={t('beatAi.keyValue', { key: keyLabel(value) })} onPress={() => setKey(value)} />)}</ScrollView></> : null}
             {op !== 'generate' ? <><Text>{t('beatAi.chooseSource')}</Text>{regions.map(item => <Button key={item.region.id} disabled={locked} label={t('beatAi.source', { name: item.track.name, region: item.region.id })} variant={selected?.region.id === item.region.id ? 'primary' : 'secondary'} onPress={() => setSelected(item)} />)}
@@ -73,10 +73,10 @@ export function BeatAiSheet({ request, client, doc, op, onClose, embedded = fals
             {op === 'targetStems' ? <><Text>{t('beatAi.instrument')}</Text>{AI_INSTRUMENTS.map(value => <Button key={value} disabled={locked} variant={instrument === value ? 'primary' : 'secondary'} label={t(`musicTargetStems.instrument.${value}`)} onPress={() => setInstrument(value)} />)}</> : null}
             <Text variant="footnote" tone="secondary">{t('beatAi.cycle', { bars: (doc.cycle.end - doc.cycle.start) / 3840, seconds: ((doc.cycle.end - doc.cycle.start) * 60 / doc.tempo.bpm / 960).toFixed(1) })}</Text>
             {reason ? <Text accessibilityLiveRegion="polite">{reason}</Text> : null}
-            {!embedded && !view.quote ? <Button label={t('beatAi.price')} disabled={view.busy || view.offline || !!reason || !built} onPress={price} /> : null}
+            {!embedded && !view.quote ? <Button label={t('beatAi.price')} disabled={locked || view.offline || !!reason || !built} onPress={price} /> : null}
         </> : <Text>{view.record.prompt}</Text>}
         {draftError ? <Text>{t('beatAi.error')}</Text> : null}
-        <RequestControls request={request} view={view} elapsed={view.elapsed} offline={view.offline} />
+        <RequestControls request={request} view={view} elapsed={view.elapsed} offline={view.offline} disabled={disabled} />
         {!embedded ? <Button label={t('beatAi.close')} disabled={view.busy} onPress={onClose} /> : null}
     </>;
     return embedded ? <View testID={`music-ai-${op}-composer`} style={s.composer}>{content}</View>

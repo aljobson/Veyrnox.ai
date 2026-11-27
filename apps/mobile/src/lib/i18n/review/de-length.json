@@ -4590,6 +4590,12 @@
     "ratio": 1.78
   },
   {
+    "id": "beatMix.dock.mix",
+    "english": "Mix",
+    "translation": "Mischen",
+    "ratio": 2.33
+  },
+  {
     "id": "beatMix.param.low",
     "english": "Low",
     "translation": "Tiefen",

@@ -3,20 +3,16 @@ import { ScrollView, View } from 'react-native';
 import { Button, Icon, Text, themedStyles, useThemedStyles } from '../ui';
 import { addInstrumentTrack, filterInstruments, type Instrument } from '../../lib/beatNative/midi';
 import type { Edit } from '../../lib/beatNative/doc';
-import type { MenuIcon } from '../../lib/menuIcons';
 import { t } from '../../lib/i18n';
 import { ds } from '../../theme';
+import { musicInstrumentIcon } from '../../lib/beatNative/musicTrackGlyph';
 
-const groupIcon = (group: string): MenuIcon => group === 'drums' ? 'drum'
-    : group === 'guitar' ? 'guitar'
-        : group === 'bass' ? 'guitar'
-            : group === 'synth' ? 'keyboard'
-                : group === 'wavetable' ? 'waveSine' : 'pianoKeys';
-
-export function MusicInstrumentTray({ apply, disabled, refusal, onBack, onAdded }: {
+export function MusicInstrumentTray({ apply, disabled, reason, refusal, compact = false, onBack, onAdded }: {
     apply(op: Edit, label?: string): boolean;
     disabled: boolean;
+    reason?: string;
     refusal?: string | null;
+    compact?: boolean;
     onBack(): void;
     onAdded(): void;
 }) {
@@ -30,7 +26,32 @@ export function MusicInstrumentTray({ apply, disabled, refusal, onBack, onAdded 
         if (apply(doc => addInstrumentTrack(doc, instrument), t('beatPiano.library.add'))) onAdded();
         else setFailed(true);
     };
-    return <View testID="music-instrument-tray" accessibilityLabel={t('beatPiano.library.title')} style={s.tray}>
+    const reasonText = disabled && reason ? <Text testID="music-instrument-disabled-reason" variant="footnote" tone="secondary" style={s.reason}>{reason}</Text> : null;
+    if (compact) return <View testID="music-instrument-tray" accessibilityLabel={t('beatPiano.library.title')} style={s.trayCompact}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.row}
+            testID="music-instrument-groups" accessibilityLabel={t('beatPiano.library.title')}>
+            <Button testID="music-instrument-back" size="sm" variant="tertiary" icon="arrowLeft" iconOnly
+                label={t('beat.back')} onPress={onBack} containerStyle={s.backHit} style={s.back} />
+            {reasonText}
+            {groups.map(group => <Button key={group.id} testID={`music-instrument-group-${group.id}`} size="sm"
+                variant={group.id === selected?.id ? 'secondary' : 'tertiary'} label={t(`beatPiano.library.group.${group.id}`)}
+                accessibilityRole="tab" accessibilityState={{ selected: group.id === selected?.id }}
+                onPress={() => setGroupId(group.id)} containerStyle={s.compactGroupHit} style={s.compactGroupButton}>
+                <Icon name={musicInstrumentIcon(group.id)} size={20} />
+                <Text variant="footnote" numberOfLines={1}>{t(`beatPiano.library.group.${group.id}`)}</Text>
+            </Button>)}
+            {selected?.presets.map(preset => <Button key={preset.instrument.preset}
+                testID={`music-instrument-add-${preset.instrument.id}-${preset.instrument.preset}`}
+                size="sm" variant="tertiary" disabled={disabled} accessibilityHint={disabled ? reason : undefined}
+                label={t('beatPiano.library.addNamed', { name: preset.label })}
+                onPress={() => add(preset.instrument)} containerStyle={s.compactPresetHit} style={s.compactPresetButton}>
+                <Icon name={musicInstrumentIcon(selected.id)} size={24} />
+                <Text variant="footnote" numberOfLines={1}>{preset.label}</Text>
+            </Button>)}
+        </ScrollView>
+    </View>;
+    return <ScrollView testID="music-instrument-tray" accessibilityLabel={t('beatPiano.library.title')} style={s.trayViewport}
+        contentContainerStyle={s.tray} nestedScrollEnabled showsVerticalScrollIndicator={false}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.row}
             testID="music-instrument-groups" accessibilityLabel={t('beatPiano.library.title')}>
             <Button testID="music-instrument-back" size="sm" variant="tertiary" icon="arrowLeft" iconOnly
@@ -39,7 +60,7 @@ export function MusicInstrumentTray({ apply, disabled, refusal, onBack, onAdded 
                 variant={group.id === selected?.id ? 'secondary' : 'tertiary'} label={t(`beatPiano.library.group.${group.id}`)}
                 accessibilityRole="tab" accessibilityState={{ selected: group.id === selected?.id }}
                 onPress={() => setGroupId(group.id)} containerStyle={s.groupHit} style={s.group}>
-                <Icon name={groupIcon(group.id)} size={20} />
+                <Icon name={musicInstrumentIcon(group.id)} size={20} />
                 <Text variant="footnote" numberOfLines={1}>{t(`beatPiano.library.group.${group.id}`)}</Text>
             </Button>)}
         </ScrollView>
@@ -47,22 +68,25 @@ export function MusicInstrumentTray({ apply, disabled, refusal, onBack, onAdded 
             testID={`music-instrument-presets-${selected.id}`}>
             {selected.presets.map(preset => <Button key={preset.instrument.preset}
                 testID={`music-instrument-add-${preset.instrument.id}-${preset.instrument.preset}`}
-                size="sm" variant="tertiary" disabled={disabled}
+                size="sm" variant="tertiary" disabled={disabled} accessibilityHint={disabled ? reason : undefined}
                 label={t('beatPiano.library.addNamed', { name: preset.label })}
                 onPress={() => add(preset.instrument)} containerStyle={s.presetHit} style={s.preset}>
-                <Icon name={groupIcon(selected.id)} size={24} />
+                <Icon name={musicInstrumentIcon(selected.id)} size={24} />
                 <Text variant="footnote" numberOfLines={1}>{preset.label}</Text>
             </Button>)}
         </ScrollView> : null}
+        {reasonText}
         {failed ? <Text accessibilityLiveRegion="polite" tone="danger" variant="footnote" style={s.error}>
             {refusal || t('beat.refused', { reason: '' })}
         </Text> : null}
-    </View>;
+    </ScrollView>;
 }
 
 const sheets = themedStyles(p => ({
+    trayViewport: { flexGrow: 0, flexShrink: 1, minHeight: 0 },
     tray: { width: '100%', maxWidth: 820, alignSelf: 'center', gap: ds.space.xs, borderTopWidth: 1,
         borderTopColor: p.borderSubtle, paddingTop: ds.space.xs },
+    trayCompact: { width: '100%', maxWidth: 820, alignSelf: 'center', borderTopWidth: 1, borderTopColor: p.borderSubtle },
     row: { alignItems: 'center', gap: ds.space.xs, paddingHorizontal: ds.space.xs },
     backHit: { width: 44, minHeight: 44 },
     back: { width: 44, minWidth: 44, paddingHorizontal: 0 },
@@ -70,5 +94,10 @@ const sheets = themedStyles(p => ({
     group: { minWidth: 82, minHeight: 44, gap: 4, paddingHorizontal: ds.space.sm },
     presetHit: { minWidth: 112 },
     preset: { minWidth: 112, minHeight: 52, flexDirection: 'column', gap: 2, paddingHorizontal: ds.space.sm },
+    compactGroupHit: { minWidth: 88, minHeight: 44 },
+    compactGroupButton: { minWidth: 88, minHeight: 44, gap: 4, paddingHorizontal: ds.space.sm },
+    compactPresetHit: { minWidth: 112, minHeight: 44 },
+    compactPresetButton: { minWidth: 112, minHeight: 44, gap: 4, paddingHorizontal: ds.space.sm },
+    reason: { maxWidth: 240, paddingHorizontal: ds.space.sm },
     error: { paddingHorizontal: ds.space.sm },
 }));
