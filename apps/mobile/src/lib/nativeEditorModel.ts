@@ -3,7 +3,7 @@ import { slicedWords } from '../../../../app/veyrnox/_lib/editorWords.mjs';
 import { slicedAnimation } from '../../../../app/veyrnox/_lib/editorAnimation.mjs';
 import { sliceMaskKeyframes as webSliceMaskKeyframes } from '../../../../app/veyrnox/_lib/editorMask.mjs';
 import { fontMetadataProblem } from '../../../../app/veyrnox/_lib/editorOrganization.mjs';
-import { canvasAspectRatio, canvasAspectSize, canvasPixelSize, customCanvasParts, formatCustomCanvasAspect, validCanvasAspect } from '../../../../app/veyrnox/_lib/editorCanvasFormat.mjs';
+import { canvasAspectRatio, canvasAspectSize, canvasPixelSize, canvasResolutionSize, customCanvasParts, formatCustomCanvasAspect, validCanvasAspect } from '../../../../app/veyrnox/_lib/editorCanvasFormat.mjs';
 // The web caller supplies the retained length; today's helper preserves keys beyond that boundary.
 const sliceMaskKeyframes = webSliceMaskKeyframes as (clip: Clip | TextClip, from: number, len: number) => ReturnType<typeof webSliceMaskKeyframes>;
 import { sourceFrame, shiftedSpeedKeys } from '../../../../app/veyrnox/_lib/editorSpeed.mjs';
@@ -13,7 +13,7 @@ export type TrackKind = 'video' | 'audio' | 'text';
 export type Selection = { track: TrackKind; id: string };
 export type CanvasAspect = '16:9' | '9:16' | '1:1' | '4:5' | `custom:${number}x${number}`;
 export type Canvas = { aspect_ratio: CanvasAspect; frame_rate: 24 | 25 | 30 | 60 };
-export { canvasAspectRatio, canvasAspectSize, canvasPixelSize, customCanvasParts, formatCustomCanvasAspect };
+export { canvasAspectRatio, canvasAspectSize, canvasPixelSize, canvasResolutionSize, customCanvasParts, formatCustomCanvasAspect };
 export type Media = {
     id: string; name?: string; kind?: string; frames?: number; hasAudio?: boolean; width?: number; height?: number;
     graphic?: { shape: string; color: string };
@@ -43,7 +43,7 @@ export type Clip = TimedFields & {
     smartPicture?: { denoise: number; keyEnabled: boolean; keyColor: string; keyTolerance: number; keyFeather: number; despill: number;
         light: number; lightX: number; lightY: number; lightRadius: number };
     colourAdjustment?: ColourAdjustment; crop?: { x: number; y: number; width: number; height: number }; blend?: string;
-    background?: { type: 'none' | 'solid' | 'blur' | 'image'; color: string; blur: number; mediaId: string };
+    background?: { type: 'none' | 'solid' | 'blur' | 'image' | 'gradient' | 'video'; color: string; secondaryColor?: string; angle?: number; blur: number; mediaId: string };
     id: string; mediaId?: string; start: number; in?: number; len: number; trackId?: string;
     volume?: number; transition?: number; transitionType?: string; rate?: number; reverse?: boolean; preservePitch?: boolean;
     fadeIn?: number; fadeOut?: number; pan?: number; groupId?: string; fit?: 'contain' | 'cover';

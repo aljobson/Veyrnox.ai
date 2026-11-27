@@ -8,6 +8,10 @@ void [ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Switch, Text,
 jest.setTimeout(30000);
 let mockInsets = { top: 0, bottom: 21, left: 59, right: 59 };
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => mockInsets }));
+jest.mock('../src/lib/safeArea', () => ({
+    useOptionalSafeAreaInsets: () => mockInsets,
+    ZERO_SAFE_AREA_INSETS: { top: 0, right: 0, bottom: 0, left: 0 },
+}));
 jest.mock('expo-crypto', () => ({ randomUUID: () => 'test-key' }));
 jest.mock('expo-secure-store', () => ({ getItemAsync: jest.fn().mockResolvedValue(null), setItemAsync: jest.fn(), deleteItemAsync: jest.fn() }));
 jest.mock('../src/lib/appCache', () => ({ getCacheUser: () => 'owner', subscribeCacheUser: () => () => {} }));

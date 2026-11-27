@@ -3,7 +3,7 @@ import { act } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { createRoot, type Root } from 'test-renderer';
 import { EditorMediaPreview } from '../src/components/editor/EditorMediaPreview';
-import { editorClipGain, activeEditorMedia, editorSourceTimeSeconds, resolveEditorMediaSource } from '../src/lib/editorPreview';
+import { editorClipGain, activeEditorMedia, editorSourceTimeSeconds, resolveEditorMediaSource, safeEditorMediaUrl } from '../src/lib/editorPreview';
 import { emptyTimeline, type Clip, type Media, type Timeline } from '../src/lib/nativeEditorModel';
 
 void [ActivityIndicator, StyleSheet, Text, View];
@@ -55,6 +55,17 @@ test('resolves owned project and Library media without persisting the signed URL
         `/api/v1/projects/${projectId}/assets/${assetId}/download`,
         `/api/v1/jobs/${jobId}/asset`,
     ]);
+});
+
+test('allows only the exact configured loopback HTTP origin for development preview media', () => {
+    const local = 'http://localhost:8799';
+    expect(safeEditorMediaUrl(`${local}/clip.mp4`, local)).toBe(`${local}/clip.mp4`);
+    expect(safeEditorMediaUrl('http://127.0.0.1:8799/clip.mp4', local)).toBeNull();
+    expect(safeEditorMediaUrl('http://localhost:8800/clip.mp4', local)).toBeNull();
+    expect(safeEditorMediaUrl('http://localhost.evil.test:8799/clip.mp4', local)).toBeNull();
+    expect(safeEditorMediaUrl('http://example.test/clip.mp4', local)).toBeNull();
+    expect(safeEditorMediaUrl('http://localhost:8799/clip.mp4')).toBeNull();
+    expect(safeEditorMediaUrl('https://assets.example/clip.mp4')).toBe('https://assets.example/clip.mp4');
 });
 
 test('maps the timeline playhead into source time', () => {

@@ -264,6 +264,7 @@ try {
         'user_ai_controls', 'ai_limit_policy', // operator AI switch/limit and reason, no customer content; a tombstoned account stays switched off (ADR-0327)
         // money and its audit trail
         'credit_balances', 'ledger_entries', 'top_ups', 'top_up_flagged_orders', 'account_actions', 'referral_rewards', 'referrals',
+        'editor_manual_commit_receipts', 'editor_manual_commit_operations', // content-free debit/delivery tombstones; source identifiers are retained only as SHA-256 hashes
         'music_daily_allowance_claims', // same-day budget facts retained with user_id anonymized
         'store_customers', 'provider_spend_reservations', 'model_free_allowance_claims', 'account_deletions', 'privacy_export_requests',
         // safety and moderation records

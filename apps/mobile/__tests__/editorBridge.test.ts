@@ -1,5 +1,5 @@
 import { nativeMessage, parsePageMessage, PROTOCOL, utf8Bytes, type ProjectDocument } from '../src/lib/editorBridge';
-import { editorDefaultEnabled, editorEnabled } from '../src/lib/editorFlag';
+import { EDITOR_MANUAL_COMMIT_ENABLED, editorDefaultEnabled, editorEnabled } from '../src/lib/editorFlag';
 const id = '11111111-1111-1111-1111-111111111111';
 const origin = 'https://example.test';
 const document: ProjectDocument = { schema_version: 1, project_id: id, brief: '' };
@@ -12,6 +12,7 @@ test('flag only accepts the exact string true', () => {
     expect(editorDefaultEnabled(undefined)).toBe(true);
     expect(editorDefaultEnabled('true')).toBe(true);
     expect(editorDefaultEnabled('false')).toBe(false);
+    expect(EDITOR_MANUAL_COMMIT_ENABLED).toBe(false);
 });
 test.each([hello, { type: 'ready', projectId: id }, { type: 'changed', projectId: id, document },
     { type: 'flushed', projectId: id, document, nonce: 'nonce' }, { type: 'asset-request', reqId: 'req-1', mediaId: `j-${id}--vocals` },

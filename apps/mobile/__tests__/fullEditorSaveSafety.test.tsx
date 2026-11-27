@@ -55,8 +55,12 @@ beforeEach(() => {
     jest.mocked(editorDeviceMedia.files).mockResolvedValue({});
     jest.mocked(editorDeviceMedia.copy).mockResolvedValue(null);
     mockRequest.mockImplementation(async (path: string, init?: RequestInit) => {
-        if (init?.method === 'PUT') return { revision: JSON.parse(init.body as string).expected_revision + 1 };
+        if (init?.method === 'PUT') {
+            const body = JSON.parse(init.body as string);
+            return { revision: body.expected_revision + 1, ...(body.manual_commit ? { credits: body.manual_commit.expected_credits } : {}) };
+        }
         if (init?.method === 'POST') return { project: { id: copyId } };
+        if (path.includes('manual_commit_status=1')) return { ok: true, committed: false, pending: false, canceled: false, revision: null };
         if (path.endsWith('/document')) return head;
         if (path.endsWith('/media-info')) return { seconds: 4 };
         return { project: { id, workspace_id: 'workspace', name: 'Cut' } };
@@ -114,6 +118,85 @@ test('status 0 retries after 5 s then 10 s; 403 pauses autosave even after an ed
     mockRequest.mockImplementation(async () => { throw new ApiError(403, 'forbidden'); });
     await tick(1); expect(puts()).toHaveLength(3); await edit('later'); await tick(60000);
     expect(puts()).toHaveLength(3); expect(session.saveStatus).toBe(t('editor.unavailable'));
+});
+test('a refused paid Save never blocks the free background autosave', async () => {
+    await open(); await edit('paid edit');
+    mockRequest.mockImplementationOnce(async () => { throw new ApiError(402, 'insufficient_balance'); });
+    let paid!: Awaited<ReturnType<typeof session.sync.savePaid>>; await act(async () => { paid = await session.sync.savePaid(5); });
+    expect(paid.committed).toBe(false); expect(session.sync.failureCode).toBe('insufficient_balance');
+    await tick(1);
+    expect(puts()).toHaveLength(2);
+    expect(JSON.parse(puts()[0][1].body)).toMatchObject({ manual_commit: { mode: 'commit', expected_credits: 5 } });
+    expect(JSON.parse(puts()[1][1].body).manual_commit).toBeUndefined();
+    expect(session.dirty).toBe(false);
+});
+test('an ambiguous paid Save replays the same key once inside the explicit action', async () => {
+    await open(); await edit('ambiguous paid edit');
+    mockRequest.mockImplementationOnce(async () => { throw new ApiError(0, 'network'); });
+    await act(async () => { expect((await session.sync.savePaid(5)).committed).toBe(true); });
+    expect(puts()).toHaveLength(2);
+    expect(puts()[1][1].headers['Idempotency-Key']).toBe(puts()[0][1].headers['Idempotency-Key']);
+    expect(session.dirty).toBe(false);
+});
+test('two ambiguous paid responses use exact-key status, never charge in the background, then resume free autosave', async () => {
+    await open(); await edit('unknown paid edit');
+    mockRequest.mockImplementationOnce(async () => { throw new ApiError(0, 'network'); });
+    mockRequest.mockImplementationOnce(async () => { throw new ApiError(0, 'network'); });
+    let paid!: Awaited<ReturnType<typeof session.sync.savePaid>>;
+    await act(async () => { paid = await session.sync.savePaid(5); });
+    expect(paid.committed).toBe(false);
+    await tick(1);
+    const bodies = puts().map(([, init]) => JSON.parse(init.body as string));
+    expect(bodies.filter(body => body.manual_commit?.mode === 'commit')).toHaveLength(2);
+    expect(bodies.filter(body => body.manual_commit === undefined)).toHaveLength(1);
+    expect(puts()[1][1].headers['Idempotency-Key']).toBe(puts()[0][1].headers['Idempotency-Key']);
+    expect(session.dirty).toBe(false);
+});
+test('a missing read-only status keeps the paid key and the next explicit retry replays that exact key', async () => {
+    await open(); await edit('unknown paid edit');
+    mockRequest.mockImplementationOnce(async () => { throw new ApiError(0, 'network'); });
+    mockRequest.mockImplementationOnce(async () => { throw new ApiError(0, 'network'); });
+    let first!: Awaited<ReturnType<typeof session.sync.savePaid>>;
+    await act(async () => { first = await session.sync.savePaid(5); });
+    expect(first.committed).toBe(false);
+    expect(puts()).toHaveLength(2);
+    const key = puts()[0][1].headers['Idempotency-Key'];
+    let retried!: Awaited<ReturnType<typeof session.sync.savePaid>>;
+    await act(async () => { retried = await session.sync.savePaid(5); });
+    expect(retried).toMatchObject({ committed: true, credits: 5 });
+    expect(puts()).toHaveLength(3);
+    expect(puts()[2][1].headers['Idempotency-Key']).toBe(key);
+});
+test('a covered clean document accepts a zero-credit Save without creating another revision', async () => {
+    await open();
+    await act(async () => { expect((await session.sync.savePaid(0)).committed).toBe(true); });
+    expect(puts()).toHaveLength(0);
+});
+test('a lost paid response reconciles the committed head without replaying a charge or opening conflict', async () => {
+    await open(); await edit('landed paid edit');
+    mockRequest.mockImplementationOnce(async () => { throw new ApiError(0, 'network'); });
+    mockRequest.mockImplementationOnce(async () => { throw new ApiError(0, 'network'); });
+    mockRequest.mockImplementationOnce(async (path: string) => {
+        expect(path).toContain('manual_commit_status=1');
+        return { ok: true, committed: false, pending: true, canceled: false, revision: 5 };
+    });
+    let result!: Awaited<ReturnType<typeof session.sync.savePaid>>;
+    await act(async () => { result = await session.sync.savePaid(5); });
+    expect(result).toMatchObject({ committed: true, revision: 5, credits: 5 });
+    expect(puts()).toHaveLength(2); expect(session.revision).toBe(5); expect(session.dirty).toBe(false); expect(session.sync.sheet).toBeNull();
+    expect(puts()[1][1].headers['Idempotency-Key']).toBe(puts()[0][1].headers['Idempotency-Key']);
+    await tick(15000); expect(puts()).toHaveLength(2); expect(session.sync.sheet).toBeNull();
+});
+test('a paid commit remains successful when a newer edit arrives during the request', async () => {
+    await open(); await edit('paid snapshot');
+    const response = deferred<{ revision: number; credits: number }>(); mockRequest.mockImplementationOnce(() => response.promise);
+    let result!: Awaited<ReturnType<typeof session.sync.savePaid>>;
+    await act(async () => { void session.sync.savePaid(5).then(value => { result = value; }); });
+    await edit('newer edit');
+    await act(async () => response.resolve({ revision: 5, credits: 5 }));
+    expect(result).toMatchObject({ committed: true, revision: 5, credits: 5 });
+    expect(session.dirty).toBe(true);
+    await tick(1); expect(JSON.parse(puts().at(-1)![1].body).document.brief).toBe('newer edit');
 });
 test('15 s watch ignores same head, opens for newer head, and does not run while a save is unknown', async () => {
     await open(); await tick(15000); expect(session.sync.sheet).toBeNull();

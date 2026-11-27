@@ -57,6 +57,27 @@ test('colour commits only valid end edits and swatch presses', async () => {
     expect(onChange).toHaveBeenLastCalledWith('#ffffff');
 });
 
+test('horizontal colour palette deduplicates choices and commits a complete valid hex while typing', async () => {
+    const onChange = jest.fn(), onOpenPicker = jest.fn().mockResolvedValue('#34C759');
+    await act(async () => root.render(<ColourField label="Text Color" value="#000000"
+        swatches={['#000000', '#000000', '#AF52DE']} presentation="horizontal" commitValidOnChange onChange={onChange} onOpenPicker={onOpenPicker} />));
+    expect(root.container.queryAll(n => n.props.accessibilityRole === 'button')).toHaveLength(3);
+    const selected = root.container.queryAll(n => n.props.accessibilityLabel === 'Colour #000000')[0];
+    expect(selected.props.accessibilityState).toEqual({ selected: true });
+    const input = root.container.queryAll(n => n.props.accessibilityLabel === 'Text Color hex colour')[0];
+    await act(async () => input.props.onChangeText('#12ab34'));
+    expect(onChange).toHaveBeenLastCalledWith('#12AB34');
+    onChange.mockClear();
+    const finalSwatch = root.container.queryAll(n => n.props.accessibilityLabel === 'Colour #AF52DE')[0];
+    await act(async () => finalSwatch.props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 }));
+    expect(onChange).toHaveBeenCalledWith('#AF52DE');
+    onChange.mockClear();
+    const picker = root.container.queryAll(n => n.props.accessibilityLabel === 'Open Text Color picker')[0];
+    await act(async () => picker.props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 }));
+    expect(onOpenPicker).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith('#34C759');
+});
+
 test('horizontal drag keeps a live value, refuses termination and commits once on release', async () => {
     const { PanResponder } = require('react-native');
     const spy = jest.spyOn(PanResponder, 'create');

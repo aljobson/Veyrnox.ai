@@ -14,6 +14,9 @@ test('group preserves existing editor controls and leaves paid separation indepe
     assert.equal(editorFeatureEnabled(names[0],env({...group,organization:'false'})),true);
     assert.equal(editorFeatureEnabled(names[1],env({...group,organization:'false'})),false);
     assert.equal(editorFeatureEnabled('CINEMA_UNLOCKS_ENABLED',env(group)),false);
+    assert.equal(editorFeatureEnabled('EDITOR_MANUAL_COMMIT_ENABLED',env(group)),false);
+    assert.equal(editorFeatureEnabled('EDITOR_MANUAL_COMMIT_ENABLED',env({...group,manualCommit:'true'})),true);
+    assert.equal(editorFeatureEnabled('EDITOR_MANUAL_COMMIT_ENABLED',{...env({...group,manualCommit:'true'}),EDITOR_MANUAL_COMMIT_ENABLED:'false'}),false);
 });
 test('malformed/missing/unknown grouped values fail closed; explicit legacy false overrides grouped true',()=>{
     for(const value of [undefined,'broken','null','[]','true',JSON.stringify({...group,other:'true'}),JSON.stringify({...group,localInference:true}),JSON.stringify({...group,audioStems:'TRUE'}),' '.repeat(1025)]){

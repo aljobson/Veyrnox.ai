@@ -1,5 +1,6 @@
 import { sourceFrame, speedAt } from '../../../../app/veyrnox/_lib/editorSpeed.mjs';
 import type { ApiClient } from './api';
+import { config, DEV_MOCK } from './config';
 import type { Clip, Media, Timeline } from './nativeEditorModel';
 
 const LIBRARY_ID = /^j-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
@@ -14,11 +15,16 @@ export interface EditorMediaSource {
     readonly kind: 'video' | 'image';
 }
 
-function safeHttpsUrl(value: unknown): string | null {
+export function safeEditorMediaUrl(value: unknown, devApiBase: string | undefined = DEV_MOCK ? config.apiBase : undefined): string | null {
     if (typeof value !== 'string') return null;
     try {
         const url = new URL(value);
-        return url.protocol === 'https:' && !url.username && !url.password ? url.href : null;
+        if (url.username || url.password) return null;
+        if (url.protocol === 'https:') return url.href;
+        if (url.protocol !== 'http:' || !devApiBase) return null;
+        const base = new URL(devApiBase);
+        const loopback = ['localhost', '127.0.0.1', '[::1]'].includes(base.hostname);
+        return loopback && base.protocol === 'http:' && url.origin === base.origin ? url.href : null;
     } catch {
         return null;
     }
@@ -49,7 +55,7 @@ export async function resolveEditorMediaSource(api: Pick<ApiClient, 'request'>, 
         body = await api.request(`/api/v1/jobs/${encodeURIComponent(match[1])}/asset`, { signal });
     }
 
-    const uri = safeHttpsUrl(body.url);
+    const uri = safeEditorMediaUrl(body.url);
     const contentType = String(body.content_type || body.mime_type || '').toLowerCase();
     if (!uri || (kind === 'video' ? !contentType.startsWith('video/') : !contentType.startsWith('image/'))) return null;
     return { uri, kind };

@@ -1,5 +1,5 @@
 import { clampFrame, holdsClip, insertMediaAt } from '../src/lib/editorInsertMedia';
-import { emptyTimeline, framesIn, removeSelections, type Timeline } from '../src/lib/nativeEditorModel';
+import { addTrack, emptyTimeline, framesIn, removeSelections, type Timeline } from '../src/lib/nativeEditorModel';
 
 const media = { id: 'source', kind: 'video', frames: 90 };
 function inserted(timeline = emptyTimeline(), item = media, at = 0) {
@@ -18,6 +18,26 @@ test.each(['audio', 'video', 'image'])('%s uses the first unlocked track of its 
     expect(result.timeline[lane][0]).toMatchObject({ trackId: 'unlocked', start: 12, in: 0, len: 90, volume: 1, transition: 0, rate: 1 });
     expect(result.selection).toEqual({ track: lane, id: `${lane[0]}1` });
     expect(timeline[lane]).toHaveLength(0);
+});
+
+test('a contextual plus inserts into its exact unlocked lane', () => {
+    const timeline = addTrack(emptyTimeline(), 'video');
+    const target = timeline.tracks.find(track => track.kind === 'video' && track.id !== 'video-0')!;
+    const result = insertMediaAt(timeline, media, 0, target.id);
+    expect(result).not.toHaveProperty('error');
+    if ('error' in result) return;
+    expect(result.timeline.video[0].trackId).toBe(target.id);
+});
+
+test('a contextual plus never silently reroutes from a locked, wrong-kind, or occupied lane', () => {
+    const withSecond = addTrack(emptyTimeline(), 'video');
+    const second = withSecond.tracks.find(track => track.kind === 'video' && track.id !== 'video-0')!;
+    const locked = { ...withSecond, tracks: withSecond.tracks.map(track => track.id === second.id ? { ...track, locked: true } : track) };
+    expect(insertMediaAt(locked, media, 0, second.id)).toEqual({ error: 'track' });
+    expect(insertMediaAt(withSecond, media, 0, 'audio-0')).toEqual({ error: 'track' });
+    const first = insertMediaAt(withSecond, media, 0, second.id);
+    if ('error' in first) throw new Error(first.error);
+    expect(insertMediaAt(first.timeline, { ...media, id: 'second' }, 0, second.id)).toEqual({ error: 'occupied' });
 });
 
 test('a locked-only kind gives track', () => {

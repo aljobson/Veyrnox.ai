@@ -114,6 +114,19 @@ test('does not invent a file dependency for a generated graphic used as an image
     expect(api.request).not.toHaveBeenCalled(); expect(mockFetch).not.toHaveBeenCalled();
 });
 
+test('materializes a video used only as a clip background', async () => {
+    const bytes = mp4(), api = { request: jest.fn(async () => ({ url: `https://${signedHost}/video`, mime_type: 'video/mp4', size_bytes: bytes.length,
+        asset_expires_at: '2030-01-01T00:00:00Z' })) }, tl = timeline();
+    tl.video = [{ ...tl.video[0], background: { type: 'video', color: '#000000', blur: 0, mediaId: videoId } }];
+    mockFetch.mockResolvedValue(response(bytes, 'video/mp4').response);
+    const result = await withEditorExportSources(request(api, { timeline: tl }), async sources => {
+        expect(sources).toEqual({ [localId]: localUri, [videoId]: `${runRoot}/${videoId}.mp4` });
+        return 'video-background-result';
+    }, { runId: () => 'test-run', now: () => Date.parse('2029-01-01T00:00:00Z') });
+    expect(result).toEqual({ ok: true, value: 'video-background-result' });
+    expect(api.request).toHaveBeenCalledTimes(1); expect(mockFetch).toHaveBeenCalledTimes(1);
+});
+
 test('rejects a changed encoded size and cleans the partial run', async () => {
     const bytes = mp4(), api = { request: jest.fn(async () => ({ url: `https://${signedHost}/video`, mime_type: 'video/mp4', size_bytes: bytes.length + 1 })) };
     mockFetch.mockResolvedValue(response(bytes, 'video/mp4', bytes.length + 1).response);
