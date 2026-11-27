@@ -21,7 +21,7 @@ test('sign-up validates input and will not submit without the security check', a
     expect(await password.getAttribute('minlength')).toBe('8');
 
     // The form's own check: the browser accepts this address, the form does not.
-    const status = dialog.getByRole('status');
+    const status = dialog.locator('#vx-auth-notice');
     await password.fill('long-enough-password');
     await email.fill('e2e@never-sent');
     await submit.click();
