@@ -31,14 +31,14 @@ export function AudioTemplateCard({ template, credits, playing = false, style, o
             <View style={styles.playLayer}><View style={styles.playBadge}><Icon name={playing ? 'pauseCircle' : 'play'} size={16} /></View></View>
             {playing ? <SamplePlayer url={sample} onEnd={onPlay} /> : null}
         </Pressable> : <View style={styles.thumb}>{art}</View>}
-        <Pressable onPress={onOpen} accessibilityRole="button" accessibilityLabel={`${t('templates.kind.audio')}, ${template.name}${price ? `, ${price}` : ''}`} style={styles.body}>
+        <Pressable onPress={onOpen} disabled={!price} accessibilityRole="button" accessibilityState={{ disabled: !price }} accessibilityLabel={`${t('templates.kind.audio')}, ${template.name}${price ? `, ${price}` : `, ${t('crunTemplates.priceUnavailable')}`}`} style={styles.body}>
             <View style={styles.meta}>
                 <View style={styles.badge}><Text variant="caption">{t('templates.kind.audio')}</Text></View>
                 <Text variant="caption" tone="secondary" numberOfLines={1} style={styles.category}>{categoryLabel(template.category)}</Text>
             </View>
             <Text variant="bodyStrong" numberOfLines={1}>{template.name}</Text>
             <Text variant="caption" tone="secondary" numberOfLines={2}>{template.prompt}</Text>
-            {price ? <Text variant="caption" tone="warning">{price}</Text> : null}
+            <Text variant="caption" tone={price ? 'warning' : 'secondary'}>{price || t('crunTemplates.priceUnavailable')}</Text>
             {template.attribution ? <Text variant="caption" tone="tertiary" numberOfLines={3}>{template.attribution}</Text> : null}
         </Pressable>
     </Card>;

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeCrunTemplateCatalog, readCrunTemplateCatalog, readCrunTemplateSummary } from '../lib/crunTemplateCatalog.js';
+import { crunTemplateCostMicrousd, normalizeCrunTemplateCatalog, publicCrunTemplateCatalog, readCrunTemplateCatalog, readCrunTemplateSummary } from '../lib/crunTemplateCatalog.js';
 
 test('normalizes the documented Kling template shape and drops unsafe media URLs', () => {
   const catalog = normalizeCrunTemplateCatalog('kling', {
@@ -15,7 +15,8 @@ test('normalizes the documented Kling template shape and drops unsafe media URLs
   assert.deepEqual(catalog.templates[0], {
     catalogId: 'kling:1:1:critter_paste', providerTemplateId: 'critter_paste',
     id: 'critter_paste', name: 'Critter Paste', category: 'Pet', tag: 'NEW', coverUrl: null,
-    previewUrl: 'https://s15-kling.klingai.com/demo.mp4', previewKind: 'video', providerCredits: 200.7,
+    previewUrl: 'https://s15-kling.klingai.com/demo.mp4', previewKind: 'video', providerCredits: 200.7, credits: 55,
+    inputCount: 1, minInputCount: 1, maxInputCount: 1,
     requirements: [{ label: 'Resolution', value: '1080p' }, { label: 'Recommended Image Types', value: 'Single animal' }],
   });
 });
@@ -36,7 +37,7 @@ test('normalizes Vidu templates, including image previews and bounded input inst
     catalogId: 'vidu:1:1:Vintage_Moment_of_Mom', providerTemplateId: 'Vintage_Moment_of_Mom',
     id: 'Vintage_Moment_of_Mom', name: 'Vintage Moment of Mom', category: 'Festival', tag: 'HOT',
     coverUrl: 'https://scene.cf.vidu.studio/cover.png', previewUrl: 'https://scene.cf.vidu.studio/preview.png', previewKind: 'image',
-    providerCredits: 28.8, inputRequirement: 'Only one person', requirements: [
+    providerCredits: 28.8, credits: 8, inputCount: 1, minInputCount: 1, maxInputCount: 1, inputRequirement: 'Only one person', requirements: [
       { label: 'Resolution', value: '1080p' },
       { label: 'Aspect ratio', value: '9:16' },
       { label: 'Output type', value: 'unspecified' },
@@ -60,11 +61,64 @@ test('normalizes ByteDance templates and identifies Seedance 2 entries', () => {
   }, 2, 50);
   assert.equal(catalog.templates[0].seedance2, true);
   assert.equal(catalog.templates[0].inputCount, 1);
+  assert.equal(catalog.templates[0].minInputCount, 1);
   assert.deepEqual(catalog.templates[0].supportedAspects, ['9:16', '1:1', '16:9']);
   assert.deepEqual(catalog.templates[0].prices, [
-    { resolution: '480p', providerCredits: 166.5 },
-    { resolution: '720p', providerCredits: 355.2 },
+    { resolution: '480p', providerCredits: 166.5, credits: 46 },
+    { resolution: '720p', providerCredits: 355.2, credits: 97 },
   ]);
+});
+
+test('customer prices round supplier cost up to the standing margin floor', () => {
+  const kling = normalizeCrunTemplateCatalog('kling', { code: 200, data: { total: 1, templates: [{ key: 'x', name: 'X', credit: 376.32, info: [] }] } }, 1, 50);
+  const vidu = normalizeCrunTemplateCatalog('vidu', { code: 200, data: { total: 1, templates: [{ template: 'free', name: 'Free upstream', credits: 0 }] } }, 1, 50);
+  assert.equal(kling.templates[0].credits, 102);
+  assert.equal(vidu.templates[0].credits, null, 'a zero price is treated as missing rather than guessed');
+});
+
+test('catalogue prices fail closed for blank, boolean, null and non-finite values', () => {
+  for (const credit of ['', '   ', false, null, 0, '0', '0x10', '1e3', Number.POSITIVE_INFINITY]) {
+    const catalog = normalizeCrunTemplateCatalog('kling', {
+      code: 200, data: { total: 1, templates: [{ key: 'x', name: 'X', credit, info: [] }] },
+    }, 1, 50);
+    assert.equal(catalog.templates[0].providerCredits, null);
+    assert.equal(catalog.templates[0].credits, null);
+    assert.equal(crunTemplateCostMicrousd(credit), null);
+  }
+  assert.equal(crunTemplateCostMicrousd(256.47), 1_245_000);
+});
+
+test('the public catalogue exposes only Veyrnox prices', () => {
+  const catalog = normalizeCrunTemplateCatalog('seedance', { code: 200, data: { total: 1, templates: [{ TemplateId: 'x', Title: 'X', ConsumeItems: [{ Resolution: '720p', Credit: 31.5 }] }] } }, 1, 50);
+  const projected = publicCrunTemplateCatalog(catalog);
+  assert.equal(projected.templates[0].providerCredits, undefined);
+  assert.equal(projected.templates[0].prices[0].providerCredits, undefined);
+  assert.equal(projected.templates[0].prices[0].credits, catalog.templates[0].prices[0].credits);
+});
+
+test('catalogue input metadata covers the full zero-to-five-image Vidu contract', () => {
+  const kling = normalizeCrunTemplateCatalog('kling', { code: 200, data: { total: 1, templates: [{ key: 'pair', name: 'Pair', credit: 10, info: [{ labels: ['Recommended Image Types'], values: ['Two single-person photos'] }] }] } }, 1, 50);
+  const vidu = instruction => normalizeCrunTemplateCatalog('vidu', { code: 200, data: { total: 1, templates: [{ template: 'effect', name: 'Effect', credits: 10, input_instruction: JSON.stringify({ image_count: instruction }) }] } }, 1, 50).templates[0];
+  assert.deepEqual([kling.templates[0].minInputCount, kling.templates[0].maxInputCount], [2, 2]);
+  for (const [instruction, expected] of [
+    ['No need to upload pictures.', [0, 0]],
+    ['Only 1 to 2 images can be uploaded', [1, 2]],
+    ['Two character images and one scene image need to be uploaded', [3, 3]],
+    ['Required, supports uploading 2-3 images', [2, 3]],
+    ['Supports uploading 1 to 5 images', [1, 5]],
+    ['A maximum of five images can be uploaded, among which the first two are mandatory.', [2, 5]],
+  ]) assert.deepEqual([vidu(instruction).minInputCount, vidu(instruction).maxInputCount], expected, instruction);
+});
+
+test('Seedance catalogue metadata preserves an eight-image template contract', () => {
+  const catalog = normalizeCrunTemplateCatalog('seedance', {
+    code: 200, data: { total: 1, templates: [{
+      TemplateId: 'eight', Title_en: 'Eight people', InputNum: 8,
+      ConsumeItems: [{ Resolution: '720p', Credit: 256.47 }],
+    }] },
+  }, 1, 50);
+  assert.deepEqual([catalog.templates[0].minInputCount, catalog.templates[0].maxInputCount], [8, 8]);
+  assert.equal(catalog.templates[0].prices[0].credits, 70);
 });
 
 test('catalog requests keep the API key server-side and forward only bounded query fields', async () => {
