@@ -14,6 +14,7 @@ test('Music Sounds exposes the admitted CRUN looping model without inventing BPM
   assert.match(page, /Looping is available on Suno Sound Effects/);
   assert.match(page, /Seamless loop/);
   assert.match(page, /BPM and musical key are prompt directions/);
+  assert.match(page, /MusicCreationTypeNav active="sound-effect"/);
   assert.doesNotMatch(page, /bpm=|key=/i);
 });
 

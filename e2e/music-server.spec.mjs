@@ -1706,8 +1706,7 @@ test('F12-H2 private Library creates a workspace and moves two owned songs atomi
   expect(accessibility.violations, accessibility.violations.map((item) => `${item.id}: ${item.help}`).join('\n')).toEqual([]);
   await page.screenshot({ path: 'replica/suno/clone-screens/S09-server-mobile.png', fullPage: true });
 
-  await page.getByRole('link', { name: 'Workspaces' }).click();
-  await expect(page.getByRole('heading', { name: 'Personal workspaces' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Workspace members' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Film Cues · 2' })).toBeVisible();
 });
 
@@ -1739,6 +1738,7 @@ test('F13-H1/F14-H1 owners invite by handle and collaborators accept in-app', as
   });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/app/music/workspaces');
+  await expect(page).toHaveURL(/\/app\/music\/library$/);
   await expect(page.getByRole('heading', { name: 'Workspace members' })).toBeVisible();
   await page.getByLabel('Invite handle to Film Cues').fill('guest_one');
   await page.getByRole('button', { name: 'Invite', exact: true }).click();

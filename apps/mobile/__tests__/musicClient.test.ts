@@ -2,7 +2,7 @@ import { song, version, hook } from './fixtures/music';
 import { ApiError, type ApiClient } from '../src/lib/api';
 import {
     analyzeMusicInspiration, createQuote, getEntitlements, getLibraryTab, getSong, isMusicOff, listSongs, probeMusic, recordListen,
-    setSongLifecycle, startGeneration,
+    setSongLifecycle, startGeneration, listMusicSources, normalizeMusicSourceFile, reserveMusicSource, removeMusicSource, uploadMusicSource,
 } from '../src/lib/music';
 // @ts-ignore server parsers, used to prove the phone sends bodies the routes accept
 import { parseMusicGeneration, parseMusicQuote } from '../../../lib/musicBackend.js';
@@ -41,7 +41,7 @@ describe('entitlements', () => {
         const { features: _features, ...legacyEntitlements } = entitlements;
         request.mockResolvedValue(legacyEntitlements);
         expect((await getEntitlements(api)).features).toEqual({
-            albums: false, inspiration: false, studioChat: false, dailyChallenge: false, persistentQueue: false,
+            albums: false, inspiration: false, studioChat: false, dailyChallenge: false, persistentQueue: false, sources: false,
         });
     });
     test('shows inspiration only for a valid, unique server source contract', async () => {
@@ -95,6 +95,53 @@ describe('entitlements', () => {
     ])('rejects malformed %j', async (v) => {
         request.mockResolvedValue(v);
         await expect(getEntitlements(api)).rejects.toMatchObject({ code: 'bad_response' });
+    });
+});
+
+describe('owned audio sources', () => {
+    const source = { id: UUID, filename: 'idea.wav', mime_type: 'audio/wav', size_bytes: 4096, duration_seconds: 12.5,
+        status: 'ready', created_at: '2026-11-25T10:00:00Z', rights_statement_version: 'music-source-rights-v1',
+        preview_url: 'https://private.example/idea.wav', preview_expires_in: 300 } as const;
+    const file = { uri: 'file:///idea.wav', name: 'idea.wav', size: 4096, mimeType: 'audio/wav' } as const;
+    test('normalizes WAV aliases and enforces the exact 20 MiB/file-name boundary', () => {
+        expect(normalizeMusicSourceFile({ ...file, mimeType: 'audio/x-wav' })).toEqual(file);
+        expect(normalizeMusicSourceFile({ ...file, size: 20 * 1024 * 1024 })).toEqual({ ...file, size: 20 * 1024 * 1024 });
+        expect(normalizeMusicSourceFile({ ...file, size: 20 * 1024 * 1024 + 1 })).toBeNull();
+        expect(normalizeMusicSourceFile({ ...file, name: '   ' })).toBeNull();
+        expect(normalizeMusicSourceFile({ ...file, name: '  idea.wav  ' })).toEqual(file);
+        expect(normalizeMusicSourceFile({ ...file, name: 'bad\nname.wav' })).toBeNull();
+        expect(normalizeMusicSourceFile({ ...file, mimeType: 'audio/mp4' })).toBeNull();
+    });
+    test('lists validated ready sources and rejects private or malformed projections', async () => {
+        request.mockResolvedValue({ sources: [source] });
+        await expect(listMusicSources(api)).resolves.toEqual([source]);
+        expect(request).toHaveBeenLastCalledWith('/api/v1/music/sources');
+        request.mockResolvedValue({ sources: [{ ...source, r2_key: 'private/key.wav' }] });
+        await expect(listMusicSources(api)).resolves.toEqual([source]);
+        request.mockResolvedValue({ sources: [{ ...source, preview_url: '/relative' }] });
+        await expect(listMusicSources(api)).rejects.toMatchObject({ code: 'bad_response' });
+    });
+    test('reserve sends immutable rights evidence and removal uses the shared route', async () => {
+        request.mockResolvedValueOnce({ id: UUID, upload_url: 'https://upload.example/source', content_type: 'audio/wav',
+            headers: { 'If-None-Match': '*' }, idempotent: false });
+        await reserveMusicSource(api, file, KEY);
+        expect(sentBody()).toEqual({ action: 'reserve', content_type: 'audio/wav', filename: 'idea.wav',
+            idempotency_key: KEY, rights_confirmed: true, size_bytes: 4096 });
+        request.mockResolvedValueOnce({ ok: true }); await removeMusicSource(api, UUID);
+        expect(request.mock.calls.at(-1)?.[1]?.method).toBe('DELETE'); expect(sentBody()).toEqual({ id: UUID });
+    });
+    test('a replayed immutable reservation accepts storage 412 then completes once', async () => {
+        request.mockResolvedValueOnce({ id: UUID, upload_url: 'https://upload.example/source', content_type: 'audio/wav',
+            headers: { 'If-None-Match': '*' }, idempotent: true }).mockResolvedValueOnce({ source, idempotent: false });
+        const put = jest.fn().mockResolvedValue(412);
+        await expect(uploadMusicSource(api, file, KEY, jest.fn(), new AbortController().signal, put)).resolves.toEqual(source);
+        expect(put).toHaveBeenCalledTimes(1); expect(sentBody()).toEqual({ action: 'complete', id: UUID });
+    });
+    test('a new reservation never treats 412 as success', async () => {
+        request.mockResolvedValue({ id: UUID, upload_url: 'https://upload.example/source', content_type: 'audio/wav', headers: {}, idempotent: false });
+        await expect(uploadMusicSource(api, file, KEY, jest.fn(), new AbortController().signal, async () => 412))
+            .rejects.toMatchObject({ code: 'storage_upload_failed', status: 412 });
+        expect(request).toHaveBeenCalledTimes(1);
     });
 });
 
