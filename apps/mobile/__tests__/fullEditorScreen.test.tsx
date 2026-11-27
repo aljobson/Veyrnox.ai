@@ -99,6 +99,9 @@ beforeEach(() => {
             if (body.manual_commit?.mode === 'commit') return { revision: body.expected_revision + 1, credits: body.manual_commit.expected_credits };
             return { revision: body.expected_revision + 1 };
         }
+        if (path.endsWith('/document') && init?.method === 'PATCH') return { ok: true, authorized: true, revision: 5 };
+        if (path.endsWith('/document') && init?.method === 'POST') return { ok: true, committed: true, revision: 5 };
+        if (path.endsWith('/document') && init?.method === 'DELETE') return { ok: true, canceled: true, revision: 5 };
         if (init?.method === 'PATCH') return { project: { id: projectId, workspace_id: 'workspace', name: JSON.parse(init.body as string).name, version: 2 } };
         if (path.endsWith('/media-info')) return { seconds: 4 };
         if (path.endsWith('/document')) return { revision: 4, document: serverDocument };
@@ -595,6 +598,9 @@ test('explicit Save quotes and confirms the one-time 5-credit manual edit before
         await act(async () => confirm.onPress!());
         const manual = puts().map(([, init]) => JSON.parse(init.body as string).manual_commit).filter(Boolean);
         expect(manual).toEqual([{ mode: 'quote' }, { mode: 'commit', expected_credits: 5 }]);
+        const settlementMethods = mockRequest.mock.calls.filter(([path]) => String(path).endsWith('/document'))
+            .map(([, init]) => init?.method).filter(method => method === 'PATCH' || method === 'POST');
+        expect(settlementMethods).toEqual(['PATCH', 'POST']);
     } finally { alert.mockRestore(); }
 });
 

@@ -20,6 +20,7 @@ const projectStatus = '88888888-8888-4888-8888-888888888888';
 const projectCrossRoute = '12121212-1212-4212-8212-121212121212';
 const projectOverlap = '13131313-1313-4313-8313-131313131313';
 const projectSwept = '14141414-1414-4414-8414-141414141414';
+const projectMfa = '15151515-1515-4515-8515-151515151515';
 
 async function psql(sql) {
   const { stdout } = await run('psql', [url, '--no-psqlrc', '--set', 'ON_ERROR_STOP=1', '--tuples-only', '--no-align', '--command', sql], { maxBuffer: 4 * 1024 * 1024 });
@@ -44,6 +45,7 @@ test('manual editor debit migration is atomic, idempotent and invisible', { skip
       IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='service_role') THEN CREATE ROLE service_role NOLOGIN; END IF;
     END $$;
     CREATE SCHEMA auth; CREATE SCHEMA private;
+    CREATE TABLE auth.mfa_factors(user_id uuid NOT NULL,factor_type text NOT NULL,status text NOT NULL);
     GRANT USAGE ON SCHEMA private TO authenticated;
     CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
     CREATE TABLE public.users(id uuid PRIMARY KEY,auth_id text UNIQUE NOT NULL,frozen_at timestamptz,hold_until timestamptz);
@@ -121,7 +123,7 @@ test('manual editor debit migration is atomic, idempotent and invisible', { skip
   await psql(`INSERT INTO public.users(id,auth_id) VALUES('${user}','${actor}'),('${otherUser}','${otherActor}');
     INSERT INTO public.projects(id,user_id) VALUES('${project}','${user}'),('${projectTwo}','${user}'),('${projectConcurrent}','${user}'),
       ('${projectUnion}','${user}'),('${projectNull}','${user}'),('${projectStatus}','${user}'),('${projectCrossRoute}','${user}'),
-      ('${projectOverlap}','${user}'),('${projectSwept}','${user}');
+      ('${projectOverlap}','${user}'),('${projectSwept}','${user}'),('${projectMfa}','${user}');
     INSERT INTO public.credit_balances(user_id,balance,free_balance,subscription_balance,subscription_expires_at,subscription_cycle)
       VALUES('${user}',20,20,0,now()+interval '1 month',1);`);
 
@@ -140,6 +142,18 @@ test('manual editor debit migration is atomic, idempotent and invisible', { skip
       FROM public.credit_balances WHERE user_id='${user}';`), '20|0|0|0');
   });
   await psql(`UPDATE public.editor_manual_commit_config SET enabled=true,updated_at=now() WHERE singleton;`);
+
+  await t.test('an enrolled account cannot bypass AAL2 through the granted PostgREST functions', async () => {
+    await psql(`INSERT INTO auth.mfa_factors(user_id,factor_type,status) VALUES('${actor}','totp','verified');`);
+    await assert.rejects(psql(saveSql(projectMfa, 0, doc(['mfa-source']), 'mfa-save-key', 5)), /MFA_REQUIRED/);
+    assert.match(await psql(`BEGIN; SELECT set_config('request.jwt.claim.sub','${actor}',true);
+      SELECT set_config('request.jwt.claims','{"aal":"aal2"}',true);
+      SELECT public.save_paid_project_document('${projectMfa}',0,'${doc(['mfa-source'])}'::jsonb,'mfa-save-key',5); COMMIT;`), /"pending": true/);
+    assert.match(await psql(`BEGIN; SELECT set_config('request.jwt.claim.sub','${actor}',true);
+      SELECT set_config('request.jwt.claims','{"aal":"aal2"}',true);
+      SELECT public.cancel_manual_editor_commit('${projectMfa}','mfa-save-key'); COMMIT;`), /"canceled": true/);
+    await psql(`DELETE FROM auth.mfa_factors WHERE user_id='${actor}';`);
+  });
 
   await t.test('authenticated grants work and non-members remain hidden', async () => {
     assert.equal(await psql(`SELECT has_function_privilege('authenticated','public.save_paid_project_document(uuid,integer,jsonb,text,integer)','EXECUTE')||'|'||
@@ -164,9 +178,13 @@ test('manual editor debit migration is atomic, idempotent and invisible', { skip
     assert.match(quote, /"credits": 0/);
     assert.match(await psql(saveSql(project, 1, doc(['camera-a']), 'export-1', 0)), /"credits": 0/);
     assert.match(await psql(finalizeSql(project, 'export-1')), /"committed": true/);
-    assert.equal(await psql(`SELECT b.balance||'|'||count(r.*)||'|'||count(j.*) FILTER(WHERE j.deleted_at IS NULL)||'|'||bool_and(j.provider='local' AND j.state='STORED')
-      FROM public.credit_balances b LEFT JOIN public.editor_manual_commit_receipts r ON r.user_id=b.user_id
-      LEFT JOIN public.jobs j ON j.user_id=b.user_id WHERE b.user_id='${user}' GROUP BY b.balance;`), '15|1|0|true');
+    assert.equal(await psql(`SELECT b.balance||'|'||
+      (SELECT count(*) FROM public.editor_manual_commit_receipts r WHERE r.project_id='${project}')||'|'||
+      (SELECT count(*) FROM public.jobs j JOIN public.editor_manual_commit_operations o ON o.job_id=j.id
+        WHERE o.project_id='${project}' AND j.deleted_at IS NULL)||'|'||
+      (SELECT bool_and(j.provider='local' AND j.state='STORED') FROM public.jobs j
+        JOIN public.editor_manual_commit_operations o ON o.job_id=j.id WHERE o.project_id='${project}')
+      FROM public.credit_balances b WHERE b.user_id='${user}';`), '15|1|0|true');
     assert.match(await psql(`BEGIN; SELECT set_config('request.jwt.claim.sub','${actor}',true);
       SELECT public.manual_editor_commit_status('${project}','save-key-1'); COMMIT;`), /"committed": true.*"revision": 1|"revision": 1.*"committed": true/);
     assert.match(await psql(`BEGIN; SELECT set_config('request.jwt.claim.sub','${actor}',true);
@@ -175,7 +193,9 @@ test('manual editor debit migration is atomic, idempotent and invisible', { skip
 
   await t.test('version conflict rolls back debit, job and receipt', async () => {
     await assert.rejects(psql(saveSql(project, 0, doc(['camera-a','camera-b']), 'conflict-1', 5)), /VERSION_CONFLICT/);
-    assert.equal(await psql(`SELECT balance||'|'||(SELECT count(*) FROM public.jobs)||'|'||(SELECT count(*) FROM public.editor_manual_commit_receipts)
+    assert.equal(await psql(`SELECT balance||'|'||(SELECT count(*) FROM public.jobs j JOIN public.editor_manual_commit_operations o ON o.job_id=j.id
+      WHERE o.project_id='${project}')||'|'||
+      (SELECT count(*) FROM public.editor_manual_commit_receipts WHERE project_id='${project}')
       FROM public.credit_balances WHERE user_id='${user}';`), '15|1|1');
   });
 

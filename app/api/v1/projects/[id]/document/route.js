@@ -95,7 +95,8 @@ async function settleManualCommit(request, params, action) {
     const id = uuid((await params).id).toLowerCase();
     const projects = await tenantRequest(request, context, `projects?id=eq.${id}&select=id&limit=1`);
     if (!projects[0]) throw new ApiError(404, 'NOT_FOUND', 'The project was not found.');
-    const result = await tenantRequest(request, context, `rpc/${action}_manual_editor_commit`, { method: 'POST', body: {
+    const rpc = action === 'begin' ? 'begin_manual_editor_delivery' : `${action}_manual_editor_commit`;
+    const result = await tenantRequest(request, context, `rpc/${rpc}`, { method: 'POST', body: {
       p_project_id: id, p_idempotency_key: idempotencyKey(request),
     }, limitAware: true });
     if (result?.ok === false) {

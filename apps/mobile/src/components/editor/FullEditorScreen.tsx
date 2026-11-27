@@ -544,7 +544,11 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         if (credits === null || credits === 'failed') return null;
         const reserved = await commitPreparedManualEdit(credits);
         if (reserved === null) return null;
-        try { return await sync.finalizePaid(); }
+        try {
+            const authorized = await sync.beginPaidDelivery();
+            if (authorized === null) return null;
+            return await sync.finalizePaid();
+        }
         catch { setProblem(t('editorManualCommit.connectionFailed')); return null; }
     };
     const openCloudExport = async () => { const rawFonts = (timeline as unknown as { fonts?: unknown }).fonts, declaredFonts = validCustomFonts(timeline);

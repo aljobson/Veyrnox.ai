@@ -43,6 +43,8 @@ test('manual editor reserves atomically before delivery and bypasses supplier-on
 test('manual editor charge is disabled by default and exact job identity is enforced', () => {
   assert.match(sql, /editor_manual_commit_config[\s\S]*enabled boolean NOT NULL DEFAULT false/);
   assert.equal((sql.match(/FEATURE_DISABLED/g) ?? []).length, 6);
+  assert.match(sql, /private\.editor_manual_mfa_satisfied[\s\S]*request\.jwt\.claims[\s\S]*auth\.mfa_factors/);
+  assert.equal((sql.match(/MFA_REQUIRED/g) ?? []).length, 5);
   assert.match(sql, /j\.credits IS DISTINCT FROM p_credits OR j\.inputs IS DISTINCT FROM p_inputs/);
   assert.match(sql, /j\.inputs=charge_inputs/);
 });

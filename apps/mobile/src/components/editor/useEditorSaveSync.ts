@@ -152,10 +152,11 @@ export function useEditorSaveSync(options: Options) {
                     const clean = await acknowledgeSave(op, status.revision);
                     return { committed: true, clean, revision: status.revision, credits: op.expectedCredits ?? null };
                 }
-                // The status RPC waits on the paid-save advisory lock, so a
-                // missing exact key is authoritative after all already-issued
-                // same-key transactions have committed or rolled back.
-                paidReconcile = null;
+                if (status.canceled) paidReconcile = null;
+                // Status is deliberately read-only and may observe no row
+                // while the reservation transaction is still committing.
+                // Keep the exact key so the next explicit action can safely
+                // replay it; never replace an unresolved charge with a new key.
                 return { committed: false, clean: false, revision: null, credits: null };
             } catch (error) {
                 if (isAccountChanged(error)) { drop(); return { committed: false, clean: false, revision: null, credits: null }; }
@@ -179,16 +180,34 @@ export function useEditorSaveSync(options: Options) {
                     : runSave(expectedCredits));
             }
             if (expectedCredits !== undefined && paidDelivery) {
-                return Promise.resolve({ committed: false, clean: false, revision: null, credits: null });
+                return Promise.resolve(paidDelivery.expectedCredits === expectedCredits
+                    ? { committed: true, clean: !o().dirtyRef.current, revision: o().revisionRef.current, credits: expectedCredits }
+                    : { committed: false, clean: false, revision: null, credits: null });
             }
             if (expectedCredits !== undefined && paidReconcile) {
                 const op = paidReconcile;
                 if (op.expectedCredits !== expectedCredits || !canRetry(locks(), op))
                     return Promise.resolve({ committed: false, clean: false, revision: null, credits: null });
-                op.token = {}; op.state = 'ambiguous'; op.reconcileChecks = 0;
+                op.token = {}; op.state = 'inflight'; op.reconcileChecks = 0;
                 saving = op; watchGen++; notify();
                 saveRun = (async () => {
-                    try { return await reconcilePaid(op); }
+                    try {
+                        const result = await putPaidDocument(o().api, o().projectId, op.expectedRevision, op.document, op.key, expectedCredits);
+                        if (!holds(op)) return { committed: false, clean: false, revision: null, credits: null };
+                        paidDelivery = op;
+                        const clean = await acknowledgeSave(op, result.revision);
+                        return { committed: true, clean, revision: result.revision, credits: expectedCredits };
+                    } catch (error) {
+                        if (isAccountChanged(error)) { drop(); return { committed: false, clean: false, revision: null, credits: null }; }
+                        if (!holds(op)) return { committed: false, clean: false, revision: null, credits: null };
+                        const status = (error as ApiError).status ?? 500;
+                        const code = error instanceof ApiError ? error.code.toLowerCase() : '';
+                        failureCode = code || null;
+                        if (ambiguous(status)) { op.state = 'ambiguous'; return reconcilePaid(op); }
+                        paidReconcile = null;
+                        if (status === 409 && code === 'version_conflict') await fetchConflict(op);
+                        return { committed: false, clean: false, revision: null, credits: null };
+                    }
                     finally {
                         if (saving === op) saving = null;
                         saveRun = null; watchGen++;
@@ -493,15 +512,26 @@ export function useEditorSaveSync(options: Options) {
                 const op = paidDelivery;
                 if (!live()) return null;
                 if (!op) return o().revisionRef.current;
-                return beginManualEditorDelivery(o().api, o().projectId, op.key);
+                try { return await beginManualEditorDelivery(o().api, o().projectId, op.key); }
+                catch (error) {
+                    if (error instanceof ApiError && ['commit_canceled', 'commit_not_found'].includes(error.code.toLowerCase()) && paidDelivery === op)
+                        paidDelivery = null;
+                    throw error;
+                }
             },
             finalizePaid: async (): Promise<number | null> => {
                 const op = paidDelivery;
                 if (!live()) return null;
                 if (!op) return o().revisionRef.current;
-                const revision = await finalizeManualEditorCommit(o().api, o().projectId, op.key);
-                if (paidDelivery === op) paidDelivery = null;
-                return revision;
+                try {
+                    const revision = await finalizeManualEditorCommit(o().api, o().projectId, op.key);
+                    if (paidDelivery === op) paidDelivery = null;
+                    return revision;
+                } catch (error) {
+                    if (error instanceof ApiError && ['commit_canceled', 'commit_not_found'].includes(error.code.toLowerCase()) && paidDelivery === op)
+                        paidDelivery = null;
+                    throw error;
+                }
             },
             cancelPaid: async (): Promise<boolean> => {
                 const op = paidDelivery;

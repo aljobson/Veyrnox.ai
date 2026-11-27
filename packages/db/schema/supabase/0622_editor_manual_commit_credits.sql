@@ -92,11 +92,26 @@ LANGUAGE sql IMMUTABLE SET search_path='' AS $$
   SELECT coalesce(jsonb_agg(source_hash ORDER BY source_hash),'[]'::jsonb) FROM eligible;
 $$;
 
+-- The HTTP middleware requires AAL2 when a person has enrolled TOTP. Repeat
+-- that boundary in the database so an authenticated JWT cannot bypass it by
+-- invoking these granted PostgREST functions directly.
+CREATE OR REPLACE FUNCTION private.editor_manual_mfa_satisfied(actor uuid) RETURNS boolean
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $$
+DECLARE claims jsonb:=coalesce(nullif(current_setting('request.jwt.claims',true),''),'{}')::jsonb;
+BEGIN
+  IF claims->>'aal'='aal2' THEN RETURN true; END IF;
+  RETURN NOT EXISTS(SELECT 1 FROM auth.mfa_factors
+    WHERE user_id=actor AND factor_type='totp' AND status='verified');
+END $$;
+REVOKE ALL ON FUNCTION private.editor_manual_mfa_satisfied(uuid) FROM PUBLIC,anon,authenticated,service_role;
+
 CREATE OR REPLACE FUNCTION private.quote_manual_editor_commit(p_project uuid, p_content jsonb) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
 DECLARE actor uuid:=auth.uid(); v_user_id uuid; sources jsonb; covered boolean;
 BEGIN
   IF actor IS NULL THEN RAISE EXCEPTION 'UNAUTHORIZED' USING ERRCODE='PT401'; END IF;
+  IF NOT private.editor_manual_mfa_satisfied(actor)
+    THEN RAISE EXCEPTION 'MFA_REQUIRED' USING ERRCODE='PT403'; END IF;
   IF NOT EXISTS(SELECT 1 FROM public.editor_manual_commit_config WHERE singleton AND enabled)
     THEN RAISE EXCEPTION 'FEATURE_DISABLED' USING ERRCODE='PT404'; END IF;
   IF coalesce(private.project_role(p_project),'') NOT IN ('OWNER','ADMIN','CREATOR','EDITOR')
@@ -129,6 +144,8 @@ DECLARE
   saved_revision integer; charge_inputs jsonb; existing public.editor_manual_commit_operations%ROWTYPE;
 BEGIN
   IF actor IS NULL THEN RAISE EXCEPTION 'UNAUTHORIZED' USING ERRCODE='PT401'; END IF;
+  IF NOT private.editor_manual_mfa_satisfied(actor)
+    THEN RAISE EXCEPTION 'MFA_REQUIRED' USING ERRCODE='PT403'; END IF;
   IF NOT EXISTS(SELECT 1 FROM public.editor_manual_commit_config WHERE singleton AND enabled)
     THEN RAISE EXCEPTION 'FEATURE_DISABLED' USING ERRCODE='PT404'; END IF;
   IF p_expected_credits IS NULL OR p_expected_credits NOT IN (0,5) THEN
@@ -229,6 +246,8 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
 DECLARE actor uuid:=auth.uid(); op public.editor_manual_commit_operations%ROWTYPE; job_state text;
 BEGIN
   IF actor IS NULL THEN RAISE EXCEPTION 'UNAUTHORIZED' USING ERRCODE='PT401'; END IF;
+  IF NOT private.editor_manual_mfa_satisfied(actor)
+    THEN RAISE EXCEPTION 'MFA_REQUIRED' USING ERRCODE='PT403'; END IF;
   IF NOT EXISTS(SELECT 1 FROM public.editor_manual_commit_config WHERE singleton AND enabled)
     THEN RAISE EXCEPTION 'FEATURE_DISABLED' USING ERRCODE='PT404'; END IF;
   IF p_request_key IS NULL OR p_request_key!~'^[A-Za-z0-9._-]{8,128}$'
@@ -262,6 +281,8 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
 DECLARE actor uuid:=auth.uid(); op public.editor_manual_commit_operations%ROWTYPE; job_state text; erased jsonb;
 BEGIN
   IF actor IS NULL THEN RAISE EXCEPTION 'UNAUTHORIZED' USING ERRCODE='PT401'; END IF;
+  IF NOT private.editor_manual_mfa_satisfied(actor)
+    THEN RAISE EXCEPTION 'MFA_REQUIRED' USING ERRCODE='PT403'; END IF;
   IF NOT EXISTS(SELECT 1 FROM public.editor_manual_commit_config WHERE singleton AND enabled)
     THEN RAISE EXCEPTION 'FEATURE_DISABLED' USING ERRCODE='PT404'; END IF;
   IF p_request_key IS NULL OR p_request_key!~'^[A-Za-z0-9._-]{8,128}$'
@@ -306,6 +327,8 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
 DECLARE actor uuid:=auth.uid(); op public.editor_manual_commit_operations%ROWTYPE; job_state text; refunded jsonb;
 BEGIN
   IF actor IS NULL THEN RAISE EXCEPTION 'UNAUTHORIZED' USING ERRCODE='PT401'; END IF;
+  IF NOT private.editor_manual_mfa_satisfied(actor)
+    THEN RAISE EXCEPTION 'MFA_REQUIRED' USING ERRCODE='PT403'; END IF;
   IF NOT EXISTS(SELECT 1 FROM public.editor_manual_commit_config WHERE singleton AND enabled)
     THEN RAISE EXCEPTION 'FEATURE_DISABLED' USING ERRCODE='PT404'; END IF;
   IF p_request_key IS NULL OR p_request_key!~'^[A-Za-z0-9._-]{8,128}$'

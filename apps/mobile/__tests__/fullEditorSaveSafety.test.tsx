@@ -152,6 +152,21 @@ test('two ambiguous paid responses use exact-key status, never charge in the bac
     expect(puts()[1][1].headers['Idempotency-Key']).toBe(puts()[0][1].headers['Idempotency-Key']);
     expect(session.dirty).toBe(false);
 });
+test('a missing read-only status keeps the paid key and the next explicit retry replays that exact key', async () => {
+    await open(); await edit('unknown paid edit');
+    mockRequest.mockImplementationOnce(async () => { throw new ApiError(0, 'network'); });
+    mockRequest.mockImplementationOnce(async () => { throw new ApiError(0, 'network'); });
+    let first!: Awaited<ReturnType<typeof session.sync.savePaid>>;
+    await act(async () => { first = await session.sync.savePaid(5); });
+    expect(first.committed).toBe(false);
+    expect(puts()).toHaveLength(2);
+    const key = puts()[0][1].headers['Idempotency-Key'];
+    let retried!: Awaited<ReturnType<typeof session.sync.savePaid>>;
+    await act(async () => { retried = await session.sync.savePaid(5); });
+    expect(retried).toMatchObject({ committed: true, credits: 5 });
+    expect(puts()).toHaveLength(3);
+    expect(puts()[2][1].headers['Idempotency-Key']).toBe(key);
+});
 test('a covered clean document accepts a zero-credit Save without creating another revision', async () => {
     await open();
     await act(async () => { expect((await session.sync.savePaid(0)).committed).toBe(true); });
