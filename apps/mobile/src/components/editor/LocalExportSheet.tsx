@@ -75,6 +75,7 @@ export function LocalExportSheet({ visible, api, account, projectId, revision, t
     const [resolution, setResolution] = useState<LocalExportResolution>('1080p');
     const [frameRate, setFrameRate] = useState<LocalExportFrameRate>([24, 25, 30, 60].includes(timeline.fps) ? timeline.fps as LocalExportFrameRate : 30);
     const [autoSave, setAutoSave] = useState(true), [saved, setSaved] = useState(false), [saving, setSaving] = useState(false), [confirming, setConfirming] = useState(false);
+    const [pendingCredits, setPendingCredits] = useState<number | null>(null);
     const exportIdentity = `${projectId}:${revision}`;
     const controller = useRef<AbortController | null>(null), mounted = useRef(true), latestArtifact = useRef(artifact), lastIdentity = useRef(exportIdentity), saveToken = useRef(0); latestArtifact.current = artifact;
     const releaseArtifact = (value: ExportArtifact) => value.kind === 'wav' ? Promise.resolve(releaseWavArtifact(value))
@@ -86,7 +87,7 @@ export function LocalExportSheet({ visible, api, account, projectId, revision, t
         lastIdentity.current = exportIdentity; controller.current?.abort(); controller.current = null;
         saveToken.current += 1;
         const value = latestArtifact.current; latestArtifact.current = null; if (value) void releaseArtifact(value);
-        setArtifact(null); setError(null); setProgress(null); setSaved(false); setSaving(false); setPhase('idle');
+        setArtifact(null); setError(null); setProgress(null); setSaved(false); setSaving(false); setPendingCredits(null); setPhase('idle');
     }, [exportIdentity, projectId]);
     const close = () => { if (phase !== 'exporting' && phase !== 'verifying' && !saving && !confirming) onClose(); };
     const start = async () => {
@@ -100,7 +101,7 @@ export function LocalExportSheet({ visible, api, account, projectId, revision, t
         if (expectedCredits === null) return;
         const frozen = JSON.parse(JSON.stringify(timeline)) as Timeline, abort = new AbortController(), task = beginSessionTask(); controller.current = abort;
         if (artifact) await releaseArtifact(artifact).catch(() => undefined);
-        setArtifact(null); setError(null); setProgress(null); setSaved(false); setSaving(false); setPhase('exporting');
+        setArtifact(null); setError(null); setProgress(null); setSaved(false); setSaving(false); setPendingCredits(null); setPhase('exporting');
         const preset = LOCAL_EXPORT_QUALITY[quality];
         let prepared: EditorExportSourceResult<EditorLocalExportResult | EditorAudioExportResult>;
         try { prepared = await withEditorExportSources<EditorLocalExportResult | EditorAudioExportResult>({ api, task, account, projectId, timeline: frozen, localMediaUris, signal: abort.signal }, materialized => {
@@ -142,13 +143,17 @@ export function LocalExportSheet({ visible, api, account, projectId, revision, t
                 await releaseArtifact(result.artifact); return;
             }
             if (committedRevision === null) {
-                await releaseArtifact(result.artifact); setError('credit-failed'); setPhase('error'); setProgress(null); return;
+                // A lost paid response may have committed and debited already.
+                // Retain the completed render and retry the exact-key status
+                // reconciliation instead of deleting the user's only output.
+                latestArtifact.current = result.artifact; setArtifact(result.artifact); setPendingCredits(expectedCredits);
+                setError('credit-failed'); setPhase('error'); setProgress(null); return;
             }
             // The paid commit advances the server revision. Adopt that identity before
             // React delivers the new prop so the freshly rendered artifact is not
             // mistaken for output from a stale edit and released by the identity effect.
             lastIdentity.current = `${projectId}:${committedRevision}`;
-            latestArtifact.current = result.artifact; setArtifact(result.artifact); setPhase('done');
+            latestArtifact.current = result.artifact; setArtifact(result.artifact); setPendingCredits(null); setPhase('done');
             if (autoSave && result.artifact.kind === 'mp4') {
                 const token = ++saveToken.current; setSaving(true);
                 const stillCurrent = () => mounted.current && task.current() && latestArtifact.current?.artifactId === result.artifact.artifactId;
@@ -163,6 +168,17 @@ export function LocalExportSheet({ visible, api, account, projectId, revision, t
         else if (result.code === 'cancelled') { setPhase('idle'); setProgress(null); }
         else { setError(result.code === 'invalid-timeline' ? 'invalid-timeline' : result.code === 'unsupported-frame' ? 'unsupported-frame'
             : result.code === 'native-media' ? 'native-media' : 'write-failed'); setPhase('error'); }
+    };
+    const retryCommit = async () => {
+        const retained = latestArtifact.current;
+        if (!retained || pendingCredits === null || confirming) return;
+        setConfirming(true); setError(null); setPhase('verifying');
+        const committedRevision = await onCommit(pendingCredits).catch(() => null);
+        if (!mounted.current || latestArtifact.current?.artifactId !== retained.artifactId) return;
+        setConfirming(false);
+        if (committedRevision === null) { setError('credit-failed'); setPhase('error'); return; }
+        lastIdentity.current = `${projectId}:${committedRevision}`;
+        setPendingCredits(null); setPhase('done');
     };
     const save = async () => { if (!artifact || artifact.kind !== 'mp4' || saving) return; const target = artifact, token = ++saveToken.current; setSaving(true); setError(null);
         const stillCurrent = () => mounted.current && latestArtifact.current?.artifactId === target.artifactId;
@@ -192,7 +208,8 @@ export function LocalExportSheet({ visible, api, account, projectId, revision, t
             <Button label={t('editorScenes.cancel')} onPress={() => controller.current?.abort()} /></> : null}
         {phase === 'verifying' ? <Text style={styles.text}>{t('editorLocalExport.verifying')}</Text> : null}
         {messageKey ? <Text style={styles.error}>{t(messageKey)}</Text> : null}
-        {phase === 'idle' || phase === 'error' ? <><View style={styles.readyCard}><View style={styles.readyIcon}><Text style={styles.readyIconText}>{output === 'audio' ? '♫' : '▣'}</Text></View><View style={{ flex: 1 }}><Text style={styles.readyTitle}>{t('editorParity.readyToExport')}</Text><Text style={styles.readyMeta}>{output === 'audio' ? t('editorParity.audioExportMeta', { size: formatNumber(estimatedLocalAudioBytes(timeline) / 1_000_000, 1) }) : t('editorParity.videoExportMeta', { width: selectedLocalExportDimensions(canvas, resolution).width, height: selectedLocalExportDimensions(canvas, resolution).height, fps: frameRate, size: formatNumber(estimatedLocalExportBytes(timeline, quality) / 1_000_000, 1) })}</Text></View></View>
+        {phase === 'error' && artifact && pendingCredits !== null ? <Button label={t('musicExport.retry')} disabled={confirming} onPress={() => void retryCommit()} /> : null}
+        {phase === 'idle' || phase === 'error' && pendingCredits === null ? <><View style={styles.readyCard}><View style={styles.readyIcon}><Text style={styles.readyIconText}>{output === 'audio' ? '♫' : '▣'}</Text></View><View style={{ flex: 1 }}><Text style={styles.readyTitle}>{t('editorParity.readyToExport')}</Text><Text style={styles.readyMeta}>{output === 'audio' ? t('editorParity.audioExportMeta', { size: formatNumber(estimatedLocalAudioBytes(timeline) / 1_000_000, 1) }) : t('editorParity.videoExportMeta', { width: selectedLocalExportDimensions(canvas, resolution).width, height: selectedLocalExportDimensions(canvas, resolution).height, fps: frameRate, size: formatNumber(estimatedLocalExportBytes(timeline, quality) / 1_000_000, 1) })}</Text></View></View>
             <Text style={styles.label}>{t('editorParity.output')}</Text><View accessibilityRole="radiogroup" accessibilityLabel={t('editorParity.output')} style={styles.outputSegment}>{(['video', 'audio'] as const).map(value => <Pressable key={value} accessibilityRole="radio" accessibilityLabel={t(value === 'video' ? 'editorSimple.video' : 'editorParity.audioOnly')} accessibilityState={{ checked: output === value }} onPress={() => setOutput(value)} style={[styles.outputChoice, output === value && styles.outputSelected]}><Text style={output === value ? styles.outputSelectedText : styles.outputChoiceText}>{t(value === 'video' ? 'editorSimple.video' : 'editorParity.audioOnly')}</Text></Pressable>)}</View>
             {output === 'video' ? <><Text style={styles.label}>{t('editorParity.resolution')}</Text>
             <View accessibilityRole="radiogroup" accessibilityLabel={t('editorParity.resolution')} style={styles.row}>{(['720p', '1080p', '4k'] as const).map(value => <Pressable key={value} accessibilityRole="radio" accessibilityLabel={value === '4k' ? t('editorParity.fourK') : value.toUpperCase()} accessibilityState={{ checked: resolution === value }} onPress={() => setResolution(value)} style={[styles.choice, resolution === value && styles.choiceSelected]}><Text style={styles.text}>{value === '4k' ? t('editorParity.fourK') : value.toUpperCase()}</Text></Pressable>)}</View>

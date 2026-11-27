@@ -55,14 +55,29 @@ test('a successful paid local export keeps its artifact and exposes Save and Sha
     expect(mockRelease).not.toHaveBeenCalled();
 });
 
-test('a refused paid commit releases the render and exposes no Save or Share', async () => {
+test('an unresolved paid commit retains the render without exposing Save or Share', async () => {
     await act(async () => root.render(<LocalExportSheet visible api={{ request: jest.fn() } as never} account="owner" projectId={projectId} revision={7}
         timeline={timeline} canvas={canvas} localMediaUris={{}} onClose={jest.fn()} onCloud={jest.fn()} onPrepare={jest.fn().mockResolvedValue(5)}
         onCommit={jest.fn().mockResolvedValue(null)} />));
     await press('Export on this device');
-    expect(mockRelease).toHaveBeenCalledWith(projectId, artifact.artifactId);
+    expect(mockRelease).not.toHaveBeenCalled();
     expect(labelled('Save to photo library')).toHaveLength(0);
     expect(labelled('Share export')).toHaveLength(0);
+    expect(labelled('Try again')).toHaveLength(1);
+});
+
+test('payment verification retries the retained render without rendering again', async () => {
+    const onCommit = jest.fn().mockResolvedValueOnce(null).mockResolvedValueOnce(7);
+    await act(async () => root.render(<LocalExportSheet visible api={{ request: jest.fn() } as never} account="owner" projectId={projectId} revision={7}
+        timeline={timeline} canvas={canvas} localMediaUris={{}} onClose={jest.fn()} onCloud={jest.fn()} onPrepare={jest.fn().mockResolvedValue(5)}
+        onCommit={onCommit} />));
+    await press('Export on this device');
+    await press('Try again');
+    expect(onCommit).toHaveBeenNthCalledWith(1, 5);
+    expect(onCommit).toHaveBeenNthCalledWith(2, 5);
+    expect(mockExportMp4).toHaveBeenCalledTimes(1);
+    expect(mockRelease).not.toHaveBeenCalled();
+    expect(labelled('Share export')).toHaveLength(1);
 });
 
 test('cancelling the credit confirmation does not render or show a false export error', async () => {

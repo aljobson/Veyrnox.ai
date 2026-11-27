@@ -22,7 +22,7 @@ test('manual editor Save and Export share one server-derived five-credit receipt
 
 test('manual editor charge is atomic with document save and bypasses supplier-only admission', () => {
   const debit = sql.indexOf('debit:=public.ledger_debit');
-  const save = sql.indexOf('saved:=private.save_project_document');
+  const save = sql.indexOf('saved:=private.save_project_document', debit);
   const receipt = sql.indexOf('INSERT INTO public.editor_manual_commit_receipts');
   assert.ok(debit > 0 && save > debit && receipt > save);
   assert.match(sql, /WHEN \(NEW\.model_id<>'editor-manual-commit'\).*enforce_user_inflight_on_job/s);

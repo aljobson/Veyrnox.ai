@@ -515,6 +515,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
             { text: t('editorManualCommit.continue', { credits }), onPress: () => resolve(true) },
         ], { cancelable: true, onDismiss: () => resolve(false) }));
     const prepareManualEdit = async (action: 'save' | 'export'): Promise<number | null | 'failed'> => {
+        if (!manualCommitEnabled) return 0;
         try {
             setProblem(null);
             const credits = await sync.quotePaid();
@@ -524,6 +525,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         }
     };
     const commitPreparedManualEdit = async (credits: number): Promise<number | null> => {
+        if (!manualCommitEnabled) return getEditRevision();
         try {
             const result = await sync.savePaid(credits);
             if (!result.committed) {
@@ -546,15 +548,12 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         if (declaredFonts.length) { setProblem(t('editorFont.exportNote')); return; }
         if (!exportGate.available) { if (await save()) setProblem(t(exportGate.messageKey)); return; } try { requireOnline(); } catch {
         setProblem(OFFLINE_PAID_MESSAGE); return; } if (exportUnavailable()) { setProblem(t('handoff.exportUnavailable')); return; }
-        // Opening or dismissing the server-render sheet must never charge the
-        // separate manual-edit fee. The paid flow is rollout-gated until the
-        // render admission can own and refund the combined charge atomically.
-        if (!manualCommitEnabled) { setProblem(t('editorManualCommit.unavailable')); return; }
+        // Cloud rendering owns its own admission price. The manual-edit fee
+        // rollout must not hide the existing cloud-export entry point.
         if (dirty && !(await save())) return;
         setExportVisible(true); };
     const openExport = () => {
         setPlaying(false);
-        if (!manualCommitEnabled) { setProblem(t('editorManualCommit.unavailable')); return; }
         setLocalExportVisible(true);
     };
     const openCover = () => { setPlaying(false); setSheet(null); setCoverRestoreFrame(clampFrame(frameStore.get())); };
@@ -679,7 +678,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         <EditorClipAudioSheet visible={clipAudioVisible !== null} clip={selected && selection?.track !== 'text' ? selected as Clip : null} fps={timeline.fps}
             focus={clipAudioVisible ?? 'volume'} onClose={() => setClipAudioVisible(null)} onPatch={patchSelected} />
         <EditorFiltersSheet visible={filtersVisible} clip={selected && selection?.track === 'video' ? selected as Clip : null} onClose={() => setFiltersVisible(false)} onPatch={patchSelected} />
-        {EDITOR_SERVER_EXPORT_ENABLED && manualCommitEnabled ? <ServerExportSheet api={api} router={router} now={Date.now} projectId={projectId} name={displayName} document={document} localMediaUris={localMediaUris} dirty={dirty} visible={exportVisible}
+        {EDITOR_SERVER_EXPORT_ENABLED ? <ServerExportSheet api={api} router={router} now={Date.now} projectId={projectId} name={displayName} document={document} localMediaUris={localMediaUris} dirty={dirty} visible={exportVisible}
             onOpen={() => setExportVisible(true)} onClose={() => setExportVisible(false)} onFallback={() => { setExportVisible(false); setProblem(t('handoff.exportUnavailable')); }} /> : null}
         <Stack.Screen options={{ headerShown: false, gestureEnabled: !timelineTouch && !selection /* a selected clip is about to be dragged: swipe-back must not steal that drag; Done and the leave guard still exit */ }} />
         <View style={[styles.projectBar, !advanced && styles.simpleProjectBar]}>
@@ -696,7 +695,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
             </Pressable>
             {advanced ? <Button label={t('editorSave.versions')} variant="tertiary" size="sm" containerStyle={{ marginVertical: -2 }} onPress={sync.openVersions} /> : null}
             {!advanced ? <Pressable accessibilityRole="button" accessibilityLabel={dirty ? t('projects.save') : saveStatus} accessibilityLiveRegion={Platform.OS === 'android' ? 'polite' : undefined}
-                onPress={() => { if (!manualCommitEnabled) { setProblem(t('editorManualCommit.unavailable')); return; } void commitManualEdit('save'); }} style={({ pressed }) => [styles.simpleSaveButton, !dirty && !sync.saving && styles.simpleSaveIdle, pressed && styles.pressed]}>
+                onPress={() => void (manualCommitEnabled ? commitManualEdit('save') : save())} style={({ pressed }) => [styles.simpleSaveButton, !dirty && !sync.saving && styles.simpleSaveIdle, pressed && styles.pressed]}>
                 <Text numberOfLines={1} maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.simpleSaveText}>{sync.saving ? t('editor.saving') : dirty ? t('projects.save') : t('editor.saved')}</Text>
             </Pressable> : null}
             <Pressable accessibilityRole="button" accessibilityLabel={advanced ? t('editor.done') : t('editor.export')} onPress={advanced ? guard.done : openExport}

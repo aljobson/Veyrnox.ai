@@ -164,7 +164,9 @@ export function useEditorSaveSync(options: Options) {
                     await new Promise(resolve => setTimeout(resolve, retryDelay(checks - 1, (error as ApiError).retryAfterSeconds)));
                     return reconcilePaid(op);
                 }
-                paidReconcile = null;
+                // Keep the exact paid operation and idempotency key available
+                // for an explicit retry. Starting a fresh paid save here could
+                // double-charge after an unreachable but successful commit.
                 return { committed: false, clean: false, revision: null, credits: null };
             }
         }
@@ -174,6 +176,22 @@ export function useEditorSaveSync(options: Options) {
                 return saveRun.then(() => pending || imports > 0
                     ? { committed: false, clean: false, revision: null, credits: null }
                     : runSave(expectedCredits));
+            }
+            if (expectedCredits !== undefined && paidReconcile) {
+                const op = paidReconcile;
+                if (op.expectedCredits !== expectedCredits || !canRetry(locks(), op))
+                    return Promise.resolve({ committed: false, clean: false, revision: null, credits: null });
+                op.token = {}; op.state = 'ambiguous'; op.reconcileChecks = 0;
+                saving = op; watchGen++; notify();
+                saveRun = (async () => {
+                    try { return await reconcilePaid(op); }
+                    finally {
+                        if (saving === op) saving = null;
+                        saveRun = null; watchGen++;
+                        if (live()) notify();
+                    }
+                })();
+                return saveRun;
             }
             if (expectedCredits !== undefined && pending) {
                 if (!canRetry(locks(), pending)) return Promise.resolve({ committed: false, clean: false, revision: null, credits: null });

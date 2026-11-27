@@ -125,6 +125,23 @@ BEGIN
     THEN RAISE EXCEPTION 'INVALID_DOCUMENT' USING ERRCODE='PT400'; END IF;
   SELECT id INTO v_user_id FROM public.users WHERE auth_id=actor::text;
   IF v_user_id IS NULL THEN RAISE EXCEPTION 'UNAUTHORIZED' USING ERRCODE='PT401'; END IF;
+  SELECT EXISTS(SELECT 1 FROM public.project_document_versions v
+    WHERE v.project_id=p_project AND v.actor_id=actor AND v.request_key=p_request_key) INTO replay;
+  IF replay THEN
+    -- Re-run the canonical document save first so the existing key is still
+    -- checked against the expected revision and exact document payload.
+    saved:=private.save_project_document(p_project,p_expected,p_content,p_request_key,NULL);
+    SELECT v.revision,v.manual_commit_credits INTO saved_revision,amount
+      FROM public.project_document_versions v
+      WHERE v.project_id=p_project AND v.actor_id=actor AND v.request_key=p_request_key;
+    IF amount IS NULL THEN
+      RETURN jsonb_build_object('ok',false,'code','IDEMPOTENCY_CONFLICT');
+    END IF;
+    IF p_expected_credits IS DISTINCT FROM amount THEN
+      RETURN jsonb_build_object('ok',false,'code','PRICE_CHANGED','expected_credits',amount);
+    END IF;
+    RETURN saved||jsonb_build_object('ok',true,'credits',amount,'covered',amount=0);
+  END IF;
   sources:=private.editor_manual_source_hashes(p_content);
   fingerprint:=encode(sha256(convert_to(sources::text,'UTF8')),'hex');
   SELECT NOT EXISTS(
@@ -137,14 +154,7 @@ BEGIN
      )
   ) INTO covered;
   amount:=CASE WHEN jsonb_array_length(sources)=0 OR covered THEN 0 ELSE 5 END;
-  SELECT EXISTS(SELECT 1 FROM public.project_document_versions v
-    WHERE v.project_id=p_project AND v.actor_id=actor AND v.request_key=p_request_key) INTO replay;
-  IF replay AND NOT EXISTS(SELECT 1 FROM public.project_document_versions v
-    WHERE v.project_id=p_project AND v.actor_id=actor AND v.request_key=p_request_key
-      AND v.manual_commit_credits IS NOT NULL) THEN
-    RETURN jsonb_build_object('ok',false,'code','IDEMPOTENCY_CONFLICT');
-  END IF;
-  IF p_expected_credits IS DISTINCT FROM amount AND NOT (replay AND p_expected_credits=5 AND amount=0) THEN
+  IF p_expected_credits IS DISTINCT FROM amount THEN
     RETURN jsonb_build_object('ok',false,'code','PRICE_CHANGED','expected_credits',amount);
   END IF;
   IF amount=5 THEN
@@ -323,6 +333,86 @@ BEGIN
       subscription_balance=subscription_balance-v_sub_part,updated_at=now() WHERE user_id=p_user_id;
     RETURN jsonb_build_object('ok',true,'job_id',v_new_job_id,'idempotent',false,'balance_after',v_spendable-p_credits);
 END $$;
+
+-- Manual editor accounting jobs are already paid synchronously and hidden;
+-- they are not generation attempts and must not consume a generation slot.
+-- Re-declare the latest public limiter here so deployed databases receive the
+-- exclusion without mutating the historical 0443 migration.
+CREATE OR REPLACE FUNCTION public.check_generation_rate_limit(
+    p_auth_id TEXT,
+    p_limit_per_window INTEGER,
+    p_window_seconds INTEGER
+) RETURNS JSONB
+LANGUAGE plpgsql
+VOLATILE
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+    v_user_id UUID;
+    v_count INTEGER;
+    v_reset_seconds INTEGER;
+    v_now TIMESTAMPTZ := clock_timestamp();
+    v_attempt_count INTEGER;
+    v_start TIMESTAMPTZ;
+    v_disabled BOOLEAN;
+    v_user_limit INTEGER;
+    v_global_limit INTEGER;
+BEGIN
+    IF p_limit_per_window IS NULL OR p_limit_per_window <= 0 THEN
+        RETURN jsonb_build_object('ok', false, 'code', 'BAD_LIMIT');
+    END IF;
+    IF p_window_seconds IS NULL OR p_window_seconds <= 0 THEN
+        RETURN jsonb_build_object('ok', false, 'code', 'BAD_WINDOW');
+    END IF;
+    SELECT id INTO v_user_id FROM public.users WHERE auth_id = p_auth_id;
+    IF v_user_id IS NULL THEN
+        RETURN jsonb_build_object('ok', false, 'code', 'USER_NOT_FOUND');
+    END IF;
+    SELECT c.ai_disabled, c.gen_limit_per_window INTO v_disabled, v_user_limit
+      FROM public.user_ai_controls c WHERE c.user_id = v_user_id;
+    IF coalesce(v_disabled, false) THEN
+        RETURN jsonb_build_object('ok', false, 'code', 'AI_DISABLED');
+    END IF;
+    SELECT gen_limit_per_window INTO v_global_limit FROM public.ai_limit_policy;
+    p_limit_per_window := LEAST(p_limit_per_window,
+        coalesce(v_user_limit, p_limit_per_window), coalesce(v_global_limit, p_limit_per_window));
+
+    INSERT INTO public.generation_attempt_rate_limits AS r (user_id, window_started_at, request_count)
+    VALUES (v_user_id, v_now, 1)
+    ON CONFLICT (user_id) DO UPDATE SET
+        window_started_at = CASE WHEN r.window_started_at <= v_now - interval '60 seconds'
+            THEN v_now ELSE r.window_started_at END,
+        request_count = CASE WHEN r.window_started_at <= v_now - interval '60 seconds'
+            THEN 1 ELSE LEAST(r.request_count + 1, 21) END
+    RETURNING window_started_at, request_count INTO v_start, v_attempt_count;
+    IF v_attempt_count > 20 THEN
+        RETURN jsonb_build_object('ok', false, 'code', 'RATE_LIMITED',
+            'count', v_attempt_count, 'limit', 20,
+            'retry_after_seconds', LEAST(60, GREATEST(1,
+                ceil(extract(epoch FROM (v_start + interval '60 seconds' - v_now)))::INTEGER)));
+    END IF;
+
+    SELECT count(*) INTO v_count FROM public.jobs
+     WHERE user_id = v_user_id
+       AND model_id <> 'editor-manual-commit'
+       AND created_at > now() - make_interval(secs => p_window_seconds);
+    IF v_count >= p_limit_per_window THEN
+        SELECT GREATEST(1, CEIL(EXTRACT(EPOCH FROM (
+            MIN(created_at) + make_interval(secs => p_window_seconds) - now()
+        ))))::int INTO v_reset_seconds
+          FROM public.jobs
+         WHERE user_id = v_user_id
+           AND model_id <> 'editor-manual-commit'
+           AND created_at > now() - make_interval(secs => p_window_seconds);
+        RETURN jsonb_build_object('ok', false, 'code', 'RATE_LIMITED',
+            'count', v_count, 'limit', p_limit_per_window,
+            'retry_after_seconds', COALESCE(v_reset_seconds, p_window_seconds));
+    END IF;
+    RETURN jsonb_build_object('ok', true, 'count', v_count, 'limit', p_limit_per_window);
+END $$;
+REVOKE ALL ON FUNCTION public.check_generation_rate_limit(TEXT, INTEGER, INTEGER) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.check_generation_rate_limit(TEXT, INTEGER, INTEGER) TO service_role;
 
 -- These jobs represent a synchronous device-side service, not supplier work.
 DROP TRIGGER IF EXISTS jobs_inflight_guard ON public.jobs;

@@ -9,6 +9,8 @@ const url = process.env.EDITOR_MANUAL_COMMIT_TEST_DATABASE_URL;
 const migration = await readFile(new URL('../packages/db/schema/supabase/0622_editor_manual_commit_credits.sql', import.meta.url), 'utf8');
 const actor = '11111111-1111-4111-8111-111111111111';
 const user = '22222222-2222-4222-8222-222222222222';
+const otherActor = '99999999-9999-4999-8999-999999999999';
+const otherUser = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const project = '33333333-3333-4333-8333-333333333333';
 const projectTwo = '44444444-4444-4444-8444-444444444444';
 const projectConcurrent = '55555555-5555-4555-8555-555555555555';
@@ -36,6 +38,7 @@ test('manual editor debit migration is atomic, idempotent and invisible', { skip
       IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='service_role') THEN CREATE ROLE service_role NOLOGIN; END IF;
     END $$;
     CREATE SCHEMA auth; CREATE SCHEMA private;
+    GRANT USAGE ON SCHEMA private TO authenticated;
     CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
     CREATE TABLE public.users(id uuid PRIMARY KEY,auth_id text UNIQUE NOT NULL,frozen_at timestamptz,hold_until timestamptz);
     CREATE TABLE public.projects(id uuid PRIMARY KEY,user_id uuid NOT NULL REFERENCES public.users(id));
@@ -49,8 +52,15 @@ test('manual editor debit migration is atomic, idempotent and invisible', { skip
       subscription_balance integer NOT NULL DEFAULT 0,subscription_expires_at timestamptz,subscription_cycle integer NOT NULL DEFAULT 0,updated_at timestamptz DEFAULT now());
     CREATE TABLE public.ledger_entries(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),user_id uuid NOT NULL REFERENCES public.users(id),delta integer NOT NULL,
       free_delta integer NOT NULL,subscription_delta integer NOT NULL,subscription_cycle integer,reason text NOT NULL,job_id uuid NOT NULL REFERENCES public.jobs(id));
-    CREATE OR REPLACE FUNCTION private.project_role(uuid) RETURNS text LANGUAGE sql STABLE AS $$ SELECT 'OWNER' $$;
-    CREATE OR REPLACE FUNCTION private.project_document_within_bounds(jsonb,uuid) RETURNS boolean LANGUAGE sql IMMUTABLE AS $$ SELECT true $$;
+    CREATE TABLE public.ai_limit_policy(singleton boolean PRIMARY KEY DEFAULT true,gen_limit_per_window integer);
+    CREATE TABLE public.user_ai_controls(user_id uuid PRIMARY KEY REFERENCES public.users(id),ai_disabled boolean NOT NULL DEFAULT false,gen_limit_per_window integer);
+    CREATE TABLE public.generation_attempt_rate_limits(user_id uuid PRIMARY KEY REFERENCES public.users(id),window_started_at timestamptz NOT NULL,request_count integer NOT NULL);
+    CREATE OR REPLACE FUNCTION private.project_role(p_project uuid) RETURNS text LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
+      SELECT CASE WHEN EXISTS(SELECT 1 FROM public.projects p JOIN public.users u ON u.id=p.user_id
+        WHERE p.id=p_project AND u.auth_id=auth.uid()::text) THEN 'OWNER' END $$;
+    CREATE OR REPLACE FUNCTION private.project_document_within_bounds(p_content jsonb,p_project uuid) RETURNS boolean LANGUAGE sql IMMUTABLE AS $$
+      SELECT jsonb_typeof(p_content)='object' AND jsonb_typeof(p_content->'timeline')='object'
+        AND (NOT (p_content ? 'project_id') OR p_content->>'project_id'=p_project::text) $$;
     CREATE OR REPLACE FUNCTION private.enforce_user_inflight_on_job() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RETURN NEW; END $$;
     CREATE OR REPLACE FUNCTION private.enforce_provider_spend_on_job() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RETURN NEW; END $$;
     CREATE OR REPLACE FUNCTION private.fal_admission_paused(text,boolean) RETURNS boolean LANGUAGE sql STABLE AS $$ SELECT false $$;
@@ -73,7 +83,7 @@ test('manual editor debit migration is atomic, idempotent and invisible', { skip
   await psql(migration);
   await psql(`CREATE OR REPLACE FUNCTION public.ledger_debit(p_user uuid,p_key text,p_credits integer,p_reason text,p_model text,p_inputs jsonb,p_a integer,p_b integer)
     RETURNS jsonb LANGUAGE sql AS $$ SELECT private.ledger_debit_for_admission(p_user,p_key,p_credits,p_reason,p_model,p_inputs,p_a,p_b,false) $$;`);
-  await psql(`INSERT INTO public.users(id,auth_id) VALUES('${user}','${actor}');
+  await psql(`INSERT INTO public.users(id,auth_id) VALUES('${user}','${actor}'),('${otherUser}','${otherActor}');
     INSERT INTO public.projects(id,user_id) VALUES('${project}','${user}'),('${projectTwo}','${user}'),('${projectConcurrent}','${user}'),
       ('${projectUnion}','${user}'),('${projectNull}','${user}'),('${projectStatus}','${user}');
     INSERT INTO public.credit_balances(user_id,balance,free_balance,subscription_balance,subscription_expires_at,subscription_cycle)
@@ -93,8 +103,24 @@ test('manual editor debit migration is atomic, idempotent and invisible', { skip
   });
   await psql(`UPDATE public.editor_manual_commit_config SET enabled=true,updated_at=now() WHERE singleton;`);
 
+  await t.test('authenticated grants work and non-members remain hidden', async () => {
+    assert.equal(await psql(`SELECT has_function_privilege('authenticated','public.save_paid_project_document(uuid,integer,jsonb,text,integer)','EXECUTE')||'|'||
+      has_function_privilege('anon','public.save_paid_project_document(uuid,integer,jsonb,text,integer)','EXECUTE');`), 'true|false');
+    assert.match(await psql(`BEGIN; SET LOCAL ROLE authenticated; SELECT set_config('request.jwt.claim.sub','${actor}',true);
+      SELECT public.quote_manual_editor_commit('${project}','${doc(['member-source'])}'::jsonb); COMMIT;`), /"credits": 5/);
+    await assert.rejects(psql(`BEGIN; SET LOCAL ROLE authenticated; SELECT set_config('request.jwt.claim.sub','${otherActor}',true);
+      SELECT public.quote_manual_editor_commit('${project}','${doc(['member-source'])}'::jsonb); COMMIT;`), /NOT_FOUND/);
+    await assert.rejects(psql(`BEGIN; SET LOCAL ROLE authenticated; SELECT set_config('request.jwt.claim.sub','${actor}',true);
+      SELECT public.quote_manual_editor_commit('${project}','[]'::jsonb); COMMIT;`), /INVALID_DOCUMENT/);
+  });
+
   await t.test('Save then Export charges once and hides the accounting job', async () => {
     assert.match(await psql(saveSql(project, 0, doc(['camera-a']), 'save-key-1', 5)), /"credits": 5/);
+    const replay = await psql(saveSql(project, 0, doc(['camera-a']), 'save-key-1', 5));
+    assert.match(replay, /"credits": 5/);
+    assert.match(replay, /"idempotent": true/);
+    assert.equal(await psql(`SELECT balance||'|'||(SELECT count(*) FROM public.project_document_versions WHERE project_id='${project}')||'|'||
+      (SELECT count(*) FROM public.jobs WHERE inputs->>'project_id'='${project}') FROM public.credit_balances WHERE user_id='${user}';`), '15|1|1');
     const quote = await psql(`BEGIN; SELECT set_config('request.jwt.claim.sub','${actor}',true); SELECT public.quote_manual_editor_commit('${project}','${doc(['camera-a'])}'::jsonb); COMMIT;`);
     assert.match(quote, /"credits": 0/);
     assert.match(await psql(saveSql(project, 1, doc(['camera-a']), 'export-1', 0)), /"credits": 0/);
@@ -185,6 +211,7 @@ test('manual editor debit migration is atomic, idempotent and invisible', { skip
   });
 
   await t.test('hidden manual accounting rows do not consume a generation rate-limit slot', async () => {
+    assert.match(await psql(`SELECT public.check_generation_rate_limit('${actor}',1,60);`), /"ok": true/);
     await psql(`UPDATE public.credit_balances SET balance=20,free_balance=20 WHERE user_id='${user}';`);
     const debit = await psql(`SELECT private.ledger_debit_for_admission('${user}','generation-after-manual',1,'debit:generation','test-model','{}',1,60,false);`);
     assert.match(debit, /"ok": true/);

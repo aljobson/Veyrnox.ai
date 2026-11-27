@@ -565,15 +565,18 @@ test('B1: flag off Export opens the private on-device MP4 flow without a server 
     expect(mockRequest.mock.calls.some(([path]) => path.includes('/editor/server-render'))).toBe(false);
 });
 
-test('manual-commit flag off blocks explicit Save without writing the document', async () => {
+test('manual-commit flag off preserves legacy free Save and local Export', async () => {
     mockManualCommitEnabled = false;
     await renderSimple();
     await press('Text');
     await press('Title');
     mockRequest.mockClear();
     await press('Save');
-    expect(puts()).toHaveLength(0);
-    expect(visible('Saving and exporting are not available yet.')).toBe(true);
+    expect(puts()).toHaveLength(1);
+    expect(JSON.parse(puts()[0][1].body as string).manual_commit).toBeUndefined();
+    expect(visible('Saving and exporting are not available yet.')).toBe(false);
+    await press('Export');
+    expect(visible('Export on this device')).toBe(true);
 });
 
 test('explicit Save quotes and confirms the one-time 5-credit manual edit before committing', async () => {
